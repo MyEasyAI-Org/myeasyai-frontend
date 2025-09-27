@@ -1,6 +1,11 @@
 import { Button } from './Button';
 
-export default function NavBar() {
+type NavBarProps = {
+  onLoginClick?: () => void;
+  onSignupClick?: () => void;
+};
+
+export default function NavBar({ onLoginClick, onSignupClick }: NavBarProps) {
   return (
     <nav className="fixed top-0 z-50 w-full border-b border-slate-800 bg-slate-900/95 backdrop-blur-sm">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -30,7 +35,7 @@ export default function NavBar() {
               </svg>
             </div>
             <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-xl font-bold text-transparent">
-              MyEasyAi
+              MyEasyAI
             </span>
           </div>
 
@@ -62,18 +67,10 @@ export default function NavBar() {
           </div>
 
           <div className="flex space-x-3">
-            <Button
-              variant="ghostNav"
-              href="https://forms.gle/seu-formulario"
-              target="_blank"
-            >
+            <Button variant="ghostNav" onClick={onSignupClick}>
               Inscreva-se
             </Button>
-            <Button
-              variant="ghostNav"
-              href="https://forms.gle/seu-formulario"
-              target="_blank"
-            >
+            <Button variant="nav" onClick={onLoginClick}>
               Login
             </Button>
           </div>
