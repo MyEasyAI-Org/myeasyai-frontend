@@ -1,9 +1,11 @@
 import type { ReactNode } from 'react';
 
+type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'log' | 'nav' | 'ghostNav';
+
 type ButtonProps = {
   children: ReactNode;
-  href?: string; // se for link externo ou âncora
-  variant?: 'primary' | 'secondary' | 'outline';
+  href?: string;
+  variant?: ButtonVariant;
   onClick?: () => void;
   target?: '_blank' | '_self';
 };
@@ -18,13 +20,13 @@ export function Button({
   const base =
     'inline-flex items-center justify-center rounded-lg px-6 py-3 font-semibold transition-all duration-300';
 
-  const variants: Record<string, string> = {
+  const variants: Record<ButtonVariant, string> = {
     primary:
       'bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700',
     secondary:
       'bg-slate-800 text-slate-200 hover:bg-slate-700 border border-slate-700',
-    log: 'bg-gradient-to-r w-70 mt-4 from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700',
     outline: 'border border-slate-700 text-slate-300 hover:bg-slate-800',
+    log: 'bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700 mt-4 w-full',
     nav: 'inline-flex items-center justify-center px-4 py-2 text-sm rounded-md bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700',
     ghostNav:
       'inline-flex items-center justify-center px-4 py-2 text-sm rounded-md text-slate-300 hover:text-white hover:bg-slate-800 transition-colors',
@@ -32,7 +34,6 @@ export function Button({
 
   const className = `${base} ${variants[variant]}`;
 
-  // se tiver href => vira link
   if (href) {
     return (
       <a
@@ -46,7 +47,6 @@ export function Button({
     );
   }
 
-  // senão, é botão
   return (
     <button onClick={onClick} className={className}>
       {children}
