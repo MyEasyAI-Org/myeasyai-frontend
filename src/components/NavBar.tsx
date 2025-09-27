@@ -1,4 +1,4 @@
-import { Button } from "./Button";
+import { Button } from './Button';
 
 type NavBarProps = {
   onLoginClick?: () => void;
@@ -35,7 +35,7 @@ export default function NavBar({ onLoginClick, onSignupClick }: NavBarProps) {
               </svg>
             </div>
             <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-xl font-bold text-transparent">
-              MyEasyAi
+              MyEasyAI
             </span>
           </div>
 

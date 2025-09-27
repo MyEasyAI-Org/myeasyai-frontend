@@ -1,6 +1,7 @@
-import { Button } from "./Button";
-import { LoginModal } from "./LoginModal";
-import { SignupModal } from "./SignupModal";
+import { FaStar } from 'react-icons/fa';
+import { Button } from './Button';
+import { LoginModal } from './LoginModal';
+import { SignupModal } from './SignupModal';
 
 type HeroProps = {
   isLoginOpen: boolean;
@@ -34,23 +35,10 @@ export function Hero({
       <div className="mx-auto max-w-7xl">
         <div className="mb-16 text-center">
           <div className="mb-8 inline-flex items-center rounded-full bg-slate-800 px-4 py-2">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
+            <FaStar
               className="mr-2 h-4 w-4 text-purple-400"
-            >
-              <path d="M11.017 2.814a1 1 0 0 1 1.966 0l1.051 5.558a2 2 0 0 0 1.594 1.594l5.558 1.051a1 1 0 0 1 0 1.966l-5.558 1.051a2 2 0 0 0-1.594 1.594l-1.051 5.558a1 1 0 0 1-1.966 0l-1.051-5.558a2 2 0 0 0-1.594-1.594l-5.558-1.051a1 1 0 0 1 0-1.966l5.558-1.051a2 2 0 0 0 1.594-1.594z" />
-              <path d="M20 2v4" />
-              <path d="M22 4h-4" />
-              <circle cx="4" cy="20" r="2" />
-            </svg>
+              aria-hidden="true"
+            />
             <span className="text-sm text-slate-300">Sua IA, do seu jeito</span>
           </div>
 
@@ -75,9 +63,6 @@ export function Hero({
             <Button variant="outline" href="#features">
               Saiba mais
             </Button>
-            <Button variant="secondary" onClick={onOpenLogin}>
-              Fazer login
-            </Button>
           </div>
         </div>
 
@@ -87,7 +72,7 @@ export function Hero({
             <div className="relative">
               <img
                 src="https://cdn.dribbble.com/userupload/44332009/file/84c558bf1e97ff630880c97a118c14c3.png?resize=752x&vertical=center"
-                alt="Dashboard MyEasyAi"
+                alt="Dashboard MyEasyAI"
                 className="w-full rounded-lg"
               />
             </div>

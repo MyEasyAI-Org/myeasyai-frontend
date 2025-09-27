@@ -32,7 +32,7 @@ export function Footer() {
                 </svg>
               </div>
               <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-xl font-bold text-transparent">
-                MyEasyAi
+                MyEasyAI
               </span>
             </div>
             <p className="mb-4 max-w-md text-slate-400">
@@ -133,7 +133,7 @@ export function Footer() {
         </div>
 
         <div className="mt-8 border-t border-slate-800 pt-8 text-center text-slate-400">
-          <p>© 2025 MyEasyAi. Todos os direitos reservados.</p>
+          <p>© 2025 MyEasyAI. Todos os direitos reservados.</p>
         </div>
       </div>
     </footer>

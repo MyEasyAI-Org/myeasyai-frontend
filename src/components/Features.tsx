@@ -7,7 +7,7 @@ export function Features() {
       <div className="mx-auto max-w-7xl">
         <div className="mb-16 text-center">
           <h2 className="mb-4 text-4xl font-bold">
-            Por que escolher MyEasyAi?
+            Por que escolher MyEasyAI?
           </h2>
           <p className="mx-auto max-w-2xl text-xl text-slate-400">
             Transforme suas ideias em assistentes virtuais inteligentes com
