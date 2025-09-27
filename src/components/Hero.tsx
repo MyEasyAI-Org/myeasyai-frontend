@@ -1,6 +1,34 @@
 import { Button } from "./Button";
+import { LoginModal } from "./LoginModal";
+import { SignupModal } from "./SignupModal";
 
-export function Hero() {
+type HeroProps = {
+  isLoginOpen: boolean;
+  onOpenLogin: () => void;
+  onCloseLogin: () => void;
+  isSignupOpen: boolean;
+  onOpenSignup: () => void;
+  onCloseSignup: () => void;
+};
+
+export function Hero({
+  isLoginOpen,
+  onOpenLogin,
+  onCloseLogin,
+  isSignupOpen,
+  onOpenSignup,
+  onCloseSignup,
+}: HeroProps) {
+  const handleSwitchToSignup = () => {
+    onCloseLogin();
+    onOpenSignup();
+  };
+
+  const handleSwitchToLogin = () => {
+    onCloseSignup();
+    onOpenLogin();
+  };
+
   return (
     <section className="px-4 pt-24 pb-20 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-7xl">
@@ -26,7 +54,7 @@ export function Hero() {
             <span className="text-sm text-slate-300">Sua IA, do seu jeito</span>
           </div>
 
-          <h1 className="mb-6 leading-tight text-5xl font-bold md:text-7xl">
+          <h1 className="mb-6 text-5xl font-bold leading-tight md:text-7xl">
             <span className="bg-gradient-to-r from-blue-400 via-purple-400 to-cyan-400 bg-clip-text text-transparent">
               Construa e treine
             </span>
@@ -35,21 +63,20 @@ export function Hero() {
           </h1>
 
           <p className="mx-auto mb-10 max-w-2xl text-xl leading-relaxed text-slate-400">
-            Construa e treine assistentes virtuais para o que você precisa. IA
-            adaptada ao seu contexto, integração com cursos e aprendizado
-            contínuo.
+            Construa e treine assistentes virtuais para o que voce precisa. IA
+            adaptada ao seu contexto, integracao com cursos e aprendizado
+            continuo.
           </p>
 
           <div className="flex flex-col justify-center gap-4 sm:flex-row">
-            <Button
-              variant="primary"
-              href="https://forms.gle/seu-formulario"
-              target="_blank"
-            >
+            <Button variant="primary" onClick={onOpenSignup}>
               Quero experimentar
             </Button>
             <Button variant="outline" href="#features">
               Saiba mais
+            </Button>
+            <Button variant="secondary" onClick={onOpenLogin}>
+              Fazer login
             </Button>
           </div>
         </div>
@@ -67,6 +94,17 @@ export function Hero() {
           </div>
         </div>
       </div>
+
+      <LoginModal
+        isOpen={isLoginOpen}
+        onClose={onCloseLogin}
+        onSwitchToSignup={handleSwitchToSignup}
+      />
+      <SignupModal
+        isOpen={isSignupOpen}
+        onClose={onCloseSignup}
+        onSwitchToLogin={handleSwitchToLogin}
+      />
     </section>
   );
 }
