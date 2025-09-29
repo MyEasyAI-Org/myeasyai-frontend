@@ -1,5 +1,5 @@
-import type { ReactNode } from "react";
-import { FiX } from "react-icons/fi";
+import type { ReactNode } from 'react';
+import { FiX } from 'react-icons/fi';
 
 type ModalProps = {
   isOpen: boolean;
@@ -20,28 +20,29 @@ export function Modal({
   children,
   dialogClassName,
   contentClassName,
-  closeButtonLabel = "Fechar modal",
+  closeButtonLabel = 'Fechar modal',
 }: ModalProps) {
   if (!isOpen) {
     return null;
   }
 
-  const baseDialogClass = "relative w-full max-w-lg rounded-2xl border border-slate-700 bg-slate-900 p-8 shadow-xl";
+  const baseDialogClass =
+    'relative w-full max-w-lg max-h-[calc(100vh-3rem)] overflow-y-auto rounded-2xl border border-slate-700 bg-slate-900 p-6 sm:p-8 shadow-xl';
   const dialogClasses = dialogClassName
     ? `${baseDialogClass} ${dialogClassName}`
     : baseDialogClass;
 
   const shouldOffsetContent = Boolean(title || description);
   const contentWrapperClasses = [
-    shouldOffsetContent ? "mt-6" : "",
-    contentClassName ?? "",
+    shouldOffsetContent ? 'mt-6' : '',
+    contentClassName ?? '',
   ]
     .filter(Boolean)
-    .join(" ");
+    .join(' ');
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 px-4"
+      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-950/80 px-4 py-10 sm:items-center sm:py-12"
       onClick={onClose}
     >
       <div
@@ -74,4 +75,3 @@ export function Modal({
     </div>
   );
 }
-
