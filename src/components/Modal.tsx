@@ -27,7 +27,7 @@ export function Modal({
   }
 
   const baseDialogClass =
-    'relative w-full max-w-lg max-h-[calc(100vh-3rem)] overflow-y-auto rounded-2xl border border-slate-700 bg-slate-900 p-6 sm:p-8 shadow-xl';
+    'relative w-full max-w-lg max-h-[calc(100vh-3rem)] overflow-y-auto rounded-2xl border border-slate-700 bg-slate-900 p-6 sm:p-8 shadow-xl modal-scrollbar';
   const dialogClasses = dialogClassName
     ? `${baseDialogClass} ${dialogClassName}`
     : baseDialogClass;
