@@ -1,8 +1,4 @@
-<<<<<<< HEAD
 import { useState, useEffect } from "react";
-=======
-import { useState } from "react";
->>>>>>> origin/main
 import "./App.css";
 import { Courses } from "./components/Courses";
 import { Features } from "./components/Features";
@@ -12,27 +8,21 @@ import { Hero } from "./components/Hero";
 import { MidStats } from "./components/MidStats";
 import NavBar from "./components/NavBar";
 import { Preview } from "./components/Preview";
-<<<<<<< HEAD
 import { Dashboard } from "./components/Dashboard";
 import { OnboardingModal } from "./components/OnboardingModal";
 import { LoadingIntro } from "./components/LoadingIntro";
 import { supabase, ensureUserInDatabase, checkUserNeedsOnboarding } from "./lib/supabase";
 import { useInactivityTimeout } from "./hooks/useInactivityTimeout";
 import type { User } from "@supabase/supabase-js";
-=======
->>>>>>> origin/main
 
 function App() {
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [isSignupOpen, setIsSignupOpen] = useState(false);
-<<<<<<< HEAD
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [currentView, setCurrentView] = useState<'home' | 'dashboard'>('home');
   const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
   const [needsOnboarding, setNeedsOnboarding] = useState(false);
-=======
->>>>>>> origin/main
 
   const openLogin = () => setIsLoginOpen(true);
   const closeLogin = () => setIsLoginOpen(false);
@@ -40,7 +30,6 @@ function App() {
   const openSignup = () => setIsSignupOpen(true);
   const closeSignup = () => setIsSignupOpen(false);
 
-<<<<<<< HEAD
   const handleLogout = async () => {
     console.log('🔄 Iniciando processo de logout...');
     
@@ -198,11 +187,6 @@ function App() {
         onDashboardClick={goToDashboard}
         onLogout={handleLogout}
       />
-=======
-  return (
-    <main className="min-h-screen bg-gradient-to-br from-black-main to-blue-main">
-      <NavBar onLoginClick={openLogin} onSignupClick={openSignup} />
->>>>>>> origin/main
       <Hero
         isLoginOpen={isLoginOpen}
         onOpenLogin={openLogin}
@@ -210,11 +194,8 @@ function App() {
         isSignupOpen={isSignupOpen}
         onOpenSignup={openSignup}
         onCloseSignup={closeSignup}
-<<<<<<< HEAD
         user={user}
         onDashboardClick={goToDashboard}
-=======
->>>>>>> origin/main
       />
       <Features />
       <Preview />
@@ -222,7 +203,6 @@ function App() {
       <Courses />
       <FinalCta />
       <Footer />
-<<<<<<< HEAD
 
       {/* Modal de Onboarding */}
       {user && (
@@ -233,8 +213,6 @@ function App() {
           user={user}
         />
       )}
-=======
->>>>>>> origin/main
     </main>
   );
 }
