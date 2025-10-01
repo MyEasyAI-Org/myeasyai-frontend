@@ -380,7 +380,7 @@ export function OnboardingModal({ isOpen, onClose, onComplete, user }: Onboardin
 
   // Fechar dropdown ao clicar fora
   useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
+    const handleClickOutside = () => {
       if (showCountryDropdown) {
         setShowCountryDropdown(false);
       }
