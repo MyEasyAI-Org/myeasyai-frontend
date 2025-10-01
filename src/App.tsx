@@ -11,6 +11,7 @@ import { Preview } from "./components/Preview";
 import { Dashboard } from "./components/Dashboard";
 import { OnboardingModal } from "./components/OnboardingModal";
 import { LoadingIntro } from "./components/LoadingIntro";
+import { PWAInstallBanner } from "./components/PWAInstallBanner";
 import { supabase, ensureUserInDatabase, checkUserNeedsOnboarding } from "./lib/supabase";
 import { useInactivityTimeout } from "./hooks/useInactivityTimeout";
 import type { User } from "@supabase/supabase-js";
@@ -213,6 +214,9 @@ function App() {
           user={user}
         />
       )}
+
+      {/* Banner de Instalação PWA */}
+      <PWAInstallBanner />
     </main>
   );
 }

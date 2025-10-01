@@ -65,37 +65,16 @@ export function LoadingIntro() {
           )}
           
           {/* Logo icon */}
-          <div className={`relative flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-r from-blue-500 to-purple-600 shadow-2xl transition-all duration-700 ${
-            showGlow ? 'animate-pulse shadow-blue-500/50' : ''
+          <div className={`relative transition-all duration-700 ${
+            showGlow ? 'animate-pulse' : ''
           }`}>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="32"
-              height="32"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className={`h-8 w-8 text-white transition-all duration-500 ${
-                showGlow ? 'drop-shadow-lg' : ''
+            <img
+              src="/bone-logo.png"
+              alt="MyEasyAI Logo"
+              className={`h-32 w-32 object-contain transition-all duration-500 ${
+                showGlow ? 'drop-shadow-2xl' : ''
               }`}
-            >
-              <path d="M12 18V5" />
-              <path d="M15 13a4.17 4.17 0 0 1-3-4 4.17 4.17 0 0 1-3 4" />
-              <path d="M17.598 6.5A3 3 0 1 0 12 5a3 3 0 1 0-5.598 1.5" />
-              <path d="M17.997 5.125a4 4 0 0 1 2.526 5.77" />
-              <path d="M18 18a4 4 0 0 0 2-7.464" />
-              <path d="M19.967 17.483A4 4 0 1 1 12 18a4 4 0 1 1-7.967-.517" />
-              <path d="M6 18a4 4 0 0 1-2-7.464" />
-              <path d="M6.003 5.125a4 4 0 0 0-2.526 5.77" />
-            </svg>
-            
-            {/* Inner glow */}
-            {showGlow && (
-              <div className="absolute inset-0 bg-gradient-to-r from-blue-400/50 to-purple-500/50 rounded-2xl blur-sm animate-pulse" />
-            )}
+            />
           </div>
         </div>
 
