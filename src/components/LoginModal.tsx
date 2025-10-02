@@ -1,6 +1,7 @@
 import { FaApple, FaFacebook, FaGoogle } from 'react-icons/fa';
 import { Button } from './Button';
 import { Modal } from './Modal';
+import { signInWithGoogle, signInWithFacebook, signInWithApple, signInWithEmail } from '../lib/supabase';
 
 type LoginModalProps = {
   isOpen: boolean;
@@ -13,6 +14,48 @@ export function LoginModal({
   onClose,
   onSwitchToSignup,
 }: LoginModalProps) {
+  const handleEmailLogin = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    const email = formData.get('email') as string;
+    const password = formData.get('password') as string;
+
+    try {
+      const { error } = await signInWithEmail(email, password);
+      if (error) {
+        alert(`Erro ao fazer login: ${error.message}`);
+        return;
+      }
+      // O modal será fechado automaticamente pelo listener de auth no App.tsx
+    } catch (error) {
+      alert(`Erro inesperado: ${error}`);
+    }
+  };
+
+  const handleSocialLogin = async (provider: 'google' | 'facebook' | 'apple') => {
+    try {
+      let result;
+      switch (provider) {
+        case 'google':
+          result = await signInWithGoogle();
+          break;
+        case 'facebook':
+          result = await signInWithFacebook();
+          break;
+        case 'apple':
+          result = await signInWithApple();
+          break;
+      }
+      
+      if (result.error) {
+        alert(`Erro ao fazer login com ${provider}: ${result.error.message}`);
+        return;
+      }
+      // O modal será fechado automaticamente pelo listener de auth no App.tsx
+    } catch (error) {
+      alert(`Erro inesperado: ${error}`);
+    }
+  };
   return (
     <Modal
       isOpen={isOpen}
@@ -21,7 +64,7 @@ export function LoginModal({
       description="Entre e continue criando experiencias incriveis com a MyEasyAI."
       contentClassName="space-y-6"
     >
-      <form className="space-y-4" onSubmit={(event) => event.preventDefault()}>
+      <form className="space-y-4" onSubmit={handleEmailLogin}>
         <label className="block text-left">
           <span className="mb-1 block text-sm font-medium text-slate-300">
             Seu e-mail
@@ -61,6 +104,7 @@ export function LoginModal({
         <div className="space-y-3">
           <button
             type="button"
+            onClick={() => handleSocialLogin('google')}
             className="flex w-full items-center justify-center gap-2 rounded-lg border border-slate-700 bg-slate-800/50 px-4 py-3 text-slate-200 transition-colors hover:border-purple-500 hover:bg-slate-800"
             aria-label="Login via conta Google"
           >
@@ -69,6 +113,7 @@ export function LoginModal({
           </button>
           <button
             type="button"
+            onClick={() => handleSocialLogin('apple')}
             className="flex w-full items-center justify-center gap-2 rounded-lg border border-slate-700 bg-slate-800/50 px-4 py-3 text-slate-200 transition-colors hover:border-purple-500 hover:bg-slate-800"
             aria-label="Login via conta Apple"
           >
@@ -77,6 +122,7 @@ export function LoginModal({
           </button>
           <button
             type="button"
+            onClick={() => handleSocialLogin('facebook')}
             className="flex w-full items-center justify-center gap-2 rounded-lg border border-slate-700 bg-slate-800/50 px-4 py-3 text-slate-200 transition-colors hover:border-purple-500 hover:bg-slate-800"
             aria-label="Login via conta Facebook"
           >

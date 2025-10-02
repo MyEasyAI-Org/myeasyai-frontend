@@ -27,9 +27,9 @@ export function Button({
       'bg-slate-800 text-slate-200 hover:bg-slate-700 border border-slate-700',
     outline: 'border border-slate-700 text-slate-300 hover:bg-slate-800',
     log: 'bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700 mt-4 w-full',
-    nav: 'inline-flex items-center justify-center px-4 py-2 text-sm rounded-md bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700',
+    nav: 'inline-flex items-center justify-center px-3 py-1.5 text-sm rounded-md bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700 h-8',
     ghostNav:
-      'inline-flex items-center justify-center px-4 py-2 text-sm rounded-md text-slate-300 hover:text-white hover:bg-slate-800 transition-colors',
+      'inline-flex items-center justify-center px-3 py-1.5 text-sm rounded-md text-slate-300 hover:text-white hover:bg-slate-800 transition-colors h-8',
   };
 
   const className = `${base} ${variants[variant]}`;
