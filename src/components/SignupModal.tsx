@@ -1,6 +1,7 @@
 import { FaApple, FaFacebook, FaGoogle } from 'react-icons/fa';
 import { Button } from './Button';
 import { Modal } from './Modal';
+import { signInWithGoogle, signInWithFacebook, signInWithApple, signUpWithEmail } from '../lib/supabase';
 
 type SignupModalProps = {
   isOpen: boolean;
@@ -13,6 +14,56 @@ export function SignupModal({
   onClose,
   onSwitchToLogin,
 }: SignupModalProps) {
+  const handleEmailSignup = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    const name = formData.get('name') as string;
+    const email = formData.get('email') as string;
+    const password = formData.get('password') as string;
+    const confirmPassword = formData.get('confirmPassword') as string;
+
+    if (password !== confirmPassword) {
+      alert('As senhas não coincidem!');
+      return;
+    }
+
+    try {
+      const { error } = await signUpWithEmail(email, password, name);
+      if (error) {
+        alert(`Erro ao criar conta: ${error.message}`);
+        return;
+      }
+      alert('Conta criada com sucesso! Verifique seu email para confirmar.');
+      // O modal será fechado automaticamente pelo listener de auth no App.tsx
+    } catch (error) {
+      alert(`Erro inesperado: ${error}`);
+    }
+  };
+
+  const handleSocialSignup = async (provider: 'google' | 'facebook' | 'apple') => {
+    try {
+      let result;
+      switch (provider) {
+        case 'google':
+          result = await signInWithGoogle();
+          break;
+        case 'facebook':
+          result = await signInWithFacebook();
+          break;
+        case 'apple':
+          result = await signInWithApple();
+          break;
+      }
+      
+      if (result.error) {
+        alert(`Erro ao cadastrar com ${provider}: ${result.error.message}`);
+        return;
+      }
+      // O modal será fechado automaticamente pelo listener de auth no App.tsx
+    } catch (error) {
+      alert(`Erro inesperado: ${error}`);
+    }
+  };
   return (
     <Modal
       isOpen={isOpen}
@@ -21,7 +72,7 @@ export function SignupModal({
       description="Conta nova, possibilidades infinitas. Comece a criar seus assistentes em minutos."
       contentClassName="space-y-6"
     >
-      <form className="space-y-4" onSubmit={(event) => event.preventDefault()}>
+      <form className="space-y-4" onSubmit={handleEmailSignup}>
         <label className="block text-left">
           <span className="mb-1 block text-sm font-medium text-slate-300">
             Como quer ser chamado?
@@ -87,6 +138,7 @@ export function SignupModal({
         <div className="space-y-3">
           <button
             type="button"
+            onClick={() => handleSocialSignup('google')}
             className="flex w-full items-center justify-center gap-2 rounded-lg border border-slate-700 bg-slate-800/50 px-4 py-3 text-slate-200 transition-colors hover:border-purple-500 hover:bg-slate-800"
             aria-label="Cadastro via conta Google"
           >
@@ -95,6 +147,7 @@ export function SignupModal({
           </button>
           <button
             type="button"
+            onClick={() => handleSocialSignup('apple')}
             className="flex w-full items-center justify-center gap-2 rounded-lg border border-slate-700 bg-slate-800/50 px-4 py-3 text-slate-200 transition-colors hover:border-purple-500 hover:bg-slate-800"
             aria-label="Cadastro via conta Apple"
           >
@@ -103,6 +156,7 @@ export function SignupModal({
           </button>
           <button
             type="button"
+            onClick={() => handleSocialSignup('facebook')}
             className="flex w-full items-center justify-center gap-2 rounded-lg border border-slate-700 bg-slate-800/50 px-4 py-3 text-slate-200 transition-colors hover:border-purple-500 hover:bg-slate-800"
             aria-label="Cadastro via conta Facebook"
           >

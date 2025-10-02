@@ -2,6 +2,7 @@ import { FaStar } from 'react-icons/fa';
 import { Button } from './Button';
 import { LoginModal } from './LoginModal';
 import { SignupModal } from './SignupModal';
+import type { User } from '@supabase/supabase-js';
 
 type HeroProps = {
   isLoginOpen: boolean;
@@ -10,6 +11,8 @@ type HeroProps = {
   isSignupOpen: boolean;
   onOpenSignup: () => void;
   onCloseSignup: () => void;
+  user?: User | null;
+  onDashboardClick?: () => void;
 };
 
 export function Hero({
@@ -19,6 +22,8 @@ export function Hero({
   isSignupOpen,
   onOpenSignup,
   onCloseSignup,
+  user,
+  onDashboardClick,
 }: HeroProps) {
   const handleSwitchToSignup = () => {
     onCloseLogin();
@@ -57,12 +62,27 @@ export function Hero({
           </p>
 
           <div className="flex flex-col justify-center gap-4 sm:flex-row">
-            <Button variant="primary" onClick={onOpenSignup}>
-              Quero experimentar
-            </Button>
-            <Button variant="outline" href="#features">
-              Saiba mais
-            </Button>
+            {user ? (
+              // Usuário logado - mostrar botão para Dashboard
+              <>
+                <Button variant="primary" onClick={onDashboardClick}>
+                  Acessar Dashboard
+                </Button>
+                <Button variant="outline" href="#features">
+                  Saiba mais
+                </Button>
+              </>
+            ) : (
+              // Usuário não logado - mostrar botão para cadastro
+              <>
+                <Button variant="primary" onClick={onOpenSignup}>
+                  Quero experimentar
+                </Button>
+                <Button variant="outline" href="#features">
+                  Saiba mais
+                </Button>
+              </>
+            )}
           </div>
         </div>
 
