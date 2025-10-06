@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from './Button';
 
 interface BeforeInstallPromptEvent extends Event {
@@ -19,8 +19,14 @@ export function PWAInstallBanner() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [showBanner, setShowBanner] = useState(false);
   const [isInstalled, setIsInstalled] = useState(false);
+  const dismissedRef = useRef(false);
+  const fallbackTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
+    if (dismissedRef.current) {
+      return;
+    }
+
     // Verificar se já está instalado
     const checkIfInstalled = () => {
       // Método 1: Verificar se está em modo standalone
@@ -49,6 +55,9 @@ export function PWAInstallBanner() {
     const handleBeforeInstallPrompt = (e: BeforeInstallPromptEvent) => {
       console.log('💾 PWA install prompt disponível');
       e.preventDefault();
+      if (dismissedRef.current) {
+        return;
+      }
       setDeferredPrompt(e);
       setShowBanner(true);
     };
@@ -67,8 +76,8 @@ export function PWAInstallBanner() {
 
     // Para navegadores que não suportam beforeinstallprompt mas permitem instalação
     // Mostrar banner após 3 segundos se não estiver instalado
-    const fallbackTimer = setTimeout(() => {
-      if (!isInstalled && !deferredPrompt) {
+    fallbackTimerRef.current = window.setTimeout(() => {
+      if (!isInstalled && !deferredPrompt && !dismissedRef.current) {
         setShowBanner(true);
       }
     }, 3000);
@@ -76,9 +85,12 @@ export function PWAInstallBanner() {
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
       window.removeEventListener('appinstalled', handleAppInstalled);
-      clearTimeout(fallbackTimer);
+      if (fallbackTimerRef.current !== null) {
+        clearTimeout(fallbackTimerRef.current);
+        fallbackTimerRef.current = null;
+      }
     };
-  }, []);
+  }, [deferredPrompt, isInstalled]);
 
   const handleInstallClick = async () => {
     if (!deferredPrompt) {
@@ -108,13 +120,13 @@ export function PWAInstallBanner() {
   };
 
   const handleDismiss = () => {
+    dismissedRef.current = true;
+    if (fallbackTimerRef.current !== null) {
+      clearTimeout(fallbackTimerRef.current);
+      fallbackTimerRef.current = null;
+    }
     setShowBanner(false);
-    // Mostrar novamente em 1 hora
-    setTimeout(() => {
-      if (!isInstalled) {
-        setShowBanner(true);
-      }
-    }, 60 * 60 * 1000); // 1 hora
+    setDeferredPrompt(null);
   };
 
   // Não mostrar se estiver instalado
@@ -123,9 +135,9 @@ export function PWAInstallBanner() {
   }
 
   return (
-    <div className="fixed bottom-4 left-4 right-4 z-50 mx-auto max-w-md">
-      <div className="rounded-lg border border-slate-700 bg-slate-900/95 p-4 shadow-xl backdrop-blur-sm">
-        <div className="flex items-start space-x-3">
+    <div className="fixed bottom-4 left-4 right-4 z-50 mx-auto max-w-sm px-4">
+      <div className="rounded-xl border border-slate-700 bg-slate-900/95 p-4 shadow-xl backdrop-blur-sm">
+        <div className="flex items-center gap-4">
           <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-gradient-to-r from-blue-500 to-purple-600">
             <svg 
               className="h-6 w-6 text-white" 
@@ -142,34 +154,35 @@ export function PWAInstallBanner() {
             </svg>
           </div>
           
-          <div className="flex-1 min-w-0">
-            <h3 className="text-sm font-semibold text-slate-100">
-              Instalar MyEasyAI
+          <div className="flex min-w-0 flex-1 flex-col items-center gap-1.5 text-center">
+            <h3 className="text-sm font-semibold leading-tight text-slate-100">
+              MyEasyAI no bolso
             </h3>
-            <p className="text-xs text-slate-300 mt-1">
-              Instale o app para acesso mais rápido e melhor experiência.
+            <p className="text-xs leading-relaxed text-slate-300">
+              Instale o app e continue criando assistentes rapidinho, onde estiver.
             </p>
             
-            <div className="flex space-x-2 mt-3">
+            <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
               <Button 
                 variant="primary" 
                 onClick={handleInstallClick}
               >
-                <span className="text-xs px-2 py-1">Instalar</span>
+                <span className="px-2 py-1 text-xs">Instalar</span>
               </Button>
               <button 
                 onClick={handleDismiss}
-                className="text-xs text-slate-400 hover:text-slate-300 px-2 py-1"
+                className="px-2 py-1 text-xs text-slate-400 hover:text-slate-300"
               >
                 Mais tarde
               </button>
             </div>
           </div>
-          
+
           <button 
             onClick={handleDismiss}
-            className="flex-shrink-0 text-slate-400 hover:text-slate-300"
+            className="flex-shrink-0 text-slate-400 transition-colors hover:text-slate-300"
           >
+            <span className="sr-only">Fechar banner</span>
             <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
