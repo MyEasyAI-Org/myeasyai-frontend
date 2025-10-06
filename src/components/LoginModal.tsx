@@ -1,7 +1,12 @@
 import { FaApple, FaFacebook, FaGoogle } from 'react-icons/fa';
+import {
+  signInWithApple,
+  signInWithEmail,
+  signInWithFacebook,
+  signInWithGoogle,
+} from '../lib/supabase';
 import { Button } from './Button';
 import { Modal } from './Modal';
-import { signInWithGoogle, signInWithFacebook, signInWithApple, signInWithEmail } from '../lib/supabase';
 
 type LoginModalProps = {
   isOpen: boolean;
@@ -32,7 +37,9 @@ export function LoginModal({
     }
   };
 
-  const handleSocialLogin = async (provider: 'google' | 'facebook' | 'apple') => {
+  const handleSocialLogin = async (
+    provider: 'google' | 'facebook' | 'apple',
+  ) => {
     try {
       let result;
       switch (provider) {
@@ -42,11 +49,11 @@ export function LoginModal({
         case 'facebook':
           result = await signInWithFacebook();
           break;
-        case 'apple':
-          result = await signInWithApple();
-          break;
+        // case 'apple':
+        //   result = await signInWithApple();
+        //   break;
       }
-      
+
       if (result.error) {
         alert(`Erro ao fazer login com ${provider}: ${result.error.message}`);
         return;
@@ -111,7 +118,7 @@ export function LoginModal({
             <FaGoogle className="h-5 w-5 text-[#ea4335]" aria-hidden="true" />
             <span className="font-medium">Google</span>
           </button>
-          <button
+          {/* <button
             type="button"
             onClick={() => handleSocialLogin('apple')}
             className="flex w-full items-center justify-center gap-2 rounded-lg border border-slate-700 bg-slate-800/50 px-4 py-3 text-slate-200 transition-colors hover:border-purple-500 hover:bg-slate-800"
@@ -119,7 +126,7 @@ export function LoginModal({
           >
             <FaApple className="h-5 w-5 text-slate-100" aria-hidden="true" />
             <span className="font-medium">Apple</span>
-          </button>
+          </button> */}
           <button
             type="button"
             onClick={() => handleSocialLogin('facebook')}
