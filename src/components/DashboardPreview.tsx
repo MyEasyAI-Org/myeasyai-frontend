@@ -2,8 +2,6 @@ import { useState } from 'react';
 import {
   CreditCard,
   TrendingUp,
-  Settings,
-  User as UserIcon,
   LogOut,
   Check,
   ArrowUpCircle,

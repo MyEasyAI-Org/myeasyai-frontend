@@ -4,8 +4,6 @@ import type { User } from '@supabase/supabase-js';
 import {
   CreditCard,
   TrendingUp,
-  Settings,
-  User as UserIcon,
   LogOut,
   Check,
   ArrowUpCircle,
@@ -100,9 +98,9 @@ const PLANS = [
 ];
 
 export function Dashboard({ onLogout, onGoHome }: DashboardProps) {
-  const [user, setUser] = useState<User | null>(null);
+  const [, setUser] = useState<User | null>(null);
   const [activeTab, setActiveTab] = useState<'overview' | 'subscription' | 'products' | 'usage' | 'settings' | 'profile'>('overview');
-  const [subscription, setSubscription] = useState<SubscriptionData>({
+  const [subscription] = useState<SubscriptionData>({
     plan: 'free',
     status: 'active',
     start_date: new Date().toISOString(),
