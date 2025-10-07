@@ -1,6 +1,4 @@
-import { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
-import type { User } from '@supabase/supabase-js';
+import { useState } from 'react';
 import {
   CreditCard,
   TrendingUp,
@@ -15,11 +13,6 @@ import {
   Package,
   ExternalLink,
 } from 'lucide-react';
-
-type DashboardProps = {
-  onLogout: () => void;
-  onGoHome: () => void;
-};
 
 type SubscriptionPlan = 'free' | 'basic' | 'pro' | 'enterprise';
 
@@ -99,74 +92,26 @@ const PLANS = [
   },
 ];
 
-export function Dashboard({ onLogout, onGoHome }: DashboardProps) {
-  const [user, setUser] = useState<User | null>(null);
+export function DashboardPreview() {
   const [activeTab, setActiveTab] = useState<'overview' | 'subscription' | 'products' | 'usage' | 'settings' | 'profile'>('overview');
-  const [subscription, setSubscription] = useState<SubscriptionData>({
-    plan: 'free',
+  const [subscription] = useState<SubscriptionData>({
+    plan: 'basic',
     status: 'active',
     start_date: new Date().toISOString(),
-    tokens_used: 250,
-    tokens_limit: 1000,
-    requests_this_month: 45,
+    tokens_used: 2500,
+    tokens_limit: 10000,
+    requests_this_month: 145,
   });
   const [profile, setProfile] = useState<UserProfile>({
-    name: '',
-    email: '',
-    bio: '',
-    phone: '',
-    company: '',
+    name: 'Usuário Demo',
+    email: 'demo@myeasyai.com',
+    bio: 'Esta é uma conta de demonstração',
+    phone: '+55 11 98765-4321',
+    company: 'MyEasyAI Demo',
   });
   const [isEditingProfile, setIsEditingProfile] = useState(false);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const loadUserData = async () => {
-      try {
-        const { data: { user: currentUser } } = await supabase.auth.getUser();
-        if (currentUser) {
-          setUser(currentUser);
-          setProfile({
-            name: currentUser.user_metadata?.name || currentUser.user_metadata?.full_name || '',
-            email: currentUser.email || '',
-            avatar_url: currentUser.user_metadata?.avatar_url,
-            bio: currentUser.user_metadata?.bio || '',
-            phone: currentUser.user_metadata?.phone || '',
-            company: currentUser.user_metadata?.company || '',
-          });
-        }
-      } catch (error) {
-        console.error('Erro ao carregar dados do usuário:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadUserData();
-  }, []);
-
-  const handleUpdateProfile = async () => {
-    try {
-      const { error } = await supabase.auth.updateUser({
-        data: {
-          name: profile.name,
-          bio: profile.bio,
-          phone: profile.phone,
-          company: profile.company,
-        },
-      });
-
-      if (error) throw error;
-      setIsEditingProfile(false);
-      alert('Perfil atualizado com sucesso!');
-    } catch (error) {
-      console.error('Erro ao atualizar perfil:', error);
-      alert('Erro ao atualizar perfil');
-    }
-  };
 
   const handleChangePlan = (newPlan: SubscriptionPlan) => {
-    // Aqui você implementaria a lógica de mudança de plano
     alert(`Solicitação de mudança para plano ${newPlan} enviada!`);
   };
 
@@ -184,14 +129,6 @@ export function Dashboard({ onLogout, onGoHome }: DashboardProps) {
     return (subscription.tokens_used / subscription.tokens_limit) * 100;
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-black-main to-blue-main flex items-center justify-center">
-        <div className="text-white text-xl">Carregando...</div>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-black-main to-blue-main">
       {/* Header */}
@@ -205,19 +142,19 @@ export function Dashboard({ onLogout, onGoHome }: DashboardProps) {
                 className="h-12 w-12 object-contain"
               />
               <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-xl font-bold text-transparent">
-                MyEasyAI Dashboard
+                MyEasyAI Dashboard (Preview)
               </span>
             </div>
             <div className="flex items-center space-x-4">
-              <button
-                onClick={onGoHome}
+              <a
+                href="/"
                 className="flex items-center space-x-2 text-slate-300 hover:text-white transition-colors"
               >
                 <Home className="h-5 w-5" />
-                <span>Início</span>
-              </button>
+                <span>Voltar</span>
+              </a>
               <button
-                onClick={onLogout}
+                onClick={() => alert('Esta é uma versão de demonstração')}
                 className="flex items-center space-x-2 rounded-lg bg-red-600 px-4 py-2 text-white hover:bg-red-700 transition-colors"
               >
                 <LogOut className="h-5 w-5" />
@@ -303,7 +240,7 @@ export function Dashboard({ onLogout, onGoHome }: DashboardProps) {
           <div className="space-y-6">
             <div>
               <h1 className="text-3xl font-bold text-white">
-                Bem-vindo, {profile.name || 'Usuário'}!
+                Bem-vindo, {profile.name}!
               </h1>
               <p className="mt-2 text-slate-400">
                 Aqui está um resumo da sua conta e atividades recentes.
@@ -837,10 +774,10 @@ export function Dashboard({ onLogout, onGoHome }: DashboardProps) {
             <div className="rounded-lg border border-slate-800 bg-slate-900/50 p-6">
               <div className="flex items-center space-x-4">
                 <div className="h-20 w-20 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center text-white text-3xl font-bold">
-                  {profile.name ? profile.name[0].toUpperCase() : profile.email[0].toUpperCase()}
+                  {profile.name[0].toUpperCase()}
                 </div>
                 <div>
-                  <h2 className="text-2xl font-bold text-white">{profile.name || 'Usuário'}</h2>
+                  <h2 className="text-2xl font-bold text-white">{profile.name}</h2>
                   <p className="text-slate-400">{profile.email}</p>
                 </div>
               </div>
@@ -912,7 +849,10 @@ export function Dashboard({ onLogout, onGoHome }: DashboardProps) {
                   ) : (
                     <>
                       <button
-                        onClick={handleUpdateProfile}
+                        onClick={() => {
+                          setIsEditingProfile(false);
+                          alert('Perfil atualizado com sucesso! (modo demo)');
+                        }}
                         className="rounded-lg bg-green-600 px-6 py-2 text-white hover:bg-green-700"
                       >
                         Salvar
