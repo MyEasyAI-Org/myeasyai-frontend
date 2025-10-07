@@ -9,6 +9,7 @@ import { MidStats } from "./components/MidStats";
 import NavBar from "./components/NavBar";
 import { Preview } from "./components/Preview";
 import { Dashboard } from "./components/Dashboard";
+import { DashboardPreview } from "./components/DashboardPreview";
 import { OnboardingModal } from "./components/OnboardingModal";
 import { LoadingIntro } from "./components/LoadingIntro";
 import { PWAInstallBanner } from "./components/PWAInstallBanner";
@@ -21,7 +22,7 @@ function App() {
   const [isSignupOpen, setIsSignupOpen] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const [currentView, setCurrentView] = useState<'home' | 'dashboard'>('home');
+  const [currentView, setCurrentView] = useState<'home' | 'dashboard' | 'preview'>('home');
   const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
   const [needsOnboarding, setNeedsOnboarding] = useState(false);
 
@@ -104,6 +105,19 @@ function App() {
   });
 
   useEffect(() => {
+    // Verificar hash para preview mode
+    const handleHashChange = () => {
+      if (window.location.hash === '#dashboard-preview') {
+        setCurrentView('preview');
+      }
+    };
+
+    // Verificar no carregamento inicial
+    handleHashChange();
+
+    // Escutar mudanças no hash
+    window.addEventListener('hashchange', handleHashChange);
+
     // Verificar sessão atual
     const checkUser = async () => {
       try {
@@ -167,6 +181,7 @@ function App() {
     return () => {
       subscription.unsubscribe();
       clearTimeout(timeoutId);
+      window.removeEventListener('hashchange', handleHashChange);
     };
   }, []);
 
@@ -177,6 +192,11 @@ function App() {
   // Renderização baseada na view atual e estado do usuário
   if (user && currentView === 'dashboard') {
     return <Dashboard onLogout={handleLogout} onGoHome={goToHome} />;
+  }
+
+  // Preview mode (sem autenticação)
+  if (currentView === 'preview') {
+    return <DashboardPreview />;
   }
 
   return (
