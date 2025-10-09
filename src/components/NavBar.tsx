@@ -56,12 +56,6 @@ export default function NavBar({
             >
               Contato
             </a>
-            <button
-              onClick={() => window.location.hash = '#dashboard-preview'}
-              className="text-amber-400 transition-colors hover:text-amber-300 font-semibold"
-            >
-              Demo Dashboard
-            </button>
           </div>
 
           <div className="flex space-x-2 sm:space-x-3">
