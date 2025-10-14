@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Modal } from './Modal';
 import { supabase } from '../lib/supabase';
 import type { User } from '@supabase/supabase-js';
+import * as flags from 'country-flag-icons/react/3x2';
 
 type OnboardingModalProps = {
   isOpen: boolean;
@@ -22,17 +23,24 @@ type FormData = {
 
 // Lista de países com códigos e bandeiras
 const countryCodes = [
-  { code: 'BR', dial: '+55', flag: '🇧🇷', name: 'Brasil', phoneFormat: '(##) #####-####', phoneLength: 11 },
-  { code: 'US', dial: '+1', flag: '🇺🇸', name: 'Estados Unidos', phoneFormat: '(###) ###-####', phoneLength: 10 },
-  { code: 'PT', dial: '+351', flag: '🇵🇹', name: 'Portugal', phoneFormat: '### ### ###', phoneLength: 9 },
-  { code: 'ES', dial: '+34', flag: '🇪🇸', name: 'Espanha', phoneFormat: '### ## ## ##', phoneLength: 9 },
-  { code: 'AR', dial: '+54', flag: '🇦🇷', name: 'Argentina', phoneFormat: '## ####-####', phoneLength: 10 },
-  { code: 'MX', dial: '+52', flag: '🇲🇽', name: 'México', phoneFormat: '## #### ####', phoneLength: 10 },
-  { code: 'CO', dial: '+57', flag: '🇨🇴', name: 'Colômbia', phoneFormat: '### ### ####', phoneLength: 10 },
-  { code: 'FR', dial: '+33', flag: '🇫🇷', name: 'França', phoneFormat: '# ## ## ## ##', phoneLength: 9 },
-  { code: 'DE', dial: '+49', flag: '🇩🇪', name: 'Alemanha', phoneFormat: '### ########', phoneLength: 11 },
-  { code: 'IT', dial: '+39', flag: '🇮🇹', name: 'Itália', phoneFormat: '### ### ####', phoneLength: 10 },
+  { code: 'BR', dial: '+55', name: 'Brasil', phoneFormat: '(##) #####-####', phoneLength: 11 },
+  { code: 'US', dial: '+1', name: 'Estados Unidos', phoneFormat: '(###) ###-####', phoneLength: 10 },
+  { code: 'PT', dial: '+351', name: 'Portugal', phoneFormat: '### ### ###', phoneLength: 9 },
+  { code: 'ES', dial: '+34', name: 'Espanha', phoneFormat: '### ## ## ##', phoneLength: 9 },
+  { code: 'AR', dial: '+54', name: 'Argentina', phoneFormat: '## ####-####', phoneLength: 10 },
+  { code: 'MX', dial: '+52', name: 'México', phoneFormat: '## #### ####', phoneLength: 10 },
+  { code: 'CO', dial: '+57', name: 'Colômbia', phoneFormat: '### ### ####', phoneLength: 10 },
+  { code: 'FR', dial: '+33', name: 'França', phoneFormat: '# ## ## ## ##', phoneLength: 9 },
+  { code: 'DE', dial: '+49', name: 'Alemanha', phoneFormat: '### ########', phoneLength: 11 },
+  { code: 'IT', dial: '+39', name: 'Itália', phoneFormat: '### ### ####', phoneLength: 10 },
 ];
+
+// Helper para renderizar bandeiras SVG
+const FlagIcon = ({ countryCode, className = "w-6 h-4" }: { countryCode: string; className?: string }) => {
+  const Flag = flags[countryCode as keyof typeof flags];
+  if (!Flag) return null;
+  return <Flag className={className} />;
+};
 
 const steps = [
   {
@@ -255,7 +263,7 @@ export function OnboardingModal({ isOpen, onClose, onComplete, user }: Onboardin
                     onClick={() => setShowCountryDropdown(!showCountryDropdown)}
                     className="flex items-center gap-2 px-3 py-3 rounded-lg border border-slate-700 bg-slate-800/60 hover:bg-slate-700/60 transition-colors"
                   >
-                    <span className="text-xl">{selectedCountry.flag}</span>
+                    <FlagIcon countryCode={selectedCountry.code} className="w-6 h-4" />
                     <span className="text-slate-100">{selectedCountry.dial}</span>
                     <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -271,7 +279,7 @@ export function OnboardingModal({ isOpen, onClose, onComplete, user }: Onboardin
                           onClick={() => handleCountryCodeChange(country.code)}
                           className="flex items-center gap-3 w-full px-4 py-2 hover:bg-slate-700 transition-colors text-left"
                         >
-                          <span className="text-xl">{country.flag}</span>
+                          <FlagIcon countryCode={country.code} className="w-6 h-4" />
                           <span className="text-slate-100">{country.name}</span>
                           <span className="text-slate-400 ml-auto">{country.dial}</span>
                         </button>
@@ -304,18 +312,25 @@ export function OnboardingModal({ isOpen, onClose, onComplete, user }: Onboardin
               <span className="mb-1 block text-sm font-medium text-slate-300">
                 País *
               </span>
-              <select
-                value={formData.country || ''}
-                onChange={(e) => setFormData(prev => ({ ...prev, country: e.target.value }))}
-                className="w-full rounded-lg border border-slate-700 bg-slate-800/60 px-4 py-3 text-slate-100 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/40"
-              >
-                <option value="">Selecione seu país</option>
-                {countryCodes.map(country => (
-                  <option key={country.code} value={country.code}>
-                    {country.flag} {country.name}
-                  </option>
-                ))}
-              </select>
+              <div className="relative">
+                <select
+                  value={formData.country || ''}
+                  onChange={(e) => setFormData(prev => ({ ...prev, country: e.target.value }))}
+                  className={`w-full rounded-lg border border-slate-700 bg-slate-800/60 py-3 text-slate-100 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/40 ${formData.country ? 'pl-12 pr-4' : 'px-4'}`}
+                >
+                  <option value="">Selecione seu país</option>
+                  {countryCodes.map(country => (
+                    <option key={country.code} value={country.code}>
+                      {country.name}
+                    </option>
+                  ))}
+                </select>
+                {formData.country && (
+                  <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                    <FlagIcon countryCode={formData.country} className="w-6 h-4" />
+                  </div>
+                )}
+              </div>
             </label>
 
             <label className="block text-left">
@@ -351,22 +366,35 @@ export function OnboardingModal({ isOpen, onClose, onComplete, user }: Onboardin
         );
 
       case 3: // Preferências
+        const languageMap: { [key: string]: string } = {
+          'pt': 'BR',
+          'en': 'US',
+          'es': 'ES',
+          'fr': 'FR'
+        };
         return (
           <div className="space-y-4">
             <label className="block text-left">
               <span className="mb-1 block text-sm font-medium text-slate-300">
                 Idioma preferido *
               </span>
-              <select
-                value={formData.preferred_language || 'pt'}
-                onChange={(e) => setFormData(prev => ({ ...prev, preferred_language: e.target.value }))}
-                className="w-full rounded-lg border border-slate-700 bg-slate-800/60 px-4 py-3 text-slate-100 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/40"
-              >
-                <option value="pt">🇧🇷 Português</option>
-                <option value="en">🇺🇸 English</option>
-                <option value="es">🇪🇸 Español</option>
-                <option value="fr">🇫🇷 Français</option>
-              </select>
+              <div className="relative">
+                <select
+                  value={formData.preferred_language || 'pt'}
+                  onChange={(e) => setFormData(prev => ({ ...prev, preferred_language: e.target.value }))}
+                  className="w-full rounded-lg border border-slate-700 bg-slate-800/60 px-4 py-3 text-slate-100 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/40 pl-12"
+                >
+                  <option value="pt">Português</option>
+                  <option value="en">English</option>
+                  <option value="es">Español</option>
+                  <option value="fr">Français</option>
+                </select>
+                {formData.preferred_language && (
+                  <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                    <FlagIcon countryCode={languageMap[formData.preferred_language]} className="w-6 h-4" />
+                  </div>
+                )}
+              </div>
             </label>
           </div>
         );
