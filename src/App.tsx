@@ -144,7 +144,21 @@ function App() {
     const checkUser = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
-        setUser(session?.user ?? null);
+        const currentUser = session?.user ?? null;
+        setUser(currentUser);
+        
+        // Se há usuário logado, verificar se precisa de onboarding
+        if (currentUser) {
+          await ensureUserInDatabase(currentUser);
+          const needsOnboardingCheck = await checkUserNeedsOnboarding(currentUser);
+          setNeedsOnboarding(needsOnboardingCheck);
+          
+          // Abrir modal de onboarding automaticamente se necessário
+          if (needsOnboardingCheck) {
+            console.log('✅ Usuário precisa de onboarding - abrindo modal');
+            setIsOnboardingOpen(true);
+          }
+        }
       } catch (error) {
         console.error('Erro ao verificar sessão:', error);
         setUser(null);
