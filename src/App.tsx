@@ -181,13 +181,24 @@ function App() {
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-black-main to-blue-main">
-      <NavBar 
-        onLoginClick={openLogin} 
+      <NavBar
+        onLoginClick={openLogin}
         onSignupClick={openSignup}
         user={user}
         onDashboardClick={goToDashboard}
         onLogout={handleLogout}
       />
+
+      {/* Botão de Debug para Onboarding Modal */}
+      {user && (
+        <button
+          onClick={() => setIsOnboardingOpen(true)}
+          className="fixed bottom-4 right-4 z-50 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg shadow-lg font-semibold text-sm transition-colors"
+          title="Debug: Abrir Onboarding Modal"
+        >
+          🧪 Debug Onboarding
+        </button>
+      )}
       <Hero
         isLoginOpen={isLoginOpen}
         onOpenLogin={openLogin}
