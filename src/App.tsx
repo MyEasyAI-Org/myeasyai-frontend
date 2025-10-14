@@ -13,6 +13,8 @@ import { DashboardPreview } from "./components/DashboardPreview";
 import { OnboardingModal } from "./components/OnboardingModal";
 import { LoadingIntro } from "./components/LoadingIntro";
 import { PWAInstallBanner } from "./components/PWAInstallBanner";
+import { MyEasyWebsite } from "./features/myeasywebsite/MyEasyWebsite";
+import { BusinessGuru } from "./features/businessguru/BusinessGuru";
 import { supabase, ensureUserInDatabase, checkUserNeedsOnboarding } from "./lib/supabase";
 import { useInactivityTimeout } from "./hooks/useInactivityTimeout";
 import type { User } from "@supabase/supabase-js";
@@ -22,7 +24,7 @@ function App() {
   const [isSignupOpen, setIsSignupOpen] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const [currentView, setCurrentView] = useState<'home' | 'dashboard' | 'preview'>('home');
+  const [currentView, setCurrentView] = useState<'home' | 'dashboard' | 'preview' | 'myeasywebsite' | 'businessguru'>('home');
   const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
   const [needsOnboarding, setNeedsOnboarding] = useState(false);
 
@@ -105,6 +107,26 @@ function App() {
   });
 
   useEffect(() => {
+    // Interceptar clicks em links de navegação
+    const handleNavigationClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      const link = target.closest('a');
+      
+      if (link && link.href) {
+        const url = new URL(link.href);
+        if (url.pathname === '/myeasywebsite') {
+          e.preventDefault();
+          setCurrentView('myeasywebsite');
+        } else if (url.pathname === '/businessguru') {
+          e.preventDefault();
+          setCurrentView('businessguru');
+        } else if (url.pathname === '/') {
+          e.preventDefault();
+          setCurrentView('home');
+        }
+      }
+    };
+
     // Verificar hash para preview mode
     const handleHashChange = () => {
       if (window.location.hash === '#dashboard-preview') {
@@ -115,8 +137,9 @@ function App() {
     // Verificar no carregamento inicial
     handleHashChange();
 
-    // Escutar mudanças no hash
+    // Escutar mudanças no hash e clicks
     window.addEventListener('hashchange', handleHashChange);
+    document.addEventListener('click', handleNavigationClick);
 
     // Verificar sessão atual
     const checkUser = async () => {
@@ -182,6 +205,7 @@ function App() {
       subscription.unsubscribe();
       clearTimeout(timeoutId);
       window.removeEventListener('hashchange', handleHashChange);
+      document.removeEventListener('click', handleNavigationClick);
     };
   }, []);
 
@@ -191,12 +215,15 @@ function App() {
 
   // Renderização baseada na view atual e estado do usuário
   if (user && currentView === 'dashboard') {
-    return <Dashboard onLogout={handleLogout} onGoHome={goToHome} />;
+    return <DashboardPreview />;
   }
 
-  // Preview mode (sem autenticação)
-  if (currentView === 'preview') {
-    return <DashboardPreview />;
+  if (user && currentView === 'myeasywebsite') {
+    return <MyEasyWebsite />;
+  }
+
+  if (user && currentView === 'businessguru') {
+    return <BusinessGuru />;
   }
 
   return (
