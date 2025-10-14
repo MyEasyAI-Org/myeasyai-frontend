@@ -133,6 +133,8 @@ export const ensureUserInDatabase = async (user: any) => {
 // Função para verificar se o usuário precisa completar o onboarding
 export const checkUserNeedsOnboarding = async (user: any) => {
   try {
+    console.log('🔍 Verificando se usuário precisa de onboarding:', user.email)
+    
     const { data: userData, error } = await supabase
       .from('users')
       .select('name, mobile_phone, country, postal_code, address, preferred_language')
@@ -140,21 +142,48 @@ export const checkUserNeedsOnboarding = async (user: any) => {
       .single()
 
     if (error) {
-      console.error('Erro ao verificar dados do usuário:', error)
+      console.error('❌ Erro ao verificar dados do usuário:', error)
+      console.log('✅ Usuário precisa de onboarding (erro ao buscar dados)')
       return true // Se houver erro, assumir que precisa onboarding
     }
 
-    // Verificar se campos essenciais estão faltando
-    const missingRequiredFields = !userData.name || !userData.country || !userData.preferred_language
+    console.log('📊 Dados do usuário:', {
+      name: userData.name || 'VAZIO',
+      mobile_phone: userData.mobile_phone || 'VAZIO',
+      country: userData.country || 'VAZIO',
+      postal_code: userData.postal_code || 'VAZIO',
+      address: userData.address || 'VAZIO',
+      preferred_language: userData.preferred_language || 'VAZIO'
+    })
+
+    // Verificar campos obrigatórios - CRÍTICO para o Dashboard
+    const hasName = !!userData.name && userData.name.trim() !== '' && userData.name !== 'Usuário'
+    const hasCountry = !!userData.country && userData.country.trim() !== ''
+    const hasLanguage = !!userData.preferred_language && userData.preferred_language.trim() !== ''
+    const hasMobilePhone = !!userData.mobile_phone && userData.mobile_phone.trim() !== ''
     
-    // Verificar se pelo menos alguns campos opcionais estão preenchidos
-    const hasOptionalData = userData.mobile_phone || userData.postal_code || userData.address
+    // Verificar se TODOS os campos essenciais estão preenchidos
+    const allRequiredFieldsFilled = hasName && hasCountry && hasLanguage && hasMobilePhone
     
-    // Precisa onboarding se campos obrigatórios estão faltando OU se não tem nenhum dado opcional
-    return missingRequiredFields || !hasOptionalData
+    console.log('📋 Verificação de campos:')
+    console.log('  - Nome:', hasName ? '✅' : '❌', userData.name)
+    console.log('  - País:', hasCountry ? '✅' : '❌', userData.country)
+    console.log('  - Idioma:', hasLanguage ? '✅' : '❌', userData.preferred_language)
+    console.log('  - Telefone:', hasMobilePhone ? '✅' : '❌', userData.mobile_phone)
+    
+    const needsOnboarding = !allRequiredFieldsFilled
+    
+    if (needsOnboarding) {
+      console.log('⚠️ Usuário PRECISA completar onboarding!')
+    } else {
+      console.log('✅ Usuário JÁ completou onboarding')
+    }
+    
+    return needsOnboarding
     
   } catch (error) {
-    console.error('Erro na verificação de onboarding:', error)
+    console.error('❌ Erro na verificação de onboarding:', error)
+    console.log('✅ Usuário precisa de onboarding (erro na verificação)')
     return true
   }
 }
