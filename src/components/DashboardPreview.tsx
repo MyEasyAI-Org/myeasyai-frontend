@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   CreditCard,
   TrendingUp,
@@ -11,6 +11,7 @@ import {
   Package,
   ExternalLink,
 } from 'lucide-react';
+import { supabase, signOut, getCurrentUser } from '../lib/supabase';
 
 type SubscriptionPlan = 'free' | 'basic' | 'pro' | 'enterprise';
 
@@ -92,7 +93,7 @@ const PLANS = [
 
 export function DashboardPreview() {
   const [activeTab, setActiveTab] = useState<'overview' | 'subscription' | 'products' | 'usage' | 'settings' | 'profile'>('overview');
-  const [subscription] = useState<SubscriptionData>({
+  const [subscription, setSubscription] = useState<SubscriptionData>({
     plan: 'basic',
     status: 'active',
     start_date: new Date().toISOString(),
@@ -101,13 +102,15 @@ export function DashboardPreview() {
     requests_this_month: 145,
   });
   const [profile, setProfile] = useState<UserProfile>({
-    name: 'Usuário Demo',
-    email: 'demo@myeasyai.com',
-    bio: 'Esta é uma conta de demonstração',
-    phone: '+55 11 98765-4321',
-    company: 'MyEasyAI Demo',
+    name: 'Carregando...',
+    email: '',
+    bio: '',
+    phone: '',
+    company: '',
   });
   const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [userUuid, setUserUuid] = useState<string | null>(null);
 
   const handleChangePlan = (newPlan: SubscriptionPlan) => {
     alert(`Solicitação de mudança para plano ${newPlan} enviada!`);
@@ -127,6 +130,131 @@ export function DashboardPreview() {
     return (subscription.tokens_used / subscription.tokens_limit) * 100;
   };
 
+  // Carregar dados do usuário logado
+  useEffect(() => {
+    loadUserData();
+  }, []);
+
+  const loadUserData = async () => {
+    try {
+      setIsLoading(true);
+      console.log('🔄 Iniciando carregamento de dados do usuário...');
+      
+      // Primeiro verificar sessão
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError) {
+        console.error('❌ Erro ao obter sessão:', sessionError);
+        window.location.href = '/';
+        return;
+      }
+
+      if (!session || !session.user) {
+        console.error('❌ Nenhuma sessão ativa encontrada');
+        window.location.href = '/';
+        return;
+      }
+
+      const user = session.user;
+      console.log('✅ Usuário autenticado:', user.email);
+      setUserUuid(user.id);
+
+      // Buscar dados do usuário na tabela users
+      console.log('🔍 Buscando dados na tabela users...');
+      const { data: userData, error: dbError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('uuid', user.id)
+        .single();
+
+      if (dbError) {
+        console.error('⚠️ Erro ao buscar dados do usuário na tabela:', dbError);
+        console.log('📋 Usando dados do auth como fallback');
+        // Usar dados do auth como fallback
+        setProfile({
+          name: user.user_metadata?.name || user.user_metadata?.full_name || 'Usuário',
+          email: user.email || '',
+          bio: '',
+          phone: '',
+          company: '',
+        });
+      } else {
+        console.log('✅ Dados carregados da tabela users:', userData);
+        // Preencher perfil com dados da tabela users
+        setProfile({
+          name: userData.name || user.user_metadata?.name || 'Usuário',
+          email: userData.email || user.email || '',
+          bio: userData.address || '',
+          phone: userData.mobile_phone || '',
+          company: userData.country || '',
+        });
+
+        // Atualizar subscription.start_date com created_at do usuário
+        if (userData.created_at) {
+          setSubscription(prev => ({
+            ...prev,
+            start_date: userData.created_at
+          }));
+        }
+      }
+      
+      console.log('✅ Carregamento concluído com sucesso');
+    } catch (error) {
+      console.error('❌ Erro crítico ao carregar dados:', error);
+      // Não redirecionar em caso de erro genérico, apenas mostrar dados vazios
+      setProfile({
+        name: 'Usuário',
+        email: '',
+        bio: '',
+        phone: '',
+        company: '',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      const { error } = await signOut();
+      if (error) {
+        console.error('Erro ao fazer logout:', error);
+      }
+      window.location.href = '/';
+    } catch (error) {
+      console.error('Erro ao fazer logout:', error);
+      window.location.href = '/';
+    }
+  };
+
+  const handleSaveProfile = async () => {
+    if (!userUuid) return;
+
+    try {
+      const { error } = await supabase
+        .from('users')
+        .update({
+          name: profile.name,
+          mobile_phone: profile.phone,
+          country: profile.company,
+          address: profile.bio,
+          last_online: new Date().toISOString(),
+        })
+        .eq('uuid', userUuid);
+
+      if (error) {
+        console.error('Erro ao atualizar perfil:', error);
+        alert('Erro ao salvar perfil. Tente novamente.');
+      } else {
+        setIsEditingProfile(false);
+        alert('Perfil atualizado com sucesso!');
+      }
+    } catch (error) {
+      console.error('Erro ao salvar perfil:', error);
+      alert('Erro ao salvar perfil. Tente novamente.');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-black-main to-blue-main">
       {/* Header */}
@@ -140,7 +268,7 @@ export function DashboardPreview() {
                 className="h-12 w-12 object-contain"
               />
               <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-xl font-bold text-transparent">
-                MyEasyAI Dashboard (Preview)
+                MyEasyAI Dashboard
               </span>
             </div>
             <div className="flex items-center space-x-4">
@@ -152,7 +280,7 @@ export function DashboardPreview() {
                 <span>Voltar</span>
               </a>
               <button
-                onClick={() => alert('Esta é uma versão de demonstração')}
+                onClick={handleLogout}
                 className="flex items-center space-x-2 rounded-lg bg-red-600 px-4 py-2 text-white hover:bg-red-700 transition-colors"
               >
                 <LogOut className="h-5 w-5" />
@@ -233,6 +361,15 @@ export function DashboardPreview() {
 
       {/* Content */}
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+        {isLoading ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="text-center">
+              <div className="inline-block h-12 w-12 animate-spin rounded-full border-4 border-solid border-blue-500 border-r-transparent"></div>
+              <p className="mt-4 text-slate-400">Carregando seus dados...</p>
+            </div>
+          </div>
+        ) : (
+          <>
         {/* Overview Tab */}
         {activeTab === 'overview' && (
           <div className="space-y-6">
@@ -399,15 +536,15 @@ export function DashboardPreview() {
 
             {/* Active Products */}
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {/* Product 1 - AI Assistant */}
-              <div className="rounded-lg border border-slate-800 bg-slate-900/50 p-6 hover:border-blue-500 transition-colors">
+              {/* Product 1 - MyEasyWebsite */}
+              <div className="rounded-lg border border-slate-800 bg-slate-900/50 p-6 hover:border-purple-500 transition-colors">
                 <div className="flex items-start justify-between">
                   <div className="flex items-center space-x-3">
-                    <div className="rounded-lg bg-blue-500/20 p-3">
-                      <Package className="h-6 w-6 text-blue-400" />
+                    <div className="rounded-lg bg-purple-500/20 p-3">
+                      <Package className="h-6 w-6 text-purple-400" />
                     </div>
                     <div>
-                      <h3 className="text-lg font-semibold text-white">AI Assistant Pro</h3>
+                      <h3 className="text-lg font-semibold text-white">MyEasyWebsite</h3>
                       <span className="inline-block mt-1 rounded-full bg-green-500/20 px-2 py-1 text-xs font-semibold text-green-400">
                         Ativo
                       </span>
@@ -416,7 +553,7 @@ export function DashboardPreview() {
                 </div>
 
                 <p className="mt-4 text-sm text-slate-400">
-                  Assistente de IA com capacidades avançadas de processamento de linguagem natural.
+                  Crie sites profissionais em minutos com o poder da IA. Interface simples e intuitiva.
                 </p>
 
                 <div className="mt-4 space-y-2 text-sm">
@@ -425,35 +562,35 @@ export function DashboardPreview() {
                     <span className="text-white">01/01/2025</span>
                   </div>
                   <div className="flex justify-between text-slate-400">
-                    <span>Próxima renovação:</span>
-                    <span className="text-white">01/02/2025</span>
+                    <span>Sites Criados:</span>
+                    <span className="text-white">12</span>
                   </div>
                   <div className="flex justify-between text-slate-400">
                     <span>Valor:</span>
-                    <span className="text-white font-semibold">R$ 149/mês</span>
+                    <span className="text-white font-semibold">Incluído no plano</span>
                   </div>
                 </div>
 
                 <div className="mt-6 flex space-x-2">
-                  <button className="flex-1 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 transition-colors flex items-center justify-center space-x-2">
+                  <a href="/myeasywebsite" className="flex-1 rounded-lg bg-purple-600 px-4 py-2 text-sm font-semibold text-white hover:bg-purple-700 transition-colors flex items-center justify-center space-x-2">
                     <ExternalLink className="h-4 w-4" />
                     <span>Acessar</span>
-                  </button>
+                  </a>
                   <button className="rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-sm text-white hover:bg-slate-700 transition-colors">
                     Gerenciar
                   </button>
                 </div>
               </div>
 
-              {/* Product 2 - API Access */}
-              <div className="rounded-lg border border-slate-800 bg-slate-900/50 p-6 hover:border-blue-500 transition-colors">
+              {/* Product 2 - Business Guru */}
+              <div className="rounded-lg border border-slate-800 bg-slate-900/50 p-6 hover:border-green-500 transition-colors">
                 <div className="flex items-start justify-between">
                   <div className="flex items-center space-x-3">
-                    <div className="rounded-lg bg-purple-500/20 p-3">
-                      <Package className="h-6 w-6 text-purple-400" />
+                    <div className="rounded-lg bg-green-500/20 p-3">
+                      <Package className="h-6 w-6 text-green-400" />
                     </div>
                     <div>
-                      <h3 className="text-lg font-semibold text-white">API Premium</h3>
+                      <h3 className="text-lg font-semibold text-white">Business Guru</h3>
                       <span className="inline-block mt-1 rounded-full bg-green-500/20 px-2 py-1 text-xs font-semibold text-green-400">
                         Ativo
                       </span>
@@ -462,29 +599,29 @@ export function DashboardPreview() {
                 </div>
 
                 <p className="mt-4 text-sm text-slate-400">
-                  Acesso completo à API com 50.000 requisições por mês.
+                  Consultoria de negócios com IA. Receba dicas personalizadas para seu negócio crescer.
                 </p>
 
                 <div className="mt-4 space-y-2 text-sm">
                   <div className="flex justify-between text-slate-400">
                     <span>Assinado em:</span>
-                    <span className="text-white">15/12/2024</span>
+                    <span className="text-white">01/01/2025</span>
                   </div>
                   <div className="flex justify-between text-slate-400">
-                    <span>Próxima renovação:</span>
-                    <span className="text-white">15/01/2025</span>
+                    <span>Consultas:</span>
+                    <span className="text-white">47 realizadas</span>
                   </div>
                   <div className="flex justify-between text-slate-400">
                     <span>Valor:</span>
-                    <span className="text-white font-semibold">R$ 99/mês</span>
+                    <span className="text-white font-semibold">Incluído no plano</span>
                   </div>
                 </div>
 
                 <div className="mt-6 flex space-x-2">
-                  <button className="flex-1 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 transition-colors flex items-center justify-center space-x-2">
+                  <a href="/businessguru" className="flex-1 rounded-lg bg-green-600 px-4 py-2 text-sm font-semibold text-white hover:bg-green-700 transition-colors flex items-center justify-center space-x-2">
                     <ExternalLink className="h-4 w-4" />
                     <span>Acessar</span>
-                  </button>
+                  </a>
                   <button className="rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-sm text-white hover:bg-slate-700 transition-colors">
                     Gerenciar
                   </button>
@@ -847,10 +984,7 @@ export function DashboardPreview() {
                   ) : (
                     <>
                       <button
-                        onClick={() => {
-                          setIsEditingProfile(false);
-                          alert('Perfil atualizado com sucesso! (modo demo)');
-                        }}
+                        onClick={handleSaveProfile}
                         className="rounded-lg bg-green-600 px-6 py-2 text-white hover:bg-green-700"
                       >
                         Salvar
@@ -867,6 +1001,8 @@ export function DashboardPreview() {
               </div>
             </div>
           </div>
+        )}
+        </>
         )}
       </div>
     </div>
