@@ -8,7 +8,6 @@ import { Hero } from "./components/Hero";
 import { MidStats } from "./components/MidStats";
 import NavBar from "./components/NavBar";
 import { Preview } from "./components/Preview";
-import { Dashboard } from "./components/Dashboard";
 import { DashboardPreview } from "./components/DashboardPreview";
 import { OnboardingModal } from "./components/OnboardingModal";
 import { LoadingIntro } from "./components/LoadingIntro";
@@ -165,28 +164,28 @@ function App() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         setUser(session?.user ?? null);
-        
+
         // Fechar modais após login bem-sucedido
         if (event === 'SIGNED_IN') {
           console.log('🔑 Evento SIGNED_IN detectado');
           setIsLoginOpen(false);
           setIsSignupOpen(false);
-          
+
           // Registrar usuário na tabela users (especialmente para login social)
           if (session?.user) {
             await ensureUserInDatabase(session.user);
-            
+
             // Verificar se precisa de onboarding
             const needsOnboardingCheck = await checkUserNeedsOnboarding(session.user);
             setNeedsOnboarding(needsOnboardingCheck);
-            
+
             // Se precisar de onboarding, abrir modal automaticamente
             if (needsOnboardingCheck) {
               setIsOnboardingOpen(true);
             }
           }
         }
-        
+
         // Limpar estados após logout
         if (event === 'SIGNED_OUT') {
           console.log('🚪 Evento SIGNED_OUT detectado');
@@ -228,13 +227,24 @@ function App() {
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-black-main to-blue-main">
-      <NavBar 
-        onLoginClick={openLogin} 
+      <NavBar
+        onLoginClick={openLogin}
         onSignupClick={openSignup}
         user={user}
         onDashboardClick={goToDashboard}
         onLogout={handleLogout}
       />
+
+      {/* Botão de Debug para Onboarding Modal */}
+      {user && (
+        <button
+          onClick={() => setIsOnboardingOpen(true)}
+          className="fixed bottom-4 right-4 z-50 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg shadow-lg font-semibold text-sm transition-colors"
+          title="Debug: Abrir Onboarding Modal"
+        >
+          🧪 Debug Onboarding
+        </button>
+      )}
       <Hero
         isLoginOpen={isLoginOpen}
         onOpenLogin={openLogin}
