@@ -83,7 +83,6 @@ function App() {
       setCurrentView('dashboard');
     }
   };
-  const goToHome = () => setCurrentView('home');
 
   const handleOnboardingComplete = () => {
     setIsOnboardingOpen(false);
