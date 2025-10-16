@@ -1,8 +1,17 @@
+import type { User } from '@supabase/supabase-js';
+import { useEffect, useRef, useState } from 'react';
 import { FaStar } from 'react-icons/fa';
 import { Button } from './Button';
 import { LoginModal } from './LoginModal';
 import { SignupModal } from './SignupModal';
-import type { User } from '@supabase/supabase-js';
+
+// Declaração de tipos para YouTube Player API
+declare global {
+  interface Window {
+    YT: any;
+    onYouTubeIframeAPIReady: () => void;
+  }
+}
 
 type HeroProps = {
   isLoginOpen: boolean;
@@ -14,6 +23,86 @@ type HeroProps = {
   user?: User | null;
   onDashboardClick?: () => void;
 };
+
+// Componente do player de vídeo do YouTube
+function YouTubePlayer() {
+  const playerRef = useRef<any>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [isMuted, setIsMuted] = useState(true);
+
+  useEffect(() => {
+    // Carregar a API do YouTube se ainda não foi carregada
+    if (!window.YT) {
+      const tag = document.createElement('script');
+      tag.src = 'https://www.youtube.com/iframe_api';
+      const firstScriptTag = document.getElementsByTagName('script')[0];
+      firstScriptTag.parentNode?.insertBefore(tag, firstScriptTag);
+    }
+
+    // Função que será chamada quando a API estiver pronta
+    const onYouTubeIframeAPIReady = () => {
+      playerRef.current = new window.YT.Player('youtube-player', {
+        videoId: '0DcfXrZCVdE',
+        playerVars: {
+          autoplay: 1,
+          mute: 1,
+          controls: 1,
+          rel: 0,
+          modestbranding: 1,
+        },
+        events: {
+          onReady: (event: any) => {
+            event.target.playVideo();
+          },
+        },
+      });
+    };
+
+    if (window.YT && window.YT.Player) {
+      onYouTubeIframeAPIReady();
+    } else {
+      window.onYouTubeIframeAPIReady = onYouTubeIframeAPIReady;
+    }
+
+    return () => {
+      if (playerRef.current && playerRef.current.destroy) {
+        playerRef.current.destroy();
+      }
+    };
+  }, []);
+
+  const handleClick = (e: React.MouseEvent) => {
+    if (playerRef.current && isMuted) {
+      e.preventDefault();
+      e.stopPropagation();
+      playerRef.current.unMute();
+      setIsMuted(false);
+    }
+  };
+
+  return (
+    <div
+      ref={containerRef}
+      className="relative w-full"
+      style={{ paddingBottom: '56.25%' }} // Aspect ratio 16:9
+    >
+      <div
+        id="youtube-player"
+        className="absolute inset-0 h-full w-full rounded-lg"
+      />
+      {isMuted && (
+        <div
+          onClick={handleClick}
+          className="absolute inset-0 z-10 flex cursor-pointer items-center justify-center bg-black/20"
+        >
+          <div className="rounded-full bg-black/70 px-6 py-3 text-sm font-medium text-white shadow-lg backdrop-blur-sm transition-transform hover:scale-105">
+            Clique para ativar o som
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export function Hero({
   isLoginOpen,
@@ -90,11 +179,7 @@ export function Hero({
           <div className="relative rounded-2xl border border-slate-700 bg-gradient-to-br from-slate-800 to-slate-900 p-8 shadow-2xl">
             <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-blue-500/10 to-purple-600/10" />
             <div className="relative">
-              <img
-                src="https://cdn.dribbble.com/userupload/44332009/file/84c558bf1e97ff630880c97a118c14c3.png?resize=752x&vertical=center"
-                alt="Dashboard MyEasyAI"
-                className="w-full rounded-lg"
-              />
+              <YouTubePlayer />
             </div>
           </div>
         </div>
