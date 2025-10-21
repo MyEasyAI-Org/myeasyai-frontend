@@ -42,7 +42,7 @@ function YouTubePlayer() {
     // Função que será chamada quando a API estiver pronta
     const onYouTubeIframeAPIReady = () => {
       playerRef.current = new window.YT.Player('youtube-player', {
-        videoId: '9f3khCGwdsg',
+        videoId: 'mYAgOPlLwp0',
         playerVars: {
           autoplay: 1,
           mute: 1,
