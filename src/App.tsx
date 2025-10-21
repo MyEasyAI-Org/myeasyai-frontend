@@ -16,6 +16,10 @@ import { supabase, ensureUserInDatabase, checkUserNeedsOnboarding } from "./lib/
 import { useInactivityTimeout } from "./hooks/useInactivityTimeout";
 import type { User } from "@supabase/supabase-js";
 
+// 🎬 CONFIGURAÇÃO: Ativar/Desativar Splash Screen
+// Mude para `true` para reativar a splash screen "Welcome to the future of AI"
+const ENABLE_SPLASH_SCREEN = false;
+
 function App() {
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [isSignupOpen, setIsSignupOpen] = useState(false);
@@ -169,7 +173,7 @@ function App() {
     };
   }, []);
 
-  if (loading) {
+  if (loading && ENABLE_SPLASH_SCREEN) {
     return <LoadingIntro />;
   }
 
