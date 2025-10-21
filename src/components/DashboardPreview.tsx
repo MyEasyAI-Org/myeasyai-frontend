@@ -2,12 +2,10 @@ import { useState, useRef, useEffect } from 'react';
 import {
   CreditCard,
   TrendingUp,
-  LogOut,
   Check,
   ArrowUpCircle,
   BarChart3,
   Clock,
-  Home,
   Package,
   ExternalLink,
 } from 'lucide-react';

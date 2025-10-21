@@ -4,12 +4,10 @@ import type { User } from '@supabase/supabase-js';
 import {
   CreditCard,
   TrendingUp,
-  LogOut,
   Check,
   ArrowUpCircle,
   BarChart3,
   Clock,
-  Home,
   Package,
   ExternalLink,
 } from 'lucide-react';
