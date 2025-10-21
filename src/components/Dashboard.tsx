@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import type { User } from '@supabase/supabase-js';
 import {
@@ -116,7 +116,25 @@ export function Dashboard({ onLogout, onGoHome }: DashboardProps) {
     company: '',
   });
   const [isEditingProfile, setIsEditingProfile] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Fechar dropdown ao clicar fora
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsDropdownOpen(false);
+      }
+    };
+
+    if (isDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isDropdownOpen]);
 
   useEffect(() => {
     const loadUserData = async () => {
@@ -135,8 +153,6 @@ export function Dashboard({ onLogout, onGoHome }: DashboardProps) {
         }
       } catch (error) {
         console.error('Erro ao carregar dados do usuário:', error);
-      } finally {
-        setLoading(false);
       }
     };
 
@@ -182,14 +198,6 @@ export function Dashboard({ onLogout, onGoHome }: DashboardProps) {
     return (subscription.tokens_used / subscription.tokens_limit) * 100;
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-black-main to-blue-main flex items-center justify-center">
-        <div className="text-white text-xl">Carregando...</div>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-black-main to-blue-main">
       {/* Header */}
@@ -206,21 +214,65 @@ export function Dashboard({ onLogout, onGoHome }: DashboardProps) {
                 MyEasyAI Dashboard
               </span>
             </div>
-            <div className="flex items-center space-x-4">
+            <div className="relative" ref={dropdownRef}>
               <button
-                onClick={onGoHome}
-                className="flex items-center space-x-2 text-slate-300 hover:text-white transition-colors"
+                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                className={`flex items-center justify-center space-x-3 border border-slate-600 bg-slate-700/80 px-4 py-3 text-slate-100 transition-colors hover:border-slate-500 hover:bg-slate-600 min-w-[280px] ${
+                  isDropdownOpen ? 'rounded-t-2xl border-b-transparent' : 'rounded-2xl'
+                }`}
               >
-                <Home className="h-5 w-5" />
-                <span>Início</span>
+                <svg
+                  className="h-5 w-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                  />
+                </svg>
+                <span>Olá, apelido do usuário</span>
+                <svg
+                  className={`h-4 w-4 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M19 9l-7 7-7-7"
+                  />
+                </svg>
               </button>
-              <button
-                onClick={onLogout}
-                className="flex items-center space-x-2 rounded-lg bg-red-600 px-4 py-2 text-white hover:bg-red-700 transition-colors"
-              >
-                <LogOut className="h-5 w-5" />
-                <span>Sair</span>
-              </button>
+
+              {isDropdownOpen && (
+                <div className="absolute right-0 w-full rounded-b-2xl border border-t-0 border-slate-600 bg-slate-700/80 shadow-xl">
+                  <button
+                    onClick={() => {
+                      setIsDropdownOpen(false);
+                      onGoHome();
+                    }}
+                    className="block w-full border-t border-slate-600 px-4 py-3 text-left text-slate-100 transition-colors hover:bg-slate-600 hover:text-blue-400"
+                  >
+                    Voltar
+                  </button>
+                  <div className="border-t border-slate-600"></div>
+                  <button
+                    onClick={() => {
+                      setIsDropdownOpen(false);
+                      onLogout();
+                    }}
+                    className="block w-full rounded-b-2xl px-4 py-3 text-left text-slate-100 transition-colors hover:bg-slate-600 hover:text-red-400"
+                  >
+                    Sair
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>
