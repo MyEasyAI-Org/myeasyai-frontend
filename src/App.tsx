@@ -12,6 +12,7 @@ import { DashboardPreview } from "./components/DashboardPreview";
 import { OnboardingModal } from "./components/OnboardingModal";
 import { LoadingIntro } from "./components/LoadingIntro";
 import { PWAInstallBanner } from "./components/PWAInstallBanner";
+import { LoadingBar } from "./components/LoadingBar";
 import { supabase, ensureUserInDatabase, checkUserNeedsOnboarding } from "./lib/supabase";
 import { useInactivityTimeout } from "./hooks/useInactivityTimeout";
 import type { User } from "@supabase/supabase-js";
@@ -28,6 +29,7 @@ function App() {
   const [currentView, setCurrentView] = useState<'home' | 'dashboard'>('home');
   const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
   const [needsOnboarding, setNeedsOnboarding] = useState(false);
+  const [isAuthLoading, setIsAuthLoading] = useState(false);
 
   const openLogin = () => setIsLoginOpen(true);
   const closeLogin = () => setIsLoginOpen(false);
@@ -37,7 +39,10 @@ function App() {
 
   const handleLogout = async () => {
     console.log('🔄 Iniciando processo de logout...');
-    
+
+    // Ativar barra de carregamento
+    setIsAuthLoading(true);
+
     // Primeiro, limpar estados imediatamente para UI responsiva
     console.log('🧹 Limpando estados locais IMEDIATAMENTE...');
     setUser(null);
@@ -77,7 +82,12 @@ function App() {
     };
     
     // Executar signOut sem bloquear a UI mas garantindo que aconteça
-    forceSignOut();
+    await forceSignOut();
+
+    // Desativar barra de carregamento após completar
+    setTimeout(() => {
+      setIsAuthLoading(false);
+    }, 100);
   };
 
   const goToDashboard = () => {
@@ -135,6 +145,8 @@ function App() {
         // Fechar modais após login bem-sucedido
         if (event === 'SIGNED_IN') {
           console.log('🔑 Evento SIGNED_IN detectado');
+          // Ativar barra de carregamento
+          setIsAuthLoading(true);
           setIsLoginOpen(false);
           setIsSignupOpen(false);
 
@@ -150,6 +162,11 @@ function App() {
             if (needsOnboardingCheck) {
               setIsOnboardingOpen(true);
             }
+
+            // Desativar barra de carregamento após completar
+            setTimeout(() => {
+              setIsAuthLoading(false);
+            }, 100);
           }
         }
 
@@ -162,6 +179,7 @@ function App() {
           setIsOnboardingOpen(false);
           setIsLoginOpen(false);
           setIsSignupOpen(false);
+          setIsAuthLoading(false);
           console.log('🏠 Estados limpos pelo listener de auth');
         }
       }
@@ -179,11 +197,20 @@ function App() {
 
   // Renderização baseada na view atual e estado do usuário
   if (user && currentView === 'dashboard') {
-    return <DashboardPreview />;
+    return (
+      <>
+        {/* Barra de carregamento de autenticação */}
+        <LoadingBar isLoading={isAuthLoading} duration={1500} />
+        <DashboardPreview />
+      </>
+    );
   }
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-black-main to-blue-main">
+      {/* Barra de carregamento de autenticação */}
+      <LoadingBar isLoading={isAuthLoading} duration={1500} />
+
       <NavBar
         onLoginClick={openLogin}
         onSignupClick={openSignup}
