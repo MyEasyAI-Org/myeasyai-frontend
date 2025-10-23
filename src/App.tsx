@@ -30,6 +30,7 @@ function App() {
   const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
   const [needsOnboarding, setNeedsOnboarding] = useState(false);
   const [isAuthLoading, setIsAuthLoading] = useState(false);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
 
   const openLogin = () => setIsLoginOpen(true);
   const closeLogin = () => setIsLoginOpen(false);
@@ -37,57 +38,46 @@ function App() {
   const openSignup = () => setIsSignupOpen(true);
   const closeSignup = () => setIsSignupOpen(false);
 
-  const handleLogout = async () => {
-    console.log('🔄 Iniciando processo de logout...');
-
-    // Ativar barra de carregamento
+  const handleLogout = () => {
+    // Ativar barra de carregamento PRIMEIRO
     setIsAuthLoading(true);
 
-    // Primeiro, limpar estados imediatamente para UI responsiva
-    console.log('🧹 Limpando estados locais IMEDIATAMENTE...');
-    setUser(null);
-    setCurrentView('home');
-    setNeedsOnboarding(false);
-    setIsOnboardingOpen(false);
-    setIsLoginOpen(false);
-    setIsSignupOpen(false);
-    console.log('🏠 Estados limpos, interface atualizada');
-    
-    // Garantir signOut do Supabase com tentativas múltiplas
-    const forceSignOut = async () => {
-      let attempts = 0;
-      const maxAttempts = 3;
-      
-      while (attempts < maxAttempts) {
-        try {
-          console.log(`📤 Tentativa ${attempts + 1} de signOut no Supabase...`);
-          await supabase.auth.signOut({ scope: 'local' }); // Forçar logout local
-          console.log('✅ SignOut realizado com sucesso');
-          break;
-        } catch (error) {
-          attempts++;
-          console.error(`❌ Tentativa ${attempts} falhou:`, error);
-          if (attempts >= maxAttempts) {
-            console.log('🔧 Forçando limpeza local da sessão...');
-            // Forçar limpeza manual do localStorage se necessário
-            const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-            if (supabaseUrl) {
-              const urlKey = supabaseUrl.split('//')[1].split('.')[0];
-              localStorage.removeItem(`sb-${urlKey}-auth-token`);
-            }
-            sessionStorage.clear();
-          }
-        }
-      }
-    };
-    
-    // Executar signOut sem bloquear a UI mas garantindo que aconteça
-    await forceSignOut();
-
-    // Desativar barra de carregamento após completar
+    // Usar setTimeout para não bloquear - limpar UI imediatamente mas depois da barra renderizar
     setTimeout(() => {
-      setIsAuthLoading(false);
-    }, 100);
+      // Limpar estados React para UI atualizar (menu dropdown desaparece)
+      setUser(null);
+      setCurrentView('home');
+      setNeedsOnboarding(false);
+      setIsOnboardingOpen(false);
+      setIsLoginOpen(false);
+      setIsSignupOpen(false);
+
+      // Limpar localStorage
+      const localKeys = Object.keys(localStorage);
+      localKeys.forEach(key => {
+        if (key.startsWith('sb-')) {
+          localStorage.removeItem(key);
+        }
+      });
+
+      // Limpar sessionStorage
+      const sessionKeys = Object.keys(sessionStorage);
+      sessionKeys.forEach(key => {
+        if (key.startsWith('sb-')) {
+          sessionStorage.removeItem(key);
+        }
+      });
+
+      // Fazer signOut do Supabase
+      supabase.auth.signOut().catch((error) => {
+        console.error('Erro ao fazer logout:', error);
+      });
+
+      // Desativar barra de carregamento após completar
+      setTimeout(() => {
+        setIsAuthLoading(false);
+      }, 2500);
+    }, 50); // Delay mínimo para barra renderizar
   };
 
   const goToDashboard = () => {
@@ -142,10 +132,9 @@ function App() {
       async (event, session) => {
         setUser(session?.user ?? null);
 
-        // Fechar modais após login bem-sucedido
-        if (event === 'SIGNED_IN') {
-          console.log('🔑 Evento SIGNED_IN detectado');
-          // Ativar barra de carregamento
+        // Apenas processar login quando NÃO for a carga inicial da sessão
+        if (event === 'SIGNED_IN' && !isInitialLoad) {
+          // Ativar barra de carregamento apenas em login intencional
           setIsAuthLoading(true);
           setIsLoginOpen(false);
           setIsSignupOpen(false);
@@ -163,16 +152,26 @@ function App() {
               setIsOnboardingOpen(true);
             }
 
-            // Desativar barra de carregamento após completar
+            // Desativar barra de carregamento após completar (tempo maior para ser visível)
             setTimeout(() => {
               setIsAuthLoading(false);
-            }, 100);
+            }, 1500);
           }
+        }
+
+        // Processar restauração de sessão silenciosamente (sem barra)
+        if (event === 'INITIAL_SESSION' || (event === 'SIGNED_IN' && isInitialLoad)) {
+          if (session?.user) {
+            await ensureUserInDatabase(session.user);
+            const needsOnboardingCheck = await checkUserNeedsOnboarding(session.user);
+            setNeedsOnboarding(needsOnboardingCheck);
+          }
+          // Marcar que a carga inicial foi completada
+          setIsInitialLoad(false);
         }
 
         // Limpar estados após logout
         if (event === 'SIGNED_OUT') {
-          console.log('🚪 Evento SIGNED_OUT detectado');
           setUser(null);
           setCurrentView('home');
           setNeedsOnboarding(false);
@@ -180,7 +179,7 @@ function App() {
           setIsLoginOpen(false);
           setIsSignupOpen(false);
           setIsAuthLoading(false);
-          console.log('🏠 Estados limpos pelo listener de auth');
+          setIsInitialLoad(true); // Resetar flag para próximo login
         }
       }
     );
@@ -200,7 +199,7 @@ function App() {
     return (
       <>
         {/* Barra de carregamento de autenticação */}
-        <LoadingBar isLoading={isAuthLoading} duration={1500} />
+        <LoadingBar isLoading={isAuthLoading} duration={2300} />
         <DashboardPreview />
       </>
     );
@@ -209,7 +208,7 @@ function App() {
   return (
     <main className="min-h-screen bg-gradient-to-br from-black-main to-blue-main">
       {/* Barra de carregamento de autenticação */}
-      <LoadingBar isLoading={isAuthLoading} duration={1500} />
+      <LoadingBar isLoading={isAuthLoading} duration={2300} />
 
       <NavBar
         onLoginClick={openLogin}
