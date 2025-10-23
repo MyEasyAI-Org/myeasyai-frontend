@@ -25,6 +25,7 @@ function App() {
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [isSignupOpen, setIsSignupOpen] = useState(false);
   const [user, setUser] = useState<User | null>(null);
+  const [userName, setUserName] = useState<string>('Usuário');
   const [loading, setLoading] = useState(true);
   const [currentView, setCurrentView] = useState<'home' | 'dashboard'>('home');
   const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
@@ -38,6 +39,34 @@ function App() {
   const openSignup = () => setIsSignupOpen(true);
   const closeSignup = () => setIsSignupOpen(false);
 
+  // Função para buscar nome do usuário do banco
+  const fetchUserName = async (userEmail: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .select('name')
+        .eq('email', userEmail)
+        .single();
+
+      if (error) {
+        console.error('Erro ao buscar nome do usuário:', error);
+        return 'Usuário';
+      }
+
+      if (!data?.name) {
+        return 'Usuário';
+      }
+
+      // Pegar apenas o primeiro nome
+      const fullName = data.name;
+      const firstName = fullName.split(' ')[0];
+      return firstName;
+    } catch (error) {
+      console.error('Erro ao buscar nome do usuário:', error);
+      return 'Usuário';
+    }
+  };
+
   const handleLogout = () => {
     // Ativar barra de carregamento PRIMEIRO
     setIsAuthLoading(true);
@@ -46,6 +75,7 @@ function App() {
     setTimeout(() => {
       // Limpar estados React para UI atualizar (menu dropdown desaparece)
       setUser(null);
+      setUserName('Usuário');
       setCurrentView('home');
       setNeedsOnboarding(false);
       setIsOnboardingOpen(false);
@@ -88,6 +118,10 @@ function App() {
     }
   };
 
+  const goToHome = () => {
+    setCurrentView('home');
+  };
+
   const handleOnboardingComplete = () => {
     setIsOnboardingOpen(false);
     setNeedsOnboarding(false);
@@ -112,6 +146,12 @@ function App() {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         setUser(session?.user ?? null);
+
+        // Buscar nome do usuário se houver sessão
+        if (session?.user?.email) {
+          const name = await fetchUserName(session.user.email);
+          setUserName(name);
+        }
       } catch (error) {
         console.error('Erro ao verificar sessão:', error);
         setUser(null);
@@ -143,6 +183,12 @@ function App() {
           if (session?.user) {
             await ensureUserInDatabase(session.user);
 
+            // Buscar nome do usuário
+            if (session.user.email) {
+              const name = await fetchUserName(session.user.email);
+              setUserName(name);
+            }
+
             // Verificar se precisa de onboarding
             const needsOnboardingCheck = await checkUserNeedsOnboarding(session.user);
             setNeedsOnboarding(needsOnboardingCheck);
@@ -163,6 +209,13 @@ function App() {
         if (event === 'INITIAL_SESSION' || (event === 'SIGNED_IN' && isInitialLoad)) {
           if (session?.user) {
             await ensureUserInDatabase(session.user);
+
+            // Buscar nome do usuário
+            if (session.user.email) {
+              const name = await fetchUserName(session.user.email);
+              setUserName(name);
+            }
+
             const needsOnboardingCheck = await checkUserNeedsOnboarding(session.user);
             setNeedsOnboarding(needsOnboardingCheck);
           }
@@ -173,6 +226,7 @@ function App() {
         // Limpar estados após logout
         if (event === 'SIGNED_OUT') {
           setUser(null);
+          setUserName('Usuário');
           setCurrentView('home');
           setNeedsOnboarding(false);
           setIsOnboardingOpen(false);
@@ -200,7 +254,7 @@ function App() {
       <>
         {/* Barra de carregamento de autenticação */}
         <LoadingBar isLoading={isAuthLoading} duration={2300} />
-        <DashboardPreview />
+        <DashboardPreview onLogout={handleLogout} onGoHome={goToHome} userName={userName} />
       </>
     );
   }
@@ -214,6 +268,7 @@ function App() {
         onLoginClick={openLogin}
         onSignupClick={openSignup}
         user={user}
+        userName={userName}
         onDashboardClick={goToDashboard}
         onLogout={handleLogout}
       />
