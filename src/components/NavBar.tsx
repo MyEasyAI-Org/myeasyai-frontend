@@ -6,6 +6,7 @@ type NavBarProps = {
   onLoginClick?: () => void;
   onSignupClick?: () => void;
   user?: User | null;
+  userName?: string;
   onDashboardClick?: () => void;
   onLogout?: () => void;
 };
@@ -14,6 +15,7 @@ export default function NavBar({
   onLoginClick,
   onSignupClick,
   user,
+  userName = 'Usuário',
   onDashboardClick,
   onLogout
 }: NavBarProps) {
@@ -84,12 +86,12 @@ export default function NavBar({
               <div className="relative" ref={dropdownRef}>
                 <button
                   onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                  className={`flex items-center justify-center space-x-3 border border-slate-600 bg-slate-700/80 px-4 py-3 text-slate-100 transition-colors hover:border-slate-500 hover:bg-slate-600 min-w-[280px] ${
+                  className={`flex items-center justify-center space-x-2 border border-slate-600 bg-slate-700/80 px-4 py-2.5 text-slate-100 transition-colors hover:border-slate-500 hover:bg-slate-600 whitespace-nowrap ${
                     isDropdownOpen ? 'rounded-t-2xl border-b-transparent' : 'rounded-2xl'
                   }`}
                 >
                   <svg
-                    className="h-5 w-5"
+                    className="h-4 w-4 flex-shrink-0"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -101,9 +103,9 @@ export default function NavBar({
                       d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
                     />
                   </svg>
-                  <span>Olá, 'apelido do usuário'</span>
+                  <span>Oi, {userName}!</span>
                   <svg
-                    className={`h-4 w-4 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`}
+                    className={`h-3.5 w-3.5 flex-shrink-0 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`}
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -118,13 +120,13 @@ export default function NavBar({
                 </button>
 
                 {isDropdownOpen && (
-                  <div className="absolute right-0 w-full rounded-b-2xl border border-t-0 border-slate-600 bg-slate-700/80 shadow-xl">
+                  <div className="absolute right-0 min-w-full rounded-b-2xl border border-t-0 border-slate-600 bg-slate-700/80 shadow-xl whitespace-nowrap">
                     <button
                       onClick={() => {
                         setIsDropdownOpen(false);
                         onDashboardClick?.();
                       }}
-                      className="block w-full border-t border-slate-600 px-4 py-3 text-left text-slate-100 transition-colors hover:bg-slate-600 hover:text-blue-400"
+                      className="block w-full border-t border-slate-600 px-4 py-2.5 text-left text-slate-100 transition-colors hover:bg-slate-600 hover:text-blue-400"
                     >
                       Dashboard
                     </button>
@@ -134,7 +136,7 @@ export default function NavBar({
                         setIsDropdownOpen(false);
                         onLogout?.();
                       }}
-                      className="block w-full rounded-b-2xl px-4 py-3 text-left text-slate-100 transition-colors hover:bg-slate-600 hover:text-red-400"
+                      className="block w-full rounded-b-2xl px-4 py-2.5 text-left text-slate-100 transition-colors hover:bg-slate-600 hover:text-red-400"
                     >
                       Sair
                     </button>
