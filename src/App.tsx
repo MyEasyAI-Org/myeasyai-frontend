@@ -32,6 +32,7 @@ function App() {
   const [needsOnboarding, setNeedsOnboarding] = useState(false);
   const [isAuthLoading, setIsAuthLoading] = useState(false);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const [isLoadingDashboard, setIsLoadingDashboard] = useState(false);
 
   const openLogin = () => setIsLoginOpen(true);
   const closeLogin = () => setIsLoginOpen(false);
@@ -114,7 +115,14 @@ function App() {
     if (needsOnboarding) {
       setIsOnboardingOpen(true);
     } else {
-      setCurrentView('dashboard');
+      // Mostrar splash screen antes de ir para o dashboard
+      setIsLoadingDashboard(true);
+
+      // Após 3 segundos, ir para o dashboard
+      setTimeout(() => {
+        setCurrentView('dashboard');
+        setIsLoadingDashboard(false);
+      }, 3000);
     }
   };
 
@@ -125,7 +133,15 @@ function App() {
   const handleOnboardingComplete = () => {
     setIsOnboardingOpen(false);
     setNeedsOnboarding(false);
-    setCurrentView('dashboard');
+
+    // Mostrar splash screen antes de ir para o dashboard
+    setIsLoadingDashboard(true);
+
+    // Após 3 segundos, ir para o dashboard
+    setTimeout(() => {
+      setCurrentView('dashboard');
+      setIsLoadingDashboard(false);
+    }, 3000);
   };
 
   const closeOnboarding = () => {
@@ -245,6 +261,11 @@ function App() {
   }, []);
 
   if (loading && ENABLE_SPLASH_SCREEN) {
+    return <LoadingIntro />;
+  }
+
+  // Mostrar splash screen ao carregar dashboard
+  if (isLoadingDashboard) {
     return <LoadingIntro />;
   }
 
