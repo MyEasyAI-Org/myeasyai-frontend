@@ -49,9 +49,9 @@ export function LoadingBar({ isLoading, duration = 1500 }: LoadingBarProps) {
   }
 
   return (
-    <div className="fixed top-0 left-0 right-0 z-[100] h-1 bg-transparent">
+    <div className="fixed top-0 left-0 right-0 z-[100] h-1 bg-transparent pointer-events-none">
       <div
-        className="h-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 transition-all duration-300 ease-out shadow-lg shadow-purple-500/50"
+        className="h-full bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 transition-all duration-200 ease-out shadow-[0_0_15px_rgba(168,85,247,0.9)]"
         style={{
           width: `${progress}%`,
           opacity: progress === 100 ? 0 : 1,
