@@ -212,16 +212,6 @@ export function DashboardPreview({ onLogout, onGoHome, userName = 'Usuário' }: 
                   <button
                     onClick={() => {
                       setIsDropdownOpen(false);
-                      onGoHome ? onGoHome() : (window.location.href = '/');
-                    }}
-                    className="block w-full border-t border-slate-600 px-4 py-2.5 text-left text-slate-100 transition-colors hover:bg-slate-600 hover:text-blue-400"
-                  >
-                    Voltar
-                  </button>
-                  <div className="border-t border-slate-600"></div>
-                  <button
-                    onClick={() => {
-                      setIsDropdownOpen(false);
                       onLogout ? onLogout() : alert('Esta é uma versão de demonstração');
                     }}
                     className="block w-full rounded-b-2xl px-4 py-2.5 text-left text-slate-100 transition-colors hover:bg-slate-600 hover:text-red-400"
