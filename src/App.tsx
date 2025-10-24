@@ -1,21 +1,25 @@
-import { useState, useEffect } from "react";
-import "./App.css";
-import { Courses } from "./components/Courses";
-import { Features } from "./components/Features";
-import { FinalCta } from "./components/FinalCTA";
-import { Footer } from "./components/Footer";
-import { Hero } from "./components/Hero";
-import { MidStats } from "./components/MidStats";
-import NavBar from "./components/NavBar";
-import { Preview } from "./components/Preview";
-import { DashboardPreview } from "./components/DashboardPreview";
-import { OnboardingModal } from "./components/OnboardingModal";
-import { LoadingIntro } from "./components/LoadingIntro";
-import { PWAInstallBanner } from "./components/PWAInstallBanner";
-import { LoadingBar } from "./components/LoadingBar";
-import { supabase, ensureUserInDatabase, checkUserNeedsOnboarding } from "./lib/supabase";
-import { useInactivityTimeout } from "./hooks/useInactivityTimeout";
-import type { User } from "@supabase/supabase-js";
+import { useEffect, useState } from 'react';
+import './App.css';
+import type { User } from '@supabase/supabase-js';
+import { Courses } from './components/Courses';
+import { DashboardPreview } from './components/DashboardPreview';
+import { Features } from './components/Features';
+import { FinalCta } from './components/FinalCTA';
+import { Footer } from './components/Footer';
+import { Hero } from './components/Hero';
+import { LoadingBar } from './components/LoadingBar';
+import { LoadingIntro } from './components/LoadingIntro';
+import { MidStats } from './components/MidStats';
+import NavBar from './components/NavBar';
+import { OnboardingModal } from './components/OnboardingModal';
+import { Preview } from './components/Preview';
+import { PWAInstallBanner } from './components/PWAInstallBanner';
+import { useInactivityTimeout } from './hooks/useInactivityTimeout';
+import {
+  checkUserNeedsOnboarding,
+  ensureUserInDatabase,
+  supabase,
+} from './lib/supabase';
 
 // 🎬 CONFIGURAÇÃO: Ativar/Desativar Splash Screen
 // Mude para `true` para reativar a splash screen "Welcome to the future of AI"
@@ -85,7 +89,7 @@ function App() {
 
       // Limpar localStorage
       const localKeys = Object.keys(localStorage);
-      localKeys.forEach(key => {
+      localKeys.forEach((key) => {
         if (key.startsWith('sb-')) {
           localStorage.removeItem(key);
         }
@@ -93,7 +97,7 @@ function App() {
 
       // Limpar sessionStorage
       const sessionKeys = Object.keys(sessionStorage);
-      sessionKeys.forEach(key => {
+      sessionKeys.forEach((key) => {
         if (key.startsWith('sb-')) {
           sessionStorage.removeItem(key);
         }
@@ -153,14 +157,16 @@ function App() {
   useInactivityTimeout({
     timeout: 10 * 60 * 1000, // 10 minutos
     onTimeout: handleLogout,
-    enabled: !!user // Só ativar se houver usuário logado
+    enabled: !!user, // Só ativar se houver usuário logado
   });
 
   useEffect(() => {
     // Verificar sessão atual
     const checkUser = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
         setUser(session?.user ?? null);
 
         // Buscar nome do usuário se houver sessão
@@ -184,75 +190,82 @@ function App() {
     }, 5000);
 
     // Escutar mudanças de autenticação
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        setUser(session?.user ?? null);
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      setUser(session?.user ?? null);
 
-        // Apenas processar login quando NÃO for a carga inicial da sessão
-        if (event === 'SIGNED_IN' && !isInitialLoad) {
-          // Ativar barra de carregamento apenas em login intencional
-          setIsAuthLoading(true);
-          setIsLoginOpen(false);
-          setIsSignupOpen(false);
+      // Apenas processar login quando NÃO for a carga inicial da sessão
+      if (event === 'SIGNED_IN' && !isInitialLoad) {
+        // Ativar barra de carregamento apenas em login intencional
+        setIsAuthLoading(true);
+        setIsLoginOpen(false);
+        setIsSignupOpen(false);
 
-          // Registrar usuário na tabela users (especialmente para login social)
-          if (session?.user) {
-            await ensureUserInDatabase(session.user);
+        // Registrar usuário na tabela users (especialmente para login social)
+        if (session?.user) {
+          await ensureUserInDatabase(session.user);
 
-            // Buscar nome do usuário
-            if (session.user.email) {
-              const name = await fetchUserName(session.user.email);
-              setUserName(name);
-            }
-
-            // Verificar se precisa de onboarding
-            const needsOnboardingCheck = await checkUserNeedsOnboarding(session.user);
-            setNeedsOnboarding(needsOnboardingCheck);
-
-            // Se precisar de onboarding, abrir modal automaticamente
-            if (needsOnboardingCheck) {
-              setIsOnboardingOpen(true);
-            }
-
-            // Desativar barra de carregamento após completar (tempo maior para ser visível)
-            setTimeout(() => {
-              setIsAuthLoading(false);
-            }, 1500);
+          // Buscar nome do usuário
+          if (session.user.email) {
+            const name = await fetchUserName(session.user.email);
+            setUserName(name);
           }
-        }
 
-        // Processar restauração de sessão silenciosamente (sem barra)
-        if (event === 'INITIAL_SESSION' || (event === 'SIGNED_IN' && isInitialLoad)) {
-          if (session?.user) {
-            await ensureUserInDatabase(session.user);
+          // Verificar se precisa de onboarding
+          const needsOnboardingCheck = await checkUserNeedsOnboarding(
+            session.user,
+          );
+          setNeedsOnboarding(needsOnboardingCheck);
 
-            // Buscar nome do usuário
-            if (session.user.email) {
-              const name = await fetchUserName(session.user.email);
-              setUserName(name);
-            }
-
-            const needsOnboardingCheck = await checkUserNeedsOnboarding(session.user);
-            setNeedsOnboarding(needsOnboardingCheck);
+          // Se precisar de onboarding, abrir modal automaticamente
+          if (needsOnboardingCheck) {
+            setIsOnboardingOpen(true);
           }
-          // Marcar que a carga inicial foi completada
-          setIsInitialLoad(false);
-        }
 
-        // Limpar estados após logout
-        if (event === 'SIGNED_OUT') {
-          setUser(null);
-          setUserName('Usuário');
-          setCurrentView('home');
-          setNeedsOnboarding(false);
-          setIsOnboardingOpen(false);
-          setIsLoginOpen(false);
-          setIsSignupOpen(false);
-          setIsAuthLoading(false);
-          setIsInitialLoad(true); // Resetar flag para próximo login
+          // Desativar barra de carregamento após completar (tempo maior para ser visível)
+          setTimeout(() => {
+            setIsAuthLoading(false);
+          }, 1500);
         }
       }
-    );
+
+      // Processar restauração de sessão silenciosamente (sem barra)
+      if (
+        event === 'INITIAL_SESSION' ||
+        (event === 'SIGNED_IN' && isInitialLoad)
+      ) {
+        if (session?.user) {
+          await ensureUserInDatabase(session.user);
+
+          // Buscar nome do usuário
+          if (session.user.email) {
+            const name = await fetchUserName(session.user.email);
+            setUserName(name);
+          }
+
+          const needsOnboardingCheck = await checkUserNeedsOnboarding(
+            session.user,
+          );
+          setNeedsOnboarding(needsOnboardingCheck);
+        }
+        // Marcar que a carga inicial foi completada
+        setIsInitialLoad(false);
+      }
+
+      // Limpar estados após logout
+      if (event === 'SIGNED_OUT') {
+        setUser(null);
+        setUserName('Usuário');
+        setCurrentView('home');
+        setNeedsOnboarding(false);
+        setIsOnboardingOpen(false);
+        setIsLoginOpen(false);
+        setIsSignupOpen(false);
+        setIsAuthLoading(false);
+        setIsInitialLoad(true); // Resetar flag para próximo login
+      }
+    });
 
     return () => {
       subscription.unsubscribe();
@@ -275,7 +288,11 @@ function App() {
       <>
         {/* Barra de carregamento de autenticação */}
         <LoadingBar isLoading={isAuthLoading} duration={2300} />
-        <DashboardPreview onLogout={handleLogout} onGoHome={goToHome} userName={userName} />
+        <DashboardPreview
+          onLogout={handleLogout}
+          onGoHome={goToHome}
+          userName={userName}
+        />
       </>
     );
   }
