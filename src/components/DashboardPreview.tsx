@@ -157,11 +157,16 @@ export function DashboardPreview({ onLogout, onGoHome, userName = 'Usuário' }: 
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="flex h-16 items-center justify-between">
             <div className="flex items-center space-x-4">
-              <img
-                src="/bone-logo.png"
-                alt="MyEasyAI Logo"
-                className="h-12 w-12 object-contain"
-              />
+              <button
+                onClick={() => onGoHome ? onGoHome() : (window.location.href = '/')}
+                className="cursor-pointer"
+              >
+                <img
+                  src="/bone-logo.png"
+                  alt="MyEasyAI Logo"
+                  className="h-12 w-12 object-contain"
+                />
+              </button>
               <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-xl font-bold text-transparent">
                 MyEasyAI Dashboard (Preview)
               </span>
@@ -204,16 +209,6 @@ export function DashboardPreview({ onLogout, onGoHome, userName = 'Usuário' }: 
 
               {isDropdownOpen && (
                 <div className="absolute right-0 min-w-full rounded-b-2xl border border-t-0 border-slate-600 bg-slate-700/80 shadow-xl whitespace-nowrap">
-                  <button
-                    onClick={() => {
-                      setIsDropdownOpen(false);
-                      onGoHome ? onGoHome() : (window.location.href = '/');
-                    }}
-                    className="block w-full border-t border-slate-600 px-4 py-2.5 text-left text-slate-100 transition-colors hover:bg-slate-600 hover:text-blue-400"
-                  >
-                    Voltar
-                  </button>
-                  <div className="border-t border-slate-600"></div>
                   <button
                     onClick={() => {
                       setIsDropdownOpen(false);
