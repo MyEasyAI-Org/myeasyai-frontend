@@ -22,6 +22,7 @@ type SubscriptionPlan = 'free' | 'basic' | 'pro' | 'enterprise';
 type UserProfile = {
   name: string;
   email: string;
+  preferredName?: string;
   avatar_url?: string;
   bio?: string;
   phone?: string;
@@ -106,12 +107,24 @@ export function Dashboard({ onLogout, onGoHome }: DashboardProps) {
     tokens_limit: 1000,
     requests_this_month: 45,
   });
-  const [profile, setProfile] = useState<UserProfile>({
-    name: '',
-    email: '',
-    bio: '',
-    phone: '',
-    company: '',
+  const [profile, setProfile] = useState<UserProfile>(() => {
+    // Tentar carregar do localStorage na inicialização
+    const savedProfile = localStorage.getItem('userProfile');
+    if (savedProfile) {
+      try {
+        return JSON.parse(savedProfile);
+      } catch (e) {
+        console.error('Erro ao parsear perfil salvo:', e);
+      }
+    }
+    return {
+      name: '',
+      email: '',
+      preferredName: '',
+      bio: '',
+      phone: '',
+      company: '',
+    };
   });
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -140,14 +153,31 @@ export function Dashboard({ onLogout, onGoHome }: DashboardProps) {
         const { data: { user: currentUser } } = await supabase.auth.getUser();
         if (currentUser) {
           setUser(currentUser);
-          setProfile({
-            name: currentUser.user_metadata?.name || currentUser.user_metadata?.full_name || '',
+
+          // Buscar dados do banco, incluindo preferred_name
+          const { data: userData, error: dbError } = await supabase
+            .from('users')
+            .select('name, preferred_name')
+            .eq('email', currentUser.email)
+            .single();
+
+          if (dbError) {
+            console.error('Erro ao buscar dados do banco:', dbError);
+          }
+
+          const profileData = {
+            name: userData?.name || currentUser.user_metadata?.name || currentUser.user_metadata?.full_name || '',
+            preferredName: userData?.preferred_name || '',
             email: currentUser.email || '',
             avatar_url: currentUser.user_metadata?.avatar_url,
             bio: currentUser.user_metadata?.bio || '',
             phone: currentUser.user_metadata?.phone || '',
             company: currentUser.user_metadata?.company || '',
-          });
+          };
+
+          setProfile(profileData);
+          // Salvar no localStorage para persistir entre recarregamentos
+          localStorage.setItem('userProfile', JSON.stringify(profileData));
         }
       } catch (error) {
         console.error('Erro ao carregar dados do usuário:', error);
@@ -235,7 +265,7 @@ export function Dashboard({ onLogout, onGoHome }: DashboardProps) {
                     d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
                   />
                 </svg>
-                <span>Olá, apelido do usuário</span>
+                <span>Olá, {profile.preferredName || (profile.name ? profile.name.split(' ')[0] : 'Usuário')}!</span>
                 <svg
                   className={`h-4 w-4 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`}
                   fill="none"
@@ -344,7 +374,7 @@ export function Dashboard({ onLogout, onGoHome }: DashboardProps) {
           <div className="space-y-6">
             <div>
               <h1 className="text-3xl font-bold text-white">
-                Bem-vindo, {profile.name || 'Usuário'}!
+                Bem-vindo, {profile.preferredName || (profile.name ? profile.name.split(' ')[0] : 'Usuário')}!
               </h1>
               <p className="mt-2 text-slate-400">
                 Aqui está um resumo da sua conta e atividades recentes.

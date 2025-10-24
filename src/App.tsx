@@ -29,7 +29,10 @@ function App() {
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [isSignupOpen, setIsSignupOpen] = useState(false);
   const [user, setUser] = useState<User | null>(null);
-  const [userName, setUserName] = useState<string>('Usuário');
+  const [userName, setUserName] = useState<string>(() => {
+    // Tentar carregar do localStorage na inicialização
+    return localStorage.getItem('userName') || 'Usuário';
+  });
   const [loading, setLoading] = useState(true);
   const [currentView, setCurrentView] = useState<'home' | 'dashboard'>('home');
   const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
@@ -49,7 +52,7 @@ function App() {
     try {
       const { data, error } = await supabase
         .from('users')
-        .select('name')
+        .select('name, preferred_name')
         .eq('email', userEmail)
         .single();
 
@@ -58,14 +61,19 @@ function App() {
         return 'Usuário';
       }
 
-      if (!data?.name) {
-        return 'Usuário';
+      let displayName = 'Usuário';
+
+      // Priorizar preferred_name, senão usar o primeiro nome
+      if (data?.preferred_name) {
+        displayName = data.preferred_name;
+      } else if (data?.name) {
+        // Pegar apenas o primeiro nome
+        displayName = data.name.split(' ')[0];
       }
 
-      // Pegar apenas o primeiro nome
-      const fullName = data.name;
-      const firstName = fullName.split(' ')[0];
-      return firstName;
+      // Salvar no localStorage para persistir entre recarregamentos
+      localStorage.setItem('userName', displayName);
+      return displayName;
     } catch (error) {
       console.error('Erro ao buscar nome do usuário:', error);
       return 'Usuário';
@@ -94,6 +102,9 @@ function App() {
           localStorage.removeItem(key);
         }
       });
+      // Limpar dados do perfil do usuário
+      localStorage.removeItem('userName');
+      localStorage.removeItem('userProfile');
 
       // Limpar sessionStorage
       const sessionKeys = Object.keys(sessionStorage);
