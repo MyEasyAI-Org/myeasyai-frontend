@@ -11,6 +11,7 @@ import {
   Package,
   ExternalLink,
 } from 'lucide-react';
+import { Footer } from './Footer';
 
 type DashboardProps = {
   onLogout: () => void;
@@ -235,7 +236,7 @@ export function Dashboard({ onLogout, onGoHome }: DashboardProps) {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-black-main to-blue-main">
+    <div className="flex min-h-screen flex-col bg-gradient-to-br from-black-main to-blue-main">
       {/* Header */}
       <header className="border-b border-slate-800 bg-black-main/50 backdrop-blur-sm">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -386,7 +387,7 @@ export function Dashboard({ onLogout, onGoHome }: DashboardProps) {
       </div>
 
       {/* Content */}
-      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-7xl flex-1 px-4 py-8 pb-32 sm:px-6 lg:px-8">
         {/* Overview Tab */}
         {activeTab === 'overview' && (
           <div className="space-y-6">
@@ -1028,6 +1029,9 @@ export function Dashboard({ onLogout, onGoHome }: DashboardProps) {
           </div>
         )}
       </div>
+
+      {/* Footer */}
+      <Footer />
     </div>
   );
 }
