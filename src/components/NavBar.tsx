@@ -9,6 +9,7 @@ type NavBarProps = {
   userName?: string;
   onDashboardClick?: () => void;
   onLogout?: () => void;
+  onLogoClick?: () => void;
 };
 
 export default function NavBar({
@@ -17,7 +18,8 @@ export default function NavBar({
   user,
   userName = 'Usuário',
   onDashboardClick,
-  onLogout
+  onLogout,
+  onLogoClick
 }: NavBarProps) {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -43,14 +45,24 @@ export default function NavBar({
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between">
           <div className="flex items-center space-x-4">
-            <img
-              src="/bone-logo.png"
-              alt="MyEasyAI Logo"
-              className="h-12 w-12 object-contain"
-            />
-            <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-xl font-bold text-transparent">
-              MyEasyAI
-            </span>
+            <button
+              onClick={onLogoClick}
+              className="cursor-pointer"
+            >
+              <img
+                src="/bone-logo.png"
+                alt="MyEasyAI Logo"
+                className="h-12 w-12 object-contain"
+              />
+            </button>
+            <button
+              onClick={onLogoClick}
+              className="cursor-pointer"
+            >
+              <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-xl font-bold text-transparent">
+                MyEasyAI
+              </span>
+            </button>
           </div>
 
           <div className="hidden space-x-8 md:flex">
