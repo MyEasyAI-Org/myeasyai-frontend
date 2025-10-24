@@ -128,6 +128,11 @@ export function Dashboard({ onLogout, onGoHome }: DashboardProps) {
   });
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isLoadingProfile, setIsLoadingProfile] = useState(() => {
+    // Se já tem dados no localStorage, não precisa mostrar loading
+    const savedProfile = localStorage.getItem('userProfile');
+    return !savedProfile;
+  });
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Fechar dropdown ao clicar fora
@@ -181,6 +186,9 @@ export function Dashboard({ onLogout, onGoHome }: DashboardProps) {
         }
       } catch (error) {
         console.error('Erro ao carregar dados do usuário:', error);
+      } finally {
+        // Marcar como carregado independente de sucesso ou erro
+        setIsLoadingProfile(false);
       }
     };
 
@@ -265,7 +273,17 @@ export function Dashboard({ onLogout, onGoHome }: DashboardProps) {
                     d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
                   />
                 </svg>
-                <span>Olá, {profile.preferredName || (profile.name ? profile.name.split(' ')[0] : 'Usuário')}!</span>
+                <span>
+                  {isLoadingProfile ? (
+                    <span className="loading-dots">
+                      <span>.</span>
+                      <span>.</span>
+                      <span>.</span>
+                    </span>
+                  ) : (
+                    `Olá, ${profile.preferredName || (profile.name ? profile.name.split(' ')[0] : 'Usuário')}!`
+                  )}
+                </span>
                 <svg
                   className={`h-4 w-4 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`}
                   fill="none"
@@ -374,7 +392,15 @@ export function Dashboard({ onLogout, onGoHome }: DashboardProps) {
           <div className="space-y-6">
             <div>
               <h1 className="text-3xl font-bold text-white">
-                Bem-vindo, {profile.preferredName || (profile.name ? profile.name.split(' ')[0] : 'Usuário')}!
+                Bem-vindo, {isLoadingProfile ? (
+                  <span className="loading-dots">
+                    <span>.</span>
+                    <span>.</span>
+                    <span>.</span>
+                  </span>
+                ) : (
+                  profile.preferredName || (profile.name ? profile.name.split(' ')[0] : 'Usuário')
+                )}!
               </h1>
               <p className="mt-2 text-slate-400">
                 Aqui está um resumo da sua conta e atividades recentes.

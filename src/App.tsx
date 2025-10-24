@@ -40,6 +40,10 @@ function App() {
   const [isAuthLoading, setIsAuthLoading] = useState(false);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [isLoadingDashboard, setIsLoadingDashboard] = useState(false);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(() => {
+    // Se já tem dados no localStorage, não precisa mostrar loading
+    return !localStorage.getItem('userName');
+  });
 
   const openLogin = () => setIsLoginOpen(true);
   const closeLogin = () => setIsLoginOpen(false);
@@ -94,6 +98,7 @@ function App() {
       setIsOnboardingOpen(false);
       setIsLoginOpen(false);
       setIsSignupOpen(false);
+      setIsCheckingAuth(false);
 
       // Limpar localStorage
       const localKeys = Object.keys(localStorage);
@@ -190,6 +195,7 @@ function App() {
         setUser(null);
       } finally {
         setLoading(false);
+        setIsCheckingAuth(false);
       }
     };
 
@@ -198,6 +204,7 @@ function App() {
     // Fallback de segurança - garantir que loading seja false após 5 segundos
     const timeoutId = setTimeout(() => {
       setLoading(false);
+      setIsCheckingAuth(false);
     }, 5000);
 
     // Escutar mudanças de autenticação
@@ -321,6 +328,7 @@ function App() {
         onDashboardClick={goToDashboard}
         onLogout={handleLogout}
         onLogoClick={goToHome}
+        isCheckingAuth={isCheckingAuth}
       />
 
       {/* Botão de Debug para Onboarding Modal */}

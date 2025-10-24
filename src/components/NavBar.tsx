@@ -10,6 +10,7 @@ type NavBarProps = {
   onDashboardClick?: () => void;
   onLogout?: () => void;
   onLogoClick?: () => void;
+  isCheckingAuth?: boolean;
 };
 
 export default function NavBar({
@@ -19,7 +20,8 @@ export default function NavBar({
   userName = 'Usuário',
   onDashboardClick,
   onLogout,
-  onLogoClick
+  onLogoClick,
+  isCheckingAuth = false
 }: NavBarProps) {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -154,6 +156,15 @@ export default function NavBar({
                     </button>
                   </div>
                 )}
+              </div>
+            ) : isCheckingAuth ? (
+              // Verificando autenticação - mostrar loading
+              <div className="flex items-center space-x-2 px-4 py-2">
+                <span className="loading-dots text-slate-300">
+                  <span>.</span>
+                  <span>.</span>
+                  <span>.</span>
+                </span>
               </div>
             ) : (
               // Usuário não logado - mostrar Inscreva-se e Login
