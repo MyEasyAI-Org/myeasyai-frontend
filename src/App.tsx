@@ -292,6 +292,7 @@ function App() {
         userName={userName}
         onDashboardClick={goToDashboard}
         onLogout={handleLogout}
+        onLogoClick={goToHome}
       />
 
       {/* Botão de Debug para Onboarding Modal */}

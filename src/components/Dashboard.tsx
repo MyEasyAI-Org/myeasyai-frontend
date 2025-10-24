@@ -203,11 +203,16 @@ export function Dashboard({ onLogout, onGoHome }: DashboardProps) {
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="flex h-16 items-center justify-between">
             <div className="flex items-center space-x-4">
-              <img
-                src="/bone-logo.png"
-                alt="MyEasyAI Logo"
-                className="h-12 w-12 object-contain"
-              />
+              <button
+                onClick={onGoHome}
+                className="cursor-pointer"
+              >
+                <img
+                  src="/bone-logo.png"
+                  alt="MyEasyAI Logo"
+                  className="h-12 w-12 object-contain"
+                />
+              </button>
               <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-xl font-bold text-transparent">
                 MyEasyAI Dashboard
               </span>
