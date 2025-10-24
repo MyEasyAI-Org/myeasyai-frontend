@@ -258,16 +258,6 @@ export function Dashboard({ onLogout, onGoHome }: DashboardProps) {
                   <button
                     onClick={() => {
                       setIsDropdownOpen(false);
-                      onGoHome();
-                    }}
-                    className="block w-full border-t border-slate-600 px-4 py-3 text-left text-slate-100 transition-colors hover:bg-slate-600 hover:text-blue-400"
-                  >
-                    Voltar
-                  </button>
-                  <div className="border-t border-slate-600"></div>
-                  <button
-                    onClick={() => {
-                      setIsDropdownOpen(false);
                       onLogout();
                     }}
                     className="block w-full rounded-b-2xl px-4 py-3 text-left text-slate-100 transition-colors hover:bg-slate-600 hover:text-red-400"
