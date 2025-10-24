@@ -202,21 +202,19 @@ export function Dashboard({ onLogout, onGoHome }: DashboardProps) {
       <header className="border-b border-slate-800 bg-black-main/50 backdrop-blur-sm">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="flex h-16 items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <button
-                onClick={onGoHome}
-                className="cursor-pointer"
-              >
-                <img
-                  src="/bone-logo.png"
-                  alt="MyEasyAI Logo"
-                  className="h-12 w-12 object-contain"
-                />
-              </button>
-              <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-xl font-bold text-transparent">
+            <button
+              onClick={onGoHome}
+              className="flex flex-row items-center gap-4 transition-all hover:scale-105 cursor-pointer -ml-2 pl-2 pr-4 py-2 rounded-lg hover:bg-slate-800/30 whitespace-nowrap"
+            >
+              <img
+                src="/bone-logo.png"
+                alt="MyEasyAI Logo"
+                className="h-12 w-12 flex-shrink-0 object-contain pointer-events-none select-none"
+              />
+              <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-xl font-bold text-transparent pointer-events-none select-none flex-shrink-0">
                 MyEasyAI Dashboard
               </span>
-            </div>
+            </button>
             <div className="relative" ref={dropdownRef}>
               <button
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
