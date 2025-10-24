@@ -179,7 +179,7 @@ export function Hero({
         </div>
 
         <div className="relative mx-auto max-w-4xl">
-          <div className="relative rounded-2xl border border-slate-700 bg-gradient-to-br from-slate-800 to-slate-900 p-8 shadow-2xl">
+          <div className="relative rounded-2xl border border-slate-700 bg-gradient-to-br from-slate-800 to-slate-900 p-2 shadow-2xl">
             <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-blue-500/10 to-purple-600/10" />
             <div className="relative">
               <YouTubePlayer />
