@@ -625,6 +625,29 @@ export function SiteTemplate({ siteData }: SiteTemplateProps) {
         .footer-link:hover::after {
           width: 100%;
         }
+
+        /* ========== ANIMAÇÃO DO MENU HAMBÚRGUER ========== */
+        #mobile-menu-btn.open span:nth-child(1) {
+          transform: rotate(45deg) translate(5px, 5px);
+        }
+
+        #mobile-menu-btn.open span:nth-child(2) {
+          opacity: 0;
+        }
+
+        #mobile-menu-btn.open span:nth-child(3) {
+          transform: rotate(-45deg) translate(5px, -5px);
+        }
+
+        /* ========== ANIMAÇÃO DO WHATSAPP BUTTON ========== */
+        @keyframes whatsappPulse {
+          0%, 100% { 
+            box-shadow: 0 10px 40px rgba(37, 211, 102, 0.4); 
+          }
+          50% { 
+            box-shadow: 0 10px 50px rgba(37, 211, 102, 0.7); 
+          }
+        }
       `}</style>
       
       <div className="site-template">
@@ -638,23 +661,152 @@ export function SiteTemplate({ siteData }: SiteTemplateProps) {
               {siteData.sections.includes('gallery') && <a href="#galeria" className={`${vibe === 'light' || vibe === 'elegant' ? 'text-gray-700' : 'text-white'} text-sm uppercase tracking-wide transition hover:opacity-70`}>Galeria</a>}
               {siteData.sections.includes('contact') && <a href="#contato" className={`${vibe === 'light' || vibe === 'elegant' ? 'text-gray-700' : 'text-white'} text-sm uppercase tracking-wide transition hover:opacity-70`}>Contato</a>}
             </nav>
-            <button 
-              className="px-6 py-3 rounded-full font-semibold text-sm uppercase tracking-wide hover:shadow-lg transition"
+            <a 
+              href={siteData.phone ? `https://wa.me/${siteData.phone.replace(/\D/g, '')}` : '#contato'}
+              target={siteData.phone ? '_blank' : '_self'}
+              rel={siteData.phone ? 'noopener noreferrer' : ''}
+              className="hidden md:block px-6 py-3 rounded-full font-semibold text-sm uppercase tracking-wide hover:shadow-lg transition"
               style={{
                 background: `linear-gradient(135deg, ${primaryColor}, ${primaryLight})`,
                 color: getContrastText(primaryColor)
               }}
             >
               Fale Conosco
+            </a>
+            
+            {/* Mobile Menu Button */}
+            <button 
+              className="md:hidden flex flex-col justify-center items-center w-10 h-10 relative z-50"
+              onClick={() => {
+                const menu = document.getElementById('mobile-menu');
+                const overlay = document.getElementById('mobile-overlay');
+                const btn = document.getElementById('mobile-menu-btn');
+                menu?.classList.toggle('translate-x-full');
+                overlay?.classList.toggle('hidden');
+                btn?.classList.toggle('open');
+              }}
+              id="mobile-menu-btn"
+            >
+              <span className={`block w-6 h-0.5 mb-1 transition-all duration-300 ${vibe === 'light' || vibe === 'elegant' ? 'bg-gray-900' : 'bg-white'}`} style={{transformOrigin: '4px 0px'}}></span>
+              <span className={`block w-6 h-0.5 mb-1 transition-all duration-300 ${vibe === 'light' || vibe === 'elegant' ? 'bg-gray-900' : 'bg-white'}`}></span>
+              <span className={`block w-6 h-0.5 transition-all duration-300 ${vibe === 'light' || vibe === 'elegant' ? 'bg-gray-900' : 'bg-white'}`} style={{transformOrigin: '4px 0px'}}></span>
             </button>
           </div>
         </header>
 
+        {/* Mobile Menu Overlay */}
+        <div 
+          id="mobile-overlay"
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 hidden md:hidden transition-opacity duration-300"
+          onClick={() => {
+            const menu = document.getElementById('mobile-menu');
+            const overlay = document.getElementById('mobile-overlay');
+            const btn = document.getElementById('mobile-menu-btn');
+            menu?.classList.add('translate-x-full');
+            overlay?.classList.add('hidden');
+            btn?.classList.remove('open');
+          }}
+        ></div>
+
+        {/* Mobile Menu Drawer */}
+        <div 
+          id="mobile-menu"
+          className={`fixed top-0 right-0 h-screen w-4/5 max-w-xs ${headerBg} backdrop-blur-lg z-50 transform translate-x-full transition-transform duration-300 ease-in-out shadow-2xl md:hidden`}
+          style={{paddingTop: '80px'}}
+        >
+          <nav className="flex flex-col gap-6 px-6">
+            <a 
+              href="#" 
+              className={`${vibe === 'light' || vibe === 'elegant' ? 'text-gray-700 border-gray-200' : 'text-white border-white/10'} text-base uppercase tracking-wide py-3 border-b transition hover:opacity-70`}
+              onClick={() => {
+                const menu = document.getElementById('mobile-menu');
+                const overlay = document.getElementById('mobile-overlay');
+                const btn = document.getElementById('mobile-menu-btn');
+                menu?.classList.add('translate-x-full');
+                overlay?.classList.add('hidden');
+                btn?.classList.remove('open');
+              }}
+            >
+              Início
+            </a>
+            {siteData.sections.includes('services') && (
+              <a 
+                href="#servicos" 
+                className={`${vibe === 'light' || vibe === 'elegant' ? 'text-gray-700 border-gray-200' : 'text-white border-white/10'} text-base uppercase tracking-wide py-3 border-b transition hover:opacity-70`}
+                onClick={() => {
+                  const menu = document.getElementById('mobile-menu');
+                  const overlay = document.getElementById('mobile-overlay');
+                  const btn = document.getElementById('mobile-menu-btn');
+                  menu?.classList.add('translate-x-full');
+                  overlay?.classList.add('hidden');
+                  btn?.classList.remove('open');
+                }}
+              >
+                Serviços
+              </a>
+            )}
+            {siteData.sections.includes('gallery') && (
+              <a 
+                href="#galeria" 
+                className={`${vibe === 'light' || vibe === 'elegant' ? 'text-gray-700 border-gray-200' : 'text-white border-white/10'} text-base uppercase tracking-wide py-3 border-b transition hover:opacity-70`}
+                onClick={() => {
+                  const menu = document.getElementById('mobile-menu');
+                  const overlay = document.getElementById('mobile-overlay');
+                  const btn = document.getElementById('mobile-menu-btn');
+                  menu?.classList.add('translate-x-full');
+                  overlay?.classList.add('hidden');
+                  btn?.classList.remove('open');
+                }}
+              >
+                Galeria
+              </a>
+            )}
+            {siteData.sections.includes('contact') && (
+              <a 
+                href="#contato" 
+                className={`${vibe === 'light' || vibe === 'elegant' ? 'text-gray-700 border-gray-200' : 'text-white border-white/10'} text-base uppercase tracking-wide py-3 border-b transition hover:opacity-70`}
+                onClick={() => {
+                  const menu = document.getElementById('mobile-menu');
+                  const overlay = document.getElementById('mobile-overlay');
+                  const btn = document.getElementById('mobile-menu-btn');
+                  menu?.classList.add('translate-x-full');
+                  overlay?.classList.add('hidden');
+                  btn?.classList.remove('open');
+                }}
+              >
+                Contato
+              </a>
+            )}
+          </nav>
+          <div className="px-6 mt-6">
+            <a 
+              href={siteData.phone ? `https://wa.me/${siteData.phone.replace(/\D/g, '')}` : '#contato'}
+              target={siteData.phone ? '_blank' : '_self'}
+              rel={siteData.phone ? 'noopener noreferrer' : ''}
+              className="w-full px-6 py-4 rounded-full font-semibold text-sm uppercase tracking-wide hover:shadow-lg transition block text-center"
+              style={{
+                background: `linear-gradient(135deg, ${primaryColor}, ${primaryLight})`,
+                color: getContrastText(primaryColor)
+              }}
+              onClick={() => {
+                const menu = document.getElementById('mobile-menu');
+                const overlay = document.getElementById('mobile-overlay');
+                const btn = document.getElementById('mobile-menu-btn');
+                menu?.classList.add('translate-x-full');
+                overlay?.classList.add('hidden');
+                btn?.classList.remove('open');
+              }}
+            >
+              Fale Conosco
+            </a>
+          </div>
+        </div>
+
         {/* Hero */}
         {siteData.sections.includes('hero') && (
-          <section className="relative min-h-screen flex items-center justify-center overflow-hidden" style={{backgroundColor: primaryColor}}>
-            {/* Elementos decorativos animados de fundo */}
-            <div className="absolute inset-0 overflow-hidden">
+          <section className="relative min-h-screen flex items-center justify-center overflow-hidden py-20" style={{backgroundColor: primaryColor}}>
+            {/* Elementos decorativos animados de fundo com efeitos de luzes - Z-INDEX BAIXO para não atrapalhar leitura */}
+            <div className="absolute inset-0 overflow-hidden z-0 pointer-events-none">
               {/* Círculo grande superior esquerdo */}
               <div 
                 className="hero-decorative-circle hero-float-slow"
@@ -704,11 +856,48 @@ export function SiteTemplate({ siteData }: SiteTemplateProps) {
                   animationDelay: '3s'
                 }}
               ></div>
+
+              {/* Partículas de luz animadas - AUMENTADAS */}
+              <div className="absolute top-20 left-20 w-6 h-6 rounded-full bg-white opacity-60 hero-float-element" style={{animationDelay: '0.5s'}}></div>
+              <div className="absolute top-40 right-32 w-5 h-5 rounded-full bg-white opacity-50 hero-pulse" style={{animationDelay: '1.5s'}}></div>
+              <div className="absolute bottom-32 left-40 w-8 h-8 rounded-full bg-white opacity-40 hero-float-slow" style={{animationDelay: '2.5s'}}></div>
+              <div className="absolute top-60 left-1/4 w-4 h-4 rounded-full bg-white opacity-70 hero-pulse" style={{animationDelay: '3.5s'}}></div>
+              <div className="absolute bottom-40 right-1/4 w-5 h-5 rounded-full bg-white opacity-55 hero-float-element" style={{animationDelay: '4s'}}></div>
+              <div className="absolute top-1/3 right-20 w-6 h-6 rounded-full bg-white opacity-45 hero-float-slow" style={{animationDelay: '2s'}}></div>
+              
+              {/* NOVAS partículas adicionais */}
+              <div className="absolute top-10 right-1/4 w-7 h-7 rounded-full bg-white opacity-65 hero-pulse" style={{animationDelay: '0.8s'}}></div>
+              <div className="absolute bottom-20 left-1/3 w-5 h-5 rounded-full bg-white opacity-60 hero-float-element" style={{animationDelay: '1.2s'}}></div>
+              <div className="absolute top-1/2 left-10 w-6 h-6 rounded-full bg-white opacity-50 hero-float-slow" style={{animationDelay: '3s'}}></div>
+              <div className="absolute bottom-60 right-40 w-4 h-4 rounded-full bg-white opacity-70 hero-pulse" style={{animationDelay: '4.5s'}}></div>
+              <div className="absolute top-80 right-10 w-8 h-8 rounded-full bg-white opacity-45 hero-float-element" style={{animationDelay: '0.3s'}}></div>
+              <div className="absolute bottom-10 left-20 w-6 h-6 rounded-full bg-white opacity-55 hero-float-slow" style={{animationDelay: '5s'}}></div>
+              <div className="absolute top-1/4 left-1/2 w-5 h-5 rounded-full bg-white opacity-60 hero-pulse" style={{animationDelay: '1.8s'}}></div>
+              <div className="absolute bottom-1/3 right-1/3 w-7 h-7 rounded-full bg-white opacity-50 hero-float-element" style={{animationDelay: '3.2s'}}></div>
+              <div className="absolute top-96 left-60 w-4 h-4 rounded-full bg-white opacity-65 hero-float-slow" style={{animationDelay: '2.3s'}}></div>
+
+              {/* Raios de luz sutis */}
+              <div 
+                className="absolute top-0 left-1/4 w-1 h-full opacity-5 hero-pulse"
+                style={{
+                  background: 'linear-gradient(to bottom, transparent, rgba(255,255,255,0.3), transparent)',
+                  transform: 'rotate(15deg)',
+                  animationDelay: '1s'
+                }}
+              ></div>
+              <div 
+                className="absolute top-0 right-1/3 w-1 h-full opacity-5 hero-pulse"
+                style={{
+                  background: 'linear-gradient(to bottom, transparent, rgba(255,255,255,0.3), transparent)',
+                  transform: 'rotate(-10deg)',
+                  animationDelay: '2s'
+                }}
+              ></div>
             </div>
 
             {/* Conteúdo centralizado */}
-            <div className="container mx-auto px-6 relative z-10 text-center">
-              <div className="max-w-4xl mx-auto">
+            <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
+              <div className="max-w-5xl mx-auto">
                 {/* Badge */}
                 <div className="hero-slide-up mb-8" style={{animationDelay: '0.1s'}}>
                   <div 
@@ -724,9 +913,9 @@ export function SiteTemplate({ siteData }: SiteTemplateProps) {
                   </div>
                 </div>
 
-                {/* Título principal */}
+                {/* Título principal - Responsivo */}
                 <h1 
-                  className="hero-slide-up text-6xl md:text-7xl font-black mb-6 leading-tight"
+                  className="hero-slide-up text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black mb-4 sm:mb-6 leading-tight px-4"
                   style={{
                     animationDelay: '0.2s',
                     color: getContrastText(primaryColor),
@@ -736,9 +925,9 @@ export function SiteTemplate({ siteData }: SiteTemplateProps) {
                   {siteData.slogan || siteData.name}
                 </h1>
 
-                {/* Descrição */}
+                {/* Descrição - Responsiva */}
                 <p 
-                  className="hero-slide-up text-xl md:text-2xl mb-12 leading-relaxed max-w-2xl mx-auto"
+                  className="hero-slide-up text-base sm:text-lg md:text-xl lg:text-2xl mb-8 sm:mb-10 lg:mb-12 leading-relaxed max-w-2xl mx-auto px-4"
                   style={{
                     animationDelay: '0.3s',
                     color: getContrastText(primaryColor),
@@ -749,10 +938,10 @@ export function SiteTemplate({ siteData }: SiteTemplateProps) {
                   {siteData.description}
                 </p>
 
-                {/* Botões CTA */}
-                <div className="hero-slide-up flex flex-col sm:flex-row gap-4 justify-center mb-20" style={{animationDelay: '0.4s'}}>
+                {/* Botões CTA - Responsivos */}
+                <div className="hero-slide-up flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center mb-12 sm:mb-16 lg:mb-20 px-4" style={{animationDelay: '0.4s'}}>
                   <button 
-                    className="px-12 py-5 rounded-full font-bold uppercase text-sm tracking-wide shadow-2xl transition transform hover:scale-105 hover:shadow-3xl"
+                    className="w-full sm:w-auto px-8 sm:px-10 lg:px-12 py-4 sm:py-5 rounded-full font-bold uppercase text-xs sm:text-sm tracking-wide shadow-2xl transition transform hover:scale-105 hover:shadow-3xl"
                     style={{
                       backgroundColor: '#ffffff',
                       color: primaryColor
@@ -761,7 +950,7 @@ export function SiteTemplate({ siteData }: SiteTemplateProps) {
                     <span>Começar Agora</span>
                   </button>
                   <button 
-                    className="px-12 py-5 rounded-full font-bold uppercase text-sm tracking-wide transition transform hover:scale-105"
+                    className="w-full sm:w-auto px-8 sm:px-10 lg:px-12 py-4 sm:py-5 rounded-full font-bold uppercase text-xs sm:text-sm tracking-wide transition transform hover:scale-105"
                     style={{
                       backgroundColor: 'transparent',
                       color: getContrastText(primaryColor),
@@ -773,8 +962,8 @@ export function SiteTemplate({ siteData }: SiteTemplateProps) {
                   </button>
                 </div>
 
-                {/* Estatísticas */}
-                <div className="hero-slide-up grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12" style={{animationDelay: '0.5s'}}>
+                {/* Estatísticas - com padding extra para não cortar */}
+                <div className="hero-slide-up grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8 px-4" style={{animationDelay: '0.5s'}}>
                   {(siteData.heroStats || [
                     { value: '500+', label: 'Clientes Satisfeitos' },
                     { value: '4.9★', label: 'Avaliação Média' },
@@ -782,15 +971,16 @@ export function SiteTemplate({ siteData }: SiteTemplateProps) {
                   ]).map((stat, idx) => (
                     <div 
                       key={idx}
-                      className="p-6 rounded-2xl"
+                      className="p-4 sm:p-6 lg:p-8 rounded-2xl transform transition-all duration-300 hover:scale-105"
                       style={{
                         backgroundColor: 'rgba(255, 255, 255, 0.15)',
                         backdropFilter: 'blur(10px)',
-                        border: '1px solid rgba(255, 255, 255, 0.2)'
+                        border: '1px solid rgba(255, 255, 255, 0.2)',
+                        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)'
                       }}
                     >
-                      <h3 className="text-5xl font-black mb-2" style={{color: getContrastText(primaryColor)}}>{stat.value}</h3>
-                      <p className="text-sm uppercase tracking-wider font-semibold opacity-90" style={{color: getContrastText(primaryColor)}}>{stat.label}</p>
+                      <h3 className="text-3xl sm:text-4xl lg:text-5xl font-black mb-2" style={{color: getContrastText(primaryColor)}}>{stat.value}</h3>
+                      <p className="text-xs sm:text-sm uppercase tracking-wider font-semibold opacity-90" style={{color: getContrastText(primaryColor)}}>{stat.label}</p>
                     </div>
                   ))}
                 </div>
@@ -874,9 +1064,9 @@ export function SiteTemplate({ siteData }: SiteTemplateProps) {
 
         {/* About */}
         {siteData.sections.includes('about') && (
-          <section className="py-24 bg-white relative overflow-hidden">
+          <section className="py-24 relative overflow-hidden" style={{background: `linear-gradient(135deg, ${lightenColor(primaryColor, 0.95)}, ${lightenColor(accentColor, 0.97)})`}}>
             {/* Fundo decorativo */}
-            <div className="absolute inset-0 pointer-events-none">
+            <div className="absolute inset-0 pointer-events-none z-0">
               <div className="absolute top-1/4 -right-32 w-96 h-96 rounded-full opacity-5" style={{background: `radial-gradient(circle, ${primaryColor}, transparent)`}}></div>
               <div className="absolute -bottom-32 -left-32 w-96 h-96 rounded-full opacity-5" style={{background: `radial-gradient(circle, ${accentColor}, transparent)`}}></div>
             </div>
@@ -1114,7 +1304,7 @@ export function SiteTemplate({ siteData }: SiteTemplateProps) {
 
         {/* FAQ Section */}
         {siteData.sections.includes('faq') && siteData.faq && siteData.faq.length > 0 && (
-          <section className="py-24 bg-white">
+          <section className="py-24" style={{background: `linear-gradient(to bottom, ${lightenColor(secondaryColor, 0.98)}, #ffffff)`}}>
             <div className="container mx-auto px-6">
               <div className="text-center mb-16">
                 <span 
@@ -1227,7 +1417,7 @@ export function SiteTemplate({ siteData }: SiteTemplateProps) {
 
         {/* Team Section */}
         {siteData.sections.includes('team') && (
-          <section className="py-24 bg-white">
+          <section className="py-24" style={{background: `linear-gradient(135deg, ${lightenColor(accentColor, 0.95)}, ${lightenColor(primaryColor, 0.97)})`}}>
             <div className="container mx-auto px-6">
               <div className="text-center mb-16">
                 <span 
@@ -1385,9 +1575,9 @@ export function SiteTemplate({ siteData }: SiteTemplateProps) {
 
         {/* Reviews */}
         {siteData.sections.includes('testimonials') && (
-          <section className="py-24 bg-white relative overflow-hidden">
+          <section className="py-24 relative overflow-hidden" style={{background: `linear-gradient(to bottom right, #ffffff, ${lightenColor(primaryColor, 0.96)})`}}>
             {/* Fundo decorativo */}
-            <div className="absolute inset-0 pointer-events-none opacity-5">
+            <div className="absolute inset-0 pointer-events-none opacity-5 z-0">
               <div className="absolute top-20 left-20 w-80 h-80 rounded-full blur-3xl" style={{background: `radial-gradient(circle, ${primaryColor}, transparent)`}}></div>
               <div className="absolute bottom-20 right-20 w-96 h-96 rounded-full blur-3xl" style={{background: `radial-gradient(circle, ${accentColor}, transparent)`}}></div>
             </div>
@@ -1664,7 +1854,11 @@ export function SiteTemplate({ siteData }: SiteTemplateProps) {
             href={`https://wa.me/${siteData.phone.replace(/\D/g, '')}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="fixed bottom-5 right-5 w-16 h-16 bg-green-500 rounded-full flex items-center justify-center shadow-2xl hover:scale-110 transition z-50 animate-pulse"
+            className="fixed bottom-5 right-5 w-16 h-16 rounded-full flex items-center justify-center shadow-2xl hover:scale-110 transition z-50"
+            style={{
+              backgroundColor: '#25d366',
+              animation: 'whatsappPulse 2s ease-in-out infinite'
+            }}
           >
             <svg viewBox="0 0 24 24" fill="white" className="w-8 h-8">
               <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>

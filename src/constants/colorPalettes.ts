@@ -2,7 +2,7 @@
 export interface ColorPalette {
   id: string;
   name: string;
-  category: 'blue' | 'green' | 'purple' | 'pink' | 'red' | 'orange' | 'yellow' | 'neutral';
+  category: 'blue' | 'green' | 'purple' | 'pink' | 'red' | 'orange' | 'yellow' | 'neutral' | 'custom';
   primary: string;
   secondary: string;
   accent: string;

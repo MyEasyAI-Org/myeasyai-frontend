@@ -23,10 +23,6 @@ export function PWAInstallBanner() {
   const fallbackTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
-    if (dismissedRef.current) {
-      return;
-    }
-
     // Verificar se já está instalado
     const checkIfInstalled = () => {
       // Método 1: Verificar se está em modo standalone
@@ -54,12 +50,21 @@ export function PWAInstallBanner() {
     // Listener para o evento beforeinstallprompt
     const handleBeforeInstallPrompt = (e: BeforeInstallPromptEvent) => {
       console.log('💾 PWA install prompt disponível');
+      // Prevenir o comportamento padrão para controlarmos quando mostrar
       e.preventDefault();
+      
+      // Não processar se já foi rejeitado pelo usuário
       if (dismissedRef.current) {
         return;
       }
+      
+      // Armazenar o evento e mostrar o banner customizado
       setDeferredPrompt(e);
-      setShowBanner(true);
+      
+      // Pequeno delay para garantir que o DOM está pronto
+      setTimeout(() => {
+        setShowBanner(true);
+      }, 100);
     };
 
     // Listener para detectar quando foi instalado
@@ -68,19 +73,12 @@ export function PWAInstallBanner() {
       setIsInstalled(true);
       setShowBanner(false);
       setDeferredPrompt(null);
+      dismissedRef.current = false; // Reset para futuras sessões
     };
 
     // Adicionar listeners
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
     window.addEventListener('appinstalled', handleAppInstalled);
-
-    // Para navegadores que não suportam beforeinstallprompt mas permitem instalação
-    // Mostrar banner após 3 segundos se não estiver instalado
-    fallbackTimerRef.current = window.setTimeout(() => {
-      if (!isInstalled && !deferredPrompt && !dismissedRef.current) {
-        setShowBanner(true);
-      }
-    }, 3000);
 
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
@@ -90,32 +88,45 @@ export function PWAInstallBanner() {
         fallbackTimerRef.current = null;
       }
     };
-  }, [deferredPrompt, isInstalled]);
+  }, []); // Remover dependências para evitar re-execução
 
   const handleInstallClick = async () => {
     if (!deferredPrompt) {
       // Fallback: instruir instalação manual
-      alert('Para instalar o app:\n\n• Chrome: Clique no ícone de instalação na barra de endereços\n• Edge: Menu ⋯ → Apps → "Instalar este site como um app"\n• Firefox: Adicione aos favoritos e acesse pelo menu');
+      alert('Para instalar o app:\\n\\n• Chrome: Clique no ícone de instalação na barra de endereços\\n• Edge: Menu ⋯ → Apps → "Instalar este site como um app"\\n• Firefox: Adicione aos favoritos e acesse pelo menu');
       return;
     }
 
     try {
       console.log('🚀 Iniciando instalação do PWA...');
+      
+      // Ocultar banner imediatamente para melhor UX
+      setShowBanner(false);
+      
+      // Chamar o prompt de instalação
       await deferredPrompt.prompt();
       
+      // Aguardar a escolha do usuário
       const choiceResult = await deferredPrompt.userChoice;
       console.log('📊 Resultado da escolha:', choiceResult.outcome);
       
       if (choiceResult.outcome === 'accepted') {
         console.log('✅ Usuário aceitou a instalação');
+        setIsInstalled(true);
       } else {
         console.log('❌ Usuário rejeitou a instalação');
+        // Marcar como dispensado para não mostrar novamente nesta sessão
+        dismissedRef.current = true;
       }
       
+      // Limpar o prompt após uso
       setDeferredPrompt(null);
-      setShowBanner(false);
     } catch (error) {
       console.error('❌ Erro ao instalar PWA:', error);
+      // Se houve erro, mostrar banner novamente
+      if (!dismissedRef.current) {
+        setShowBanner(true);
+      }
     }
   };
 

@@ -3,6 +3,7 @@ import { Modal } from './Modal';
 import { supabase } from '../lib/supabase';
 import type { User } from '@supabase/supabase-js';
 import * as flags from 'country-flag-icons/react/3x2';
+import { COUNTRIES, getCountryConfig, type CountryAddressConfig } from '../constants/countries';
 
 type OnboardingModalProps = {
   isOpen: boolean;
@@ -13,7 +14,7 @@ type OnboardingModalProps = {
 
 type FormData = {
   name?: string;
-  preferred_name?: string; // Como quer ser chamado 
+  preferred_name?: string;
   mobile_phone?: string;
   country_code?: string;
   country?: string;
@@ -27,20 +28,6 @@ type FormData = {
   state?: string;
   preferred_language?: string;
 };
-
-// Lista de países com códigos e bandeiras
-const countryCodes = [
-  { code: 'BR', dial: '+55', name: 'Brasil', phoneFormat: '(##) #####-####', phoneLength: 11 },
-  { code: 'US', dial: '+1', name: 'Estados Unidos', phoneFormat: '(###) ###-####', phoneLength: 10 },
-  { code: 'PT', dial: '+351', name: 'Portugal', phoneFormat: '### ### ###', phoneLength: 9 },
-  { code: 'ES', dial: '+34', name: 'Espanha', phoneFormat: '### ## ## ##', phoneLength: 9 },
-  { code: 'AR', dial: '+54', name: 'Argentina', phoneFormat: '## ####-####', phoneLength: 10 },
-  { code: 'MX', dial: '+52', name: 'México', phoneFormat: '## #### ####', phoneLength: 10 },
-  { code: 'CO', dial: '+57', name: 'Colômbia', phoneFormat: '### ### ####', phoneLength: 10 },
-  { code: 'FR', dial: '+33', name: 'França', phoneFormat: '# ## ## ## ##', phoneLength: 9 },
-  { code: 'DE', dial: '+49', name: 'Alemanha', phoneFormat: '### ########', phoneLength: 11 },
-  { code: 'IT', dial: '+39', name: 'Itália', phoneFormat: '### ### ####', phoneLength: 10 },
-];
 
 // Helper para renderizar bandeiras SVG
 const FlagIcon = ({ countryCode, className = "w-6 h-4" }: { countryCode: string; className?: string }) => {
@@ -75,28 +62,38 @@ const steps = [
 export function OnboardingModal({ isOpen, onClose, onComplete, user }: OnboardingModalProps) {
   const [currentStep, setCurrentStep] = useState(0);
   const [formData, setFormData] = useState<FormData>({
-    name: user.user_metadata?.full_name || user.user_metadata?.name || '',
+    name: '',
+    preferred_name: '',
     country_code: 'BR',
     country: 'BR',
     preferred_language: 'pt'
   });
   const [loading, setLoading] = useState(false);
+  const [isLoadingUserData, setIsLoadingUserData] = useState(true);
   const [errors, setErrors] = useState<Partial<FormData>>({});
   const [showCountryDropdown, setShowCountryDropdown] = useState(false);
-  const [isClosingDropdown, setIsClosingDropdown] = useState(false);
+  const [showLocationDropdown, setShowLocationDropdown] = useState(false);
+  const [showLanguageDropdown, setShowLanguageDropdown] = useState(false);
+  const [countrySearch, setCountrySearch] = useState('');
+  const [locationSearch, setLocationSearch] = useState('');
+  const [languageSearch, setLanguageSearch] = useState('');
+  const [isLoadingAddress, setIsLoadingAddress] = useState(false);
+  const [isClosingCountryDropdown, setIsClosingCountryDropdown] = useState(false);
+  const [isClosingLocationDropdown, setIsClosingLocationDropdown] = useState(false);
+  const [isClosingLanguageDropdown, setIsClosingLanguageDropdown] = useState(false);
 
   const countryDropdownRef = useRef<HTMLDivElement>(null);
+  const locationDropdownRef = useRef<HTMLDivElement>(null);
+  const languageDropdownRef = useRef<HTMLDivElement>(null);
 
   // Função para capitalizar nomes
   const capitalizeName = (name: string): string => {
-    // Lista de preposições que devem ficar em minúsculo (exceto se for a primeira palavra)
     const lowercaseWords = ['de', 'da', 'do', 'dos', 'das', 'e'];
     
     return name
       .toLowerCase()
       .split(' ')
       .map((word, index) => {
-        // Se for a primeira palavra ou não estiver na lista de palavras em minúsculo
         if (index === 0 || !lowercaseWords.includes(word)) {
           return word.charAt(0).toUpperCase() + word.slice(1);
         }
@@ -107,16 +104,12 @@ export function OnboardingModal({ isOpen, onClose, onComplete, user }: Onboardin
 
   // Função para formatar telefone baseado no país
   const formatPhone = (phone: string, countryCode: string): string => {
-    const country = countryCodes.find(c => c.code === countryCode);
+    const country = getCountryConfig(countryCode);
     if (!country) return phone;
 
-    // Remove todos os caracteres não numéricos
     const numbers = phone.replace(/\D/g, '');
-    
-    // Limita ao tamanho máximo do país
     const limitedNumbers = numbers.slice(0, country.phoneLength);
     
-    // Aplica a formatação do país
     let formatted = '';
     let numberIndex = 0;
     
@@ -130,6 +123,43 @@ export function OnboardingModal({ isOpen, onClose, onComplete, user }: Onboardin
     }
     
     return formatted;
+  };
+
+  // Função para buscar CEP (ViaCEP - Brasil)
+  const fetchBrazilianAddress = async (cep: string) => {
+    const cleanCep = cep.replace(/\D/g, '');
+    if (cleanCep.length !== 8) return;
+
+    setIsLoadingAddress(true);
+    try {
+      const response = await fetch(`https://viacep.com.br/ws/${cleanCep}/json/`);
+      const data = await response.json();
+
+      if (!data.erro) {
+        setFormData(prev => ({
+          ...prev,
+          street: data.logradouro || '',
+          neighborhood: data.bairro || '',
+          city: data.localidade || '',
+          state: data.uf || '',
+        }));
+      }
+    } catch (error) {
+      console.error('Erro ao buscar CEP:', error);
+    } finally {
+      setIsLoadingAddress(false);
+    }
+  };
+
+  // Handler para mudança de CEP/Postal Code
+  const handlePostalCodeChange = async (value: string) => {
+    const cleanValue = value.replace(/\D/g, '');
+    setFormData(prev => ({ ...prev, postal_code: cleanValue }));
+
+    // Se for Brasil e tiver 8 dígitos, buscar endereço
+    if (formData.country === 'BR' && cleanValue.length === 8) {
+      await fetchBrazilianAddress(cleanValue);
+    }
   };
 
   // Handler para mudança de nome com capitalização automática
@@ -148,7 +178,7 @@ export function OnboardingModal({ isOpen, onClose, onComplete, user }: Onboardin
     const formatted = formatPhone(value, formData.country_code || 'BR');
     setFormData(prev => ({ ...prev, mobile_phone: formatted }));
     
-    const country = countryCodes.find(c => c.code === formData.country_code);
+    const country = getCountryConfig(formData.country_code || 'BR');
     const numbers = value.replace(/\D/g, '');
     if (country && numbers.length < country.phoneLength) {
       setErrors(prev => ({ ...prev, mobile_phone: 'Telefone incompleto' }));
@@ -162,26 +192,93 @@ export function OnboardingModal({ isOpen, onClose, onComplete, user }: Onboardin
     setFormData(prev => ({ 
       ...prev, 
       country_code: countryCode,
-      mobile_phone: '' // Limpa o telefone ao mudar de país
+      mobile_phone: ''
     }));
-    setIsClosingDropdown(true);
+    setIsClosingCountryDropdown(true);
     setTimeout(() => {
       setShowCountryDropdown(false);
-      setIsClosingDropdown(false);
+      setIsClosingCountryDropdown(false);
     }, 700);
+    setCountrySearch('');
+  };
+
+  // Handler para mudança de país (localização)
+  const handleLocationCountryChange = (countryCode: string) => {
+    setFormData(prev => ({ 
+      ...prev, 
+      country: countryCode,
+      postal_code: '',
+      street: '',
+      neighborhood: '',
+      city: '',
+      state: '',
+      complement: '',
+    }));
+    setIsClosingLocationDropdown(true);
+    setTimeout(() => {
+      setShowLocationDropdown(false);
+      setIsClosingLocationDropdown(false);
+    }, 700);
+    setLocationSearch('');
+  };
+
+  // Filtrar países para dropdown de telefone
+  const filteredPhoneCountries = COUNTRIES.filter(country =>
+    country.name.toLowerCase().includes(countrySearch.toLowerCase()) ||
+    country.dial.includes(countrySearch)
+  );
+
+  // Filtrar países para dropdown de localização
+  const filteredLocationCountries = COUNTRIES.filter(country =>
+    country.name.toLowerCase().includes(locationSearch.toLowerCase())
+  );
+
+  // Idiomas disponíveis
+  const languages = [
+    { code: 'pt', name: 'Português', countryFlag: 'BR' },
+    { code: 'en', name: 'English', countryFlag: 'US' },
+    { code: 'es', name: 'Español', countryFlag: 'ES' },
+    { code: 'fr', name: 'Français', countryFlag: 'FR' },
+  ];
+
+  // Filtrar idiomas
+  const filteredLanguages = languages.filter(lang =>
+    lang.name.toLowerCase().includes(languageSearch.toLowerCase())
+  );
+
+  // Handler para mudança de idioma
+  const handleLanguageChange = (languageCode: string) => {
+    setFormData(prev => ({ ...prev, preferred_language: languageCode }));
+    setIsClosingLanguageDropdown(true);
+    setTimeout(() => {
+      setShowLanguageDropdown(false);
+      setIsClosingLanguageDropdown(false);
+    }, 700);
+    setLanguageSearch('');
   };
 
   // Validar se pode avançar para próximo passo
   const canProceed = (): boolean => {
     switch (currentStep) {
       case 0: // Dados Pessoais
-        return !!(formData.name && formData.name.trim().split(' ').length >= 2 && formData.preferred_name && !errors.name);
+        return !!(formData.name && formData.name.trim().split(' ').length >= 2 && !errors.name);
       case 1: // Contato
-        const country = countryCodes.find(c => c.code === formData.country_code);
+        const country = getCountryConfig(formData.country_code || 'BR');
         const numbers = (formData.mobile_phone || '').replace(/\D/g, '');
         return !!(country && numbers.length === country.phoneLength && !errors.mobile_phone);
       case 2: // Localização
-        return !!(formData.country && formData.postal_code && formData.neighborhood && formData.street && formData.number && formData.city && formData.state);
+        const locationCountry = getCountryConfig(formData.country || 'BR');
+        if (!locationCountry) return false;
+        
+        // Validar campos obrigatórios baseados no país
+        const hasPostalCode = !!formData.postal_code;
+        const hasStreet = !!formData.street;
+        const hasNumber = !!formData.number;
+        const hasCity = !!formData.city;
+        const hasNeighborhood = locationCountry.addressFields.neighborhoodLabel ? !!formData.neighborhood : true;
+        const hasState = locationCountry.addressFields.stateLabel ? !!formData.state : true;
+        
+        return hasPostalCode && hasStreet && hasNumber && hasCity && hasNeighborhood && hasState;
       case 3: // Preferências
         return !!(formData.preferred_language);
       default:
@@ -214,20 +311,16 @@ export function OnboardingModal({ isOpen, onClose, onComplete, user }: Onboardin
       formData.state
     ].filter(Boolean).join(', ');
 
-    // Debug: Mostra o endereço que será enviado ao backend
-    alert(`Esse é o endereço que vai para o backend: '${fullAddress}'`);
-
     setLoading(true);
-    console.log('⏳ Loading ativado, salvando dados...');
-    
     try {
-      const country = countryCodes.find(c => c.code === formData.country_code);
+      const country = getCountryConfig(formData.country_code || 'BR');
       const fullPhoneNumber = country ? `${country.dial} ${formData.mobile_phone}` : formData.mobile_phone;
 
       const { error } = await supabase
         .from('users')
         .update({
           name: formData.name || 'Usuário',
+          preferred_name: formData.preferred_name || null,
           mobile_phone: fullPhoneNumber ? parseInt(fullPhoneNumber.replace(/\D/g, '')) : null,
           country: formData.country,
           postal_code: formData.postal_code ? parseInt(formData.postal_code) : null,
@@ -238,18 +331,16 @@ export function OnboardingModal({ isOpen, onClose, onComplete, user }: Onboardin
         .eq('email', user.email);
 
       if (error) {
-        console.error('❌ Erro ao salvar dados:', error);
-        alert(`Erro ao salvar informações: ${error.message}`);
-        setLoading(false);
+        console.error('Erro ao salvar dados:', error);
+        alert('Erro ao salvar informações. Tente novamente.');
         return;
       }
 
-      console.log('✅ Dados salvos com sucesso!');
-      console.log('🎉 Chamando onComplete...');
       onComplete();
     } catch (error) {
-      console.error('❌ Erro inesperado:', error);
-      alert(`Erro inesperado: ${error}`);
+      console.error('Erro inesperado:', error);
+      alert('Erro inesperado. Tente novamente.');
+    } finally {
       setLoading(false);
     }
   };
@@ -277,27 +368,22 @@ export function OnboardingModal({ isOpen, onClose, onComplete, user }: Onboardin
 
             <label className="block text-left">
               <span className="mb-1 block text-sm font-medium text-slate-300">
-                Como quer ser chamado? *
+                Como quer ser chamado?
               </span>
               <input
                 type="text"
                 value={formData.preferred_name || ''}
-                onChange={(e) => {
-                  const capitalizedName = capitalizeName(e.target.value);
-                  setFormData(prev => ({ ...prev, preferred_name: capitalizedName }));
-                }}
-                placeholder="Ex: João, Joãozinho, JV..."
+                onChange={(e) => setFormData(prev => ({ ...prev, preferred_name: e.target.value }))}
+                placeholder="Ex: João, Joãozinho, JJ..."
                 className="w-full rounded-lg border border-slate-700 bg-slate-800/60 px-4 py-3 text-slate-100 placeholder-slate-500 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/40"
               />
-              <p className="text-xs text-slate-400 mt-1">
-                ✨ Este será o nome usado em toda a plataforma
-              </p>
+              <span className="text-xs text-slate-500 mt-1">Escreva um nome amigável para usarmos com você 😊</span>
             </label>
           </div>
         );
 
       case 1: // Contato
-        const selectedCountry = countryCodes.find(c => c.code === formData.country_code) || countryCodes[0];
+        const selectedCountry = getCountryConfig(formData.country_code || 'BR') || COUNTRIES[0];
         return (
           <div className="space-y-4">
             <label className="block text-left">
@@ -309,7 +395,10 @@ export function OnboardingModal({ isOpen, onClose, onComplete, user }: Onboardin
                 <div className="relative" ref={countryDropdownRef}>
                   <button
                     type="button"
-                    onClick={() => setShowCountryDropdown(!showCountryDropdown)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowCountryDropdown(!showCountryDropdown);
+                    }}
                     className="flex items-center gap-2 px-3 py-3 rounded-lg border border-slate-700 bg-slate-800/60 hover:bg-slate-700/60 transition-colors"
                   >
                     <FlagIcon countryCode={selectedCountry.code} className="w-6 h-4" />
@@ -320,22 +409,34 @@ export function OnboardingModal({ isOpen, onClose, onComplete, user }: Onboardin
                   </button>
                   
                   {showCountryDropdown && (
-                    <div className={`absolute z-10 mt-1 w-64 rounded-lg border border-slate-700 bg-slate-800 shadow-xl max-h-60 overflow-y-auto transition-opacity duration-700 ${isClosingDropdown ? 'opacity-0' : 'opacity-100'}`}>
-                      {countryCodes.map(country => (
-                        <button
-                          key={country.code}
-                          type="button"
-                          onMouseDown={(e) => {
-                            e.preventDefault();
-                            handleCountryCodeChange(country.code);
-                          }}
-                          className="flex items-center gap-3 w-full px-4 py-2 hover:bg-slate-700 transition-colors text-left"
-                        >
-                          <FlagIcon countryCode={country.code} className="w-6 h-4" />
-                          <span className="text-slate-100">{country.name}</span>
-                          <span className="text-slate-400 ml-auto">{country.dial}</span>
-                        </button>
-                      ))}
+                    <div className={`absolute z-10 mt-1 w-80 rounded-lg border border-slate-700 bg-slate-800 shadow-xl transition-opacity duration-700 ${isClosingCountryDropdown ? 'opacity-0' : 'opacity-100'}`}>
+                      <div className="p-2 border-b border-slate-700">
+                        <input
+                          type="text"
+                          value={countrySearch}
+                          onChange={(e) => setCountrySearch(e.target.value)}
+                          placeholder="Buscar país..."
+                          className="w-full px-3 py-2 rounded-md bg-slate-700 text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                      </div>
+                      <div className="max-h-60 overflow-y-auto">
+                        {filteredPhoneCountries.map(country => (
+                          <button
+                            key={country.code}
+                            type="button"
+                            onMouseDown={(e) => {
+                              e.preventDefault();
+                              handleCountryCodeChange(country.code);
+                            }}
+                            className="flex items-center gap-3 w-full px-4 py-2 hover:bg-slate-700 transition-colors text-left"
+                          >
+                            <FlagIcon countryCode={country.code} className="w-6 h-4 flex-shrink-0" />
+                            <span className="text-slate-100 flex-1 truncate">{country.name}</span>
+                            <span className="text-slate-400">{country.dial}</span>
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   )}
                 </div>
@@ -352,34 +453,59 @@ export function OnboardingModal({ isOpen, onClose, onComplete, user }: Onboardin
               {errors.mobile_phone && (
                 <span className="text-xs text-red-400 mt-1">{errors.mobile_phone}</span>
               )}
-              
             </label>
           </div>
         );
 
       case 2: // Localização
+        const locationCountry = getCountryConfig(formData.country || 'BR') || COUNTRIES[0];
         return (
           <div className="space-y-4">
             <label className="block text-left">
               <span className="mb-1 block text-sm font-medium text-slate-300">
                 País *
               </span>
-              <div className="relative">
-                <select
-                  value={formData.country || ''}
-                  onChange={(e) => setFormData(prev => ({ ...prev, country: e.target.value }))}
-                  className={`w-full rounded-lg border border-slate-700 bg-slate-800/60 py-3 text-slate-100 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/40 ${formData.country ? 'pl-12 pr-4' : 'px-4'}`}
+              <div className="relative" ref={locationDropdownRef}>
+                <button
+                  type="button"
+                  onClick={() => setShowLocationDropdown(!showLocationDropdown)}
+                  className="w-full flex items-center gap-3 px-4 py-3 rounded-lg border border-slate-700 bg-slate-800/60 hover:bg-slate-700/60 transition-colors text-left"
                 >
-                  <option value="">Selecione seu país</option>
-                  {countryCodes.map(country => (
-                    <option key={country.code} value={country.code}>
-                      {country.name}
-                    </option>
-                  ))}
-                </select>
-                {formData.country && (
-                  <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                    <FlagIcon countryCode={formData.country} className="w-6 h-4" />
+                  <FlagIcon countryCode={locationCountry.code} className="w-6 h-4" />
+                  <span className="text-slate-100 flex-1">{locationCountry.name}</span>
+                  <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                
+                {showLocationDropdown && (
+                  <div className={`absolute z-10 mt-1 w-full rounded-lg border border-slate-700 bg-slate-800 shadow-xl transition-opacity duration-700 ${isClosingLocationDropdown ? 'opacity-0' : 'opacity-100'}`}>
+                    <div className="p-2 border-b border-slate-700">
+                      <input
+                        type="text"
+                        value={locationSearch}
+                        onChange={(e) => setLocationSearch(e.target.value)}
+                        placeholder="Buscar país..."
+                        className="w-full px-3 py-2 rounded-md bg-slate-700 text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                    </div>
+                    <div className="max-h-60 overflow-y-auto">
+                      {filteredLocationCountries.map(country => (
+                        <button
+                          key={country.code}
+                          type="button"
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            handleLocationCountryChange(country.code);
+                          }}
+                          className="flex items-center gap-3 w-full px-4 py-2 hover:bg-slate-700 transition-colors text-left"
+                        >
+                          <FlagIcon countryCode={country.code} className="w-6 h-4 flex-shrink-0" />
+                          <span className="text-slate-100 truncate">{country.name}</span>
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>
@@ -387,38 +513,41 @@ export function OnboardingModal({ isOpen, onClose, onComplete, user }: Onboardin
 
             <label className="block text-left">
               <span className="mb-1 block text-sm font-medium text-slate-300">
-                CEP *
+                {locationCountry.postalCodeLabel} * {isLoadingAddress && '(Buscando...)'}
               </span>
               <input
                 type="text"
                 value={formData.postal_code || ''}
-                onChange={(e) => {
-                  const value = e.target.value.replace(/\D/g, '');
-                  setFormData(prev => ({ ...prev, postal_code: value }));
-                }}
-                placeholder="00000000"
-                maxLength={8}
-                className="w-full rounded-lg border border-slate-700 bg-slate-800/60 px-4 py-3 text-slate-100 placeholder-slate-500 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/40"
+                onChange={(e) => handlePostalCodeChange(e.target.value)}
+                placeholder={locationCountry.postalCodePlaceholder}
+                maxLength={locationCountry.postalCodeMaxLength}
+                disabled={isLoadingAddress}
+                className="w-full rounded-lg border border-slate-700 bg-slate-800/60 px-4 py-3 text-slate-100 placeholder-slate-500 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/40 disabled:opacity-50"
               />
+              {locationCountry.hasAutoComplete && (
+                <span className="text-xs text-slate-500 mt-1">
+                  ✨ Preenchimento automático disponível
+                </span>
+              )}
             </label>
 
             <div className="grid grid-cols-2 gap-4">
               <label className="block text-left">
                 <span className="mb-1 block text-sm font-medium text-slate-300">
-                  Rua *
+                  {locationCountry.addressFields.line1Label} *
                 </span>
                 <input
                   type="text"
                   value={formData.street || ''}
                   onChange={(e) => setFormData(prev => ({ ...prev, street: e.target.value }))}
-                  placeholder="Ex: Rua das Flores"
+                  placeholder={`Ex: ${locationCountry.addressFields.line1Label}`}
                   className="w-full rounded-lg border border-slate-700 bg-slate-800/60 px-4 py-3 text-slate-100 placeholder-slate-500 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/40"
                 />
               </label>
 
               <label className="block text-left">
                 <span className="mb-1 block text-sm font-medium text-slate-300">
-                  Número *
+                  {locationCountry.addressFields.line2Label || 'Número'} *
                 </span>
                 <input
                   type="text"
@@ -438,85 +567,115 @@ export function OnboardingModal({ isOpen, onClose, onComplete, user }: Onboardin
                 type="text"
                 value={formData.complement || ''}
                 onChange={(e) => setFormData(prev => ({ ...prev, complement: e.target.value }))}
-                placeholder="Ex: Apto 42, Bloco B"
+                placeholder="Ex.: Bloco 2 / Apartamento 602"
                 className="w-full rounded-lg border border-slate-700 bg-slate-800/60 px-4 py-3 text-slate-100 placeholder-slate-500 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/40"
               />
             </label>
 
-            <label className="block text-left">
-              <span className="mb-1 block text-sm font-medium text-slate-300">
-                Bairro *
-              </span>
-              <input
-                type="text"
-                value={formData.neighborhood || ''}
-                onChange={(e) => setFormData(prev => ({ ...prev, neighborhood: e.target.value }))}
-                placeholder="Ex: Centro"
-                className="w-full rounded-lg border border-slate-700 bg-slate-800/60 px-4 py-3 text-slate-100 placeholder-slate-500 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/40"
-              />
-            </label>
+            {locationCountry.addressFields.neighborhoodLabel && (
+              <label className="block text-left">
+                <span className="mb-1 block text-sm font-medium text-slate-300">
+                  {locationCountry.addressFields.neighborhoodLabel} *
+                </span>
+                <input
+                  type="text"
+                  value={formData.neighborhood || ''}
+                  onChange={(e) => setFormData(prev => ({ ...prev, neighborhood: e.target.value }))}
+                  placeholder={`Ex: ${locationCountry.addressFields.neighborhoodLabel}`}
+                  className="w-full rounded-lg border border-slate-700 bg-slate-800/60 px-4 py-3 text-slate-100 placeholder-slate-500 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/40"
+                />
+              </label>
+            )}
 
             <div className="grid grid-cols-2 gap-4">
               <label className="block text-left">
                 <span className="mb-1 block text-sm font-medium text-slate-300">
-                  Cidade *
+                  {locationCountry.addressFields.cityLabel} *
                 </span>
                 <input
                   type="text"
                   value={formData.city || ''}
                   onChange={(e) => setFormData(prev => ({ ...prev, city: e.target.value }))}
-                  placeholder="Ex: São Paulo"
+                  placeholder={`Ex: ${locationCountry.addressFields.cityLabel}`}
                   className="w-full rounded-lg border border-slate-700 bg-slate-800/60 px-4 py-3 text-slate-100 placeholder-slate-500 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/40"
                 />
               </label>
 
-              <label className="block text-left">
-                <span className="mb-1 block text-sm font-medium text-slate-300">
-                  UF *
-                </span>
-                <input
-                  type="text"
-                  value={formData.state || ''}
-                  onChange={(e) => {
-                    const value = e.target.value.toUpperCase().replace(/[^A-Z]/g, '');
-                    setFormData(prev => ({ ...prev, state: value }));
-                  }}
-                  placeholder="SP"
-                  maxLength={2}
-                  className="w-full rounded-lg border border-slate-700 bg-slate-800/60 px-4 py-3 text-slate-100 placeholder-slate-500 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/40"
-                />
-              </label>
+              {locationCountry.addressFields.stateLabel && (
+                <label className="block text-left">
+                  <span className="mb-1 block text-sm font-medium text-slate-300">
+                    {locationCountry.addressFields.stateLabel} *
+                  </span>
+                  <input
+                    type="text"
+                    value={formData.state || ''}
+                    onChange={(e) => {
+                      const maxLength = locationCountry.addressFields.stateMaxLength;
+                      let value = e.target.value;
+                      if (maxLength) {
+                        value = value.toUpperCase().replace(/[^A-Z]/g, '').slice(0, maxLength);
+                      }
+                      setFormData(prev => ({ ...prev, state: value }));
+                    }}
+                    placeholder={locationCountry.addressFields.statePlaceholder || 'Estado'}
+                    maxLength={locationCountry.addressFields.stateMaxLength}
+                    className="w-full rounded-lg border border-slate-700 bg-slate-800/60 px-4 py-3 text-slate-100 placeholder-slate-500 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/40"
+                  />
+                </label>
+              )}
             </div>
           </div>
         );
 
       case 3: // Preferências
-        const languageMap: { [key: string]: string } = {
-          'pt': 'BR',
-          'en': 'US',
-          'es': 'ES',
-          'fr': 'FR'
-        };
+        const selectedLanguage = languages.find(lang => lang.code === formData.preferred_language) || languages[0];
         return (
           <div className="space-y-4">
             <label className="block text-left">
               <span className="mb-1 block text-sm font-medium text-slate-300">
                 Idioma preferido *
               </span>
-              <div className="relative">
-                <select
-                  value={formData.preferred_language || 'pt'}
-                  onChange={(e) => setFormData(prev => ({ ...prev, preferred_language: e.target.value }))}
-                  className="w-full rounded-lg border border-slate-700 bg-slate-800/60 px-4 py-3 text-slate-100 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/40 pl-12"
+              <div className="relative" ref={languageDropdownRef}>
+                <button
+                  type="button"
+                  onClick={() => setShowLanguageDropdown(!showLanguageDropdown)}
+                  className="w-full flex items-center gap-3 px-4 py-3 rounded-lg border border-slate-700 bg-slate-800/60 hover:bg-slate-700/60 transition-colors text-left"
                 >
-                  <option value="pt">Português</option>
-                  <option value="en">English</option>
-                  <option value="es">Español</option>
-                  <option value="fr">Français</option>
-                </select>
-                {formData.preferred_language && (
-                  <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                    <FlagIcon countryCode={languageMap[formData.preferred_language]} className="w-6 h-4" />
+                  <FlagIcon countryCode={selectedLanguage.countryFlag} className="w-6 h-4" />
+                  <span className="text-slate-100 flex-1">{selectedLanguage.name}</span>
+                  <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                
+                {showLanguageDropdown && (
+                  <div className={`absolute z-10 mt-1 w-full rounded-lg border border-slate-700 bg-slate-800 shadow-xl transition-opacity duration-700 ${isClosingLanguageDropdown ? 'opacity-0' : 'opacity-100'}`}>
+                    <div className="p-2 border-b border-slate-700">
+                      <input
+                        type="text"
+                        value={languageSearch}
+                        onChange={(e) => setLanguageSearch(e.target.value)}
+                        placeholder="Buscar idioma..."
+                        className="w-full px-3 py-2 rounded-md bg-slate-700 text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                    </div>
+                    <div className="max-h-60 overflow-y-auto">
+                      {filteredLanguages.map(language => (
+                        <button
+                          key={language.code}
+                          type="button"
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            handleLanguageChange(language.code);
+                          }}
+                          className="flex items-center gap-3 w-full px-4 py-2 hover:bg-slate-700 transition-colors text-left"
+                        >
+                          <FlagIcon countryCode={language.countryFlag} className="w-6 h-4 flex-shrink-0" />
+                          <span className="text-slate-100 truncate">{language.name}</span>
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>
@@ -531,7 +690,57 @@ export function OnboardingModal({ isOpen, onClose, onComplete, user }: Onboardin
 
   const progressPercentage = ((currentStep + 1) / steps.length) * 100;
 
-  // Fechar dropdown ao clicar fora
+  // Carregar dados do usuário ao abrir o modal
+  useEffect(() => {
+    const loadUserData = async () => {
+      if (!isOpen || !user.email) return;
+      
+      setIsLoadingUserData(true);
+      try {
+        const { data, error } = await supabase
+          .from('users')
+          .select('name, preferred_name, mobile_phone, country, postal_code, address, street, number, complement, neighborhood, city, state, preferred_language, country_code')
+          .eq('email', user.email)
+          .single();
+
+        if (error) {
+          console.error('Erro ao carregar dados do usuário:', error);
+          // Usar dados do user_metadata como fallback
+          setFormData(prev => ({
+            ...prev,
+            name: user.user_metadata?.full_name || user.user_metadata?.name || '',
+            preferred_name: user.user_metadata?.preferred_name || ''
+          }));
+        } else if (data) {
+          // Preencher formulário com dados do banco
+          setFormData(prev => ({
+            ...prev,
+            name: data.name || user.user_metadata?.full_name || user.user_metadata?.name || '',
+            preferred_name: data.preferred_name || user.user_metadata?.preferred_name || '',
+            mobile_phone: data.mobile_phone ? String(data.mobile_phone) : '',
+            country_code: data.country_code || 'BR',
+            country: data.country || 'BR',
+            postal_code: data.postal_code ? String(data.postal_code) : '',
+            street: data.street || '',
+            number: data.number || '',
+            complement: data.complement || '',
+            neighborhood: data.neighborhood || '',
+            city: data.city || '',
+            state: data.state || '',
+            preferred_language: data.preferred_language || 'pt'
+          }));
+        }
+      } catch (error) {
+        console.error('Erro ao carregar dados:', error);
+      } finally {
+        setIsLoadingUserData(false);
+      }
+    };
+
+    loadUserData();
+  }, [isOpen, user]);
+
+  // Fechar dropdowns ao clicar fora
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -539,6 +748,18 @@ export function OnboardingModal({ isOpen, onClose, onComplete, user }: Onboardin
         !countryDropdownRef.current.contains(event.target as Node)
       ) {
         setShowCountryDropdown(false);
+      }
+      if (
+        locationDropdownRef.current &&
+        !locationDropdownRef.current.contains(event.target as Node)
+      ) {
+        setShowLocationDropdown(false);
+      }
+      if (
+        languageDropdownRef.current &&
+        !languageDropdownRef.current.contains(event.target as Node)
+      ) {
+        setShowLanguageDropdown(false);
       }
     };
 

@@ -12,8 +12,11 @@ import { LoadingIntro } from './components/LoadingIntro';
 import { MidStats } from './components/MidStats';
 import NavBar from './components/NavBar';
 import { OnboardingModal } from './components/OnboardingModal';
+import { Packages } from './components/Packages';
 import { Preview } from './components/Preview';
 import { PWAInstallBanner } from './components/PWAInstallBanner';
+import { MyEasyWebsite } from './features/myeasywebsite/MyEasyWebsite';
+import { BusinessGuru } from './features/businessguru/BusinessGuru';
 import { useInactivityTimeout } from './hooks/useInactivityTimeout';
 import {
   checkUserNeedsOnboarding,
@@ -33,6 +36,10 @@ function App() {
     // Tentar carregar do localStorage na inicialização
     return localStorage.getItem('userName') || 'Usuário';
   });
+  const [userAvatarUrl, setUserAvatarUrl] = useState<string | undefined>(() => {
+    // Tentar carregar do localStorage na inicialização
+    return localStorage.getItem('userAvatarUrl') || undefined;
+  });
   const [loading, setLoading] = useState(true);
   const [currentView, setCurrentView] = useState<'home' | 'dashboard' | 'preview' | 'myeasywebsite' | 'businessguru'>('home');
   const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
@@ -44,6 +51,7 @@ function App() {
     // Se já tem dados no localStorage, não precisa mostrar loading
     return !localStorage.getItem('userName');
   });
+  const [dashboardKey, setDashboardKey] = useState(Date.now());
 
   const openLogin = () => setIsLoginOpen(true);
   const closeLogin = () => setIsLoginOpen(false);
@@ -51,18 +59,18 @@ function App() {
   const openSignup = () => setIsSignupOpen(true);
   const closeSignup = () => setIsSignupOpen(false);
 
-  // Função para buscar nome do usuário do banco
-  const fetchUserName = async (userEmail: string) => {
+  // Função para buscar dados do usuário do banco
+  const fetchUserData = async (userEmail: string) => {
     try {
       const { data, error } = await supabase
         .from('users')
-        .select('name, preferred_name')
+        .select('name, preferred_name, avatar_url')
         .eq('email', userEmail)
         .single();
 
       if (error) {
-        console.error('Erro ao buscar nome do usuário:', error);
-        return 'Usuário';
+        console.error('Erro ao buscar dados do usuário:', error);
+        return { name: 'Usuário', avatarUrl: undefined };
       }
 
       let displayName = 'Usuário';
@@ -77,10 +85,18 @@ function App() {
 
       // Salvar no localStorage para persistir entre recarregamentos
       localStorage.setItem('userName', displayName);
-      return displayName;
+      if (data?.avatar_url) {
+        localStorage.setItem('userAvatarUrl', data.avatar_url);
+        setUserAvatarUrl(data.avatar_url);
+      } else {
+        localStorage.removeItem('userAvatarUrl');
+        setUserAvatarUrl(undefined);
+      }
+
+      return { name: displayName, avatarUrl: data?.avatar_url };
     } catch (error) {
-      console.error('Erro ao buscar nome do usuário:', error);
-      return 'Usuário';
+      console.error('Erro ao buscar dados do usuário:', error);
+      return { name: 'Usuário', avatarUrl: undefined };
     }
   };
 
@@ -109,6 +125,7 @@ function App() {
       });
       // Limpar dados do perfil do usuário
       localStorage.removeItem('userName');
+      localStorage.removeItem('userAvatarUrl');
       localStorage.removeItem('userProfile');
 
       // Limpar sessionStorage
@@ -135,14 +152,10 @@ function App() {
     if (needsOnboarding) {
       setIsOnboardingOpen(true);
     } else {
-      // Mostrar splash screen antes de ir para o dashboard
-      setIsLoadingDashboard(true);
-
-      // Após 3 segundos, ir para o dashboard
-      setTimeout(() => {
-        setCurrentView('dashboard');
-        setIsLoadingDashboard(false);
-      }, 3000);
+      // Ir diretamente para o dashboard - o loading será feito pelo próprio Dashboard
+      setCurrentView('dashboard');
+      // Forçar remontagem do Dashboard para recarregar dados
+      setDashboardKey(Date.now());
     }
   };
 
@@ -150,18 +163,20 @@ function App() {
     setCurrentView('home');
   };
 
+  const goToMyEasyWebsite = () => {
+    setCurrentView('myeasywebsite');
+  };
+
+  const goToBusinessGuru = () => {
+    setCurrentView('businessguru');
+  };
+
   const handleOnboardingComplete = () => {
     setIsOnboardingOpen(false);
     setNeedsOnboarding(false);
 
-    // Mostrar splash screen antes de ir para o dashboard
-    setIsLoadingDashboard(true);
-
-    // Após 3 segundos, ir para o dashboard
-    setTimeout(() => {
-      setCurrentView('dashboard');
-      setIsLoadingDashboard(false);
-    }, 3000);
+    // Ir diretamente para o dashboard - o loading será feito pelo próprio Dashboard
+    setCurrentView('dashboard');
   };
 
   const closeOnboarding = () => {
@@ -187,7 +202,7 @@ function App() {
         if (url.pathname === '/myeasywebsite') {
           e.preventDefault();
           setCurrentView('myeasywebsite');
-        } else if (url.pathname === '/businessguru') {
+        } else if (url.pathname === '/business-guru') {
           e.preventDefault();
           setCurrentView('businessguru');
         } else if (url.pathname === '/') {
@@ -197,18 +212,7 @@ function App() {
       }
     };
 
-    // Verificar hash para preview mode
-    const handleHashChange = () => {
-      if (window.location.hash === '#dashboard-preview') {
-        setCurrentView('preview');
-      }
-    };
-
-    // Verificar no carregamento inicial
-    handleHashChange();
-
-    // Escutar mudanças no hash e clicks
-    window.addEventListener('hashchange', handleHashChange);
+    // Adicionar listener de clicks
     document.addEventListener('click', handleNavigationClick);
 
     // Verificar sessão atual
@@ -219,13 +223,13 @@ function App() {
         } = await supabase.auth.getSession();
         setUser(session?.user ?? null);
 
-        // Buscar nome do usuário se houver sessão
+        // Buscar dados do usuário se houver sessão
         if (session?.user?.email) {
-          const name = await fetchUserName(session.user.email);
-          setUserName(name);
+          const userData = await fetchUserData(session.user.email);
+          setUserName(userData.name);
         }
       } catch (error) {
-        console.error('❌ Erro ao verificar sessão:', error);
+        console.error('Erro ao verificar sessão:', error);
         setUser(null);
       } finally {
         setLoading(false);
@@ -245,55 +249,18 @@ function App() {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('Auth event:', event, 'isInitialLoad:', isInitialLoad);
       setUser(session?.user ?? null);
 
-      // Apenas processar login quando NÃO for a carga inicial da sessão
-      if (event === 'SIGNED_IN' && !isInitialLoad) {
-        // Ativar barra de carregamento apenas em login intencional
-        setIsAuthLoading(true);
-        setIsLoginOpen(false);
-        setIsSignupOpen(false);
-
-        // Registrar usuário na tabela users (especialmente para login social)
+      // Processar restauração de sessão silenciosamente (sem barra de carregamento)
+      if (event === 'INITIAL_SESSION') {
         if (session?.user) {
           await ensureUserInDatabase(session.user);
 
-          // Buscar nome do usuário
+          // Buscar dados do usuário
           if (session.user.email) {
-            const name = await fetchUserName(session.user.email);
-            setUserName(name);
-          }
-
-          // Verificar se precisa de onboarding
-          const needsOnboardingCheck = await checkUserNeedsOnboarding(
-            session.user,
-          );
-          setNeedsOnboarding(needsOnboardingCheck);
-
-          // Se precisar de onboarding, abrir modal automaticamente
-          if (needsOnboardingCheck) {
-            setIsOnboardingOpen(true);
-          }
-
-          // Desativar barra de carregamento após completar (tempo maior para ser visível)
-          setTimeout(() => {
-            setIsAuthLoading(false);
-          }, 1500);
-        }
-      }
-
-      // Processar restauração de sessão silenciosamente (sem barra)
-      if (
-        event === 'INITIAL_SESSION' ||
-        (event === 'SIGNED_IN' && isInitialLoad)
-      ) {
-        if (session?.user) {
-          await ensureUserInDatabase(session.user);
-
-          // Buscar nome do usuário
-          if (session.user.email) {
-            const name = await fetchUserName(session.user.email);
-            setUserName(name);
+            const userData = await fetchUserData(session.user.email);
+            setUserName(userData.name);
           }
 
           const needsOnboardingCheck = await checkUserNeedsOnboarding(
@@ -305,10 +272,48 @@ function App() {
         setIsInitialLoad(false);
       }
 
+      // Processar login intencional (email, OAuth, etc)
+      if (event === 'SIGNED_IN' && !isInitialLoad) {
+        // Ativar barra de carregamento apenas em login intencional
+        setIsAuthLoading(true);
+        setIsLoginOpen(false);
+        setIsSignupOpen(false);
+
+        // Registrar usuário na tabela users (especialmente para login social)
+        if (session?.user) {
+          await ensureUserInDatabase(session.user);
+
+          // Buscar dados do usuário
+          if (session.user.email) {
+            const userData = await fetchUserData(session.user.email);
+            setUserName(userData.name);
+          }
+
+          // Verificar se precisa de onboarding
+          const needsOnboardingCheck = await checkUserNeedsOnboarding(
+            session.user,
+          );
+          setNeedsOnboarding(needsOnboardingCheck);
+
+          // Se precisar de onboarding, abrir modal automaticamente
+          if (needsOnboardingCheck) {
+            setTimeout(() => {
+              setIsOnboardingOpen(true);
+            }, 100);
+          }
+
+          // Desativar barra de carregamento após completar
+          setTimeout(() => {
+            setIsAuthLoading(false);
+          }, 1500);
+        }
+      }
+
       // Limpar estados após logout
       if (event === 'SIGNED_OUT') {
         setUser(null);
         setUserName('Usuário');
+        setUserAvatarUrl(undefined);
         setCurrentView('home');
         setNeedsOnboarding(false);
         setIsOnboardingOpen(false);
@@ -322,7 +327,6 @@ function App() {
     return () => {
       subscription.unsubscribe();
       clearTimeout(timeoutId);
-      window.removeEventListener('hashchange', handleHashChange);
       document.removeEventListener('click', handleNavigationClick);
     };
   }, []);
@@ -331,10 +335,6 @@ function App() {
     return <LoadingIntro />;
   }
 
-  // Mostrar splash screen ao carregar dashboard
-  if (isLoadingDashboard) {
-    return <LoadingIntro />;
-  }
 
   // Renderização baseada na view atual e estado do usuário
   if (user && currentView === 'dashboard') {
@@ -343,20 +343,27 @@ function App() {
         {/* Barra de carregamento de autenticação */}
         <LoadingBar isLoading={isAuthLoading} duration={2300} />
         <DashboardPreview
+          key={dashboardKey}
           onLogout={handleLogout}
           onGoHome={goToHome}
+          onGoToMyEasyWebsite={goToMyEasyWebsite}
+          onGoToBusinessGuru={goToBusinessGuru}
           userName={userName}
+          onLoadingComplete={() => {
+            // Callback quando o carregamento do dashboard termina
+            console.log('Dashboard carregado com sucesso!');
+          }}
         />
       </>
     );
   }
 
   if (user && currentView === 'myeasywebsite') {
-    return <MyEasyWebsite />;
+    return <MyEasyWebsite onBackToDashboard={goToDashboard} />;
   }
 
   if (user && currentView === 'businessguru') {
-    return <BusinessGuru />;
+    return <BusinessGuru onBackToDashboard={goToDashboard} />;
   }
 
   return (
@@ -369,22 +376,13 @@ function App() {
         onSignupClick={openSignup}
         user={user}
         userName={userName}
+        userAvatarUrl={userAvatarUrl}
         onDashboardClick={goToDashboard}
         onLogout={handleLogout}
         onLogoClick={goToHome}
         isCheckingAuth={isCheckingAuth}
       />
 
-      {/* Botão de Debug para Onboarding Modal */}
-      {user && (
-        <button
-          onClick={() => setIsOnboardingOpen(true)}
-          className="fixed bottom-4 right-4 z-50 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg shadow-lg font-semibold text-sm transition-colors"
-          title="Debug: Abrir Onboarding Modal"
-        >
-          🧪 Debug Onboarding
-        </button>
-      )}
       <Hero
         isLoginOpen={isLoginOpen}
         onOpenLogin={openLogin}
@@ -397,6 +395,7 @@ function App() {
       />
       <Features />
       <Preview />
+      <Packages user={user} />
       <MidStats />
       <Courses />
       <FinalCta />
