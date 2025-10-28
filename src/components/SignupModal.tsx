@@ -1,4 +1,3 @@
-import React from 'react';
 import {
   signInWithFacebook,
   signInWithGoogle,
@@ -7,72 +6,63 @@ import {
 import { Button } from './Button';
 import { Modal } from './Modal';
 
+type SubscriptionPlan = 'free' | 'basic' | 'pro' | 'enterprise';
+
 type SignupModalProps = {
   isOpen: boolean;
   onClose: () => void;
   onSwitchToLogin?: () => void;
+  selectedPlan?: SubscriptionPlan | null;
 };
 
 export function SignupModal({
   isOpen,
   onClose,
   onSwitchToLogin,
+  selectedPlan,
 }: SignupModalProps) {
-  const [isLoading, setIsLoading] = React.useState(false);
-  const [error, setError] = React.useState<string | null>(null);
-  const [success, setSuccess] = React.useState<string | null>(null);
-
   const handleEmailSignup = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setError(null);
-    setSuccess(null);
-    setIsLoading(true);
-    
     const formData = new FormData(e.currentTarget);
-    const name = formData.get('name') as string;
+    const fullName = formData.get('fullName') as string;
+    const preferredName = formData.get('preferredName') as string;
     const email = formData.get('email') as string;
     const password = formData.get('password') as string;
     const confirmPassword = formData.get('confirmPassword') as string;
 
     if (password !== confirmPassword) {
-      setError('As senhas não coincidem!');
-      setIsLoading(false);
+      alert('As senhas não coincidem!');
       return;
     }
 
-    if (password.length < 6) {
-      setError('A senha deve ter no mínimo 6 caracteres');
-      setIsLoading(false);
+    // Validar nome completo
+    if (fullName.trim().split(' ').length < 2) {
+      alert('Por favor, digite seu nome completo (nome e sobrenome)');
       return;
     }
 
     try {
-      const { error, data } = await signUpWithEmail(email, password, name);
+      const { error } = await signUpWithEmail(email, password, fullName, preferredName);
       if (error) {
-        setError((error as any).message || 'Erro ao criar conta');
-        setIsLoading(false);
+        alert(`Erro ao criar conta: ${error.message}`);
         return;
       }
-      setSuccess('Conta criada com sucesso! Verifique seu email para confirmar.');
-      setIsLoading(false);
       
-      // Fechar modal após 2 segundos para usuário ver mensagem de sucesso
-      setTimeout(() => {
-        onClose();
-      }, 2000);
+      // Se há um plano selecionado, salvar para vincular depois do login
+      if (selectedPlan) {
+        localStorage.setItem('selectedPlan', selectedPlan);
+      }
+      
+      alert('Conta criada com sucesso! Verifique seu email para confirmar.');
+      // O modal será fechado automaticamente pelo listener de auth no App.tsx
     } catch (error) {
-      setError('Erro inesperado ao criar conta. Tente novamente.');
-      setIsLoading(false);
+      alert(`Erro inesperado: ${error}`);
     }
   };
 
   const handleSocialSignup = async (
     provider: 'google' | 'facebook' | 'apple',
   ) => {
-    setError(null);
-    setSuccess(null);
-    setIsLoading(true);
-    
     try {
       let result;
       switch (provider) {
@@ -83,57 +73,78 @@ export function SignupModal({
           result = await signInWithFacebook();
           break;
         case 'apple':
-          setError('Cadastro com Apple não está disponível no momento.');
-          setIsLoading(false);
+          alert('Cadastro com Apple não está disponível no momento.');
           return;
       }
 
       if (result.error) {
-        setError(`Erro ao cadastrar com ${provider}: ${(result.error as any).message}`);
-        setIsLoading(false);
+        alert(`Erro ao cadastrar com ${provider}: ${result.error.message}`);
         return;
       }
       
-      // Cadastro social iniciado com sucesso
-      console.log(`✅ Cadastro com ${provider} iniciado! Modal permanecerá aberto até retorno...`);
-      // Nota: O modal será fechado pelo listener de auth quando o usuário retornar
+      // Se há um plano selecionado, salvar para vincular depois do login
+      if (selectedPlan) {
+        localStorage.setItem('selectedPlan', selectedPlan);
+      }
+      
+      // O modal será fechado automaticamente pelo listener de auth no App.tsx
     } catch (error) {
-      setError('Erro inesperado ao criar conta. Tente novamente.');
-      setIsLoading(false);
+      alert(`Erro inesperado: ${error}`);
     }
   };
+  const getModalTitle = () => {
+    if (selectedPlan) {
+      const planNames = {
+        free: 'Plano Free',
+        basic: 'Plano Basic',
+        pro: 'Plano Pro',
+        enterprise: 'Plano Enterprise'
+      };
+      return `Cadastre-se no ${planNames[selectedPlan]}`;
+    }
+    return "Chega mais!";
+  };
+
+  const getModalDescription = () => {
+    if (selectedPlan) {
+      return `Crie sua conta para começar a usar o ${selectedPlan.toUpperCase()} e aproveitar todos os benefícios.`;
+    }
+    return "Conta nova, possibilidades infinitas. Comece a criar seus assistentes em minutos.";
+  };
+
   return (
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="Chega mais!"
-      description="Conta nova, possibilidades infinitas. Comece a criar seus assistentes em minutos."
+      title={getModalTitle()}
+      description={getModalDescription()}
       contentClassName="space-y-6"
     >
-      {error && (
-        <div className="rounded-lg bg-red-500/10 border border-red-500/20 px-4 py-3 text-sm text-red-400">
-          {error}
-        </div>
-      )}
-
-      {success && (
-        <div className="rounded-lg bg-green-500/10 border border-green-500/20 px-4 py-3 text-sm text-green-400">
-          {success}
-        </div>
-      )}
-
       <form className="space-y-4" onSubmit={handleEmailSignup}>
+        <label className="block text-left">
+          <span className="mb-1 block text-sm font-medium text-slate-300">
+            Seu nome completo *
+          </span>
+          <input
+            type="text"
+            name="fullName"
+            placeholder="Ex: João Silva Santos"
+            required
+            className="w-full rounded-lg border border-slate-700 bg-slate-800/60 px-4 py-3 text-slate-100 placeholder-slate-500 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/40"
+          />
+        </label>
+
         <label className="block text-left">
           <span className="mb-1 block text-sm font-medium text-slate-300">
             Como quer ser chamado?
           </span>
           <input
             type="text"
-            name="name"
-            placeholder="Seu nome"
-            required
+            name="preferredName"
+            placeholder="Ex: João, Joãozinho, JJ..."
             className="w-full rounded-lg border border-slate-700 bg-slate-800/60 px-4 py-3 text-slate-100 placeholder-slate-500 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/40"
           />
+          <span className="text-xs text-slate-500 mt-1">Escreva um nome amigável para usarmos com você 😊</span>
         </label>
 
         <label className="block text-left">
@@ -176,23 +187,7 @@ export function SignupModal({
         </label>
 
         <div className="flex justify-center">
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="px-8 py-3 bg-gradient-to-r from-purple-600 to-purple-700 text-white font-semibold rounded-lg hover:from-purple-700 hover:to-purple-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isLoading ? (
-              <span className="flex items-center gap-2">
-                <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                </svg>
-                Criando conta...
-              </span>
-            ) : (
-              'Criar conta'
-            )}
-          </button>
+          <Button variant="log">Criar conta</Button>
         </div>
       </form>
 
@@ -205,8 +200,7 @@ export function SignupModal({
           <button
             type="button"
             onClick={() => handleSocialSignup('google')}
-            disabled={isLoading}
-            className="flex w-full items-center justify-center gap-2 rounded-lg border border-slate-700 bg-slate-800/50 px-4 py-3 text-slate-200 transition-colors hover:border-purple-500 hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex w-full items-center justify-center gap-2 rounded-lg border border-slate-700 bg-slate-800/50 px-4 py-3 text-slate-200 transition-colors hover:border-purple-500 hover:bg-slate-800"
             aria-label="Cadastro via conta Google"
           >
             <svg className="h-5 w-5" viewBox="0 0 24 24" aria-hidden="true">
@@ -241,8 +235,7 @@ export function SignupModal({
           <button
             type="button"
             onClick={() => handleSocialSignup('facebook')}
-            disabled={isLoading}
-            className="flex w-full items-center justify-center gap-2 rounded-lg border border-slate-700 bg-slate-800/50 px-4 py-3 text-slate-200 transition-colors hover:border-purple-500 hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex w-full items-center justify-center gap-2 rounded-lg border border-slate-700 bg-slate-800/50 px-4 py-3 text-slate-200 transition-colors hover:border-purple-500 hover:bg-slate-800"
             aria-label="Cadastro via conta Facebook"
           >
             <svg className="h-5 w-5" viewBox="0 0 24 24" aria-hidden="true">

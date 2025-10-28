@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { MessageSquare, Send, Lightbulb, TrendingUp, Users, DollarSign, Target, Loader2, Building2, ChevronRight, Briefcase, User } from 'lucide-react';
+import { MessageSquare, Send, Lightbulb, TrendingUp, Users, DollarSign, Target, Loader2, Building2, ChevronRight, Briefcase, User, ArrowLeft } from 'lucide-react';
 import { businessAreas, onboardingQuestions, type BusinessArea } from '../../constants/businessQuestions';
 
 type Message = {
@@ -20,7 +20,11 @@ interface BusinessInfo {
 
 type OnboardingState = 'not_started' | 'selecting_area' | 'answering_questions' | 'completed';
 
-export function BusinessGuru() {
+type BusinessGuruProps = {
+  onBackToDashboard?: () => void;
+};
+
+export function BusinessGuru({ onBackToDashboard }: BusinessGuruProps = {}) {
   const [onboardingState, setOnboardingState] = useState<OnboardingState>('not_started');
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [businessInfo, setBusinessInfo] = useState<BusinessInfo>({});
@@ -185,12 +189,13 @@ export function BusinessGuru() {
                   <p className="text-xs text-slate-400">Consultoria de Negócios com IA</p>
                 </div>
               </div>
-              <a
-                href="/"
-                className="text-slate-300 hover:text-white transition-colors"
+              <button
+                onClick={() => onBackToDashboard ? onBackToDashboard() : window.location.href = '/'}
+                className="flex items-center space-x-2 text-slate-300 hover:text-white transition-colors"
               >
-                Voltar ao Dashboard
-              </a>
+                <ArrowLeft className="h-5 w-5" />
+                <span>Voltar ao Dashboard</span>
+              </button>
             </div>
           </div>
         </header>
@@ -330,12 +335,13 @@ export function BusinessGuru() {
                 <p className="text-xs text-slate-400">Consultoria de Negócios com IA</p>
               </div>
             </div>
-            <a
-              href="/"
-              className="text-slate-300 hover:text-white transition-colors"
+            <button
+              onClick={() => onBackToDashboard ? onBackToDashboard() : window.location.href = '/'}
+              className="flex items-center space-x-2 text-slate-300 hover:text-white transition-colors"
             >
-              Voltar ao Dashboard
-            </a>
+              <ArrowLeft className="h-5 w-5" />
+              <span>Voltar ao Dashboard</span>
+            </button>
           </div>
         </div>
       </header>

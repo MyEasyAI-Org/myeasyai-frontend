@@ -5,17 +5,23 @@ import {
   Clock,
   CreditCard,
   ExternalLink,
+  Home,
+  LogOut,
   Package,
   TrendingUp,
+  User as UserIcon,
+  Settings,
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { Footer } from './Footer';
+import { LoadingIntro } from './LoadingIntro';
+import { supabase, signOut } from '../lib/supabase';
 
 type SubscriptionPlan = 'free' | 'basic' | 'pro' | 'enterprise';
 
 type UserProfile = {
   name: string;
-  preferred_name?: string; // Como o usuário quer ser chamado
+  preferred_name?: string;
   email: string;
   avatar_url?: string;
   bio?: string;
@@ -105,19 +111,25 @@ const PLANS = [
 type DashboardPreviewProps = {
   onLogout?: () => void;
   onGoHome?: () => void;
+  onGoToMyEasyWebsite?: () => void;
+  onGoToBusinessGuru?: () => void;
   userName?: string;
+  onLoadingComplete?: () => void;
 };
 
 export function DashboardPreview({
   onLogout,
   onGoHome,
+  onGoToMyEasyWebsite,
+  onGoToBusinessGuru,
   userName = 'Usuário',
+  onLoadingComplete,
 }: DashboardPreviewProps = {}) {
   const [activeTab, setActiveTab] = useState<
     'overview' | 'subscription' | 'products' | 'usage' | 'settings' | 'profile'
   >('overview');
-  const [subscription] = useState<SubscriptionData>({
-    plan: 'basic',
+  const [subscription, setSubscription] = useState<SubscriptionData>({
+    plan: 'free',
     status: 'active',
     start_date: new Date().toISOString(),
     tokens_used: 0,
@@ -138,8 +150,261 @@ export function DashboardPreview({
     product_updates: false,
   });
   const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadingProgress, setLoadingProgress] = useState(0);
+  const [loadingStep, setLoadingStep] = useState('Inicializando...');
+  const [userUuid, setUserUuid] = useState<string | null>(null);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [cadastralInfo, setCadastralInfo] = useState({
+    country: '',
+    postal_code: '',
+    address: '',
+    preferred_language: '',
+    created_at: '',
+    last_online: '',
+  });
+  const [isDangerZoneOpen, setIsDangerZoneOpen] = useState(false);
+  const [showConfirmationModal, setShowConfirmationModal] = useState(false);
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [confirmationText, setConfirmationText] = useState('');
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Carregar dados do usuário logado
+  useEffect(() => {
+    loadUserData();
+  }, []);
+
+  const loadUserData = async () => {
+    let timeoutId: NodeJS.Timeout | undefined;
+    
+    try {
+      setIsLoading(true);
+      setLoadingProgress(20);
+      setLoadingStep('Carregando seu perfil...');
+      
+      // Timeout de segurança - forçar finalização após 10 segundos
+      timeoutId = setTimeout(() => {
+        console.warn('⏰ Timeout no carregamento do dashboard - forçando finalização');
+        setLoadingStep('Finalizando carregamento...');
+        setLoadingProgress(100);
+        setTimeout(() => {
+          setIsLoading(false);
+          onLoadingComplete?.();
+        }, 1000);
+      }, 10000);
+      
+      // Delay visual menor para não travar muito tempo se houver erro
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      console.log('🔄 Iniciando carregamento do dashboard...');
+      
+      // Verificar sessão com timeout
+      const sessionPromise = supabase.auth.getSession();
+      const sessionTimeout = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Timeout na verificação de sessão')), 8000)
+      );
+      
+      const { data: { session }, error: sessionError } = await Promise.race([
+        sessionPromise,
+        sessionTimeout
+      ]) as any;
+      
+      if (sessionError) {
+        console.error('❌ Erro de sessão:', sessionError);
+        throw new Error('Erro na sessão do usuário');
+      }
+      
+      if (!session || !session.user) {
+        console.error('❌ Nenhuma sessão ativa');
+        alert('Sessão expirada. Você será redirecionado para fazer login novamente.');
+        window.location.href = '/';
+        return;
+      }
+
+      console.log('✅ Sessão válida encontrada para:', session.user.email);
+      const user = session.user;
+      setUserUuid(user.id);
+      setLoadingProgress(40);
+
+      // Buscar dados do usuário com timeout
+      setLoadingStep('Buscando dados...');
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      const userDataPromise = supabase
+        .from('users')
+        .select('*')
+        .eq('uuid', user.id)
+        .single();
+        
+      const userDataTimeout = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Timeout ao buscar dados do usuário')), 6000)
+      );
+
+      const userDataResult = await Promise.race([userDataPromise, userDataTimeout]).catch(error => {
+        console.warn('⚠️ Erro ao buscar dados do usuário:', error);
+        return { data: null, error };
+      }) as any;
+
+      setLoadingProgress(60);
+      setLoadingStep('Configurando dashboard...');
+
+      // Buscar produtos com timeout
+      const productsPromise = supabase
+        .from('user_products')
+        .select('*')
+        .eq('user_uuid', user.id);
+        
+      const productsTimeout = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Timeout ao buscar produtos')), 5000)
+      );
+
+      const productsResult = await Promise.race([productsPromise, productsTimeout]).catch(error => {
+        console.warn('⚠️ Erro ao buscar produtos:', error);
+        return { data: [], error };
+      }) as any;
+
+      if (productsResult.data) {
+        setUserProducts(productsResult.data || []);
+      }
+
+      await new Promise(resolve => setTimeout(resolve, 500));
+      setLoadingProgress(80);
+
+      // Configurar dados do perfil
+      if (userDataResult.error || !userDataResult.data) {
+        console.warn('⚠️ Usando dados básicos do usuário');
+        setProfile({
+          name: user.user_metadata?.name || user.user_metadata?.full_name || 'Usuário',
+          email: user.email || '',
+          bio: '',
+          phone: '',
+          company: '',
+        });
+      } else {
+        const userData = userDataResult.data;
+        console.log('✅ Dados do usuário carregados com sucesso');
+        
+        // Preencher perfil com dados da tabela users
+        setProfile({
+          name: userData.name || user.user_metadata?.name || 'Usuário',
+          preferred_name: userData.preferred_name || userData.name?.split(' ')[0] || 'Usuário',
+          email: userData.email || user.email || '',
+          bio: userData.bio || '',
+          phone: userData.mobile_phone || '',
+          company: userData.company_name || '',
+          avatar_url: userData.avatar_url,
+        });
+
+        // Atualizar dados de assinatura com dados reais
+        setSubscription({
+          plan: (userData.subscription_plan || 'free') as SubscriptionPlan,
+          status: userData.subscription_status || 'active',
+          start_date: userData.subscription_start_date || userData.created_at,
+          end_date: userData.subscription_end_date,
+          tokens_used: userData.tokens_used || 0,
+          tokens_limit: userData.tokens_limit || 1000,
+          requests_this_month: userData.requests_this_month || 0,
+          next_billing_date: userData.next_billing_date,
+          billing_cycle: userData.billing_cycle,
+          payment_method: userData.payment_method,
+        });
+
+        // Atualizar configurações de notificação
+        setNotificationSettings({
+          email_notifications: userData.email_notifications ?? true,
+          token_alerts: userData.token_alerts ?? true,
+          product_updates: userData.product_updates ?? false,
+        });
+
+        // Preencher informações cadastrais
+        setCadastralInfo({
+          country: userData.country || '',
+          postal_code: userData.postal_code || '',
+          address: userData.address || '',
+          preferred_language: userData.preferred_language || 'pt',
+          created_at: userData.created_at || '',
+          last_online: userData.last_online || '',
+        });
+      }
+
+      setLoadingProgress(100);
+      setLoadingStep('Pronto!');
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      console.log('🎉 Dashboard carregado com sucesso!');
+
+    } catch (error) {
+      console.error('💥 Erro crítico no carregamento:', error);
+      
+      // Configurar perfil básico em caso de erro
+      setProfile({
+        name: 'Usuário',
+        email: '',
+        bio: '',
+        phone: '',
+        company: '',
+      });
+      
+      setLoadingStep('Erro no carregamento');
+      setLoadingProgress(100);
+      
+      // Mostrar erro por um momento antes de finalizar
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+    } finally {
+      // Limpar timeout de segurança
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+      
+      // Garantir que o loading sempre termine, mesmo em caso de erro
+      setIsLoading(false);
+      onLoadingComplete?.();
+      console.log('🏁 Carregamento finalizado');
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      const { error } = await signOut();
+      if (error) {
+        console.error('Erro ao fazer logout:', error);
+      }
+      window.location.href = '/';
+    } catch (error) {
+      console.error('Erro ao fazer logout:', error);
+      window.location.href = '/';
+    }
+  };
+
+  const handleSaveProfile = async () => {
+    if (!userUuid) return;
+
+    try {
+      const { error } = await supabase
+        .from('users')
+        .update({
+          name: profile.name,
+          preferred_name: profile.preferred_name || profile.name?.split(' ')[0] || 'Usuário',
+          mobile_phone: profile.phone,
+          company_name: profile.company,
+          bio: profile.bio,
+          last_online: new Date().toISOString(),
+        })
+        .eq('uuid', userUuid);
+
+      if (error) {
+        console.error('Erro ao atualizar perfil:', error);
+        alert('Erro ao salvar perfil. Tente novamente.');
+      } else {
+        setIsEditingProfile(false);
+        alert('Perfil atualizado com sucesso!');
+      }
+    } catch (error) {
+      console.error('Erro ao salvar perfil:', error);
+      alert('Erro ao salvar perfil. Tente novamente.');
+    }
+  };
 
   // Fechar dropdown ao clicar fora
   useEffect(() => {
@@ -179,160 +444,190 @@ export function DashboardPreview({
     return (subscription.tokens_used / subscription.tokens_limit) * 100;
   };
 
-  // Carregar dados do usuário logado
-  useEffect(() => {
-    loadUserData();
-  }, []);
-
-  const loadUserData = async () => {
-    try {
-      setIsLoading(true);
-      console.log('🔄 Iniciando carregamento de dados do usuário...');
-      
-      // Primeiro verificar sessão
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      
-      if (sessionError) {
-        console.error('❌ Erro ao obter sessão:', sessionError);
+  const handleAccessProduct = (productName: string) => {
+    const name = productName.toLowerCase();
+    
+    if (name.includes('website') || name.includes('site')) {
+      // Redirecionar para MyEasyWebsite
+      if (onGoToMyEasyWebsite) {
+        onGoToMyEasyWebsite();
+      } else {
+        window.location.href = '/#myeasywebsite';
+      }
+    } else if (name.includes('guru') || name.includes('business')) {
+      // Redirecionar para BusinessGuru
+      if (onGoToBusinessGuru) {
+        onGoToBusinessGuru();
+      } else {
+        window.location.href = '/#businessguru';
+      }
+    } else {
+      // Produto genérico - voltar para home
+      if (onGoHome) {
+        onGoHome();
+      } else {
         window.location.href = '/';
-        return;
       }
-
-      if (!session || !session.user) {
-        console.error('❌ Nenhuma sessão ativa encontrada');
-        window.location.href = '/';
-        return;
-      }
-
-      const user = session.user;
-      console.log('✅ Usuário autenticado:', user.email);
-      setUserUuid(user.id);
-
-      // Buscar dados completos do usuário na tabela users
-      console.log('🔍 Buscando dados completos na tabela users...');
-      const { data: userData, error: dbError } = await supabase
-        .from('users')
-        .select('*')
-        .eq('uuid', user.id)
-        .single();
-
-      // Buscar produtos do usuário
-      console.log('🔍 Buscando produtos do usuário...');
-      const { data: productsData, error: productsError } = await supabase
-        .from('user_products')
-        .select('*')
-        .eq('user_uuid', user.id);
-
-      if (productsError) {
-        console.error('⚠️ Erro ao buscar produtos:', productsError);
-      } else {
-        console.log('✅ Produtos carregados:', productsData);
-        setUserProducts(productsData || []);
-      }
-
-      if (dbError) {
-        console.error('⚠️ Erro ao buscar dados do usuário na tabela:', dbError);
-        console.log('📋 Usando dados do auth como fallback');
-        // Usar dados do auth como fallback
-        setProfile({
-          name: user.user_metadata?.name || user.user_metadata?.full_name || 'Usuário',
-          email: user.email || '',
-          bio: '',
-          phone: '',
-          company: '',
-        });
-      } else {
-        console.log('✅ Dados carregados da tabela users:', userData);
-        // Preencher perfil com dados da tabela users
-        setProfile({
-          name: userData.name || user.user_metadata?.name || 'Usuário',
-          preferred_name: userData.preferred_name || userData.name?.split(' ')[0] || 'Usuário',
-          email: userData.email || user.email || '',
-          bio: userData.bio || userData.address || '',
-          phone: userData.mobile_phone || '',
-          company: userData.company_name || userData.country || '',
-          avatar_url: userData.avatar_url,
-        });
-
-        // Atualizar dados de assinatura com dados reais
-        setSubscription({
-          plan: (userData.subscription_plan || 'free') as SubscriptionPlan,
-          status: userData.subscription_status || 'active',
-          start_date: userData.subscription_start_date || userData.created_at,
-          end_date: userData.subscription_end_date,
-          tokens_used: userData.tokens_used || 0,
-          tokens_limit: userData.tokens_limit || 1000,
-          requests_this_month: userData.requests_this_month || 0,
-          next_billing_date: userData.next_billing_date,
-          billing_cycle: userData.billing_cycle,
-          payment_method: userData.payment_method,
-        });
-
-        // Atualizar configurações de notificação
-        setNotificationSettings({
-          email_notifications: userData.email_notifications ?? true,
-          token_alerts: userData.token_alerts ?? true,
-          product_updates: userData.product_updates ?? false,
-        });
-      }
-      
-      console.log('✅ Carregamento concluído com sucesso');
-    } catch (error) {
-      console.error('❌ Erro crítico ao carregar dados:', error);
-      // Não redirecionar em caso de erro genérico, apenas mostrar dados vazios
-      setProfile({
-        name: 'Usuário',
-        email: '',
-        bio: '',
-        phone: '',
-        company: '',
-      });
-    } finally {
-      setIsLoading(false);
     }
   };
 
-  const handleLogout = async () => {
-    try {
-      const { error } = await signOut();
-      if (error) {
-        console.error('Erro ao fazer logout:', error);
-      }
-      window.location.href = '/';
-    } catch (error) {
-      console.error('Erro ao fazer logout:', error);
-      window.location.href = '/';
+  // Função para gerar iniciais do nome
+  const getInitials = (name: string) => {
+    const names = name.trim().split(' ');
+    if (names.length >= 2) {
+      return `${names[0][0]}${names[names.length - 1][0]}`.toUpperCase();
     }
+    return name.substring(0, 2).toUpperCase();
   };
 
-  const handleSaveProfile = async () => {
-    if (!userUuid) return;
-
-    try {
-      const { error } = await supabase
-        .from('users')
-        .update({
-          name: profile.name,
-          preferred_name: profile.preferred_name || profile.name?.split(' ')[0] || 'Usuário',
-          mobile_phone: profile.phone,
-          country: profile.company,
-          address: profile.bio,
-          last_online: new Date().toISOString(),
-        })
-        .eq('uuid', userUuid);
-
-      if (error) {
-        console.error('Erro ao atualizar perfil:', error);
-        alert('Erro ao salvar perfil. Tente novamente.');
-      } else {
-        setIsEditingProfile(false);
-        alert('Perfil atualizado com sucesso!');
-      }
-    } catch (error) {
-      console.error('Erro ao salvar perfil:', error);
-      alert('Erro ao salvar perfil. Tente novamente.');
+  // Função para obter avatar (foto ou iniciais)
+  const getAvatarContent = () => {
+    // Se tiver avatar_url, exibir imagem
+    if (profile.avatar_url) {
+      return (
+        <img 
+          src={profile.avatar_url} 
+          alt={profile.name}
+          className="h-full w-full rounded-full object-cover"
+        />
+      );
     }
+    
+    // Caso contrário, exibir iniciais
+    return (
+      <div className="flex h-full w-full items-center justify-center rounded-full bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 text-white font-bold">
+        {getInitials(profile.name)}
+      </div>
+    );
   };
+
+  // Mostrar tela de carregamento enquanto dados estão sendo carregados
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-black-main to-blue-main flex flex-col items-center justify-center relative overflow-hidden">
+        
+        {/* Background animated particles (estrelas) */}
+        <div className="absolute inset-0">
+          {[...Array(25)].map((_, i) => (
+            <div
+              key={i}
+              className="absolute animate-ping"
+              style={{
+                left: `${Math.random() * 100}%`,
+                top: `${Math.random() * 100}%`,
+                animationDelay: `${Math.random() * 3}s`,
+                animationDuration: `${2 + Math.random() * 2}s`
+              }}
+            >
+              <div className="w-1 h-1 bg-blue-400/40 rounded-full" />
+            </div>
+          ))}
+        </div>
+
+        {/* Main content */}
+        <div className="relative z-10 flex flex-col items-center space-y-8">
+          
+          {/* Logo container com efeitos de glow */}
+          <div className="relative">
+            
+            {/* Glow effect rings */}
+            <div className="absolute inset-0 animate-pulse">
+              <div className="w-32 h-32 bg-gradient-to-r from-blue-500/20 to-purple-600/20 rounded-full blur-xl" />
+            </div>
+            <div className="absolute inset-0 animate-ping" style={{ animationDuration: '2s' }}>
+              <div className="w-28 h-28 bg-gradient-to-r from-blue-400/30 to-purple-500/30 rounded-full blur-lg mx-auto my-auto" />
+            </div>
+            <div className="absolute inset-0 animate-pulse" style={{ animationDuration: '3s' }}>
+              <div className="w-36 h-36 bg-gradient-to-r from-purple-500/10 to-blue-500/10 rounded-full blur-2xl -mx-2 -my-2" />
+            </div>
+            
+            {/* Logo icon */}
+            <div className="relative animate-pulse">
+              <img
+                src="/bone-logo.png"
+                alt="MyEasyAI Logo"
+                className="h-32 w-32 object-contain drop-shadow-2xl"
+              />
+            </div>
+          </div>
+
+          {/* Text container com efeito shimmer */}
+          <div className="relative">
+            
+            {/* Text glow background */}
+            <div className="absolute inset-0 blur-xl">
+              <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-4xl font-bold text-transparent opacity-30 animate-pulse">
+                MyEasyAI Dashboard
+              </span>
+            </div>
+            
+            {/* Main text */}
+            <h1 className="relative bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-4xl font-bold text-transparent drop-shadow-2xl">
+              MyEasyAI Dashboard
+            </h1>
+            
+            {/* Shimmer effect */}
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent transform -skew-x-12 animate-shimmer" />
+          </div>
+
+          {/* Subtitle com status dinâmico */}
+          <div className="text-center space-y-2">
+            <p className="text-slate-200 text-lg font-medium tracking-wide">
+              {loadingStep}
+            </p>
+            <p className="text-slate-400 text-sm">
+              {loadingProgress < 50 && "✨ Preparando sua experiência..."}
+              {loadingProgress >= 50 && loadingProgress < 100 && "🚀 Quase lá..."}
+              {loadingProgress >= 100 && "🎉 Tudo pronto!"}
+            </p>
+          </div>
+
+          {/* Loading dots melhorados */}
+          <div className="flex space-x-3">
+            {[0, 1, 2].map((i) => (
+              <div
+                key={i}
+                className="w-3 h-3 bg-gradient-to-r from-blue-400 to-purple-400 rounded-full animate-pulse"
+                style={{
+                  animationDelay: `${i * 0.3}s`,
+                  animationDuration: '1.5s'
+                }}
+              />
+            ))}
+          </div>
+
+          {/* Progress indicator dinâmico */}
+          <div className="w-80 space-y-2">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-slate-300 font-medium">Progresso</span>
+              <span className="text-slate-400">{Math.round(loadingProgress)}%</span>
+            </div>
+            <div className="h-2 bg-slate-700/50 rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-full transition-all duration-500 ease-out relative"
+                style={{ width: `${loadingProgress}%` }}
+              >
+                <div className="absolute inset-0 bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 opacity-60 animate-pulse"></div>
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent opacity-30 transform -skew-x-12 animate-shimmer"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Enhanced animations styles */}
+        <style>{`
+          @keyframes shimmer {
+            0% { transform: translateX(-100%) skewX(-12deg); }
+            100% { transform: translateX(200%) skewX(-12deg); }
+          }
+          
+          .animate-shimmer {
+            animation: shimmer 2.5s ease-in-out infinite;
+          }
+        `}</style>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen flex-col bg-gradient-to-br from-black-main to-blue-main">
@@ -360,54 +655,69 @@ export function DashboardPreview({
             <div className="relative" ref={dropdownRef}>
               <button
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                className={`flex items-center justify-center space-x-2 border border-slate-600 bg-slate-700/80 px-4 py-2.5 text-slate-100 transition-colors hover:border-slate-500 hover:bg-slate-600 whitespace-nowrap ${
-                  isDropdownOpen
-                    ? 'rounded-t-2xl border-b-transparent'
-                    : 'rounded-2xl'
-                }`}
+                className="flex items-center space-x-3 rounded-full border border-slate-700 bg-slate-700/30 px-3 py-2 transition-all hover:border-slate-600 hover:bg-slate-600/40 hover:shadow-lg hover:shadow-purple-500/20"
               >
-                <svg
-                  className="h-4 w-4 flex-shrink-0"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                  />
-                </svg>
-                <span>Oi, {userName}!</span>
-                <svg
-                  className={`h-3.5 w-3.5 flex-shrink-0 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`}
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M19 9l-7 7-7-7"
-                  />
-                </svg>
+                <div className="h-9 w-9 flex-shrink-0 overflow-hidden rounded-full ring-2 ring-purple-500/30">
+                  {getAvatarContent()}
+                </div>
+                <span className="text-sm font-medium text-slate-200">
+                  Olá, {profile.preferred_name || profile.name.split(' ')[0]}
+                </span>
               </button>
 
               {isDropdownOpen && (
-                <div className="absolute right-0 min-w-full rounded-b-2xl border border-t-0 border-slate-600 bg-slate-700/80 shadow-xl whitespace-nowrap">
-                  <button
-                    onClick={() => {
-                      setIsDropdownOpen(false);
-                      onLogout
-                        ? onLogout()
-                        : alert('Esta é uma versão de demonstração');
-                    }}
-                    className="block w-full rounded-b-2xl px-4 py-2.5 text-left text-slate-100 transition-colors hover:bg-slate-600 hover:text-red-400"
-                  >
-                    Sair
-                  </button>
+                <div className="absolute right-0 mt-2 w-64 origin-top-right animate-in fade-in slide-in-from-top-2 duration-200 rounded-xl border border-slate-700 bg-slate-800/95 backdrop-blur-xl shadow-2xl shadow-black/50">
+                  <div className="p-4 border-b border-slate-700">
+                    <div className="flex items-center space-x-3">
+                      <div className="h-12 w-12 flex-shrink-0 overflow-hidden rounded-full ring-2 ring-purple-500/40">
+                        {getAvatarContent()}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-white truncate">
+                          {profile.name}
+                        </p>
+                        <p className="text-xs text-slate-400 truncate">
+                          {profile.email}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="p-2">
+                    <button
+                      onClick={() => {
+                        setIsDropdownOpen(false);
+                        setActiveTab('profile');
+                      }}
+                      className="flex w-full items-center space-x-3 rounded-lg px-3 py-2.5 text-left text-slate-200 transition-colors hover:bg-slate-700"
+                    >
+                      <UserIcon className="h-4 w-4" />
+                      <span className="text-sm">Perfil</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        setIsDropdownOpen(false);
+                        setActiveTab('settings');
+                      }}
+                      className="flex w-full items-center space-x-3 rounded-lg px-3 py-2.5 text-left text-slate-200 transition-colors hover:bg-slate-700"
+                    >
+                      <Settings className="h-4 w-4" />
+                      <span className="text-sm">Configurações</span>
+                    </button>
+                  </div>
+
+                  <div className="border-t border-slate-700 p-2">
+                    <button
+                      onClick={() => {
+                        setIsDropdownOpen(false);
+                        handleLogout();
+                      }}
+                      className="flex w-full items-center space-x-3 rounded-lg px-3 py-2.5 text-left text-red-400 transition-colors hover:bg-red-500/10"
+                    >
+                      <LogOut className="h-4 w-4" />
+                      <span className="text-sm font-medium">Sair</span>
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
@@ -458,26 +768,6 @@ export function DashboardPreview({
               }`}
             >
               Uso e Tokens
-            </button>
-            <button
-              onClick={() => setActiveTab('settings')}
-              className={`border-b-2 px-1 py-4 text-sm font-medium transition-colors ${
-                activeTab === 'settings'
-                  ? 'border-blue-500 text-blue-400'
-                  : 'border-transparent text-slate-400 hover:text-slate-300'
-              }`}
-            >
-              Configurações
-            </button>
-            <button
-              onClick={() => setActiveTab('profile')}
-              className={`border-b-2 px-1 py-4 text-sm font-medium transition-colors ${
-                activeTab === 'profile'
-                  ? 'border-blue-500 text-blue-400'
-                  : 'border-transparent text-slate-400 hover:text-slate-300'
-              }`}
-            >
-              Perfil
             </button>
           </nav>
         </div>
@@ -678,177 +968,112 @@ export function DashboardPreview({
             </div>
 
             {/* Active Products */}
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {/* Product 1 - MyEasyWebsite */}
-              <div className="rounded-lg border border-slate-800 bg-slate-900/50 p-6 hover:border-purple-500 transition-colors">
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center space-x-3">
-                    <div className="rounded-lg bg-purple-500/20 p-3">
-                      <Package className="h-6 w-6 text-purple-400" />
+            {isLoading ? (
+              <div className="text-center py-12">
+                <p className="text-slate-400">Carregando produtos...</p>
+              </div>
+            ) : userProducts.length > 0 ? (
+              <>
+                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                  {userProducts.map((product, index) => {
+                    const colors = ['blue', 'purple', 'amber', 'green', 'pink'];
+                    const color = colors[index % colors.length];
+                    const isActive = product.product_status === 'active';
+                    
+                    return (
+                      <div key={product.id} className="rounded-lg border border-slate-800 bg-slate-900/50 p-6 hover:border-blue-500 transition-colors">
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-center space-x-3">
+                            <div className={`rounded-lg bg-${color}-500/20 p-3`}>
+                              <Package className={`h-6 w-6 text-${color}-400`} />
+                            </div>
+                            <div>
+                              <h3 className="text-lg font-semibold text-white">
+                                {product.product_name}
+                              </h3>
+                              <span className={`inline-block mt-1 rounded-full ${isActive ? 'bg-green-500/20 text-green-400' : 'bg-slate-500/20 text-slate-400'} px-2 py-1 text-xs font-semibold`}>
+                                {isActive ? 'Ativo' : product.product_status}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="mt-4 space-y-2 text-sm">
+                          <div className="flex justify-between text-slate-400">
+                            <span>Assinado em:</span>
+                            <span className="text-white">
+                              {new Date(product.subscribed_at).toLocaleDateString('pt-BR')}
+                            </span>
+                          </div>
+                          {product.product_name.toLowerCase().includes('website') && (
+                            <div className="flex justify-between text-slate-400">
+                              <span>Sites criados:</span>
+                              <span className="text-white font-semibold">{product.sites_created || 0}</span>
+                            </div>
+                          )}
+                          {product.product_name.toLowerCase().includes('guru') && (
+                            <div className="flex justify-between text-slate-400">
+                              <span>Consultas:</span>
+                              <span className="text-white font-semibold">{product.consultations_made || 0}</span>
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="mt-6 flex space-x-2">
+                          <button 
+                            onClick={() => handleAccessProduct(product.product_name)}
+                            className="flex-1 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 transition-colors flex items-center justify-center space-x-2"
+                          >
+                            <ExternalLink className="h-4 w-4" />
+                            <span>Acessar</span>
+                          </button>
+                          <button className="rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-sm text-white hover:bg-slate-700 transition-colors">
+                            Gerenciar
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Summary Card */}
+                <div className="rounded-lg border border-slate-800 bg-slate-900/50 p-6">
+                  <h2 className="text-xl font-bold text-white">
+                    Resumo de Assinaturas
+                  </h2>
+                  <div className="mt-4 grid gap-4 md:grid-cols-3">
+                    <div className="text-center">
+                      <p className="text-3xl font-bold text-white">{userProducts.filter(p => p.product_status === 'active').length}</p>
+                      <p className="mt-1 text-sm text-slate-400">Produtos Ativos</p>
                     </div>
-                    <div>
-                      <h3 className="text-lg font-semibold text-white">
-                        AI Assistant Pro
-                      </h3>
-                      <span className="inline-block mt-1 rounded-full bg-green-500/20 px-2 py-1 text-xs font-semibold text-green-400">
-                        Ativo
-                      </span>
+                    <div className="text-center">
+                      <p className="text-3xl font-bold text-white">
+                        {userProducts.reduce((sum, p) => sum + (p.sites_created || 0) + (p.consultations_made || 0), 0)}
+                      </p>
+                      <p className="mt-1 text-sm text-slate-400">
+                        Total de Uso
+                      </p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-3xl font-bold text-green-400">
+                        {new Date(Math.min(...userProducts.map(p => new Date(p.subscribed_at).getTime()))).toLocaleDateString('pt-BR')}
+                      </p>
+                      <p className="mt-1 text-sm text-slate-400">
+                        Primeiro Produto
+                      </p>
                     </div>
                   </div>
                 </div>
-
-                <p className="mt-4 text-sm text-slate-400">
-                  Assistente de IA com capacidades avançadas de processamento de
-                  linguagem natural.
+              </>
+            ) : (
+              <div className="rounded-lg border border-slate-800 bg-slate-900/50 p-12 text-center">
+                <Package className="mx-auto h-16 w-16 text-slate-600" />
+                <h3 className="mt-4 text-xl font-semibold text-white">Nenhum produto ativo</h3>
+                <p className="mt-2 text-slate-400">
+                  Você ainda não possui produtos ativos. Explore os produtos disponíveis abaixo!
                 </p>
-
-                <div className="mt-4 space-y-2 text-sm">
-                  <div className="flex justify-between text-slate-400">
-                    <span>Assinado em:</span>
-                    <span className="text-white">01/01/2025</span>
-                  </div>
-                  <div className="flex justify-between text-slate-400">
-                    <span>Sites Criados:</span>
-                    <span className="text-white">12</span>
-                  </div>
-                  <div className="flex justify-between text-slate-400">
-                    <span>Valor:</span>
-                    <span className="text-white font-semibold">Incluído no plano</span>
-                  </div>
-                </div>
-
-                <div className="mt-6 flex space-x-2">
-                  <a href="/myeasywebsite" className="flex-1 rounded-lg bg-purple-600 px-4 py-2 text-sm font-semibold text-white hover:bg-purple-700 transition-colors flex items-center justify-center space-x-2">
-                    <ExternalLink className="h-4 w-4" />
-                    <span>Acessar</span>
-                  </a>
-                  <button className="rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-sm text-white hover:bg-slate-700 transition-colors">
-                    Gerenciar
-                  </button>
-                </div>
               </div>
-
-              {/* Product 2 - Business Guru */}
-              <div className="rounded-lg border border-slate-800 bg-slate-900/50 p-6 hover:border-green-500 transition-colors">
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center space-x-3">
-                    <div className="rounded-lg bg-green-500/20 p-3">
-                      <Package className="h-6 w-6 text-green-400" />
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-semibold text-white">
-                        API Premium
-                      </h3>
-                      <span className="inline-block mt-1 rounded-full bg-green-500/20 px-2 py-1 text-xs font-semibold text-green-400">
-                        Ativo
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                <p className="mt-4 text-sm text-slate-400">
-                  Consultoria de negócios com IA. Receba dicas personalizadas para seu negócio crescer.
-                </p>
-
-                <div className="mt-4 space-y-2 text-sm">
-                  <div className="flex justify-between text-slate-400">
-                    <span>Assinado em:</span>
-                    <span className="text-white">01/01/2025</span>
-                  </div>
-                  <div className="flex justify-between text-slate-400">
-                    <span>Consultas:</span>
-                    <span className="text-white">47 realizadas</span>
-                  </div>
-                  <div className="flex justify-between text-slate-400">
-                    <span>Valor:</span>
-                    <span className="text-white font-semibold">Incluído no plano</span>
-                  </div>
-                </div>
-
-                <div className="mt-6 flex space-x-2">
-                  <a href="/businessguru" className="flex-1 rounded-lg bg-green-600 px-4 py-2 text-sm font-semibold text-white hover:bg-green-700 transition-colors flex items-center justify-center space-x-2">
-                    <ExternalLink className="h-4 w-4" />
-                    <span>Acessar</span>
-                  </a>
-                  <button className="rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-sm text-white hover:bg-slate-700 transition-colors">
-                    Gerenciar
-                  </button>
-                </div>
-              </div>
-
-              {/* Product 3 - Data Analytics */}
-              <div className="rounded-lg border border-slate-800 bg-slate-900/50 p-6 hover:border-blue-500 transition-colors">
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center space-x-3">
-                    <div className="rounded-lg bg-amber-500/20 p-3">
-                      <Package className="h-6 w-6 text-amber-400" />
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-semibold text-white">
-                        Analytics Dashboard
-                      </h3>
-                      <span className="inline-block mt-1 rounded-full bg-green-500/20 px-2 py-1 text-xs font-semibold text-green-400">
-                        Ativo
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                <p className="mt-4 text-sm text-slate-400">
-                  Dashboard completo de analytics com relatórios customizados.
-                </p>
-
-                <div className="mt-4 space-y-2 text-sm">
-                  <div className="flex justify-between text-slate-400">
-                    <span>Assinado em:</span>
-                    <span className="text-white">20/11/2024</span>
-                  </div>
-                  <div className="flex justify-between text-slate-400">
-                    <span>Próxima renovação:</span>
-                    <span className="text-white">20/12/2024</span>
-                  </div>
-                  <div className="flex justify-between text-slate-400">
-                    <span>Valor:</span>
-                    <span className="text-white font-semibold">R$ 79/mês</span>
-                  </div>
-                </div>
-
-                <div className="mt-6 flex space-x-2">
-                  <button className="flex-1 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 transition-colors flex items-center justify-center space-x-2">
-                    <ExternalLink className="h-4 w-4" />
-                    <span>Acessar</span>
-                  </button>
-                  <button className="rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-sm text-white hover:bg-slate-700 transition-colors">
-                    Gerenciar
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* Summary Card */}
-            <div className="rounded-lg border border-slate-800 bg-slate-900/50 p-6">
-              <h2 className="text-xl font-bold text-white">
-                Resumo de Assinaturas
-              </h2>
-              <div className="mt-4 grid gap-4 md:grid-cols-3">
-                <div className="text-center">
-                  <p className="text-3xl font-bold text-white">3</p>
-                  <p className="mt-1 text-sm text-slate-400">Produtos Ativos</p>
-                </div>
-                <div className="text-center">
-                  <p className="text-3xl font-bold text-white">R$ 327</p>
-                  <p className="mt-1 text-sm text-slate-400">
-                    Gasto Mensal Total
-                  </p>
-                </div>
-                <div className="text-center">
-                  <p className="text-3xl font-bold text-green-400">R$ 73</p>
-                  <p className="mt-1 text-sm text-slate-400">
-                    Economia vs. Separado
-                  </p>
-                </div>
-              </div>
-            </div>
+            )}
 
             {/* Available Products */}
             <div>
@@ -1084,18 +1309,6 @@ export function DashboardPreview({
                   </button>
                 </div>
               </div>
-
-              <div className="rounded-lg border border-red-900 bg-red-950/30 p-6">
-                <h2 className="text-xl font-bold text-red-400">
-                  Zona de Perigo
-                </h2>
-                <p className="mt-2 text-sm text-slate-400">
-                  Ações irreversíveis que afetam sua conta.
-                </p>
-                <button className="mt-4 rounded-lg border border-red-600 bg-red-600/20 px-4 py-2 text-red-400 hover:bg-red-600/30">
-                  Cancelar Assinatura
-                </button>
-              </div>
             </div>
           </div>
         )}
@@ -1165,7 +1378,8 @@ export function DashboardPreview({
                     }
                     disabled={!isEditingProfile}
                     rows={3}
-                    className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-white disabled:opacity-50"
+                    placeholder="Conte um pouco sobre você... 😊"
+                    className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-white disabled:opacity-50 placeholder:text-slate-500"
                   />
                 </div>
 
@@ -1226,9 +1440,234 @@ export function DashboardPreview({
                 </div>
               </div>
             </div>
+
+            {/* Informações de Cadastro */}
+            <div className="rounded-lg border border-slate-800 bg-slate-900/50 p-6">
+              <h2 className="text-xl font-bold text-white mb-6">Informações de Cadastro</h2>
+              
+              <div className="grid gap-6 md:grid-cols-2">
+                <div>
+                  <label className="block text-sm font-medium text-slate-400">
+                    País de Residência
+                  </label>
+                  <div className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-white opacity-50">
+                    {cadastralInfo.country || 'Não informado'}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-400">
+                    CEP / Código Postal
+                  </label>
+                  <div className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-white opacity-50">
+                    {cadastralInfo.postal_code || 'Não informado'}
+                  </div>
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-slate-400">
+                    Endereço Completo
+                  </label>
+                  <div className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-white opacity-50">
+                    {cadastralInfo.address || 'Não informado'}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-400">
+                    Idioma Preferido
+                  </label>
+                  <div className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-white opacity-50">
+                    {cadastralInfo.preferred_language === 'pt' ? 'Português' :
+                     cadastralInfo.preferred_language === 'en' ? 'English' :
+                     cadastralInfo.preferred_language === 'es' ? 'Español' :
+                     cadastralInfo.preferred_language === 'fr' ? 'Français' :
+                     'Não informado'}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-400">
+                    Última vez online
+                  </label>
+                  <div className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-white opacity-50">
+                    {cadastralInfo.last_online 
+                      ? new Date(cadastralInfo.last_online).toLocaleString('pt-BR')
+                      : 'Agora'}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-400">
+                    Membro desde
+                  </label>
+                  <div className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-white opacity-50">
+                    {cadastralInfo.created_at 
+                      ? new Date(cadastralInfo.created_at).toLocaleDateString('pt-BR')
+                      : 'Não informado'}
+                  </div>
+                </div>
+              </div>
+
+              <p className="mt-6 text-sm text-slate-500">
+                💡 Essas informações foram coletadas durante seu cadastro. Para atualizar, entre em contato com o suporte.
+              </p>
+
+              {/* Zona de Perigo - Acordeão */}
+              <div className="mt-6 border-t border-slate-700 pt-6">
+                <button
+                  onClick={() => setIsDangerZoneOpen(!isDangerZoneOpen)}
+                  className="flex w-full items-center justify-between text-left"
+                >
+                  <div>
+                    <h3 className="text-sm font-medium text-rose-300">Zona de Perigo</h3>
+                    <p className="text-xs text-slate-500 mt-1">Ações irreversíveis que afetam sua conta</p>
+                  </div>
+                  <svg
+                    className={`h-5 w-5 text-rose-300 transition-transform ${isDangerZoneOpen ? 'rotate-180' : ''}`}
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+
+                {isDangerZoneOpen && (
+                  <div className="mt-4 rounded-lg border border-rose-900/30 bg-rose-950/20 p-4">
+                    <p className="text-sm text-slate-400 mb-4">
+                      As ações aqui realizadas são permanentes e não podem ser desfeitas.
+                    </p>
+                    <button
+                      onClick={() => setShowConfirmationModal(true)}
+                      className="rounded-lg border border-rose-800/50 bg-rose-900/30 px-4 py-2 text-sm text-rose-300 hover:bg-rose-900/50 transition-colors"
+                    >
+                      Acessar Zona de Perigo
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         )}
       </div>
+
+      {/* Modal de Confirmação - Digite YES */}
+      {showConfirmationModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
+          <div className="mx-4 max-w-md rounded-lg border border-rose-900/50 bg-slate-900 p-6 shadow-2xl">
+            <h2 className="text-2xl font-bold text-rose-300">⚠️ Zona de Perigo</h2>
+            <p className="mt-4 text-slate-300">
+              Você está prestes a acessar a <strong className="text-rose-300">Zona de Perigo</strong>.
+            </p>
+            <p className="mt-2 text-sm text-slate-400">
+              As ações realizadas aqui são <strong className="text-rose-400">permanentes e irreversíveis</strong>. 
+              Tenha certeza absoluta antes de prosseguir.
+            </p>
+            
+            <div className="mt-6">
+              <label className="block text-sm font-medium text-slate-400 mb-2">
+                Digite <strong className="text-rose-300">YES</strong> (em maiúsculas) para confirmar:
+              </label>
+              <input
+                type="text"
+                value={confirmationText}
+                onChange={(e) => setConfirmationText(e.target.value)}
+                className="w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-white focus:border-rose-500 focus:outline-none"
+                placeholder="YES"
+                autoFocus
+              />
+            </div>
+
+            <div className="mt-6 flex space-x-3">
+              <button
+                onClick={() => {
+                  setShowConfirmationModal(false);
+                  setConfirmationText('');
+                }}
+                className="flex-1 rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-white hover:bg-slate-700 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => {
+                  if (confirmationText === 'YES') {
+                    setShowConfirmationModal(false);
+                    setShowCancelModal(true);
+                    setConfirmationText('');
+                  }
+                }}
+                disabled={confirmationText !== 'YES'}
+                className={`flex-1 rounded-lg px-4 py-2 text-white transition-colors ${
+                  confirmationText === 'YES'
+                    ? 'bg-rose-800 hover:bg-rose-700'
+                    : 'bg-slate-700 cursor-not-allowed opacity-50'
+                }`}
+              >
+                Continuar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Cancelamento - Aviso Final */}
+      {showCancelModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
+          <div className="mx-4 max-w-lg rounded-lg border border-rose-900/50 bg-slate-900 p-6 shadow-2xl">
+            <h2 className="text-2xl font-bold text-rose-400">🚨 Cancelar Assinatura</h2>
+            
+            <div className="mt-4 space-y-3">
+              <p className="text-slate-300">
+                Tem certeza que deseja cancelar sua assinatura?
+              </p>
+              
+              <div className="rounded-lg border border-blue-900/50 bg-blue-950/30 p-4">
+                <p className="text-sm text-blue-300 font-semibold mb-2">💡 Considere antes de cancelar:</p>
+                <ul className="text-sm text-slate-400 space-y-1">
+                  <li>• Você perderá acesso a todos os recursos premium</li>
+                  <li>• Seus dados e projetos serão mantidos por apenas 30 dias</li>
+                  <li>• Tokens não utilizados serão perdidos</li>
+                  <li>• Esta ação não pode ser desfeita</li>
+                </ul>
+              </div>
+
+              <div className="rounded-lg border border-amber-900/50 bg-amber-950/30 p-4">
+                <p className="text-sm text-amber-300 font-semibold mb-2">✨ O que você está deixando para trás:</p>
+                <ul className="text-sm text-slate-400 space-y-1">
+                  <li>• {subscription.tokens_limit.toLocaleString()} tokens por mês</li>
+                  <li>• Suporte prioritário</li>
+                  <li>• Analytics avançado</li>
+                  <li>• {userProducts.length} produto(s) ativo(s)</li>
+                </ul>
+              </div>
+
+              <p className="text-xs text-slate-500 italic">
+                💬 Que tal conversar com nosso suporte antes? Podemos ajudar com qualquer problema que esteja enfrentando.
+              </p>
+            </div>
+
+            <div className="mt-6 flex space-x-3">
+              <button
+                onClick={() => setShowCancelModal(false)}
+                className="flex-1 rounded-lg bg-blue-600 px-4 py-2.5 text-white hover:bg-blue-700 transition-colors font-semibold"
+              >
+                Manter Assinatura
+              </button>
+              <button
+                onClick={() => {
+                  alert('Cancelamento solicitado. Nossa equipe entrará em contato em breve.');
+                  setShowCancelModal(false);
+                  setIsDangerZoneOpen(false);
+                }}
+                className="flex-1 rounded-lg border border-rose-800/50 bg-rose-900/30 px-4 py-2.5 text-rose-300 hover:bg-rose-900/50 transition-colors"
+              >
+                Cancelar Mesmo Assim
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Footer */}
       <Footer />

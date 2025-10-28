@@ -1,4 +1,3 @@
-import React from 'react';
 import {
   signInWithEmail,
   signInWithFacebook,
@@ -18,46 +17,27 @@ export function LoginModal({
   onClose,
   onSwitchToSignup,
 }: LoginModalProps) {
-  const [isLoading, setIsLoading] = React.useState(false);
-  const [error, setError] = React.useState<string | null>(null);
-
   const handleEmailLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setError(null);
-    setIsLoading(true);
-    
     const formData = new FormData(e.currentTarget);
     const email = formData.get('email') as string;
     const password = formData.get('password') as string;
 
     try {
-      const { error, data } = await signInWithEmail(email, password);
+      const { error } = await signInWithEmail(email, password);
       if (error) {
-        setError((error as any).message || 'Erro ao fazer login');
-        setIsLoading(false);
+        alert(`Erro ao fazer login: ${error.message}`);
         return;
       }
-      
-      // Login bem-sucedido!
-      console.log('✅ Login bem-sucedido! Fechando modal...');
-      setIsLoading(false);
-      
-      // Fechar modal após breve delay para feedback visual
-      setTimeout(() => {
-        onClose();
-      }, 500);
+      // O modal será fechado automaticamente pelo listener de auth no App.tsx
     } catch (error) {
-      setError('Erro inesperado ao fazer login. Tente novamente.');
-      setIsLoading(false);
+      alert(`Erro inesperado: ${error}`);
     }
   };
 
   const handleSocialLogin = async (
     provider: 'google' | 'facebook' | 'apple',
   ) => {
-    setError(null);
-    setIsLoading(true);
-    
     try {
       let result;
       switch (provider) {
@@ -68,23 +48,17 @@ export function LoginModal({
           result = await signInWithFacebook();
           break;
         case 'apple':
-          setError('Login com Apple não está disponível no momento.');
-          setIsLoading(false);
+          alert('Login com Apple não está disponível no momento.');
           return;
       }
 
       if (result.error) {
-        setError(`Erro ao fazer login com ${provider}: ${(result.error as any).message}`);
-        setIsLoading(false);
+        alert(`Erro ao fazer login com ${provider}: ${result.error.message}`);
         return;
       }
-      
-      // Login social iniciado com sucesso
-      console.log(`✅ Login com ${provider} iniciado! Modal permanecerá aberto até retorno...`);
-      // Nota: O modal será fechado pelo listener de auth quando o usuário retornar
+      // O modal será fechado automaticamente pelo listener de auth no App.tsx
     } catch (error) {
-      setError('Erro inesperado ao fazer login. Tente novamente.');
-      setIsLoading(false);
+      alert(`Erro inesperado: ${error}`);
     }
   };
   return (
@@ -95,12 +69,6 @@ export function LoginModal({
       description="Entre e continue criando experiencias incriveis com a MyEasyAI."
       contentClassName="space-y-6"
     >
-      {error && (
-        <div className="rounded-lg bg-red-500/10 border border-red-500/20 px-4 py-3 text-sm text-red-400">
-          {error}
-        </div>
-      )}
-
       <form className="space-y-4" onSubmit={handleEmailLogin}>
         <label className="block text-left">
           <span className="mb-1 block text-sm font-medium text-slate-300">
@@ -129,23 +97,7 @@ export function LoginModal({
         </label>
 
         <div className="flex justify-center">
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="px-8 py-3 bg-gradient-to-r from-purple-600 to-purple-700 text-white font-semibold rounded-lg hover:from-purple-700 hover:to-purple-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isLoading ? (
-              <span className="flex items-center gap-2">
-                <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                </svg>
-                Entrando...
-              </span>
-            ) : (
-              'Entrar'
-            )}
-          </button>
+          <Button variant="log">Entrar</Button>
         </div>
       </form>
 
@@ -158,8 +110,7 @@ export function LoginModal({
           <button
             type="button"
             onClick={() => handleSocialLogin('google')}
-            disabled={isLoading}
-            className="flex w-full items-center justify-center gap-2 rounded-lg border border-slate-700 bg-slate-800/50 px-4 py-3 text-slate-200 transition-colors hover:border-purple-500 hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex w-full items-center justify-center gap-2 rounded-lg border border-slate-700 bg-slate-800/50 px-4 py-3 text-slate-200 transition-colors hover:border-purple-500 hover:bg-slate-800"
             aria-label="Login via conta Google"
           >
             <svg className="h-5 w-5" viewBox="0 0 24 24" aria-hidden="true">
@@ -194,8 +145,7 @@ export function LoginModal({
           <button
             type="button"
             onClick={() => handleSocialLogin('facebook')}
-            disabled={isLoading}
-            className="flex w-full items-center justify-center gap-2 rounded-lg border border-slate-700 bg-slate-800/50 px-4 py-3 text-slate-200 transition-colors hover:border-purple-500 hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex w-full items-center justify-center gap-2 rounded-lg border border-slate-700 bg-slate-800/50 px-4 py-3 text-slate-200 transition-colors hover:border-purple-500 hover:bg-slate-800"
             aria-label="Login via conta Facebook"
           >
             <svg className="h-5 w-5" viewBox="0 0 24 24" aria-hidden="true">

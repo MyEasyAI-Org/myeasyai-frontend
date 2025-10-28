@@ -4,13 +4,16 @@ import { Save, X, Check, Image as ImageIcon, Plus, Trash2 } from 'lucide-react';
 interface EditableSiteTemplateProps {
   siteData: any;
   onUpdate: (updatedData: any) => void;
+  viewportMode?: 'desktop' | 'tablet' | 'mobile';
 }
 
-export function EditableSiteTemplate({ siteData, onUpdate }: EditableSiteTemplateProps) {
+export function EditableSiteTemplate({ siteData, onUpdate, viewportMode = 'desktop' }: EditableSiteTemplateProps) {
   const [editingField, setEditingField] = useState<string | null>(null);
   const [tempValue, setTempValue] = useState('');
   const [hoveredElement, setHoveredElement] = useState<string | null>(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const editInputRef = useRef<HTMLInputElement | HTMLTextAreaElement>(null);
 
   // Parse cores ou usar padrão
   let primaryColor = '#ea580c';
@@ -96,16 +99,32 @@ export function EditableSiteTemplate({ siteData, onUpdate }: EditableSiteTemplat
   };
 
   const handleSaveEdit = () => {
-    if (!editingField) return;
+    if (!editingField || !editInputRef.current) return;
     
-    const [section, index] = editingField.split('.');
+    // Ler o valor diretamente do input
+    const currentValue = editInputRef.current.value;
     
-    if (section === 'services' && index !== undefined) {
+    // Handle nested fields (e.g., "services.0", "heroStats.0.value", "features.0.title")
+    const parts = editingField.split('.');
+    
+    if (parts[0] === 'services' && parts[1] !== undefined) {
       const newServices = [...siteData.services];
-      newServices[parseInt(index)] = tempValue;
+      newServices[parseInt(parts[1])] = currentValue;
       onUpdate({ ...siteData, services: newServices });
+    } else if (parts.length === 3) {
+      // Handle deeply nested fields like heroStats.0.value or features.0.title
+      const [section, index, field] = parts;
+      const newArray = [...(siteData[section] || [])];
+      newArray[parseInt(index)] = { ...newArray[parseInt(index)], [field]: currentValue };
+      onUpdate({ ...siteData, [section]: newArray });
+    } else if (parts.length === 2) {
+      // Handle nested objects like sectionLabels.features
+      const [section, field] = parts;
+      const newSection = { ...(siteData[section] || {}), [field]: currentValue };
+      onUpdate({ ...siteData, [section]: newSection });
     } else {
-      onUpdate({ ...siteData, [editingField]: tempValue });
+      // Simple field
+      onUpdate({ ...siteData, [editingField]: currentValue });
     }
     
     setEditingField(null);
@@ -170,20 +189,20 @@ export function EditableSiteTemplate({ siteData, onUpdate }: EditableSiteTemplat
         <div className="relative inline-block w-full">
           {multiline ? (
             <textarea
-              value={tempValue}
-              onChange={(e) => setTempValue(e.target.value)}
+              ref={editInputRef as any}
+              defaultValue={tempValue}
               className="border-2 border-purple-500 bg-white px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 w-full shadow-xl"
-              style={{ color: '#1a1a1a', backgroundColor: '#ffffff' }}
+              style={{ color: '#1a1a1a', backgroundColor: '#ffffff', direction: 'ltr' }}
               rows={4}
               autoFocus
             />
           ) : (
             <input
+              ref={editInputRef as any}
               type="text"
-              value={tempValue}
-              onChange={(e) => setTempValue(e.target.value)}
+              defaultValue={tempValue}
               className="border-2 border-purple-500 bg-white px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 w-full shadow-xl"
-              style={{ color: '#1a1a1a', backgroundColor: '#ffffff' }}
+              style={{ color: '#1a1a1a', backgroundColor: '#ffffff', direction: 'ltr' }}
               autoFocus
             />
           )}
@@ -244,8 +263,7 @@ export function EditableSiteTemplate({ siteData, onUpdate }: EditableSiteTemplat
         }
         
         .site-template-header {
-          position: sticky;
-          top: 0;
+          position: relative; /* Alterado de sticky para relative para corrigir a sobreposição no editor */
           z-index: 50;
         }
 
@@ -304,27 +322,152 @@ export function EditableSiteTemplate({ siteData, onUpdate }: EditableSiteTemplat
               value={siteData.name} 
               className={`text-2xl font-bold ${vibe === 'light' || vibe === 'elegant' ? 'text-gray-900' : 'text-white'}`}
             />
-            <nav className="hidden md:flex gap-8">
-              <a href="#" className={`${vibe === 'light' || vibe === 'elegant' ? 'text-gray-700' : 'text-white'} text-sm uppercase tracking-wide transition hover:opacity-70`}>Início</a>
-              {siteData.sections.includes('services') && <a href="#servicos" className={`${vibe === 'light' || vibe === 'elegant' ? 'text-gray-700' : 'text-white'} text-sm uppercase tracking-wide transition hover:opacity-70`}>Serviços</a>}
-              {siteData.sections.includes('gallery') && <a href="#galeria" className={`${vibe === 'light' || vibe === 'elegant' ? 'text-gray-700' : 'text-white'} text-sm uppercase tracking-wide transition hover:opacity-70`}>Galeria</a>}
-              {siteData.sections.includes('contact') && <a href="#contato" className={`${vibe === 'light' || vibe === 'elegant' ? 'text-gray-700' : 'text-white'} text-sm uppercase tracking-wide transition hover:opacity-70`}>Contato</a>}
-            </nav>
-            <button 
-              className="px-6 py-3 rounded-full font-semibold text-sm uppercase tracking-wide hover:shadow-lg transition"
-              style={{
-                background: `linear-gradient(135deg, ${primaryColor}, ${primaryLight})`,
-                color: getContrastText(primaryColor)
-              }}
-            >
-              Fale Conosco
-            </button>
+            <div className={`${viewportMode === 'mobile' ? 'hidden' : 'flex'} items-center gap-8`}>
+              <nav className={`${viewportMode === 'mobile' ? 'hidden' : 'flex'} gap-8`}>
+                <a href="#" className={`${vibe === 'light' || vibe === 'elegant' ? 'text-gray-700' : 'text-white'} text-sm uppercase tracking-wide transition hover:opacity-70`}>Início</a>
+                {siteData.sections.includes('services') && <a href="#servicos" className={`${vibe === 'light' || vibe === 'elegant' ? 'text-gray-700' : 'text-white'} text-sm uppercase tracking-wide transition hover:opacity-70`}>Serviços</a>}
+                {siteData.sections.includes('gallery') && <a href="#galeria" className={`${vibe === 'light' || vibe === 'elegant' ? 'text-gray-700' : 'text-white'} text-sm uppercase tracking-wide transition hover:opacity-70`}>Galeria</a>}
+                {siteData.sections.includes('contact') && <a href="#contato" className={`${vibe === 'light' || vibe === 'elegant' ? 'text-gray-700' : 'text-white'} text-sm uppercase tracking-wide transition hover:opacity-70`}>Contato</a>}
+              </nav>
+              <button 
+                className="px-6 py-3 rounded-full font-semibold text-sm uppercase tracking-wide hover:shadow-lg transition"
+                style={{
+                  background: `linear-gradient(135deg, ${primaryColor}, ${primaryLight})`,
+                  color: getContrastText(primaryColor)
+                }}
+              >
+                Fale Conosco
+              </button>
+            </div>
+            <div className={viewportMode === 'mobile' ? 'block' : 'hidden'}>
+              <button 
+                onClick={() => setMobileMenuOpen(true)}
+                className="p-2 rounded-md" 
+                style={{ color: vibe === 'light' || vibe === 'elegant' ? 'text-gray-900' : 'text-white' }}
+              >
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="3" y1="12" x2="21" y2="12"></line>
+                  <line x1="3" y1="6" x2="21" y2="6"></line>
+                  <line x1="3" y1="18" x2="21" y2="18"></line>
+                </svg>
+              </button>
+            </div>
           </div>
         </header>
 
+        {/* Mobile Menu Drawer */}
+        {mobileMenuOpen && (
+          <>
+            {/* Backdrop */}
+            <div 
+              className="fixed inset-0 bg-black/50 z-[100] md:hidden"
+              onClick={() => setMobileMenuOpen(false)}
+            />
+            
+            {/* Drawer */}
+            <div 
+              className="fixed top-0 right-0 h-full w-[280px] z-[101] shadow-2xl md:hidden"
+              style={{
+                backgroundColor: vibe === 'light' || vibe === 'elegant' ? '#ffffff' : primaryColor,
+                animation: 'slideInRight 0.3s ease-out'
+              }}
+            >
+              <style>{`
+                @keyframes slideInRight {
+                  from {
+                    transform: translateX(100%);
+                  }
+                  to {
+                    transform: translateX(0);
+                  }
+                }
+              `}</style>
+              
+              <div className="flex flex-col h-full">
+                {/* Header do drawer */}
+                <div className="flex items-center justify-between p-6 border-b" style={{borderColor: vibe === 'light' || vibe === 'elegant' ? '#e5e7eb' : 'rgba(255,255,255,0.2)'}}>
+                  <span className="text-xl font-bold" style={{color: vibe === 'light' || vibe === 'elegant' ? '#1a1a1a' : '#ffffff'}}>
+                    Menu
+                  </span>
+                  <button 
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="p-2 rounded-lg hover:bg-black/10"
+                    style={{color: vibe === 'light' || vibe === 'elegant' ? '#1a1a1a' : '#ffffff'}}
+                  >
+                    <X className="h-6 w-6" />
+                  </button>
+                </div>
+
+                {/* Links de navegação */}
+                <nav className="flex flex-col p-6 space-y-4 flex-1">
+                  <a 
+                    href="#" 
+                    className="text-lg font-semibold py-3 px-4 rounded-lg transition"
+                    style={{
+                      color: vibe === 'light' || vibe === 'elegant' ? '#1a1a1a' : '#ffffff',
+                      backgroundColor: vibe === 'light' || vibe === 'elegant' ? '#f3f4f6' : 'rgba(255,255,255,0.1)'
+                    }}
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    Início
+                  </a>
+                  {siteData.sections.includes('services') && (
+                    <a 
+                      href="#servicos" 
+                      className="text-lg font-semibold py-3 px-4 rounded-lg transition hover:bg-black/5"
+                      style={{color: vibe === 'light' || vibe === 'elegant' ? '#1a1a1a' : '#ffffff'}}
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      Serviços
+                    </a>
+                  )}
+                  {siteData.sections.includes('gallery') && (
+                    <a 
+                      href="#galeria" 
+                      className="text-lg font-semibold py-3 px-4 rounded-lg transition hover:bg-black/5"
+                      style={{color: vibe === 'light' || vibe === 'elegant' ? '#1a1a1a' : '#ffffff'}}
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      Galeria
+                    </a>
+                  )}
+                  {siteData.sections.includes('contact') && (
+                    <a 
+                      href="#contato" 
+                      className="text-lg font-semibold py-3 px-4 rounded-lg transition hover:bg-black/5"
+                      style={{color: vibe === 'light' || vibe === 'elegant' ? '#1a1a1a' : '#ffffff'}}
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      Contato
+                    </a>
+                  )}
+                </nav>
+
+                {/* Botão CTA no fundo */}
+                <div className="p-6 border-t" style={{borderColor: vibe === 'light' || vibe === 'elegant' ? '#e5e7eb' : 'rgba(255,255,255,0.2)'}}>
+                  <button 
+                    className="w-full px-6 py-4 rounded-full font-bold text-sm uppercase tracking-wide shadow-lg transition transform hover:scale-105"
+                    style={{
+                      background: vibe === 'light' || vibe === 'elegant' 
+                        ? `linear-gradient(135deg, ${primaryColor}, ${primaryLight})`
+                        : '#ffffff',
+                      color: vibe === 'light' || vibe === 'elegant' 
+                        ? getContrastText(primaryColor)
+                        : primaryColor
+                    }}
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    Fale Conosco
+                  </button>
+                </div>
+              </div>
+            </div>
+          </>
+        )}
+
         {/* Hero */}
         {siteData.sections.includes('hero') && (
-          <section className="relative min-h-screen flex items-center justify-center overflow-hidden" style={{backgroundColor: primaryColor}}>
+          <section className="relative min-h-screen flex items-center justify-center overflow-hidden py-20" style={{backgroundColor: primaryColor}}>
             {/* Elementos decorativos animados de fundo */}
             <div className="absolute inset-0 overflow-hidden">
               <div 
@@ -372,10 +515,33 @@ export function EditableSiteTemplate({ siteData, onUpdate }: EditableSiteTemplat
                   animationDelay: '3s'
                 }}
               ></div>
+
+              {/* Partículas de luz animadas */}
+              <div className="absolute w-6 h-6 rounded-full bg-white hero-float-element" style={{top: '80px', left: '80px', opacity: 0.6, animationDelay: '0.5s'}}></div>
+              <div className="absolute w-5 h-5 rounded-full bg-white hero-pulse" style={{top: '160px', right: '128px', opacity: 0.5, animationDelay: '1.5s'}}></div>
+              <div className="absolute w-8 h-8 rounded-full bg-white hero-float-slow" style={{bottom: '128px', left: '160px', opacity: 0.4, animationDelay: '2.5s'}}></div>
+              <div className="absolute w-4 h-4 rounded-full bg-white hero-pulse" style={{top: '240px', left: '25%', opacity: 0.7, animationDelay: '3.5s'}}></div>
+              <div className="absolute w-5 h-5 rounded-full bg-white hero-float-element" style={{bottom: '160px', right: '25%', opacity: 0.55, animationDelay: '4s'}}></div>
+              <div className="absolute w-6 h-6 rounded-full bg-white hero-float-slow" style={{top: '33.333%', right: '80px', opacity: 0.45, animationDelay: '2s'}}></div>
+              
+              {/* Partículas adicionais */}
+              <div className="absolute w-7 h-7 rounded-full bg-white hero-pulse" style={{top: '40px', right: '25%', opacity: 0.65, animationDelay: '0.8s'}}></div>
+              <div className="absolute w-5 h-5 rounded-full bg-white hero-float-element" style={{bottom: '80px', left: '33.333%', opacity: 0.6, animationDelay: '1.2s'}}></div>
+              <div className="absolute w-6 h-6 rounded-full bg-white hero-float-slow" style={{top: '50%', left: '40px', opacity: 0.5, animationDelay: '3s'}}></div>
+              <div className="absolute w-4 h-4 rounded-full bg-white hero-pulse" style={{bottom: '240px', right: '160px', opacity: 0.7, animationDelay: '4.5s'}}></div>
+              <div className="absolute w-8 h-8 rounded-full bg-white hero-float-element" style={{top: '320px', right: '40px', opacity: 0.45, animationDelay: '0.3s'}}></div>
+              <div className="absolute w-6 h-6 rounded-full bg-white hero-float-slow" style={{bottom: '40px', left: '80px', opacity: 0.55, animationDelay: '5s'}}></div>
+              <div className="absolute w-5 h-5 rounded-full bg-white hero-pulse" style={{top: '25%', left: '50%', opacity: 0.6, animationDelay: '1.8s'}}></div>
+              <div className="absolute w-7 h-7 rounded-full bg-white hero-float-element" style={{bottom: '33.333%', right: '33.333%', opacity: 0.5, animationDelay: '3.2s'}}></div>
+              <div className="absolute w-4 h-4 rounded-full bg-white hero-float-slow" style={{top: '384px', left: '240px', opacity: 0.65, animationDelay: '2.3s'}}></div>
+
+              {/* Raios de luz sutis */}
+              <div className="absolute top-0 w-px h-full opacity-5 bg-gradient-to-b from-transparent via-white to-transparent hero-pulse" style={{left: '25%', transform: 'rotate(15deg)', animationDelay: '1s'}}></div>
+              <div className="absolute top-0 w-px h-full opacity-5 bg-gradient-to-b from-transparent via-white to-transparent hero-pulse" style={{right: '33.333%', transform: 'rotate(-10deg)', animationDelay: '2s'}}></div>
             </div>
 
             {/* Conteúdo centralizado */}
-            <div className="container mx-auto px-6 relative z-10 text-center">
+            <div className="container mx-auto px-6 py-12 relative z-10 text-center">
               <div className="max-w-4xl mx-auto">
                 {/* Badge */}
                 <div className="hero-slide-up mb-8" style={{animationDelay: '0.1s'}}>
@@ -396,7 +562,7 @@ export function EditableSiteTemplate({ siteData, onUpdate }: EditableSiteTemplat
                 <EditableText 
                   field="slogan" 
                   value={siteData.slogan || siteData.name}
-                  className="hero-slide-up text-6xl md:text-7xl font-black mb-6 leading-tight"
+                  className={`hero-slide-up font-black mb-6 leading-tight ${viewportMode === 'mobile' ? 'text-5xl' : 'text-6xl md:text-7xl'}`}
                   as="h1"
                   style={{color: getContrastText(primaryColor), textShadow: '0 4px 20px rgba(0,0,0,0.3)'}}
                 />
@@ -405,14 +571,14 @@ export function EditableSiteTemplate({ siteData, onUpdate }: EditableSiteTemplat
                 <EditableText 
                   field="description" 
                   value={siteData.description}
-                  className="hero-slide-up text-xl md:text-2xl mb-12 leading-relaxed max-w-2xl mx-auto"
+                  className={`hero-slide-up mb-12 leading-relaxed max-w-2xl mx-auto ${viewportMode === 'mobile' ? 'text-lg' : 'text-xl md:text-2xl'}`}
                   as="p"
                   multiline
                   style={{color: getContrastText(primaryColor), opacity: 0.95, textShadow: '0 2px 10px rgba(0,0,0,0.2)'}}
                 />
 
                 {/* Botões CTA */}
-                <div className="hero-slide-up flex flex-col sm:flex-row gap-4 justify-center mb-20" style={{animationDelay: '0.4s'}}>
+                <div className={`hero-slide-up flex gap-4 justify-center mb-20 ${viewportMode === 'mobile' ? 'flex-col' : 'flex-col sm:flex-row'}`} style={{animationDelay: '0.4s'}}>
                   <button 
                     className="px-12 py-5 rounded-full font-bold uppercase text-sm tracking-wide shadow-2xl transition transform hover:scale-105 hover:shadow-3xl"
                     style={{
@@ -436,7 +602,7 @@ export function EditableSiteTemplate({ siteData, onUpdate }: EditableSiteTemplat
                 </div>
 
                 {/* Estatísticas */}
-                <div className="hero-slide-up grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12" style={{animationDelay: '0.5s'}}>
+                <div className={`hero-slide-up grid gap-8 ${viewportMode === 'mobile' ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-3 md:gap-12'}`} style={{animationDelay: '0.5s'}}>
                 {(siteData.heroStats || [
                     { value: '500+', label: 'Clientes Satisfeitos' },
                     { value: '4.9★', label: 'Avaliação Média' },
@@ -451,8 +617,20 @@ export function EditableSiteTemplate({ siteData, onUpdate }: EditableSiteTemplat
                         border: '1px solid rgba(255, 255, 255, 0.2)'
                       }}
                     >
-                      <h3 className="text-5xl font-black mb-2" style={{color: getContrastText(primaryColor)}}>{stat.value}</h3>
-                      <p className="text-sm uppercase tracking-wider font-semibold opacity-90" style={{color: getContrastText(primaryColor)}}>{stat.label}</p>
+                      <EditableText
+                        field={`heroStats.${idx}.value`}
+                        value={stat.value}
+                        className="text-5xl font-black mb-2"
+                        as="h3"
+                        style={{color: getContrastText(primaryColor)}}
+                      />
+                      <EditableText
+                        field={`heroStats.${idx}.label`}
+                        value={stat.label}
+                        className="text-sm uppercase tracking-wider font-semibold opacity-90"
+                        as="p"
+                        style={{color: getContrastText(primaryColor)}}
+                      />
                     </div>
                   ))}
                 </div>
@@ -470,21 +648,25 @@ export function EditableSiteTemplate({ siteData, onUpdate }: EditableSiteTemplat
 
           <div className="container mx-auto px-6 relative z-10">
             <div className="text-center mb-16">
-              <span 
+              <EditableText
+                field="sectionLabels.features"
+                value={siteData.sectionLabels?.features || "Por Que Escolher a Gente?"}
                 className="inline-block px-5 py-2 rounded-full text-xs font-semibold uppercase tracking-wider mb-5"
+                as="span"
                 style={{
                   backgroundColor: `${primaryColor}10`,
                   color: primaryColor
                 }}
-              >
-                Por Que Escolher a Gente?
-              </span>
-              <h2 className="text-5xl font-black text-gray-900">
-                Benefícios <span style={{ color: primaryColor }}>Exclusivos</span>
-              </h2>
+              />
+              <EditableText
+                field="sectionTitles.features"
+                value={siteData.sectionTitles?.features || "Benefícios Exclusivos"}
+                className="text-5xl font-black text-gray-900"
+                as="h2"
+              />
             </div>
 
-            <div className="grid md:grid-cols-3 gap-8">
+            <div className={`grid gap-8 ${viewportMode === 'mobile' ? 'grid-cols-1' : 'md:grid-cols-3'}`}>
               {(siteData.features || [
                 { title: "Experiência Premium", description: "Muito mais que um serviço, uma verdadeira experiência de luxo e conforto" },
                 { title: "Profissionais Qualificados", description: "Equipe altamente treinada e experiente no que faz" },
@@ -515,8 +697,19 @@ export function EditableSiteTemplate({ siteData, onUpdate }: EditableSiteTemplat
                         <path d={icons[idx % icons.length]}/>
                       </svg>
                     </div>
-                    <h3 className="text-2xl font-bold mb-4 text-gray-900">{feature.title}</h3>
-                    <p className="text-gray-600 leading-relaxed">{feature.description}</p>
+                    <EditableText
+                      field={`features.${idx}.title`}
+                      value={feature.title}
+                      className="text-2xl font-bold mb-4 text-gray-900"
+                      as="h3"
+                    />
+                    <EditableText
+                      field={`features.${idx}.description`}
+                      value={feature.description}
+                      className="text-gray-600 leading-relaxed"
+                      as="p"
+                      multiline
+                    />
                   </div>
                 );
               })}
@@ -533,7 +726,7 @@ export function EditableSiteTemplate({ siteData, onUpdate }: EditableSiteTemplat
             </div>
 
             <div className="container mx-auto px-6 relative z-10">
-              <div className="grid md:grid-cols-2 gap-20 items-center">
+              <div className={`grid gap-20 items-center ${viewportMode === 'mobile' ? 'grid-cols-1' : 'md:grid-cols-2'}`}>
                 <div className="relative h-[600px]">
                   <img 
                     src="https://via.placeholder.com/400x500" 
@@ -564,26 +757,31 @@ export function EditableSiteTemplate({ siteData, onUpdate }: EditableSiteTemplat
                 </div>
 
                 <div>
-                  <span 
+                  <EditableText
+                    field="sectionLabels.about"
+                    value={siteData.sectionLabels?.about || "Sobre Nós"}
                     className="inline-block px-5 py-2 rounded-full text-xs font-semibold uppercase tracking-wider mb-5"
+                    as="span"
                     style={{
                       backgroundColor: `${primaryColor}10`,
                       color: primaryColor
                     }}
-                  >
-                    Sobre Nós
-                  </span>
+                  />
                   
-                  <h2 className="text-5xl md:text-6xl font-black mb-6 leading-tight text-gray-900">
-                    Do Sonho à<br/>
-                    <span style={{ color: primaryColor }}>
-                      Realidade
-                    </span>
-                  </h2>
+                  <EditableText
+                    field="sectionTitles.about"
+                    value={siteData.sectionTitles?.about || "Do Sonho à Realidade"}
+                    className={`font-black mb-6 leading-tight text-gray-900 ${viewportMode === 'mobile' ? 'text-4xl' : 'text-5xl md:text-6xl'}`}
+                    as="h2"
+                  />
                   
-                  <p className="text-xl font-medium text-gray-700 mb-5 leading-relaxed">
-                    Nossa empresa foi projetada para ser um ponto de referência em qualidade, inovação e excelência.
-                  </p>
+                  <EditableText
+                    field="aboutSubtitle"
+                    value={siteData.aboutSubtitle || "Nossa empresa foi projetada para ser um ponto de referência em qualidade, inovação e excelência."}
+                    className="text-xl font-medium text-gray-700 mb-5 leading-relaxed"
+                    as="p"
+                    multiline
+                  />
                   
                   <EditableText 
                     field="description"
@@ -606,7 +804,12 @@ export function EditableSiteTemplate({ siteData, onUpdate }: EditableSiteTemplat
                             <path d="M9 12L11 14L15 10M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" strokeLinecap="round"/>
                           </svg>
                         </div>
-                        <span className="font-semibold text-gray-800">{item}</span>
+                        <EditableText
+                          field={`aboutContent.checklist.${idx}`}
+                          value={item}
+                          className="font-semibold text-gray-800"
+                          as="span"
+                        />
                       </div>
                     ))}
                   </div>
@@ -631,16 +834,23 @@ export function EditableSiteTemplate({ siteData, onUpdate }: EditableSiteTemplat
           <section id="servicos" className="py-24 text-white relative overflow-hidden" style={{background: `linear-gradient(135deg, ${primaryColor}, ${darkColor})`}}>
             <div className="container mx-auto px-6 relative z-10">
               <div className="text-center max-w-2xl mx-auto mb-16">
-                <span className="inline-block px-6 py-3 rounded-full text-xs font-bold uppercase tracking-wider mb-6 shadow-xl" style={{backgroundColor: 'rgba(255,255,255,0.2)', color: getContrastText(primaryColor), border: '2px solid rgba(255,255,255,0.3)'}}>
-                  Nossos Serviços
-                </span>
-                <h2 className="text-5xl md:text-6xl font-black mb-6 leading-tight" style={{color: getContrastText(primaryColor), textShadow: '0 4px 20px rgba(0,0,0,0.4)'}}>
-                  Serviços que<br/>
-                  <span style={{textShadow: '0 6px 30px rgba(0,0,0,0.6)'}}>Transformam</span>
-                </h2>
+                <EditableText
+                  field="sectionLabels.services"
+                  value={siteData.sectionLabels?.services || "Nossos Serviços"}
+                  className="inline-block px-6 py-3 rounded-full text-xs font-bold uppercase tracking-wider mb-6 shadow-xl"
+                  as="span"
+                  style={{backgroundColor: 'rgba(255,255,255,0.2)', color: getContrastText(primaryColor), border: '2px solid rgba(255,255,255,0.3)'}}
+                />
+                <EditableText
+                  field="sectionTitles.services"
+                  value={siteData.sectionTitles?.services || "Serviços que Transformam"}
+                  className="text-5xl md:text-6xl font-black mb-6 leading-tight"
+                  as="h2"
+                  style={{color: getContrastText(primaryColor), textShadow: '0 4px 20px rgba(0,0,0,0.4)'}}
+                />
               </div>
 
-              <div className="grid md:grid-cols-3 gap-8">
+              <div className={`grid gap-8 ${viewportMode === 'mobile' ? 'grid-cols-1' : 'md:grid-cols-3'}`}>
                 {siteData.services.slice(0, 6).map((service: string, idx: number) => (
                   <div 
                     key={idx} 
@@ -670,16 +880,14 @@ export function EditableSiteTemplate({ siteData, onUpdate }: EditableSiteTemplat
                       style={{color: getContrastText(primaryColor), textShadow: '0 2px 6px rgba(0,0,0,0.5)'}}
                     />
                     
-                    {siteData.serviceDescriptions?.[idx] && (
-                      <p className="leading-relaxed mb-6" style={{color: getContrastText(primaryColor), opacity: 0.85, textShadow: '0 1px 3px rgba(0,0,0,0.4)'}}>
-                        {siteData.serviceDescriptions[idx].description}
-                      </p>
-                    )}
-                    {!siteData.serviceDescriptions?.[idx] && (
-                      <p className="leading-relaxed mb-6" style={{color: getContrastText(primaryColor), opacity: 0.85, textShadow: '0 1px 3px rgba(0,0,0,0.4)'}}>
-                        Serviço de qualidade premium com resultados excepcionais
-                      </p>
-                    )}
+                    <EditableText
+                      field={`serviceDescriptions.${idx}.description`}
+                      value={siteData.serviceDescriptions?.[idx]?.description || "Serviço de qualidade premium com resultados excepcionais"}
+                      className="leading-relaxed mb-6"
+                      as="p"
+                      multiline
+                      style={{color: getContrastText(primaryColor), opacity: 0.85, textShadow: '0 1px 3px rgba(0,0,0,0.4)'}}
+                    />
 
                     {hoveredElement === `service-${idx}` && (
                       <button
@@ -709,18 +917,22 @@ export function EditableSiteTemplate({ siteData, onUpdate }: EditableSiteTemplat
           <section className="py-24 bg-white">
             <div className="container mx-auto px-6">
               <div className="text-center mb-16">
-                <span 
+                <EditableText
+                  field="sectionLabels.faq"
+                  value={siteData.sectionLabels?.faq || "FAQ"}
                   className="inline-block px-5 py-2 rounded-full text-xs font-semibold uppercase tracking-wider mb-5"
+                  as="span"
                   style={{
                     backgroundColor: `${primaryColor}10`,
                     color: primaryColor
                   }}
-                >
-                  FAQ
-                </span>
-                <h2 className="text-5xl font-black text-gray-900">
-                  Perguntas <span style={{ color: primaryColor }}>Frequentes</span>
-                </h2>
+                />
+                <EditableText
+                  field="sectionTitles.faq"
+                  value={siteData.sectionTitles?.faq || "Perguntas Frequentes"}
+                  className="text-5xl font-black text-gray-900"
+                  as="h2"
+                />
               </div>
               <div className="max-w-3xl mx-auto space-y-4">
                 {(siteData.faq || [
@@ -730,13 +942,24 @@ export function EditableSiteTemplate({ siteData, onUpdate }: EditableSiteTemplat
                 ]).map((item: { question: string; answer: string }, idx: number) => (
                   <details key={idx} className="group bg-gray-50 rounded-2xl overflow-hidden border border-gray-200 hover:shadow-lg transition" style={{borderColor: `${primaryColor}20`}}>
                     <summary className="flex items-center justify-between p-6 cursor-pointer list-none">
-                      <h3 className="text-lg font-bold text-gray-900">{item.question}</h3>
+                      <EditableText
+                        field={`faq.${idx}.question`}
+                        value={item.question}
+                        className="text-lg font-bold text-gray-900"
+                        as="h3"
+                      />
                       <svg className="w-6 h-6 transform group-open:rotate-180 transition-transform" fill="none" stroke={primaryColor} viewBox="0 0 24 24" strokeWidth="2">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
                       </svg>
                     </summary>
                     <div className="px-6 pb-6">
-                      <p className="text-gray-600 leading-relaxed">{item.answer}</p>
+                      <EditableText
+                        field={`faq.${idx}.answer`}
+                        value={item.answer}
+                        className="text-gray-600 leading-relaxed"
+                        as="p"
+                        multiline
+                      />
                     </div>
                   </details>
                 ))}
@@ -750,20 +973,24 @@ export function EditableSiteTemplate({ siteData, onUpdate }: EditableSiteTemplat
           <section className="py-24 bg-gray-50">
             <div className="container mx-auto px-6">
               <div className="text-center mb-16">
-                <span 
+                <EditableText
+                  field="sectionLabels.pricing"
+                  value={siteData.sectionLabels?.pricing || "Preços"}
                   className="inline-block px-5 py-2 rounded-full text-xs font-semibold uppercase tracking-wider mb-5"
+                  as="span"
                   style={{
                     backgroundColor: `${primaryColor}10`,
                     color: primaryColor
                   }}
-                >
-                  Preços
-                </span>
-                <h2 className="text-5xl font-black text-gray-900">
-                  Planos que <span style={{ color: primaryColor }}>Cabem no Bolso</span>
-                </h2>
+                />
+                <EditableText
+                  field="sectionTitles.pricing"
+                  value={siteData.sectionTitles?.pricing || "Planos que Cabem no Bolso"}
+                  className="text-5xl font-black text-gray-900"
+                  as="h2"
+                />
               </div>
-              <div className="grid md:grid-cols-3 gap-8">
+              <div className={`grid gap-8 ${viewportMode === 'mobile' ? 'grid-cols-1' : 'md:grid-cols-3'}`}>
                 {(siteData.pricing || [
                   { name: 'Básico', price: 'R$ 99', features: ['Atendimento básico', 'Produtos padrão', 'Sem agendamento'] },
                   { name: 'Premium', price: 'R$ 199', features: ['Atendimento premium', 'Produtos premium', 'Agendamento prioritário', 'Brindes exclusivos'] },
@@ -775,9 +1002,20 @@ export function EditableSiteTemplate({ siteData, onUpdate }: EditableSiteTemplat
                         POPULAR
                       </div>
                     )}
-                    <h3 className="text-2xl font-bold mb-4 text-gray-900">{plan.name}</h3>
+                    <EditableText
+                      field={`pricing.${idx}.name`}
+                      value={plan.name}
+                      className="text-2xl font-bold mb-4 text-gray-900"
+                      as="h3"
+                    />
                     <div className="mb-6">
-                      <span className="text-5xl font-black" style={{color: primaryColor}}>{plan.price}</span>
+                      <EditableText
+                        field={`pricing.${idx}.price`}
+                        value={plan.price}
+                        className="text-5xl font-black"
+                        as="span"
+                        style={{color: primaryColor}}
+                      />
                       <span className="text-gray-600">/mês</span>
                     </div>
                     <ul className="space-y-4 mb-8">
@@ -786,7 +1024,12 @@ export function EditableSiteTemplate({ siteData, onUpdate }: EditableSiteTemplat
                           <svg className="w-6 h-6 flex-shrink-0 mt-0.5" fill="none" stroke={primaryColor} viewBox="0 0 24 24" strokeWidth="2">
                             <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                           </svg>
-                          <span className="text-gray-700">{feature}</span>
+                          <EditableText
+                            field={`pricing.${idx}.features.${fIdx}`}
+                            value={feature}
+                            className="text-gray-700"
+                            as="span"
+                          />
                         </li>
                       ))}
                     </ul>
@@ -826,20 +1069,24 @@ export function EditableSiteTemplate({ siteData, onUpdate }: EditableSiteTemplat
           <section className="py-24 bg-white">
             <div className="container mx-auto px-6">
               <div className="text-center mb-16">
-                <span 
+                <EditableText
+                  field="sectionLabels.team"
+                  value={siteData.sectionLabels?.team || "Nossa Equipe"}
                   className="inline-block px-5 py-2 rounded-full text-xs font-semibold uppercase tracking-wider mb-5"
+                  as="span"
                   style={{
                     backgroundColor: `${primaryColor}10`,
                     color: primaryColor
                   }}
-                >
-                  Nossa Equipe
-                </span>
-                <h2 className="text-5xl font-black text-gray-900">
-                  Conheça nosso <span style={{ color: primaryColor }}>Time</span>
-                </h2>
+                />
+                <EditableText
+                  field="sectionTitles.team"
+                  value={siteData.sectionTitles?.team || "Conheça nosso Time"}
+                  className="text-5xl font-black text-gray-900"
+                  as="h2"
+                />
               </div>
-              <div className="grid md:grid-cols-3 gap-8">
+              <div className={`grid gap-8 ${viewportMode === 'mobile' ? 'grid-cols-1' : 'md:grid-cols-3'}`}>
                 {(siteData.team || [
                   { name: 'João Silva', role: 'CEO & Fundador' },
                   { name: 'Maria Santos', role: 'Diretora de Operações' },
@@ -857,8 +1104,19 @@ export function EditableSiteTemplate({ siteData, onUpdate }: EditableSiteTemplat
                         {member.name.charAt(0)}
                       </div>
                     </div>
-                    <h3 className="text-2xl font-bold mb-2 text-gray-900">{member.name}</h3>
-                    <p className="font-medium mb-4" style={{color: primaryColor}}>{member.role}</p>
+                    <EditableText
+                      field={`team.${idx}.name`}
+                      value={member.name}
+                      className="text-2xl font-bold mb-2 text-gray-900"
+                      as="h3"
+                    />
+                    <EditableText
+                      field={`team.${idx}.role`}
+                      value={member.role}
+                      className="font-medium mb-4"
+                      as="p"
+                      style={{color: primaryColor}}
+                    />
                     <div className="flex justify-center gap-3">
                       <a href="#" className="w-10 h-10 flex items-center justify-center bg-gray-100 rounded-full transition" style={{color: '#6b7280'}} onMouseEnter={e => {
                         e.currentTarget.style.backgroundColor = primaryColor;
@@ -889,24 +1147,25 @@ export function EditableSiteTemplate({ siteData, onUpdate }: EditableSiteTemplat
 
             <div className="container mx-auto px-6 relative z-10">
               <div className="text-center mb-16">
-                <span 
+                <EditableText
+                  field="sectionLabels.testimonials"
+                  value={siteData.sectionLabels?.testimonials || "Depoimentos"}
                   className="inline-block px-5 py-2 rounded-full text-xs font-semibold uppercase tracking-wider mb-5"
+                  as="span"
                   style={{
                     backgroundColor: `${primaryColor}10`,
                     color: primaryColor
                   }}
-                >
-                  Depoimentos
-                </span>
-                <h2 className="text-5xl md:text-6xl font-black text-gray-900">
-                  O que dizem<br/>
-                  <span style={{ color: primaryColor }}>
-                    Nossos Clientes
-                  </span>
-                </h2>
+                />
+                <EditableText
+                  field="sectionTitles.testimonials"
+                  value={siteData.sectionTitles?.testimonials || "O que dizem Nossos Clientes"}
+                  className="text-5xl md:text-6xl font-black text-gray-900"
+                  as="h2"
+                />
               </div>
 
-              <div className="grid md:grid-cols-3 gap-8">
+              <div className={`grid gap-8 ${viewportMode === 'mobile' ? 'grid-cols-1' : 'md:grid-cols-3'}`}>
                 {(siteData.testimonials || [
                   { name: 'Ana Silva', role: 'Cliente Satisfeita', text: 'Excelente serviço! Profissionais atenciosos e ambiente incrível.' },
                   { name: 'Carlos Santos', role: 'Cliente Fiel', text: 'Superou todas as minhas expectativas! Qualidade premium.' },
@@ -937,9 +1196,13 @@ export function EditableSiteTemplate({ siteData, onUpdate }: EditableSiteTemplat
                     </div>
 
                     <div className="mb-8">
-                      <p className="text-lg italic text-gray-700 leading-relaxed relative z-10">
-                        "{testimonial.text}"
-                      </p>
+                      <EditableText
+                        field={`testimonials.${idx}.text`}
+                        value={testimonial.text}
+                        className="text-lg italic text-gray-700 leading-relaxed relative z-10"
+                        as="p"
+                        multiline
+                      />
                     </div>
 
                     <div className="w-16 h-1 mb-6 rounded-full" style={{background: `linear-gradient(90deg, ${primaryColor}, ${accentColor})`}}></div>
@@ -956,8 +1219,19 @@ export function EditableSiteTemplate({ siteData, onUpdate }: EditableSiteTemplat
                       </div>
                       
                       <div>
-                        <strong className="block text-lg font-bold text-gray-900">{testimonial.name}</strong>
-                        <span className="text-sm font-medium" style={{color: primaryColor}}>{testimonial.role}</span>
+                        <EditableText
+                          field={`testimonials.${idx}.name`}
+                          value={testimonial.name}
+                          className="block text-lg font-bold text-gray-900"
+                          as="span"
+                        />
+                        <EditableText
+                          field={`testimonials.${idx}.role`}
+                          value={testimonial.role}
+                          className="text-sm font-medium"
+                          as="span"
+                          style={{color: primaryColor}}
+                        />
                       </div>
                     </div>
                   </div>
@@ -973,21 +1247,25 @@ export function EditableSiteTemplate({ siteData, onUpdate }: EditableSiteTemplat
           <section id="galeria" className="py-24 bg-gray-50 relative overflow-hidden">
             <div className="container mx-auto px-6 relative z-10">
               <div className="text-center mb-16">
-                <span 
+                <EditableText
+                  field="sectionLabels.gallery"
+                  value={siteData.sectionLabels?.gallery || "Galeria"}
                   className="inline-block px-5 py-2 rounded-full text-xs font-semibold uppercase tracking-wider mb-5"
+                  as="span"
                   style={{
                     backgroundColor: `${primaryColor}10`,
                     color: primaryColor
                   }}
-                >
-                  Galeria
-                </span>
-                <h2 className="text-5xl md:text-6xl font-black text-gray-900">
-                  Nosso <span style={{ color: primaryColor }}>Trabalho</span>
-                </h2>
+                />
+                <EditableText
+                  field="sectionTitles.gallery"
+                  value={siteData.sectionTitles?.gallery || "Nosso Trabalho"}
+                  className="text-5xl md:text-6xl font-black text-gray-900"
+                  as="h2"
+                />
               </div>
 
-              <div className="grid md:grid-cols-3 gap-6">
+              <div className={`grid gap-6 ${viewportMode === 'mobile' ? 'grid-cols-1' : 'md:grid-cols-3'}`}>
                 {siteData.gallery.map((img: string, idx: number) => (
                   <div 
                     key={idx} 
@@ -1040,21 +1318,25 @@ export function EditableSiteTemplate({ siteData, onUpdate }: EditableSiteTemplat
           <section id="contato" className="py-24 bg-gray-50 relative overflow-hidden">
             <div className="container mx-auto px-6 relative z-10">
               <div className="text-center mb-16">
-                <span 
+                <EditableText
+                  field="sectionLabels.contact"
+                  value={siteData.sectionLabels?.contact || "Fale Conosco"}
                   className="inline-block px-5 py-2 rounded-full text-xs font-semibold uppercase tracking-wider mb-5"
+                  as="span"
                   style={{
                     backgroundColor: `${primaryColor}10`,
                     color: primaryColor
                   }}
-                >
-                  Fale Conosco
-                </span>
-                <h2 className="text-5xl md:text-6xl font-black text-gray-900 mb-4">
-                  Venha nos <span style={{ color: primaryColor }}>Visitar</span>
-                </h2>
+                />
+                <EditableText
+                  field="sectionTitles.contact"
+                  value={siteData.sectionTitles?.contact || "Venha nos Visitar"}
+                  className="text-5xl md:text-6xl font-black text-gray-900 mb-4"
+                  as="h2"
+                />
               </div>
 
-              <div className="grid md:grid-cols-2 gap-16 items-center">
+              <div className={`grid gap-16 items-center ${viewportMode === 'mobile' ? 'grid-cols-1' : 'md:grid-cols-2'}`}>
                 <div>
                   {siteData.address && (
                     <div className="flex gap-5 mb-8 p-6 bg-white rounded-2xl shadow-lg">

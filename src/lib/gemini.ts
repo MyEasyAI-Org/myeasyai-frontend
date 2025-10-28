@@ -1,7 +1,7 @@
 // Serviço de integração com Google Gemini AI para reescrita de textos
 
 const GEMINI_API_KEY = 'AIzaSyCQ0z4kedDKW_kVr9f10o_t39NYLZmMjro';
-const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent';
+const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-001:generateContent';
 
 interface GeminiRequest {
   contents: Array<{
@@ -126,9 +126,9 @@ export async function rewriteDescription(businessInfo: {
   targetAudience?: string;
   differentials?: string;
 }): Promise<string> {
-  const prompt = `Você é um especialista em copywriting persuasivo e marketing de conversão.
+  const prompt = `Você é um especialista em copywriting conciso e impactante.
 
-TAREFA: Reescreva a descrição da empresa de forma PERSUASIVA e PROFISSIONAL para CONVERTER visitantes em clientes.
+TAREFA: Reescreva a descrição da empresa de forma ULTRA CONCISA e IMPACTANTE.
 
 INFORMAÇÕES DA EMPRESA:
 - Nome: ${businessInfo.name}
@@ -138,23 +138,24 @@ ${businessInfo.slogan ? `- Slogan: ${businessInfo.slogan}` : ''}
 ${businessInfo.targetAudience ? `- Público-alvo: ${businessInfo.targetAudience}` : ''}
 ${businessInfo.differentials ? `- Diferenciais: ${businessInfo.differentials}` : ''}
 
-REQUISITOS:
-1. MÁXIMO de 150 palavras (2-3 frases impactantes)
-2. Corrigir TODOS os erros ortográficos e gramaticais
-3. Usar maiúsculas apenas quando gramaticalmente correto
-4. Focar em BENEFÍCIOS, não características
-5. Criar URGÊNCIA e DESEJO
-6. Linguagem EMOCIONAL e PERSUASIVA
-7. Terminar com um CALL-TO-ACTION implícito
+REQUISITOS CRÍTICOS:
+1. MÁXIMO de 50 palavras (1-2 frases curtas e impactantes)
+2. Focar APENAS no principal benefício
+3. Linguagem DIRETA e EMOCIONAL
+4. SEM palavras desnecessárias
+5. Corrigir ortografia e gramática
 
-ESTRUTURA IDEAL:
-1ª Frase: Problema/Necessidade do cliente + Nossa solução
-2ª Frase: Principais benefícios e diferenciais
-3ª Frase (opcional): Resultado/Transformação que oferecemos
+ESTRUTURA:
+- 1 frase principal (máximo 30 palavras)
+- 1 frase complementar OPCIONAL (máximo 20 palavras)
 
-Retorne APENAS o texto reescrito, sem aspas, títulos ou comentários adicionais.`;
+EXEMPLOS DE TAMANHO IDEAL:
+- "Transformamos seus sonhos em realidade com qualidade premium e atendimento personalizado."
+- "Oferecemos a melhor experiência em [área] com resultados que superam expectativas."
 
-  return await callGemini(prompt, 0.8);
+Retorne APENAS o texto reescrito, SEM aspas ou comentários.`;
+
+  return await callGemini(prompt, 0.7);
 }
 
 /**

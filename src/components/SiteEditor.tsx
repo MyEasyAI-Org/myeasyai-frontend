@@ -196,15 +196,15 @@ export function SiteEditor({ siteData, onUpdate, onClose }: SiteEditorProps) {
     alert('Alterações salvas com sucesso!');
   };
 
-  // Viewport dimensions
+  // Viewport dimensions - Usando larguras FIXAS para ativar media queries
   const getViewportDimensions = () => {
     switch (viewportMode) {
       case 'tablet':
-        return 'max-w-[768px]';
+        return { width: 'w-[768px]', scale: 'scale-90' };
       case 'mobile':
-        return 'max-w-[375px]';
+        return { width: 'w-[375px]', scale: 'scale-100' };
       default:
-        return 'w-full';
+        return { width: 'w-full', scale: 'scale-100' };
     }
   };
 
@@ -730,8 +730,8 @@ export function SiteEditor({ siteData, onUpdate, onClose }: SiteEditorProps) {
 
         {/* Preview Area */}
         <div className="flex-1 overflow-auto p-8 flex justify-center bg-slate-900">
-          <div className={`${getViewportDimensions()} transition-all duration-300 shadow-2xl`}>
-            <EditableSiteTemplate siteData={tempData} onUpdate={updateData} />
+          <div className={`${getViewportDimensions().width} transition-all duration-300 shadow-2xl origin-top`} style={{ transform: getViewportDimensions().scale }}>
+            <EditableSiteTemplate siteData={tempData} onUpdate={updateData} viewportMode={viewportMode} />
           </div>
         </div>
       </div>

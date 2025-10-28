@@ -562,15 +562,15 @@ export function Dashboard({ onLogout, onGoHome }: DashboardProps) {
 
             {/* Active Products */}
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {/* Product 1 - AI Assistant */}
-              <div className="rounded-lg border border-slate-800 bg-slate-900/50 p-6 hover:border-blue-500 transition-colors">
+              {/* Product 1 - Business Guru */}
+              <div className="rounded-lg border border-slate-800 bg-slate-900/50 p-6 hover:border-green-500 transition-colors">
                 <div className="flex items-start justify-between">
                   <div className="flex items-center space-x-3">
-                    <div className="rounded-lg bg-blue-500/20 p-3">
-                      <Package className="h-6 w-6 text-blue-400" />
+                    <div className="rounded-lg bg-green-500/20 p-3">
+                      <Package className="h-6 w-6 text-green-400" />
                     </div>
                     <div>
-                      <h3 className="text-lg font-semibold text-white">AI Assistant Pro</h3>
+                      <h3 className="text-lg font-semibold text-white">Business Guru</h3>
                       <span className="inline-block mt-1 rounded-full bg-green-500/20 px-2 py-1 text-xs font-semibold text-green-400">
                         Ativo
                       </span>
@@ -579,7 +579,7 @@ export function Dashboard({ onLogout, onGoHome }: DashboardProps) {
                 </div>
 
                 <p className="mt-4 text-sm text-slate-400">
-                  Assistente de IA com capacidades avançadas de processamento de linguagem natural.
+                  Consultoria de negócios com IA para impulsionar seu empreendimento.
                 </p>
 
                 <div className="mt-4 space-y-2 text-sm">
@@ -598,25 +598,28 @@ export function Dashboard({ onLogout, onGoHome }: DashboardProps) {
                 </div>
 
                 <div className="mt-6 flex space-x-2">
-                  <button className="flex-1 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 transition-colors flex items-center justify-center space-x-2">
+                  <a
+                    href="/business-guru"
+                    className="flex-1 rounded-lg bg-green-600 px-4 py-2 text-sm font-semibold text-white hover:bg-green-700 transition-colors flex items-center justify-center space-x-2"
+                  >
                     <ExternalLink className="h-4 w-4" />
                     <span>Acessar</span>
-                  </button>
+                  </a>
                   <button className="rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-sm text-white hover:bg-slate-700 transition-colors">
                     Gerenciar
                   </button>
                 </div>
               </div>
 
-              {/* Product 2 - API Access */}
-              <div className="rounded-lg border border-slate-800 bg-slate-900/50 p-6 hover:border-blue-500 transition-colors">
+              {/* Product 2 - MyEasyWebsite */}
+              <div className="rounded-lg border border-slate-800 bg-slate-900/50 p-6 hover:border-purple-500 transition-colors">
                 <div className="flex items-start justify-between">
                   <div className="flex items-center space-x-3">
                     <div className="rounded-lg bg-purple-500/20 p-3">
                       <Package className="h-6 w-6 text-purple-400" />
                     </div>
                     <div>
-                      <h3 className="text-lg font-semibold text-white">API Premium</h3>
+                      <h3 className="text-lg font-semibold text-white">MyEasyWebsite</h3>
                       <span className="inline-block mt-1 rounded-full bg-green-500/20 px-2 py-1 text-xs font-semibold text-green-400">
                         Ativo
                       </span>
@@ -625,7 +628,7 @@ export function Dashboard({ onLogout, onGoHome }: DashboardProps) {
                 </div>
 
                 <p className="mt-4 text-sm text-slate-400">
-                  Acesso completo à API com 50.000 requisições por mês.
+                  Criador de sites inteligente com IA para criar seu site profissional.
                 </p>
 
                 <div className="mt-4 space-y-2 text-sm">
@@ -644,56 +647,13 @@ export function Dashboard({ onLogout, onGoHome }: DashboardProps) {
                 </div>
 
                 <div className="mt-6 flex space-x-2">
-                  <button className="flex-1 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 transition-colors flex items-center justify-center space-x-2">
+                  <a
+                    href="/myeasywebsite"
+                    className="flex-1 rounded-lg bg-purple-600 px-4 py-2 text-sm font-semibold text-white hover:bg-purple-700 transition-colors flex items-center justify-center space-x-2"
+                  >
                     <ExternalLink className="h-4 w-4" />
                     <span>Acessar</span>
-                  </button>
-                  <button className="rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-sm text-white hover:bg-slate-700 transition-colors">
-                    Gerenciar
-                  </button>
-                </div>
-              </div>
-
-              {/* Product 3 - Data Analytics */}
-              <div className="rounded-lg border border-slate-800 bg-slate-900/50 p-6 hover:border-blue-500 transition-colors">
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center space-x-3">
-                    <div className="rounded-lg bg-amber-500/20 p-3">
-                      <Package className="h-6 w-6 text-amber-400" />
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-semibold text-white">Analytics Dashboard</h3>
-                      <span className="inline-block mt-1 rounded-full bg-green-500/20 px-2 py-1 text-xs font-semibold text-green-400">
-                        Ativo
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                <p className="mt-4 text-sm text-slate-400">
-                  Dashboard completo de analytics com relatórios customizados.
-                </p>
-
-                <div className="mt-4 space-y-2 text-sm">
-                  <div className="flex justify-between text-slate-400">
-                    <span>Assinado em:</span>
-                    <span className="text-white">20/11/2024</span>
-                  </div>
-                  <div className="flex justify-between text-slate-400">
-                    <span>Próxima renovação:</span>
-                    <span className="text-white">20/12/2024</span>
-                  </div>
-                  <div className="flex justify-between text-slate-400">
-                    <span>Valor:</span>
-                    <span className="text-white font-semibold">R$ 79/mês</span>
-                  </div>
-                </div>
-
-                <div className="mt-6 flex space-x-2">
-                  <button className="flex-1 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 transition-colors flex items-center justify-center space-x-2">
-                    <ExternalLink className="h-4 w-4" />
-                    <span>Acessar</span>
-                  </button>
+                  </a>
                   <button className="rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-sm text-white hover:bg-slate-700 transition-colors">
                     Gerenciar
                   </button>
@@ -706,15 +666,15 @@ export function Dashboard({ onLogout, onGoHome }: DashboardProps) {
               <h2 className="text-xl font-bold text-white">Resumo de Assinaturas</h2>
               <div className="mt-4 grid gap-4 md:grid-cols-3">
                 <div className="text-center">
-                  <p className="text-3xl font-bold text-white">3</p>
+                  <p className="text-3xl font-bold text-white">2</p>
                   <p className="mt-1 text-sm text-slate-400">Produtos Ativos</p>
                 </div>
                 <div className="text-center">
-                  <p className="text-3xl font-bold text-white">R$ 327</p>
+                  <p className="text-3xl font-bold text-white">R$ 248</p>
                   <p className="mt-1 text-sm text-slate-400">Gasto Mensal Total</p>
                 </div>
                 <div className="text-center">
-                  <p className="text-3xl font-bold text-green-400">R$ 73</p>
+                  <p className="text-3xl font-bold text-green-400">R$ 52</p>
                   <p className="mt-1 text-sm text-slate-400">Economia vs. Separado</p>
                 </div>
               </div>
