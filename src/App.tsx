@@ -34,7 +34,7 @@ function App() {
     return localStorage.getItem('userName') || 'Usuário';
   });
   const [loading, setLoading] = useState(true);
-  const [currentView, setCurrentView] = useState<'home' | 'dashboard'>('home');
+  const [currentView, setCurrentView] = useState<'home' | 'dashboard' | 'preview' | 'myeasywebsite' | 'businessguru'>('home');
   const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
   const [needsOnboarding, setNeedsOnboarding] = useState(false);
   const [isAuthLoading, setIsAuthLoading] = useState(false);
@@ -177,6 +177,40 @@ function App() {
   });
 
   useEffect(() => {
+    // Interceptar clicks em links de navegação
+    const handleNavigationClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      const link = target.closest('a');
+      
+      if (link && link.href) {
+        const url = new URL(link.href);
+        if (url.pathname === '/myeasywebsite') {
+          e.preventDefault();
+          setCurrentView('myeasywebsite');
+        } else if (url.pathname === '/businessguru') {
+          e.preventDefault();
+          setCurrentView('businessguru');
+        } else if (url.pathname === '/') {
+          e.preventDefault();
+          setCurrentView('home');
+        }
+      }
+    };
+
+    // Verificar hash para preview mode
+    const handleHashChange = () => {
+      if (window.location.hash === '#dashboard-preview') {
+        setCurrentView('preview');
+      }
+    };
+
+    // Verificar no carregamento inicial
+    handleHashChange();
+
+    // Escutar mudanças no hash e clicks
+    window.addEventListener('hashchange', handleHashChange);
+    document.addEventListener('click', handleNavigationClick);
+
     // Verificar sessão atual
     const checkUser = async () => {
       try {
@@ -191,7 +225,7 @@ function App() {
           setUserName(name);
         }
       } catch (error) {
-        console.error('Erro ao verificar sessão:', error);
+        console.error('❌ Erro ao verificar sessão:', error);
         setUser(null);
       } finally {
         setLoading(false);
@@ -288,6 +322,8 @@ function App() {
     return () => {
       subscription.unsubscribe();
       clearTimeout(timeoutId);
+      window.removeEventListener('hashchange', handleHashChange);
+      document.removeEventListener('click', handleNavigationClick);
     };
   }, []);
 
@@ -313,6 +349,14 @@ function App() {
         />
       </>
     );
+  }
+
+  if (user && currentView === 'myeasywebsite') {
+    return <MyEasyWebsite />;
+  }
+
+  if (user && currentView === 'businessguru') {
+    return <BusinessGuru />;
   }
 
   return (

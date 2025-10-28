@@ -15,6 +15,7 @@ type SubscriptionPlan = 'free' | 'basic' | 'pro' | 'enterprise';
 
 type UserProfile = {
   name: string;
+  preferred_name?: string; // Como o usuário quer ser chamado
   email: string;
   avatar_url?: string;
   bio?: string;
@@ -30,6 +31,18 @@ type SubscriptionData = {
   tokens_used: number;
   tokens_limit: number;
   requests_this_month: number;
+  next_billing_date?: string;
+  billing_cycle?: string;
+  payment_method?: string;
+};
+
+type UserProduct = {
+  id: string;
+  product_name: string;
+  product_status: string;
+  subscribed_at: string;
+  sites_created: number;
+  consultations_made: number;
 };
 
 const PLANS = [
@@ -107,16 +120,22 @@ export function DashboardPreview({
     plan: 'basic',
     status: 'active',
     start_date: new Date().toISOString(),
-    tokens_used: 2500,
-    tokens_limit: 10000,
-    requests_this_month: 145,
+    tokens_used: 0,
+    tokens_limit: 1000,
+    requests_this_month: 0,
   });
   const [profile, setProfile] = useState<UserProfile>({
-    name: 'Usuário Demo',
-    email: 'demo@myeasyai.com',
-    bio: 'Esta é uma conta de demonstração',
-    phone: '+55 11 98765-4321',
-    company: 'MyEasyAI Demo',
+    name: 'Carregando...',
+    email: '',
+    bio: '',
+    phone: '',
+    company: '',
+  });
+  const [userProducts, setUserProducts] = useState<UserProduct[]>([]);
+  const [notificationSettings, setNotificationSettings] = useState({
+    email_notifications: true,
+    token_alerts: true,
+    product_updates: false,
   });
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -158,6 +177,161 @@ export function DashboardPreview({
 
   const calculateTokensPercentage = () => {
     return (subscription.tokens_used / subscription.tokens_limit) * 100;
+  };
+
+  // Carregar dados do usuário logado
+  useEffect(() => {
+    loadUserData();
+  }, []);
+
+  const loadUserData = async () => {
+    try {
+      setIsLoading(true);
+      console.log('🔄 Iniciando carregamento de dados do usuário...');
+      
+      // Primeiro verificar sessão
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError) {
+        console.error('❌ Erro ao obter sessão:', sessionError);
+        window.location.href = '/';
+        return;
+      }
+
+      if (!session || !session.user) {
+        console.error('❌ Nenhuma sessão ativa encontrada');
+        window.location.href = '/';
+        return;
+      }
+
+      const user = session.user;
+      console.log('✅ Usuário autenticado:', user.email);
+      setUserUuid(user.id);
+
+      // Buscar dados completos do usuário na tabela users
+      console.log('🔍 Buscando dados completos na tabela users...');
+      const { data: userData, error: dbError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('uuid', user.id)
+        .single();
+
+      // Buscar produtos do usuário
+      console.log('🔍 Buscando produtos do usuário...');
+      const { data: productsData, error: productsError } = await supabase
+        .from('user_products')
+        .select('*')
+        .eq('user_uuid', user.id);
+
+      if (productsError) {
+        console.error('⚠️ Erro ao buscar produtos:', productsError);
+      } else {
+        console.log('✅ Produtos carregados:', productsData);
+        setUserProducts(productsData || []);
+      }
+
+      if (dbError) {
+        console.error('⚠️ Erro ao buscar dados do usuário na tabela:', dbError);
+        console.log('📋 Usando dados do auth como fallback');
+        // Usar dados do auth como fallback
+        setProfile({
+          name: user.user_metadata?.name || user.user_metadata?.full_name || 'Usuário',
+          email: user.email || '',
+          bio: '',
+          phone: '',
+          company: '',
+        });
+      } else {
+        console.log('✅ Dados carregados da tabela users:', userData);
+        // Preencher perfil com dados da tabela users
+        setProfile({
+          name: userData.name || user.user_metadata?.name || 'Usuário',
+          preferred_name: userData.preferred_name || userData.name?.split(' ')[0] || 'Usuário',
+          email: userData.email || user.email || '',
+          bio: userData.bio || userData.address || '',
+          phone: userData.mobile_phone || '',
+          company: userData.company_name || userData.country || '',
+          avatar_url: userData.avatar_url,
+        });
+
+        // Atualizar dados de assinatura com dados reais
+        setSubscription({
+          plan: (userData.subscription_plan || 'free') as SubscriptionPlan,
+          status: userData.subscription_status || 'active',
+          start_date: userData.subscription_start_date || userData.created_at,
+          end_date: userData.subscription_end_date,
+          tokens_used: userData.tokens_used || 0,
+          tokens_limit: userData.tokens_limit || 1000,
+          requests_this_month: userData.requests_this_month || 0,
+          next_billing_date: userData.next_billing_date,
+          billing_cycle: userData.billing_cycle,
+          payment_method: userData.payment_method,
+        });
+
+        // Atualizar configurações de notificação
+        setNotificationSettings({
+          email_notifications: userData.email_notifications ?? true,
+          token_alerts: userData.token_alerts ?? true,
+          product_updates: userData.product_updates ?? false,
+        });
+      }
+      
+      console.log('✅ Carregamento concluído com sucesso');
+    } catch (error) {
+      console.error('❌ Erro crítico ao carregar dados:', error);
+      // Não redirecionar em caso de erro genérico, apenas mostrar dados vazios
+      setProfile({
+        name: 'Usuário',
+        email: '',
+        bio: '',
+        phone: '',
+        company: '',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      const { error } = await signOut();
+      if (error) {
+        console.error('Erro ao fazer logout:', error);
+      }
+      window.location.href = '/';
+    } catch (error) {
+      console.error('Erro ao fazer logout:', error);
+      window.location.href = '/';
+    }
+  };
+
+  const handleSaveProfile = async () => {
+    if (!userUuid) return;
+
+    try {
+      const { error } = await supabase
+        .from('users')
+        .update({
+          name: profile.name,
+          preferred_name: profile.preferred_name || profile.name?.split(' ')[0] || 'Usuário',
+          mobile_phone: profile.phone,
+          country: profile.company,
+          address: profile.bio,
+          last_online: new Date().toISOString(),
+        })
+        .eq('uuid', userUuid);
+
+      if (error) {
+        console.error('Erro ao atualizar perfil:', error);
+        alert('Erro ao salvar perfil. Tente novamente.');
+      } else {
+        setIsEditingProfile(false);
+        alert('Perfil atualizado com sucesso!');
+      }
+    } catch (error) {
+      console.error('Erro ao salvar perfil:', error);
+      alert('Erro ao salvar perfil. Tente novamente.');
+    }
   };
 
   return (
@@ -316,7 +490,7 @@ export function DashboardPreview({
           <div className="space-y-6">
             <div>
               <h1 className="text-3xl font-bold text-white">
-                Bem-vindo, {profile.name}!
+                Bem-vindo, {profile.preferred_name || profile.name}!
               </h1>
               <p className="mt-2 text-slate-400">
                 Aqui está um resumo da sua conta e atividades recentes.
@@ -505,12 +679,12 @@ export function DashboardPreview({
 
             {/* Active Products */}
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {/* Product 1 - AI Assistant */}
-              <div className="rounded-lg border border-slate-800 bg-slate-900/50 p-6 hover:border-blue-500 transition-colors">
+              {/* Product 1 - MyEasyWebsite */}
+              <div className="rounded-lg border border-slate-800 bg-slate-900/50 p-6 hover:border-purple-500 transition-colors">
                 <div className="flex items-start justify-between">
                   <div className="flex items-center space-x-3">
-                    <div className="rounded-lg bg-blue-500/20 p-3">
-                      <Package className="h-6 w-6 text-blue-400" />
+                    <div className="rounded-lg bg-purple-500/20 p-3">
+                      <Package className="h-6 w-6 text-purple-400" />
                     </div>
                     <div>
                       <h3 className="text-lg font-semibold text-white">
@@ -534,32 +708,32 @@ export function DashboardPreview({
                     <span className="text-white">01/01/2025</span>
                   </div>
                   <div className="flex justify-between text-slate-400">
-                    <span>Próxima renovação:</span>
-                    <span className="text-white">01/02/2025</span>
+                    <span>Sites Criados:</span>
+                    <span className="text-white">12</span>
                   </div>
                   <div className="flex justify-between text-slate-400">
                     <span>Valor:</span>
-                    <span className="text-white font-semibold">R$ 149/mês</span>
+                    <span className="text-white font-semibold">Incluído no plano</span>
                   </div>
                 </div>
 
                 <div className="mt-6 flex space-x-2">
-                  <button className="flex-1 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 transition-colors flex items-center justify-center space-x-2">
+                  <a href="/myeasywebsite" className="flex-1 rounded-lg bg-purple-600 px-4 py-2 text-sm font-semibold text-white hover:bg-purple-700 transition-colors flex items-center justify-center space-x-2">
                     <ExternalLink className="h-4 w-4" />
                     <span>Acessar</span>
-                  </button>
+                  </a>
                   <button className="rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-sm text-white hover:bg-slate-700 transition-colors">
                     Gerenciar
                   </button>
                 </div>
               </div>
 
-              {/* Product 2 - API Access */}
-              <div className="rounded-lg border border-slate-800 bg-slate-900/50 p-6 hover:border-blue-500 transition-colors">
+              {/* Product 2 - Business Guru */}
+              <div className="rounded-lg border border-slate-800 bg-slate-900/50 p-6 hover:border-green-500 transition-colors">
                 <div className="flex items-start justify-between">
                   <div className="flex items-center space-x-3">
-                    <div className="rounded-lg bg-purple-500/20 p-3">
-                      <Package className="h-6 w-6 text-purple-400" />
+                    <div className="rounded-lg bg-green-500/20 p-3">
+                      <Package className="h-6 w-6 text-green-400" />
                     </div>
                     <div>
                       <h3 className="text-lg font-semibold text-white">
@@ -573,29 +747,29 @@ export function DashboardPreview({
                 </div>
 
                 <p className="mt-4 text-sm text-slate-400">
-                  Acesso completo à API com 50.000 requisições por mês.
+                  Consultoria de negócios com IA. Receba dicas personalizadas para seu negócio crescer.
                 </p>
 
                 <div className="mt-4 space-y-2 text-sm">
                   <div className="flex justify-between text-slate-400">
                     <span>Assinado em:</span>
-                    <span className="text-white">15/12/2024</span>
+                    <span className="text-white">01/01/2025</span>
                   </div>
                   <div className="flex justify-between text-slate-400">
-                    <span>Próxima renovação:</span>
-                    <span className="text-white">15/01/2025</span>
+                    <span>Consultas:</span>
+                    <span className="text-white">47 realizadas</span>
                   </div>
                   <div className="flex justify-between text-slate-400">
                     <span>Valor:</span>
-                    <span className="text-white font-semibold">R$ 99/mês</span>
+                    <span className="text-white font-semibold">Incluído no plano</span>
                   </div>
                 </div>
 
                 <div className="mt-6 flex space-x-2">
-                  <button className="flex-1 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 transition-colors flex items-center justify-center space-x-2">
+                  <a href="/businessguru" className="flex-1 rounded-lg bg-green-600 px-4 py-2 text-sm font-semibold text-white hover:bg-green-700 transition-colors flex items-center justify-center space-x-2">
                     <ExternalLink className="h-4 w-4" />
                     <span>Acessar</span>
-                  </button>
+                  </a>
                   <button className="rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-sm text-white hover:bg-slate-700 transition-colors">
                     Gerenciar
                   </button>
@@ -1036,10 +1210,7 @@ export function DashboardPreview({
                   ) : (
                     <>
                       <button
-                        onClick={() => {
-                          setIsEditingProfile(false);
-                          alert('Perfil atualizado com sucesso! (modo demo)');
-                        }}
+                        onClick={handleSaveProfile}
                         className="rounded-lg bg-green-600 px-6 py-2 text-white hover:bg-green-700"
                       >
                         Salvar
@@ -1056,6 +1227,8 @@ export function DashboardPreview({
               </div>
             </div>
           </div>
+        )}
+        </>
         )}
       </div>
 
