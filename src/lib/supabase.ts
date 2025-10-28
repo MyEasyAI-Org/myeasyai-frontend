@@ -17,13 +17,29 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 
 // Auth helper functions
 export const signInWithGoogle = async () => {
-  const { data, error } = await supabase.auth.signInWithOAuth({
-    provider: 'google',
-    options: {
-      redirectTo: window.location.origin
+  try {
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}/`,
+        queryParams: {
+          access_type: 'offline',
+          prompt: 'consent',
+        }
+      }
+    })
+    
+    if (error) {
+      console.error('❌ Erro no login com Google:', error)
+    } else {
+      console.log('✅ Login com Google iniciado')
     }
-  })
-  return { data, error }
+    
+    return { data, error }
+  } catch (error) {
+    console.error('❌ Erro inesperado no login com Google:', error)
+    return { data: null, error }
+  }
 }
 
 export const signInWithFacebook = async () => {
@@ -47,11 +63,46 @@ export const signInWithApple = async () => {
 }
 
 export const signInWithEmail = async (email: string, password: string) => {
-  const { data, error } = await supabase.auth.signInWithPassword({
-    email,
-    password
-  })
-  return { data, error }
+  try {
+    console.log('🔐 Tentando login com email:', email)
+    
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password
+    })
+    
+    if (error) {
+      console.error('❌ Erro no login com email:', error)
+      
+      // Mensagens de erro mais amigáveis
+      if (error.message.includes('Invalid login credentials')) {
+        return { 
+          data, 
+          error: { 
+            ...error, 
+            message: 'Email ou senha incorretos. Verifique suas credenciais e tente novamente.' 
+          } 
+        }
+      }
+      
+      if (error.message.includes('Email not confirmed')) {
+        return { 
+          data, 
+          error: { 
+            ...error, 
+            message: 'Por favor, confirme seu email antes de fazer login. Verifique sua caixa de entrada.' 
+          } 
+        }
+      }
+    } else {
+      console.log('✅ Login com email bem-sucedido:', data.user?.email)
+    }
+    
+    return { data, error }
+  } catch (error) {
+    console.error('❌ Erro inesperado no login com email:', error)
+    return { data: null, error }
+  }
 }
 
 export const signUpWithEmail = async (email: string, password: string, name: string) => {
@@ -83,47 +134,24 @@ export const getCurrentSession = () => {
 // Função para registrar usuário na tabela users após login social
 export const ensureUserInDatabase = async (user: any) => {
   try {
-    // Verificar se o usuário já existe na tabela users
-    const { data: existingUser, error: checkError } = await supabase
+    // Usar upsert para evitar erros de duplicação (409)
+    const { error: upsertError } = await supabase
       .from('users')
-      .select('uuid')
-      .eq('email', user.email)
-      .single()
+      .upsert({
+        uuid: user.id,
+        email: user.email,
+        name: user.user_metadata?.full_name || user.user_metadata?.name || 'Usuário',
+        last_online: new Date().toISOString(),
+        preferred_language: 'pt'
+      }, {
+        onConflict: 'email', // Usar email como chave de conflito
+        ignoreDuplicates: false // Atualizar se já existir
+      })
 
-    if (checkError && checkError.code !== 'PGRST116') {
-      // PGRST116 = "The result contains 0 rows" - usuário não encontrado
-      console.error('Erro ao verificar usuário existente:', checkError)
-      return
-    }
-
-    // Se o usuário não existe, criar registro
-    if (!existingUser) {
-      const { error: insertError } = await supabase
-        .from('users')
-        .insert({
-          uuid: user.id,
-          email: user.email,
-          name: user.user_metadata?.full_name || user.user_metadata?.name || 'Usuário',
-          created_at: new Date().toISOString(),
-          last_online: new Date().toISOString(),
-          preferred_language: 'pt'
-        })
-
-      if (insertError) {
-        console.error('Erro ao inserir usuário na tabela:', insertError)
-      } else {
-        console.log('Usuário registrado na tabela users:', user.email)
-      }
+    if (upsertError) {
+      console.error('Erro ao garantir usuário no banco:', upsertError)
     } else {
-      // Atualizar last_online se o usuário já existe
-      const { error: updateError } = await supabase
-        .from('users')
-        .update({ last_online: new Date().toISOString() })
-        .eq('email', user.email)
-
-      if (updateError) {
-        console.error('Erro ao atualizar last_online:', updateError)
-      }
+      console.log('Usuário registrado/atualizado na tabela users:', user.email)
     }
   } catch (error) {
     console.error('Erro na função ensureUserInDatabase:', error)
@@ -139,12 +167,17 @@ export const checkUserNeedsOnboarding = async (user: any) => {
       .from('users')
       .select('name, mobile_phone, country, postal_code, address, preferred_language')
       .eq('email', user.email)
-      .single()
+      .maybeSingle() // Usar maybeSingle ao invés de single para evitar erro se não encontrar
 
     if (error) {
       console.error('❌ Erro ao verificar dados do usuário:', error)
       console.log('✅ Usuário precisa de onboarding (erro ao buscar dados)')
       return true // Se houver erro, assumir que precisa onboarding
+    }
+
+    if (!userData) {
+      console.log('⚠️ Usuário não encontrado no banco - precisa onboarding')
+      return true
     }
 
     console.log('📊 Dados do usuário:', {

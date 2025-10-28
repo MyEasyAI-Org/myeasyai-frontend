@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run build:*)",
+      "Read(//c/Users/Guilherme/Desktop/MyEasyAI/**)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
