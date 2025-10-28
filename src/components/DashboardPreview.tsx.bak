@@ -1228,6 +1228,8 @@ export function DashboardPreview({
             </div>
           </div>
         )}
+        </>
+        )}
       </div>
 
       {/* Footer */}
