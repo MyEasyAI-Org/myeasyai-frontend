@@ -1,18 +1,17 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import type { User } from '@supabase/supabase-js';
 import {
   CreditCard,
   TrendingUp,
-  LogOut,
   Check,
   ArrowUpCircle,
   BarChart3,
   Clock,
-  Home,
   Package,
   ExternalLink,
 } from 'lucide-react';
+import { Footer } from './Footer';
 
 type DashboardProps = {
   onLogout: () => void;
@@ -24,6 +23,7 @@ type SubscriptionPlan = 'free' | 'basic' | 'pro' | 'enterprise';
 type UserProfile = {
   name: string;
   email: string;
+  preferredName?: string;
   avatar_url?: string;
   bio?: string;
   phone?: string;
@@ -108,15 +108,50 @@ export function Dashboard({ onLogout, onGoHome }: DashboardProps) {
     tokens_limit: 1000,
     requests_this_month: 45,
   });
-  const [profile, setProfile] = useState<UserProfile>({
-    name: '',
-    email: '',
-    bio: '',
-    phone: '',
-    company: '',
+  const [profile, setProfile] = useState<UserProfile>(() => {
+    // Tentar carregar do localStorage na inicialização
+    const savedProfile = localStorage.getItem('userProfile');
+    if (savedProfile) {
+      try {
+        return JSON.parse(savedProfile);
+      } catch (e) {
+        console.error('Erro ao parsear perfil salvo:', e);
+      }
+    }
+    return {
+      name: '',
+      email: '',
+      preferredName: '',
+      bio: '',
+      phone: '',
+      company: '',
+    };
   });
   const [isEditingProfile, setIsEditingProfile] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isLoadingProfile, setIsLoadingProfile] = useState(() => {
+    // Se já tem dados no localStorage, não precisa mostrar loading
+    const savedProfile = localStorage.getItem('userProfile');
+    return !savedProfile;
+  });
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Fechar dropdown ao clicar fora
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsDropdownOpen(false);
+      }
+    };
+
+    if (isDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isDropdownOpen]);
 
   useEffect(() => {
     const loadUserData = async () => {
@@ -124,19 +159,37 @@ export function Dashboard({ onLogout, onGoHome }: DashboardProps) {
         const { data: { user: currentUser } } = await supabase.auth.getUser();
         if (currentUser) {
           setUser(currentUser);
-          setProfile({
-            name: currentUser.user_metadata?.name || currentUser.user_metadata?.full_name || '',
+
+          // Buscar dados do banco, incluindo preferred_name
+          const { data: userData, error: dbError } = await supabase
+            .from('users')
+            .select('name, preferred_name')
+            .eq('email', currentUser.email)
+            .single();
+
+          if (dbError) {
+            console.error('Erro ao buscar dados do banco:', dbError);
+          }
+
+          const profileData = {
+            name: userData?.name || currentUser.user_metadata?.name || currentUser.user_metadata?.full_name || '',
+            preferredName: userData?.preferred_name || '',
             email: currentUser.email || '',
             avatar_url: currentUser.user_metadata?.avatar_url,
             bio: currentUser.user_metadata?.bio || '',
             phone: currentUser.user_metadata?.phone || '',
             company: currentUser.user_metadata?.company || '',
-          });
+          };
+
+          setProfile(profileData);
+          // Salvar no localStorage para persistir entre recarregamentos
+          localStorage.setItem('userProfile', JSON.stringify(profileData));
         }
       } catch (error) {
         console.error('Erro ao carregar dados do usuário:', error);
       } finally {
-        setLoading(false);
+        // Marcar como carregado independente de sucesso ou erro
+        setIsLoadingProfile(false);
       }
     };
 
@@ -182,45 +235,84 @@ export function Dashboard({ onLogout, onGoHome }: DashboardProps) {
     return (subscription.tokens_used / subscription.tokens_limit) * 100;
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-black-main to-blue-main flex items-center justify-center">
-        <div className="text-white text-xl">Carregando...</div>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-black-main to-blue-main">
+    <div className="flex min-h-screen flex-col bg-gradient-to-br from-black-main to-blue-main">
       {/* Header */}
       <header className="border-b border-slate-800 bg-black-main/50 backdrop-blur-sm">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="flex h-16 items-center justify-between">
-            <div className="flex items-center space-x-4">
+            <button
+              onClick={onGoHome}
+              className="flex flex-row items-center gap-4 transition-all hover:scale-105 cursor-pointer -ml-2 pl-2 pr-4 py-2 rounded-lg hover:bg-slate-800/30 whitespace-nowrap"
+            >
               <img
                 src="/bone-logo.png"
                 alt="MyEasyAI Logo"
-                className="h-12 w-12 object-contain"
+                className="h-12 w-12 flex-shrink-0 object-contain pointer-events-none select-none"
               />
-              <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-xl font-bold text-transparent">
+              <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-xl font-bold text-transparent pointer-events-none select-none flex-shrink-0">
                 MyEasyAI Dashboard
               </span>
-            </div>
-            <div className="flex items-center space-x-4">
+            </button>
+            <div className="relative" ref={dropdownRef}>
               <button
-                onClick={onGoHome}
-                className="flex items-center space-x-2 text-slate-300 hover:text-white transition-colors"
+                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                className={`flex items-center justify-center space-x-3 border border-slate-600 bg-slate-700/80 px-4 py-3 text-slate-100 transition-colors hover:border-slate-500 hover:bg-slate-600 min-w-[280px] ${
+                  isDropdownOpen ? 'rounded-t-2xl border-b-transparent' : 'rounded-2xl'
+                }`}
               >
-                <Home className="h-5 w-5" />
-                <span>Início</span>
+                <svg
+                  className="h-5 w-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                  />
+                </svg>
+                <span>
+                  {isLoadingProfile ? (
+                    <span className="loading-dots">
+                      <span>.</span>
+                      <span>.</span>
+                      <span>.</span>
+                    </span>
+                  ) : (
+                    `Olá, ${profile.preferredName || (profile.name ? profile.name.split(' ')[0] : 'Usuário')}!`
+                  )}
+                </span>
+                <svg
+                  className={`h-4 w-4 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M19 9l-7 7-7-7"
+                  />
+                </svg>
               </button>
-              <button
-                onClick={onLogout}
-                className="flex items-center space-x-2 rounded-lg bg-red-600 px-4 py-2 text-white hover:bg-red-700 transition-colors"
-              >
-                <LogOut className="h-5 w-5" />
-                <span>Sair</span>
-              </button>
+
+              {isDropdownOpen && (
+                <div className="absolute right-0 w-full rounded-b-2xl border border-t-0 border-slate-600 bg-slate-700/80 shadow-xl">
+                  <button
+                    onClick={() => {
+                      setIsDropdownOpen(false);
+                      onLogout();
+                    }}
+                    className="block w-full rounded-b-2xl px-4 py-3 text-left text-slate-100 transition-colors hover:bg-slate-600 hover:text-red-400"
+                  >
+                    Sair
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -295,13 +387,21 @@ export function Dashboard({ onLogout, onGoHome }: DashboardProps) {
       </div>
 
       {/* Content */}
-      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-7xl flex-1 px-4 py-8 pb-32 sm:px-6 lg:px-8">
         {/* Overview Tab */}
         {activeTab === 'overview' && (
           <div className="space-y-6">
             <div>
               <h1 className="text-3xl font-bold text-white">
-                Bem-vindo, {profile.name || 'Usuário'}!
+                Bem-vindo, {isLoadingProfile ? (
+                  <span className="loading-dots">
+                    <span>.</span>
+                    <span>.</span>
+                    <span>.</span>
+                  </span>
+                ) : (
+                  profile.preferredName || (profile.name ? profile.name.split(' ')[0] : 'Usuário')
+                )}!
               </h1>
               <p className="mt-2 text-slate-400">
                 Aqui está um resumo da sua conta e atividades recentes.
@@ -929,6 +1029,9 @@ export function Dashboard({ onLogout, onGoHome }: DashboardProps) {
           </div>
         )}
       </div>
+
+      {/* Footer */}
+      <Footer />
     </div>
   );
 }

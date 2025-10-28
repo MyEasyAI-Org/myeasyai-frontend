@@ -1,17 +1,15 @@
-import { useState, useEffect } from 'react';
 import {
-  CreditCard,
-  TrendingUp,
-  LogOut,
-  Check,
   ArrowUpCircle,
   BarChart3,
+  Check,
   Clock,
-  Home,
-  Package,
+  CreditCard,
   ExternalLink,
+  Package,
+  TrendingUp,
 } from 'lucide-react';
-import { supabase, signOut, getCurrentUser } from '../lib/supabase';
+import { useEffect, useRef, useState } from 'react';
+import { Footer } from './Footer';
 
 type SubscriptionPlan = 'free' | 'basic' | 'pro' | 'enterprise';
 
@@ -104,10 +102,22 @@ const PLANS = [
   },
 ];
 
-export function DashboardPreview() {
-  const [activeTab, setActiveTab] = useState<'overview' | 'subscription' | 'products' | 'usage' | 'settings' | 'profile'>('overview');
-  const [subscription, setSubscription] = useState<SubscriptionData>({
-    plan: 'free',
+type DashboardPreviewProps = {
+  onLogout?: () => void;
+  onGoHome?: () => void;
+  userName?: string;
+};
+
+export function DashboardPreview({
+  onLogout,
+  onGoHome,
+  userName = 'Usuário',
+}: DashboardPreviewProps = {}) {
+  const [activeTab, setActiveTab] = useState<
+    'overview' | 'subscription' | 'products' | 'usage' | 'settings' | 'profile'
+  >('overview');
+  const [subscription] = useState<SubscriptionData>({
+    plan: 'basic',
     status: 'active',
     start_date: new Date().toISOString(),
     tokens_used: 0,
@@ -128,8 +138,28 @@ export function DashboardPreview() {
     product_updates: false,
   });
   const [isEditingProfile, setIsEditingProfile] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  const [userUuid, setUserUuid] = useState<string | null>(null);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Fechar dropdown ao clicar fora
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
+        setIsDropdownOpen(false);
+      }
+    };
+
+    if (isDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isDropdownOpen]);
 
   const handleChangePlan = (newPlan: SubscriptionPlan) => {
     alert(`Solicitação de mudança para plano ${newPlan} enviada!`);
@@ -305,36 +335,81 @@ export function DashboardPreview() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-black-main to-blue-main">
+    <div className="flex min-h-screen flex-col bg-gradient-to-br from-black-main to-blue-main">
       {/* Header */}
       <header className="border-b border-slate-800 bg-black-main/50 backdrop-blur-sm">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="flex h-16 items-center justify-between">
             <div className="flex items-center space-x-4">
-              <img
-                src="/bone-logo.png"
-                alt="MyEasyAI Logo"
-                className="h-12 w-12 object-contain"
-              />
-              <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-xl font-bold text-transparent">
-                MyEasyAI Dashboard
-              </span>
-            </div>
-            <div className="flex items-center space-x-4">
-              <a
-                href="/"
-                className="flex items-center space-x-2 text-slate-300 hover:text-white transition-colors"
-              >
-                <Home className="h-5 w-5" />
-                <span>Voltar</span>
-              </a>
               <button
-                onClick={handleLogout}
-                className="flex items-center space-x-2 rounded-lg bg-red-600 px-4 py-2 text-white hover:bg-red-700 transition-colors"
+                onClick={() =>
+                  onGoHome ? onGoHome() : (window.location.href = '/')
+                }
+                className="flex items-center gap-3 cursor-pointer"
               >
-                <LogOut className="h-5 w-5" />
-                <span>Sair</span>
+                <img
+                  src="/bone-logo.png"
+                  alt="MyEasyAI Logo"
+                  className="h-12 w-12 object-contain"
+                />
+                <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-xl font-bold text-transparent">
+                  MyEasyAI Dashboard
+                </span>
               </button>
+            </div>
+            <div className="relative" ref={dropdownRef}>
+              <button
+                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                className={`flex items-center justify-center space-x-2 border border-slate-600 bg-slate-700/80 px-4 py-2.5 text-slate-100 transition-colors hover:border-slate-500 hover:bg-slate-600 whitespace-nowrap ${
+                  isDropdownOpen
+                    ? 'rounded-t-2xl border-b-transparent'
+                    : 'rounded-2xl'
+                }`}
+              >
+                <svg
+                  className="h-4 w-4 flex-shrink-0"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                  />
+                </svg>
+                <span>Oi, {userName}!</span>
+                <svg
+                  className={`h-3.5 w-3.5 flex-shrink-0 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M19 9l-7 7-7-7"
+                  />
+                </svg>
+              </button>
+
+              {isDropdownOpen && (
+                <div className="absolute right-0 min-w-full rounded-b-2xl border border-t-0 border-slate-600 bg-slate-700/80 shadow-xl whitespace-nowrap">
+                  <button
+                    onClick={() => {
+                      setIsDropdownOpen(false);
+                      onLogout
+                        ? onLogout()
+                        : alert('Esta é uma versão de demonstração');
+                    }}
+                    className="block w-full rounded-b-2xl px-4 py-2.5 text-left text-slate-100 transition-colors hover:bg-slate-600 hover:text-red-400"
+                  >
+                    Sair
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -409,16 +484,7 @@ export function DashboardPreview() {
       </div>
 
       {/* Content */}
-      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-        {isLoading ? (
-          <div className="flex items-center justify-center py-12">
-            <div className="text-center">
-              <div className="inline-block h-12 w-12 animate-spin rounded-full border-4 border-solid border-blue-500 border-r-transparent"></div>
-              <p className="mt-4 text-slate-400">Carregando seus dados...</p>
-            </div>
-          </div>
-        ) : (
-          <>
+      <div className="mx-auto max-w-7xl flex-1 px-4 py-8 pb-32 sm:px-6 lg:px-8">
         {/* Overview Tab */}
         {activeTab === 'overview' && (
           <div className="space-y-6">
@@ -435,12 +501,19 @@ export function DashboardPreview() {
             <div className="rounded-lg border border-slate-800 bg-slate-900/50 p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="text-lg font-semibold text-white">Assinatura Atual</h2>
-                  <div className={`mt-2 inline-block rounded-full bg-gradient-to-r ${getPlanColor(subscription.plan)} px-4 py-1 text-sm font-semibold text-white`}>
+                  <h2 className="text-lg font-semibold text-white">
+                    Assinatura Atual
+                  </h2>
+                  <div
+                    className={`mt-2 inline-block rounded-full bg-gradient-to-r ${getPlanColor(subscription.plan)} px-4 py-1 text-sm font-semibold text-white`}
+                  >
                     {subscription.plan.toUpperCase()}
                   </div>
                   <p className="mt-2 text-slate-400">
-                    Status: <span className="text-green-400">{subscription.status === 'active' ? 'Ativo' : 'Inativo'}</span>
+                    Status:{' '}
+                    <span className="text-green-400">
+                      {subscription.status === 'active' ? 'Ativo' : 'Inativo'}
+                    </span>
                   </p>
                 </div>
                 <CreditCard className="h-16 w-16 text-blue-400" />
@@ -473,7 +546,9 @@ export function DashboardPreview() {
               <div className="rounded-lg border border-slate-800 bg-slate-900/50 p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-slate-400">Requisições este Mês</p>
+                    <p className="text-sm text-slate-400">
+                      Requisições este Mês
+                    </p>
                     <p className="mt-2 text-3xl font-bold text-white">
                       {subscription.requests_this_month}
                     </p>
@@ -487,7 +562,9 @@ export function DashboardPreview() {
                   <div>
                     <p className="text-sm text-slate-400">Membro desde</p>
                     <p className="mt-2 text-xl font-bold text-white">
-                      {new Date(subscription.start_date).toLocaleDateString('pt-BR')}
+                      {new Date(subscription.start_date).toLocaleDateString(
+                        'pt-BR',
+                      )}
                     </p>
                   </div>
                   <Clock className="h-10 w-10 text-amber-400" />
@@ -501,7 +578,9 @@ export function DashboardPreview() {
         {activeTab === 'subscription' && (
           <div className="space-y-6">
             <div>
-              <h1 className="text-3xl font-bold text-white">Planos de Assinatura</h1>
+              <h1 className="text-3xl font-bold text-white">
+                Planos de Assinatura
+              </h1>
               <p className="mt-2 text-slate-400">
                 Escolha o plano ideal para suas necessidades.
               </p>
@@ -526,19 +605,29 @@ export function DashboardPreview() {
                   )}
 
                   <div className="text-center">
-                    <h3 className="text-xl font-bold text-white">{plan.name}</h3>
+                    <h3 className="text-xl font-bold text-white">
+                      {plan.name}
+                    </h3>
                     <div className="mt-4">
-                      <span className="text-4xl font-bold text-white">{plan.price}</span>
-                      {plan.price !== 'Customizado' && <span className="text-slate-400">/mês</span>}
+                      <span className="text-4xl font-bold text-white">
+                        {plan.price}
+                      </span>
+                      {plan.price !== 'Customizado' && (
+                        <span className="text-slate-400">/mês</span>
+                      )}
                     </div>
-                    <p className="mt-2 text-sm text-slate-400">{plan.tokens} tokens</p>
+                    <p className="mt-2 text-sm text-slate-400">
+                      {plan.tokens} tokens
+                    </p>
                   </div>
 
                   <ul className="mt-6 space-y-3">
                     {plan.features.map((feature, index) => (
                       <li key={index} className="flex items-start">
                         <Check className="mr-2 h-5 w-5 flex-shrink-0 text-green-400" />
-                        <span className="text-sm text-slate-300">{feature}</span>
+                        <span className="text-sm text-slate-300">
+                          {feature}
+                        </span>
                       </li>
                     ))}
                   </ul>
@@ -552,7 +641,9 @@ export function DashboardPreview() {
                         : 'bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700'
                     }`}
                   >
-                    {subscription.plan === plan.value ? 'Plano Atual' : 'Selecionar Plano'}
+                    {subscription.plan === plan.value
+                      ? 'Plano Atual'
+                      : 'Selecionar Plano'}
                   </button>
                 </div>
               ))}
@@ -562,8 +653,11 @@ export function DashboardPreview() {
             <div className="rounded-lg border border-slate-800 bg-slate-900/50 p-6">
               <h2 className="text-xl font-bold text-white">Trocar de Plano</h2>
               <p className="mt-2 text-slate-400">
-                Você está atualmente no plano <span className="font-semibold text-blue-400">{subscription.plan.toUpperCase()}</span>.
-                Selecione um novo plano acima para fazer upgrade ou downgrade.
+                Você está atualmente no plano{' '}
+                <span className="font-semibold text-blue-400">
+                  {subscription.plan.toUpperCase()}
+                </span>
+                . Selecione um novo plano acima para fazer upgrade ou downgrade.
               </p>
               <div className="mt-4 flex items-center space-x-2 text-sm text-slate-400">
                 <ArrowUpCircle className="h-5 w-5 text-green-400" />
@@ -593,7 +687,9 @@ export function DashboardPreview() {
                       <Package className="h-6 w-6 text-purple-400" />
                     </div>
                     <div>
-                      <h3 className="text-lg font-semibold text-white">MyEasyWebsite</h3>
+                      <h3 className="text-lg font-semibold text-white">
+                        AI Assistant Pro
+                      </h3>
                       <span className="inline-block mt-1 rounded-full bg-green-500/20 px-2 py-1 text-xs font-semibold text-green-400">
                         Ativo
                       </span>
@@ -602,7 +698,8 @@ export function DashboardPreview() {
                 </div>
 
                 <p className="mt-4 text-sm text-slate-400">
-                  Crie sites profissionais em minutos com o poder da IA. Interface simples e intuitiva.
+                  Assistente de IA com capacidades avançadas de processamento de
+                  linguagem natural.
                 </p>
 
                 <div className="mt-4 space-y-2 text-sm">
@@ -639,7 +736,9 @@ export function DashboardPreview() {
                       <Package className="h-6 w-6 text-green-400" />
                     </div>
                     <div>
-                      <h3 className="text-lg font-semibold text-white">Business Guru</h3>
+                      <h3 className="text-lg font-semibold text-white">
+                        API Premium
+                      </h3>
                       <span className="inline-block mt-1 rounded-full bg-green-500/20 px-2 py-1 text-xs font-semibold text-green-400">
                         Ativo
                       </span>
@@ -685,7 +784,9 @@ export function DashboardPreview() {
                       <Package className="h-6 w-6 text-amber-400" />
                     </div>
                     <div>
-                      <h3 className="text-lg font-semibold text-white">Analytics Dashboard</h3>
+                      <h3 className="text-lg font-semibold text-white">
+                        Analytics Dashboard
+                      </h3>
                       <span className="inline-block mt-1 rounded-full bg-green-500/20 px-2 py-1 text-xs font-semibold text-green-400">
                         Ativo
                       </span>
@@ -726,7 +827,9 @@ export function DashboardPreview() {
 
             {/* Summary Card */}
             <div className="rounded-lg border border-slate-800 bg-slate-900/50 p-6">
-              <h2 className="text-xl font-bold text-white">Resumo de Assinaturas</h2>
+              <h2 className="text-xl font-bold text-white">
+                Resumo de Assinaturas
+              </h2>
               <div className="mt-4 grid gap-4 md:grid-cols-3">
                 <div className="text-center">
                   <p className="text-3xl font-bold text-white">3</p>
@@ -734,18 +837,24 @@ export function DashboardPreview() {
                 </div>
                 <div className="text-center">
                   <p className="text-3xl font-bold text-white">R$ 327</p>
-                  <p className="mt-1 text-sm text-slate-400">Gasto Mensal Total</p>
+                  <p className="mt-1 text-sm text-slate-400">
+                    Gasto Mensal Total
+                  </p>
                 </div>
                 <div className="text-center">
                   <p className="text-3xl font-bold text-green-400">R$ 73</p>
-                  <p className="mt-1 text-sm text-slate-400">Economia vs. Separado</p>
+                  <p className="mt-1 text-sm text-slate-400">
+                    Economia vs. Separado
+                  </p>
                 </div>
               </div>
             </div>
 
             {/* Available Products */}
             <div>
-              <h2 className="text-2xl font-bold text-white">Produtos Disponíveis</h2>
+              <h2 className="text-2xl font-bold text-white">
+                Produtos Disponíveis
+              </h2>
               <p className="mt-2 text-slate-400">
                 Explore outros produtos que podem ajudar seu negócio.
               </p>
@@ -756,13 +865,17 @@ export function DashboardPreview() {
                     <div className="rounded-lg bg-slate-700 p-3">
                       <Package className="h-6 w-6 text-slate-400" />
                     </div>
-                    <h3 className="text-lg font-semibold text-white">Image Generator</h3>
+                    <h3 className="text-lg font-semibold text-white">
+                      Image Generator
+                    </h3>
                   </div>
                   <p className="mt-4 text-sm text-slate-400">
                     Gere imagens de alta qualidade usando IA.
                   </p>
                   <div className="mt-4">
-                    <p className="text-2xl font-bold text-white">R$ 59<span className="text-sm text-slate-400">/mês</span></p>
+                    <p className="text-2xl font-bold text-white">
+                      R$ 59<span className="text-sm text-slate-400">/mês</span>
+                    </p>
                   </div>
                   <button className="mt-4 w-full rounded-lg border border-blue-600 bg-blue-600/10 px-4 py-2 text-sm font-semibold text-blue-400 hover:bg-blue-600/20 transition-colors">
                     Adicionar Produto
@@ -774,13 +887,17 @@ export function DashboardPreview() {
                     <div className="rounded-lg bg-slate-700 p-3">
                       <Package className="h-6 w-6 text-slate-400" />
                     </div>
-                    <h3 className="text-lg font-semibold text-white">Voice AI</h3>
+                    <h3 className="text-lg font-semibold text-white">
+                      Voice AI
+                    </h3>
                   </div>
                   <p className="mt-4 text-sm text-slate-400">
                     Sintetização e reconhecimento de voz avançado.
                   </p>
                   <div className="mt-4">
-                    <p className="text-2xl font-bold text-white">R$ 89<span className="text-sm text-slate-400">/mês</span></p>
+                    <p className="text-2xl font-bold text-white">
+                      R$ 89<span className="text-sm text-slate-400">/mês</span>
+                    </p>
                   </div>
                   <button className="mt-4 w-full rounded-lg border border-blue-600 bg-blue-600/10 px-4 py-2 text-sm font-semibold text-blue-400 hover:bg-blue-600/20 transition-colors">
                     Adicionar Produto
@@ -792,13 +909,17 @@ export function DashboardPreview() {
                     <div className="rounded-lg bg-slate-700 p-3">
                       <Package className="h-6 w-6 text-slate-400" />
                     </div>
-                    <h3 className="text-lg font-semibold text-white">Custom Models</h3>
+                    <h3 className="text-lg font-semibold text-white">
+                      Custom Models
+                    </h3>
                   </div>
                   <p className="mt-4 text-sm text-slate-400">
                     Treine seus próprios modelos de IA personalizados.
                   </p>
                   <div className="mt-4">
-                    <p className="text-2xl font-bold text-white">R$ 299<span className="text-sm text-slate-400">/mês</span></p>
+                    <p className="text-2xl font-bold text-white">
+                      R$ 299<span className="text-sm text-slate-400">/mês</span>
+                    </p>
                   </div>
                   <button className="mt-4 w-full rounded-lg border border-blue-600 bg-blue-600/10 px-4 py-2 text-sm font-semibold text-blue-400 hover:bg-blue-600/20 transition-colors">
                     Adicionar Produto
@@ -826,7 +947,8 @@ export function DashboardPreview() {
                 <div className="flex items-center justify-between text-sm text-slate-400">
                   <span>Tokens usados este mês</span>
                   <span className="font-semibold text-white">
-                    {subscription.tokens_used.toLocaleString()} / {subscription.tokens_limit.toLocaleString()}
+                    {subscription.tokens_used.toLocaleString()} /{' '}
+                    {subscription.tokens_limit.toLocaleString()}
                   </span>
                 </div>
                 <div className="mt-2 h-4 w-full rounded-full bg-slate-800">
@@ -844,34 +966,46 @@ export function DashboardPreview() {
             {/* Usage Stats */}
             <div className="grid gap-6 md:grid-cols-2">
               <div className="rounded-lg border border-slate-800 bg-slate-900/50 p-6">
-                <h3 className="text-lg font-semibold text-white">Requisições</h3>
+                <h3 className="text-lg font-semibold text-white">
+                  Requisições
+                </h3>
                 <div className="mt-4 space-y-4">
                   <div className="flex items-center justify-between">
                     <span className="text-slate-400">Este mês</span>
-                    <span className="text-2xl font-bold text-white">{subscription.requests_this_month}</span>
+                    <span className="text-2xl font-bold text-white">
+                      {subscription.requests_this_month}
+                    </span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-slate-400">Média diária</span>
                     <span className="text-2xl font-bold text-white">
-                      {Math.round(subscription.requests_this_month / new Date().getDate())}
+                      {Math.round(
+                        subscription.requests_this_month / new Date().getDate(),
+                      )}
                     </span>
                   </div>
                 </div>
               </div>
 
               <div className="rounded-lg border border-slate-800 bg-slate-900/50 p-6">
-                <h3 className="text-lg font-semibold text-white">Período de Renovação</h3>
+                <h3 className="text-lg font-semibold text-white">
+                  Período de Renovação
+                </h3>
                 <div className="mt-4 space-y-4">
                   <div className="flex items-center justify-between">
                     <span className="text-slate-400">Início do ciclo</span>
                     <span className="font-semibold text-white">
-                      {new Date(subscription.start_date).toLocaleDateString('pt-BR')}
+                      {new Date(subscription.start_date).toLocaleDateString(
+                        'pt-BR',
+                      )}
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-slate-400">Próxima renovação</span>
                     <span className="font-semibold text-white">
-                      {new Date(new Date().setMonth(new Date().getMonth() + 1)).toLocaleDateString('pt-BR')}
+                      {new Date(
+                        new Date().setMonth(new Date().getMonth() + 1),
+                      ).toLocaleDateString('pt-BR')}
                     </span>
                   </div>
                 </div>
@@ -895,22 +1029,41 @@ export function DashboardPreview() {
                 <h2 className="text-xl font-bold text-white">Notificações</h2>
                 <div className="mt-4 space-y-4">
                   <label className="flex items-center justify-between">
-                    <span className="text-slate-300">Notificações por email</span>
-                    <input type="checkbox" className="h-5 w-5 rounded border-slate-700 bg-slate-800" defaultChecked />
+                    <span className="text-slate-300">
+                      Notificações por email
+                    </span>
+                    <input
+                      type="checkbox"
+                      className="h-5 w-5 rounded border-slate-700 bg-slate-800"
+                      defaultChecked
+                    />
                   </label>
                   <label className="flex items-center justify-between">
-                    <span className="text-slate-300">Alertas de uso de tokens</span>
-                    <input type="checkbox" className="h-5 w-5 rounded border-slate-700 bg-slate-800" defaultChecked />
+                    <span className="text-slate-300">
+                      Alertas de uso de tokens
+                    </span>
+                    <input
+                      type="checkbox"
+                      className="h-5 w-5 rounded border-slate-700 bg-slate-800"
+                      defaultChecked
+                    />
                   </label>
                   <label className="flex items-center justify-between">
-                    <span className="text-slate-300">Atualizações de produto</span>
-                    <input type="checkbox" className="h-5 w-5 rounded border-slate-700 bg-slate-800" />
+                    <span className="text-slate-300">
+                      Atualizações de produto
+                    </span>
+                    <input
+                      type="checkbox"
+                      className="h-5 w-5 rounded border-slate-700 bg-slate-800"
+                    />
                   </label>
                 </div>
               </div>
 
               <div className="rounded-lg border border-slate-800 bg-slate-900/50 p-6">
-                <h2 className="text-xl font-bold text-white">API e Integrações</h2>
+                <h2 className="text-xl font-bold text-white">
+                  API e Integrações
+                </h2>
                 <div className="mt-4 space-y-4">
                   <div>
                     <label className="text-sm text-slate-400">API Key</label>
@@ -933,7 +1086,9 @@ export function DashboardPreview() {
               </div>
 
               <div className="rounded-lg border border-red-900 bg-red-950/30 p-6">
-                <h2 className="text-xl font-bold text-red-400">Zona de Perigo</h2>
+                <h2 className="text-xl font-bold text-red-400">
+                  Zona de Perigo
+                </h2>
                 <p className="mt-2 text-sm text-slate-400">
                   Ações irreversíveis que afetam sua conta.
                 </p>
@@ -961,52 +1116,53 @@ export function DashboardPreview() {
                   {profile.name[0].toUpperCase()}
                 </div>
                 <div>
-                  <h2 className="text-2xl font-bold text-white">{profile.name}</h2>
+                  <h2 className="text-2xl font-bold text-white">
+                    {profile.name}
+                  </h2>
                   <p className="text-slate-400">{profile.email}</p>
                 </div>
               </div>
 
               <div className="mt-6 space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-400">Nome Completo</label>
+                  <label className="block text-sm font-medium text-slate-400">
+                    Nome
+                  </label>
                   <input
                     type="text"
                     value={profile.name}
-                    onChange={(e) => setProfile({ ...profile, name: e.target.value })}
+                    onChange={(e) =>
+                      setProfile({ ...profile, name: e.target.value })
+                    }
                     disabled={!isEditingProfile}
                     className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-white disabled:opacity-50"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-400">Como quer ser chamado? </label>
-                  <input
-                    type="text"
-                    value={profile.preferred_name || ''}
-                    onChange={(e) => setProfile({ ...profile, preferred_name: e.target.value })}
-                    disabled={!isEditingProfile}
-                    placeholder="Ex: João, Joãozinho, JV..."
-                    className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-white disabled:opacity-50"
-                  />
-                  <p className="mt-1 text-xs text-slate-500">✨ Este nome será usado em toda a plataforma</p>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-slate-400">Email</label>
+                  <label className="block text-sm font-medium text-slate-400">
+                    Email
+                  </label>
                   <input
                     type="email"
                     value={profile.email}
                     disabled
                     className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-white opacity-50"
                   />
-                  <p className="mt-1 text-xs text-slate-500">O email não pode ser alterado</p>
+                  <p className="mt-1 text-xs text-slate-500">
+                    O email não pode ser alterado
+                  </p>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-400">Biografia</label>
+                  <label className="block text-sm font-medium text-slate-400">
+                    Biografia
+                  </label>
                   <textarea
                     value={profile.bio}
-                    onChange={(e) => setProfile({ ...profile, bio: e.target.value })}
+                    onChange={(e) =>
+                      setProfile({ ...profile, bio: e.target.value })
+                    }
                     disabled={!isEditingProfile}
                     rows={3}
                     className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-white disabled:opacity-50"
@@ -1014,22 +1170,30 @@ export function DashboardPreview() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-400">Telefone</label>
+                  <label className="block text-sm font-medium text-slate-400">
+                    Telefone
+                  </label>
                   <input
                     type="tel"
                     value={profile.phone}
-                    onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
+                    onChange={(e) =>
+                      setProfile({ ...profile, phone: e.target.value })
+                    }
                     disabled={!isEditingProfile}
                     className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-white disabled:opacity-50"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-400">Empresa</label>
+                  <label className="block text-sm font-medium text-slate-400">
+                    Empresa
+                  </label>
                   <input
                     type="text"
                     value={profile.company}
-                    onChange={(e) => setProfile({ ...profile, company: e.target.value })}
+                    onChange={(e) =>
+                      setProfile({ ...profile, company: e.target.value })
+                    }
                     disabled={!isEditingProfile}
                     className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-white disabled:opacity-50"
                   />
@@ -1067,6 +1231,9 @@ export function DashboardPreview() {
         </>
         )}
       </div>
+
+      {/* Footer */}
+      <Footer />
     </div>
   );
 }

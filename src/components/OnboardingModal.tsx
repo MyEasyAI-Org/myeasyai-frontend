@@ -19,6 +19,12 @@ type FormData = {
   country?: string;
   postal_code?: string;
   address?: string;
+  neighborhood?: string;
+  street?: string;
+  number?: string;
+  complement?: string;
+  city?: string;
+  state?: string;
   preferred_language?: string;
 };
 
@@ -175,7 +181,7 @@ export function OnboardingModal({ isOpen, onClose, onComplete, user }: Onboardin
         const numbers = (formData.mobile_phone || '').replace(/\D/g, '');
         return !!(country && numbers.length === country.phoneLength && !errors.mobile_phone);
       case 2: // Localização
-        return !!(formData.country && formData.postal_code && formData.address);
+        return !!(formData.country && formData.postal_code && formData.neighborhood && formData.street && formData.number && formData.city && formData.state);
       case 3: // Preferências
         return !!(formData.preferred_language);
       default:
@@ -196,41 +202,40 @@ export function OnboardingModal({ isOpen, onClose, onComplete, user }: Onboardin
   };
 
   const handleSubmit = async () => {
-    console.log('📝 Iniciando submit do onboarding...');
-    
-    if (!canProceed()) {
-      console.log('❌ Não pode prosseguir - validação falhou');
-      return;
-    }
-    
+    if (!canProceed()) return;
+
+    // Monta o endereço completo concatenando os campos
+    const fullAddress = [
+      formData.street,
+      formData.number,
+      formData.complement,
+      formData.neighborhood,
+      formData.city,
+      formData.state
+    ].filter(Boolean).join(', ');
+
+    // Debug: Mostra o endereço que será enviado ao backend
+    alert(`Esse é o endereço que vai para o backend: '${fullAddress}'`);
+
     setLoading(true);
     console.log('⏳ Loading ativado, salvando dados...');
     
     try {
       const country = countryCodes.find(c => c.code === formData.country_code);
       const fullPhoneNumber = country ? `${country.dial} ${formData.mobile_phone}` : formData.mobile_phone;
-      
-      const dataToUpdate = {
-        name: formData.name || 'Usuário',
-        preferred_name: formData.preferred_name || formData.name?.split(' ')[0] || 'Usuário',
-        mobile_phone: fullPhoneNumber || null,
-        country: formData.country,
-        postal_code: formData.postal_code || null,
-        address: formData.address,
-        preferred_language: formData.preferred_language || 'pt',
-        last_online: new Date().toISOString()
-      };
-      
-      console.log('💾 Dados para atualizar:', dataToUpdate);
-      console.log('📧 Email do usuário:', user.email);
-      
-      const { data, error } = await supabase
-        .from('users')
-        .update(dataToUpdate)
-        .eq('email', user.email)
-        .select();
 
-      console.log('📊 Resposta do Supabase:', { data, error });
+      const { error } = await supabase
+        .from('users')
+        .update({
+          name: formData.name || 'Usuário',
+          mobile_phone: fullPhoneNumber ? parseInt(fullPhoneNumber.replace(/\D/g, '')) : null,
+          country: formData.country,
+          postal_code: formData.postal_code ? parseInt(formData.postal_code) : null,
+          address: fullAddress,
+          preferred_language: formData.preferred_language || 'pt',
+          last_online: new Date().toISOString()
+        })
+        .eq('email', user.email);
 
       if (error) {
         console.error('❌ Erro ao salvar dados:', error);
@@ -397,18 +402,91 @@ export function OnboardingModal({ isOpen, onClose, onComplete, user }: Onboardin
               />
             </label>
 
+            <div className="grid grid-cols-2 gap-4">
+              <label className="block text-left">
+                <span className="mb-1 block text-sm font-medium text-slate-300">
+                  Rua *
+                </span>
+                <input
+                  type="text"
+                  value={formData.street || ''}
+                  onChange={(e) => setFormData(prev => ({ ...prev, street: e.target.value }))}
+                  placeholder="Ex: Rua das Flores"
+                  className="w-full rounded-lg border border-slate-700 bg-slate-800/60 px-4 py-3 text-slate-100 placeholder-slate-500 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/40"
+                />
+              </label>
+
+              <label className="block text-left">
+                <span className="mb-1 block text-sm font-medium text-slate-300">
+                  Número *
+                </span>
+                <input
+                  type="text"
+                  value={formData.number || ''}
+                  onChange={(e) => setFormData(prev => ({ ...prev, number: e.target.value }))}
+                  placeholder="123"
+                  className="w-full rounded-lg border border-slate-700 bg-slate-800/60 px-4 py-3 text-slate-100 placeholder-slate-500 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/40"
+                />
+              </label>
+            </div>
+
             <label className="block text-left">
               <span className="mb-1 block text-sm font-medium text-slate-300">
-                Endereço completo *
+                Complemento
               </span>
               <input
                 type="text"
-                value={formData.address || ''}
-                onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
-                placeholder="Rua, número, bairro, cidade"
+                value={formData.complement || ''}
+                onChange={(e) => setFormData(prev => ({ ...prev, complement: e.target.value }))}
+                placeholder="Ex: Apto 42, Bloco B"
                 className="w-full rounded-lg border border-slate-700 bg-slate-800/60 px-4 py-3 text-slate-100 placeholder-slate-500 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/40"
               />
             </label>
+
+            <label className="block text-left">
+              <span className="mb-1 block text-sm font-medium text-slate-300">
+                Bairro *
+              </span>
+              <input
+                type="text"
+                value={formData.neighborhood || ''}
+                onChange={(e) => setFormData(prev => ({ ...prev, neighborhood: e.target.value }))}
+                placeholder="Ex: Centro"
+                className="w-full rounded-lg border border-slate-700 bg-slate-800/60 px-4 py-3 text-slate-100 placeholder-slate-500 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/40"
+              />
+            </label>
+
+            <div className="grid grid-cols-2 gap-4">
+              <label className="block text-left">
+                <span className="mb-1 block text-sm font-medium text-slate-300">
+                  Cidade *
+                </span>
+                <input
+                  type="text"
+                  value={formData.city || ''}
+                  onChange={(e) => setFormData(prev => ({ ...prev, city: e.target.value }))}
+                  placeholder="Ex: São Paulo"
+                  className="w-full rounded-lg border border-slate-700 bg-slate-800/60 px-4 py-3 text-slate-100 placeholder-slate-500 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/40"
+                />
+              </label>
+
+              <label className="block text-left">
+                <span className="mb-1 block text-sm font-medium text-slate-300">
+                  UF *
+                </span>
+                <input
+                  type="text"
+                  value={formData.state || ''}
+                  onChange={(e) => {
+                    const value = e.target.value.toUpperCase().replace(/[^A-Z]/g, '');
+                    setFormData(prev => ({ ...prev, state: value }));
+                  }}
+                  placeholder="SP"
+                  maxLength={2}
+                  className="w-full rounded-lg border border-slate-700 bg-slate-800/60 px-4 py-3 text-slate-100 placeholder-slate-500 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/40"
+                />
+              </label>
+            </div>
           </div>
         );
 
