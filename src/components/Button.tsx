@@ -29,7 +29,7 @@ export function Button({
     log: 'bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700 mt-4 w-full',
     nav: 'inline-flex items-center justify-center px-3 py-1.5 text-sm rounded-md bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700 h-8',
     ghostNav:
-      'inline-flex items-center justify-center px-3 py-1.5 text-sm rounded-md text-slate-300 hover:text-white hover:bg-slate-800 transition-colors h-8',
+      'inline-flex items-center justify-center px-3 py-1.5 text-sm rounded-md text-slate-300 hover:text-white hover:bg-slate-800 transition-colors h-8 animate-pulse-subtle border border-blue-400/50 shadow-[0_0_20px_rgba(59,130,246,0.4)] hover:shadow-[0_0_35px_rgba(59,130,246,0.7),0_0_15px_rgba(147,51,234,0.4)] hover:border-blue-400/80',
   };
 
   const className = `${base} ${variants[variant]}`;
