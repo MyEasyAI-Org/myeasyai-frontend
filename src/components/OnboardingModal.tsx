@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Modal } from './Modal';
 import { supabase } from '../lib/supabase';
 import type { User } from '@supabase/supabase-js';
@@ -13,6 +13,7 @@ type OnboardingModalProps = {
 
 type FormData = {
   name?: string;
+  preferred_name?: string; // Como quer ser chamado 
   mobile_phone?: string;
   country_code?: string;
   country?: string;
@@ -76,6 +77,9 @@ export function OnboardingModal({ isOpen, onClose, onComplete, user }: Onboardin
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Partial<FormData>>({});
   const [showCountryDropdown, setShowCountryDropdown] = useState(false);
+  const [isClosingDropdown, setIsClosingDropdown] = useState(false);
+
+  const countryDropdownRef = useRef<HTMLDivElement>(null);
 
   // Função para capitalizar nomes
   const capitalizeName = (name: string): string => {
@@ -154,14 +158,18 @@ export function OnboardingModal({ isOpen, onClose, onComplete, user }: Onboardin
       country_code: countryCode,
       mobile_phone: '' // Limpa o telefone ao mudar de país
     }));
-    setShowCountryDropdown(false);
+    setIsClosingDropdown(true);
+    setTimeout(() => {
+      setShowCountryDropdown(false);
+      setIsClosingDropdown(false);
+    }, 700);
   };
 
   // Validar se pode avançar para próximo passo
   const canProceed = (): boolean => {
     switch (currentStep) {
       case 0: // Dados Pessoais
-        return !!(formData.name && formData.name.trim().split(' ').length >= 2 && !errors.name);
+        return !!(formData.name && formData.name.trim().split(' ').length >= 2 && formData.preferred_name && !errors.name);
       case 1: // Contato
         const country = countryCodes.find(c => c.code === formData.country_code);
         const numbers = (formData.mobile_phone || '').replace(/\D/g, '');
@@ -188,37 +196,55 @@ export function OnboardingModal({ isOpen, onClose, onComplete, user }: Onboardin
   };
 
   const handleSubmit = async () => {
-    if (!canProceed()) return;
+    console.log('📝 Iniciando submit do onboarding...');
+    
+    if (!canProceed()) {
+      console.log('❌ Não pode prosseguir - validação falhou');
+      return;
+    }
     
     setLoading(true);
+    console.log('⏳ Loading ativado, salvando dados...');
+    
     try {
       const country = countryCodes.find(c => c.code === formData.country_code);
       const fullPhoneNumber = country ? `${country.dial} ${formData.mobile_phone}` : formData.mobile_phone;
       
-      const { error } = await supabase
+      const dataToUpdate = {
+        name: formData.name || 'Usuário',
+        preferred_name: formData.preferred_name || formData.name?.split(' ')[0] || 'Usuário',
+        mobile_phone: fullPhoneNumber || null,
+        country: formData.country,
+        postal_code: formData.postal_code || null,
+        address: formData.address,
+        preferred_language: formData.preferred_language || 'pt',
+        last_online: new Date().toISOString()
+      };
+      
+      console.log('💾 Dados para atualizar:', dataToUpdate);
+      console.log('📧 Email do usuário:', user.email);
+      
+      const { data, error } = await supabase
         .from('users')
-        .update({
-          name: formData.name || 'Usuário',
-          mobile_phone: fullPhoneNumber ? parseInt(fullPhoneNumber.replace(/\D/g, '')) : null,
-          country: formData.country,
-          postal_code: formData.postal_code ? parseInt(formData.postal_code) : null,
-          address: formData.address,
-          preferred_language: formData.preferred_language || 'pt',
-          last_online: new Date().toISOString()
-        })
-        .eq('email', user.email);
+        .update(dataToUpdate)
+        .eq('email', user.email)
+        .select();
+
+      console.log('📊 Resposta do Supabase:', { data, error });
 
       if (error) {
-        console.error('Erro ao salvar dados:', error);
-        alert('Erro ao salvar informações. Tente novamente.');
+        console.error('❌ Erro ao salvar dados:', error);
+        alert(`Erro ao salvar informações: ${error.message}`);
+        setLoading(false);
         return;
       }
 
+      console.log('✅ Dados salvos com sucesso!');
+      console.log('🎉 Chamando onComplete...');
       onComplete();
     } catch (error) {
-      console.error('Erro inesperado:', error);
-      alert('Erro inesperado. Tente novamente.');
-    } finally {
+      console.error('❌ Erro inesperado:', error);
+      alert(`Erro inesperado: ${error}`);
       setLoading(false);
     }
   };
@@ -242,7 +268,25 @@ export function OnboardingModal({ isOpen, onClose, onComplete, user }: Onboardin
               {errors.name && (
                 <span className="text-xs text-red-400 mt-1">{errors.name}</span>
               )}
-              
+            </label>
+
+            <label className="block text-left">
+              <span className="mb-1 block text-sm font-medium text-slate-300">
+                Como quer ser chamado? *
+              </span>
+              <input
+                type="text"
+                value={formData.preferred_name || ''}
+                onChange={(e) => {
+                  const capitalizedName = capitalizeName(e.target.value);
+                  setFormData(prev => ({ ...prev, preferred_name: capitalizedName }));
+                }}
+                placeholder="Ex: João, Joãozinho, JV..."
+                className="w-full rounded-lg border border-slate-700 bg-slate-800/60 px-4 py-3 text-slate-100 placeholder-slate-500 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/40"
+              />
+              <p className="text-xs text-slate-400 mt-1">
+                ✨ Este será o nome usado em toda a plataforma
+              </p>
             </label>
           </div>
         );
@@ -257,7 +301,7 @@ export function OnboardingModal({ isOpen, onClose, onComplete, user }: Onboardin
               </span>
               <div className="flex gap-2">
                 {/* Country Code Selector */}
-                <div className="relative">
+                <div className="relative" ref={countryDropdownRef}>
                   <button
                     type="button"
                     onClick={() => setShowCountryDropdown(!showCountryDropdown)}
@@ -271,12 +315,15 @@ export function OnboardingModal({ isOpen, onClose, onComplete, user }: Onboardin
                   </button>
                   
                   {showCountryDropdown && (
-                    <div className="absolute z-10 mt-1 w-64 rounded-lg border border-slate-700 bg-slate-800 shadow-xl max-h-60 overflow-y-auto">
+                    <div className={`absolute z-10 mt-1 w-64 rounded-lg border border-slate-700 bg-slate-800 shadow-xl max-h-60 overflow-y-auto transition-opacity duration-700 ${isClosingDropdown ? 'opacity-0' : 'opacity-100'}`}>
                       {countryCodes.map(country => (
                         <button
                           key={country.code}
                           type="button"
-                          onClick={() => handleCountryCodeChange(country.code)}
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            handleCountryCodeChange(country.code);
+                          }}
                           className="flex items-center gap-3 w-full px-4 py-2 hover:bg-slate-700 transition-colors text-left"
                         >
                           <FlagIcon countryCode={country.code} className="w-6 h-4" />
@@ -408,17 +455,20 @@ export function OnboardingModal({ isOpen, onClose, onComplete, user }: Onboardin
 
   // Fechar dropdown ao clicar fora
   useEffect(() => {
-    const handleClickOutside = () => {
-      if (showCountryDropdown) {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        countryDropdownRef.current &&
+        !countryDropdownRef.current.contains(event.target as Node)
+      ) {
         setShowCountryDropdown(false);
       }
     };
-    
-    if (showCountryDropdown) {
-      document.addEventListener('click', handleClickOutside);
-      return () => document.removeEventListener('click', handleClickOutside);
-    }
-  }, [showCountryDropdown]);
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   return (
     <Modal

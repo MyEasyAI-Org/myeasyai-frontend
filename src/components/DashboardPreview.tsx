@@ -17,6 +17,7 @@ type SubscriptionPlan = 'free' | 'basic' | 'pro' | 'enterprise';
 
 type UserProfile = {
   name: string;
+  preferred_name?: string; // Como o usuário quer ser chamado
   email: string;
   avatar_url?: string;
   bio?: string;
@@ -32,6 +33,18 @@ type SubscriptionData = {
   tokens_used: number;
   tokens_limit: number;
   requests_this_month: number;
+  next_billing_date?: string;
+  billing_cycle?: string;
+  payment_method?: string;
+};
+
+type UserProduct = {
+  id: string;
+  product_name: string;
+  product_status: string;
+  subscribed_at: string;
+  sites_created: number;
+  consultations_made: number;
 };
 
 const PLANS = [
@@ -94,12 +107,12 @@ const PLANS = [
 export function DashboardPreview() {
   const [activeTab, setActiveTab] = useState<'overview' | 'subscription' | 'products' | 'usage' | 'settings' | 'profile'>('overview');
   const [subscription, setSubscription] = useState<SubscriptionData>({
-    plan: 'basic',
+    plan: 'free',
     status: 'active',
     start_date: new Date().toISOString(),
-    tokens_used: 2500,
-    tokens_limit: 10000,
-    requests_this_month: 145,
+    tokens_used: 0,
+    tokens_limit: 1000,
+    requests_this_month: 0,
   });
   const [profile, setProfile] = useState<UserProfile>({
     name: 'Carregando...',
@@ -107,6 +120,12 @@ export function DashboardPreview() {
     bio: '',
     phone: '',
     company: '',
+  });
+  const [userProducts, setUserProducts] = useState<UserProduct[]>([]);
+  const [notificationSettings, setNotificationSettings] = useState({
+    email_notifications: true,
+    token_alerts: true,
+    product_updates: false,
   });
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -159,13 +178,27 @@ export function DashboardPreview() {
       console.log('✅ Usuário autenticado:', user.email);
       setUserUuid(user.id);
 
-      // Buscar dados do usuário na tabela users
-      console.log('🔍 Buscando dados na tabela users...');
+      // Buscar dados completos do usuário na tabela users
+      console.log('🔍 Buscando dados completos na tabela users...');
       const { data: userData, error: dbError } = await supabase
         .from('users')
         .select('*')
         .eq('uuid', user.id)
         .single();
+
+      // Buscar produtos do usuário
+      console.log('🔍 Buscando produtos do usuário...');
+      const { data: productsData, error: productsError } = await supabase
+        .from('user_products')
+        .select('*')
+        .eq('user_uuid', user.id);
+
+      if (productsError) {
+        console.error('⚠️ Erro ao buscar produtos:', productsError);
+      } else {
+        console.log('✅ Produtos carregados:', productsData);
+        setUserProducts(productsData || []);
+      }
 
       if (dbError) {
         console.error('⚠️ Erro ao buscar dados do usuário na tabela:', dbError);
@@ -183,19 +216,34 @@ export function DashboardPreview() {
         // Preencher perfil com dados da tabela users
         setProfile({
           name: userData.name || user.user_metadata?.name || 'Usuário',
+          preferred_name: userData.preferred_name || userData.name?.split(' ')[0] || 'Usuário',
           email: userData.email || user.email || '',
-          bio: userData.address || '',
+          bio: userData.bio || userData.address || '',
           phone: userData.mobile_phone || '',
-          company: userData.country || '',
+          company: userData.company_name || userData.country || '',
+          avatar_url: userData.avatar_url,
         });
 
-        // Atualizar subscription.start_date com created_at do usuário
-        if (userData.created_at) {
-          setSubscription(prev => ({
-            ...prev,
-            start_date: userData.created_at
-          }));
-        }
+        // Atualizar dados de assinatura com dados reais
+        setSubscription({
+          plan: (userData.subscription_plan || 'free') as SubscriptionPlan,
+          status: userData.subscription_status || 'active',
+          start_date: userData.subscription_start_date || userData.created_at,
+          end_date: userData.subscription_end_date,
+          tokens_used: userData.tokens_used || 0,
+          tokens_limit: userData.tokens_limit || 1000,
+          requests_this_month: userData.requests_this_month || 0,
+          next_billing_date: userData.next_billing_date,
+          billing_cycle: userData.billing_cycle,
+          payment_method: userData.payment_method,
+        });
+
+        // Atualizar configurações de notificação
+        setNotificationSettings({
+          email_notifications: userData.email_notifications ?? true,
+          token_alerts: userData.token_alerts ?? true,
+          product_updates: userData.product_updates ?? false,
+        });
       }
       
       console.log('✅ Carregamento concluído com sucesso');
@@ -235,6 +283,7 @@ export function DashboardPreview() {
         .from('users')
         .update({
           name: profile.name,
+          preferred_name: profile.preferred_name || profile.name?.split(' ')[0] || 'Usuário',
           mobile_phone: profile.phone,
           country: profile.company,
           address: profile.bio,
@@ -375,7 +424,7 @@ export function DashboardPreview() {
           <div className="space-y-6">
             <div>
               <h1 className="text-3xl font-bold text-white">
-                Bem-vindo, {profile.name}!
+                Bem-vindo, {profile.preferred_name || profile.name}!
               </h1>
               <p className="mt-2 text-slate-400">
                 Aqui está um resumo da sua conta e atividades recentes.
@@ -919,7 +968,7 @@ export function DashboardPreview() {
 
               <div className="mt-6 space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-400">Nome</label>
+                  <label className="block text-sm font-medium text-slate-400">Nome Completo</label>
                   <input
                     type="text"
                     value={profile.name}
@@ -927,6 +976,19 @@ export function DashboardPreview() {
                     disabled={!isEditingProfile}
                     className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-white disabled:opacity-50"
                   />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-400">Como quer ser chamado? </label>
+                  <input
+                    type="text"
+                    value={profile.preferred_name || ''}
+                    onChange={(e) => setProfile({ ...profile, preferred_name: e.target.value })}
+                    disabled={!isEditingProfile}
+                    placeholder="Ex: João, Joãozinho, JV..."
+                    className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-white disabled:opacity-50"
+                  />
+                  <p className="mt-1 text-xs text-slate-500">✨ Este nome será usado em toda a plataforma</p>
                 </div>
 
                 <div>

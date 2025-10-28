@@ -1,6 +1,10 @@
 import { useState, useRef, useEffect } from 'react';
 import { Sparkles, Upload, Eye, Loader2, Send, ArrowLeft, Globe, Lock, RefreshCw, Smartphone, Save, Palette, Rocket, MessageSquare, Laptop, Store, Handshake, Utensils, Heart, GraduationCap, Image as ImageIcon, X } from 'lucide-react';
 import { SiteTemplate } from './SiteTemplate';
+import { SiteEditor } from '../../components/SiteEditor';
+import type { ColorPalette } from '../../constants/colorPalettes';
+import { colorPalettes } from '../../constants/colorPalettes';
+import { rewriteAllContent, correctNameCapitalization } from '../../lib/gemini';
 
 type Message = {
   role: 'user' | 'assistant';
@@ -8,18 +12,22 @@ type Message = {
   options?: Array<{ label: string; value: string; icon?: any }>;
   requiresInput?: boolean;
   requiresImages?: boolean;
+  showColorPalettes?: boolean;
+  showCustomColorButton?: boolean;
 };
 
 type BusinessArea = 'technology' | 'retail' | 'services' | 'food' | 'health' | 'education';
 
-type SectionKey = 'hero' | 'about' | 'services' | 'gallery' | 'app' | 'testimonials' | 'contact';
+type SectionKey = 'hero' | 'about' | 'services' | 'gallery' | 'app' | 'testimonials' | 'contact' | 'faq' | 'pricing' | 'team';
 
 interface SiteData {
   area: string;
   name: string;
   slogan: string;
   description: string;
-  colors: string;
+  vibe: string; // Vibração/emoção do site (dark, vibrant, light, corporate, fun, elegant)
+  colors: string; // JSON string com { primary, secondary, accent, dark, light }
+  selectedPaletteId?: string;
   sections: SectionKey[];
   services: string[];
   gallery: string[];
@@ -27,10 +35,17 @@ interface SiteData {
   appAppStore: string;
   showPlayStore: boolean;
   showAppStore: boolean;
-  testimonials: Array<{ name: string; text: string; rating: number }>;
+  testimonials: Array<{ name: string; role: string; text: string }>;
   address: string;
   phone: string;
   email: string;
+  faq: Array<{ question: string; answer: string }>;
+  pricing: Array<{ name: string; price: string; features: string[] }>;
+  team: Array<{ name: string; role: string; photo?: string }>;
+  heroStats?: Array<{ value: string; label: string }>;
+  features?: Array<{ title: string; description: string }>;
+  aboutContent?: { title: string; subtitle: string; checklist: string[] };
+  serviceDescriptions?: Array<{ name: string; description: string }>;
 }
 
 export function MyEasyWebsite() {
@@ -56,7 +71,9 @@ export function MyEasyWebsite() {
     name: '',
     slogan: '',
     description: '',
+    vibe: '',
     colors: '',
+    selectedPaletteId: undefined,
     sections: [],
     services: [],
     gallery: [],
@@ -67,8 +84,26 @@ export function MyEasyWebsite() {
     testimonials: [],
     address: '',
     phone: '',
-    email: ''
+    email: '',
+    faq: [
+      { question: 'Como posso agendar um horário?', answer: 'Você pode agendar através do nosso site, app ou WhatsApp.' },
+      { question: 'Quais são as formas de pagamento?', answer: 'Aceitamos dinheiro, cartão de crédito/débito e PIX.' },
+      { question: 'Vocês atendem aos finais de semana?', answer: 'Sim, atendemos de segunda a sábado, das 9h às 18h.' }
+    ],
+    pricing: [
+      { name: 'Básico', price: 'R$ 99', features: ['Atendimento básico', 'Produtos padrão', 'Sem agendamento'] },
+      { name: 'Premium', price: 'R$ 199', features: ['Atendimento premium', 'Produtos premium', 'Agendamento prioritário', 'Brindes exclusivos'] },
+      { name: 'VIP', price: 'R$ 299', features: ['Atendimento VIP', 'Produtos top de linha', 'Agendamento exclusivo', 'Tratamento especial', 'Benefícios extras'] }
+    ],
+    team: [
+      { name: 'João Silva', role: 'CEO & Fundador' },
+      { name: 'Maria Santos', role: 'Diretora de Operações' },
+      { name: 'Pedro Costa', role: 'Gerente de Atendimento' }
+    ]
   });
+  const [showColorSelector, setShowColorSelector] = useState(false);
+  const [selectedColorCategory, setSelectedColorCategory] = useState<string | null>(null);
+  const [showEditor, setShowEditor] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [sitePreviewUrl, setSitePreviewUrl] = useState('https://seu-site.netlify.app');
   const [uploadedImages, setUploadedImages] = useState<string[]>([]);
@@ -100,6 +135,42 @@ export function MyEasyWebsite() {
     setMessages([...messages, userMessage, assistantMessage]);
     setSiteData({ ...siteData, area });
     setCurrentStep(1);
+  };
+
+  // Handler para seleção de vibração/emoção do site
+  const handleVibeSelect = (vibe: string) => {
+    const vibeLabels: Record<string, string> = {
+      'vibrant': '🎨 Vibrante & Animado',
+      'dark': '🌑 Dark & Profissional',
+      'light': '☀️ Claro & Alegre',
+      'corporate': '💼 Corporativo & Formal',
+      'fun': '🎪 Divertido & Criativo',
+      'elegant': '✨ Elegante & Minimalista'
+    };
+
+    const userMessage: Message = {
+      role: 'user',
+      content: `Escolhi: ${vibeLabels[vibe]}`
+    };
+
+    const assistantMessage: Message = {
+      role: 'assistant',
+      content: 'Perfeito! 🎨\n\nAgora vamos escolher as cores perfeitas para o seu site!\n\nPrimeiro, escolha uma cor base:',
+      options: [
+        { label: '💙 Azul', value: 'blue' },
+        { label: '💚 Verde', value: 'green' },
+        { label: '💜 Roxo', value: 'purple' },
+        { label: '💗 Rosa', value: 'pink' },
+        { label: '❤️ Vermelho', value: 'red' },
+        { label: '🧡 Laranja', value: 'orange' },
+        { label: '💛 Amarelo', value: 'yellow' },
+        { label: '🤍 Neutro', value: 'neutral' },
+      ]
+    };
+
+    setMessages([...messages, userMessage, assistantMessage]);
+    setSiteData({ ...siteData, vibe });
+    setCurrentStep(4);
   };
 
   const handleSendMessage = () => {
@@ -138,16 +209,34 @@ export function MyEasyWebsite() {
           setSiteData({ ...siteData, description: inputMessage });
           assistantResponse = {
             role: 'assistant',
-            content: 'Ótima descrição! 🎨\n\nVamos escolher as cores do seu site. Descreva as cores que representam sua marca.\n\n(Exemplo: "azul e laranja", "preto e dourado", "verde e branco")\n\nA IA vai encontrar a melhor combinação para você!'
+            content: '✨ Perfeito! Agora me diga:\n\n**Que sentimento você quer transmitir ao visitante do seu site?**',
+            options: [
+              { label: '🎨 Vibrante & Animado', value: 'vibrant' },
+              { label: '🌑 Dark & Profissional', value: 'dark' },
+              { label: '☀️ Claro & Alegre', value: 'light' },
+              { label: '💼 Corporativo & Formal', value: 'corporate' },
+              { label: '🎪 Divertido & Criativo', value: 'fun' },
+              { label: '✨ Elegante & Minimalista', value: 'elegant' },
+            ]
           };
-          setCurrentStep(4);
+          setCurrentStep(3.5); // Novo step para vibração
           break;
         
-        case 4: // Cores
-          setSiteData({ ...siteData, colors: inputMessage });
+        case 3.5: // Vibração (será chamado por handleVibeSelect)
+          // Este caso não será usado diretamente, mas mantenho para consistência
+          break;
+        
+        case 4: // Cores (agora via ColorPaletteSelector, mas mantém fallback para descrição textual)
+          // Este caso só será usado se o usuário usar a opção "Descrever Minhas Cores"
+          const customColors = processColors(inputMessage);
+          setSiteData({ 
+            ...siteData, 
+            colors: JSON.stringify(customColors)
+          });
+          setShowColorSelector(false);
           assistantResponse = {
             role: 'assistant',
-            content: 'Perfeito! ✨\n\nAgora selecione quais seções você quer no seu site:',
+            content: 'Perfeito! ✨\n\nSua paleta personalizada foi criada!\n\nAgora selecione quais seções você quer no seu site:',
             options: [
               { label: 'Hero (Início)', value: 'hero' },
               { label: 'Sobre Nós', value: 'about' },
@@ -177,7 +266,7 @@ export function MyEasyWebsite() {
             } else if (siteData.sections.includes('contact')) {
               assistantResponse = {
                 role: 'assistant',
-                content: '📧 Vamos configurar a seção de CONTATO\n\nQual é o endereço completo da sua empresa?'
+                content: '📧 Vamos configurar a seção de CONTATO\n\nQual é o endereço completo da sua empresa com CEP?'
               };
               setCurrentStep(8);
             } else {
@@ -291,7 +380,7 @@ export function MyEasyWebsite() {
     if (sections.includes('contact') && !siteData.address) {
       setMessages(prev => [...prev, {
         role: 'assistant',
-        content: '📧 Vamos configurar a seção de CONTATO\n\nQual é o endereço completo da sua empresa?'
+        content: '📧 Vamos configurar a seção de CONTATO\n\nQual é o endereço completo da sua empresa com CEP?'
       }]);
       setCurrentStep(7);
       return;
@@ -328,7 +417,106 @@ export function MyEasyWebsite() {
     });
   };
 
-  // Função para processar cores descritas pelo usuário
+  // Handler para seleção de cor base
+  const handleColorCategorySelect = (category: string) => {
+    const categoryLabels: Record<string, string> = {
+      'blue': '💙 Azul',
+      'green': '💚 Verde',
+      'purple': '💜 Roxo',
+      'pink': '💗 Rosa',
+      'red': '❤️ Vermelho',
+      'orange': '🧡 Laranja',
+      'yellow': '💛 Amarelo',
+      'neutral': '🤍 Neutro'
+    };
+
+    const userMessage: Message = {
+      role: 'user',
+      content: `Escolhi: ${categoryLabels[category]}`
+    };
+
+    const assistantMessage: Message = {
+      role: 'assistant',
+      content: `Ótima escolha! ${categoryLabels[category]}\n\nAgora escolha uma das paletas profissionais abaixo:`,
+      showColorPalettes: true,
+      showCustomColorButton: true
+    };
+
+    setMessages([...messages, userMessage, assistantMessage]);
+    setSelectedColorCategory(category);
+    setCurrentStep(4.5);
+  };
+
+  // Handler para seleção de paleta
+  const handlePaletteSelect = (palette: ColorPalette) => {
+    const paletteColors = {
+      primary: palette.primary,
+      secondary: palette.secondary,
+      accent: palette.accent,
+      dark: palette.dark,
+      light: palette.light
+    };
+    
+    setSiteData({ 
+      ...siteData, 
+      colors: JSON.stringify(paletteColors),
+      selectedPaletteId: palette.id
+    });
+    setShowColorSelector(false);
+    
+    // Adicionar mensagem do assistente
+    setMessages(prev => [...prev, {
+      role: 'assistant',
+      content: `Excelente escolha! 🎨\n\nPaleta "${palette.name}" selecionada com sucesso!\n\nAgora selecione quais seções você quer no seu site:`,
+      options: [
+        { label: 'Hero (Início)', value: 'hero' },
+        { label: 'Sobre Nós', value: 'about' },
+        { label: 'Serviços', value: 'services' },
+        { label: 'Galeria', value: 'gallery' },
+        { label: 'Preços', value: 'pricing' },
+        { label: 'Equipe', value: 'team' },
+        { label: 'FAQ', value: 'faq' },
+        { label: 'App Download', value: 'app' },
+        { label: 'Depoimentos', value: 'testimonials' },
+        { label: 'Contato', value: 'contact' },
+      ]
+    }]);
+    setCurrentStep(5);
+  };
+
+  // Handler para descrição customizada de cores
+  const handleCustomColors = (description: string) => {
+    const customColors = processColors(description);
+    setSiteData({ 
+      ...siteData, 
+      colors: JSON.stringify(customColors)
+    });
+    setShowColorSelector(false);
+    
+    // Adicionar mensagens
+    setMessages(prev => [...prev, 
+      {
+        role: 'user',
+        content: `Minhas cores: ${description}`
+      },
+      {
+        role: 'assistant',
+        content: `Perfeito! 🎨\n\nSua paleta personalizada foi criada com base em "${description}"!\n\nAgora selecione quais seções você quer no seu site:`,
+        options: [
+          { label: 'Hero (Início)', value: 'hero' },
+          { label: 'Sobre Nós', value: 'about' },
+          { label: 'Serviços', value: 'services' },
+          { label: 'Galeria', value: 'gallery' },
+          { label: 'App Download', value: 'app' },
+          { label: 'Depoimentos', value: 'testimonials' },
+          { label: 'Contato', value: 'contact' },
+        ]
+      }
+    ]);
+    setCurrentStep(5);
+  };
+
+  // Função para processar cores descritas pelo usuário (IA personalizada)
   const processColors = (colorDescription: string) => {
     const desc = colorDescription.toLowerCase();
     
@@ -395,19 +583,67 @@ export function MyEasyWebsite() {
       secondaryColor = foundColors[0];
     }
     
-    return { primary: primaryColor, secondary: secondaryColor };
+    // Gerar cores complementares
+    const accentColor = foundColors.length > 2 ? foundColors[2] : primaryColor;
+    const darkColor = '#1a1a1a';
+    const lightColor = '#f5f5f5';
+    
+    return { 
+      primary: primaryColor, 
+      secondary: secondaryColor,
+      accent: accentColor,
+      dark: darkColor,
+      light: lightColor
+    };
   };
 
-  const handleGenerateSite = () => {
+  const handleGenerateSite = async () => {
     setIsGenerating(true);
     
-    setTimeout(() => {
-      // Processar cores
-      const processedColors = processColors(siteData.colors);
-      setSiteData({
-        ...siteData,
-        colors: JSON.stringify(processedColors) // Salvar como JSON
+    // Mensagem de que a IA está processando
+    setMessages(prev => [...prev, {
+      role: 'assistant',
+      content: '🤖 Estou processando seus textos com IA...\n\n✨ Reescrevendo slogan\n📝 Otimizando descrição\n🎯 Melhorando serviços\n❓ Gerando FAQ personalizado\n\nIsso vai deixar seu site muito mais profissional e persuasivo!'
+    }]);
+    
+    try {
+      // Primeiro, corrigir a capitalização do nome da empresa
+      const correctedName = await correctNameCapitalization(siteData.name);
+      
+      // Chamar a IA do Gemini para reescrever TODOS os textos
+      const rewrittenContent = await rewriteAllContent({
+        name: correctedName,
+        area: siteData.area,
+        slogan: siteData.slogan,
+        description: siteData.description,
+        services: siteData.services,
       });
+      
+      // Atualizar siteData com TODOS os textos reescritos pela IA
+      const updatedSiteData = {
+        ...siteData,
+        name: correctedName, // Nome com capitalização corrigida
+        slogan: rewrittenContent.slogan,
+        description: rewrittenContent.description,
+        services: rewrittenContent.services,
+        faq: rewrittenContent.faq,
+        heroStats: rewrittenContent.heroStats,
+        features: rewrittenContent.features,
+        aboutContent: rewrittenContent.aboutContent,
+        serviceDescriptions: rewrittenContent.serviceDescriptions,
+        testimonials: rewrittenContent.testimonials
+      };
+      
+      setSiteData(updatedSiteData);
+      
+      // Mensagem de sucesso da IA
+      setMessages(prev => [...prev, {
+        role: 'assistant',
+        content: '✅ Textos otimizados com sucesso!\n\n🎨 Slogan reescrito com impacto\n📖 Descrição persuasiva criada\n🌟 Serviços profissionalizados\n💬 FAQ personalizado gerado\n\nAgora vou gerar seu site...'
+      }]);
+      
+      // Pequeno delay para mostrar a mensagem de sucesso
+      await new Promise(resolve => setTimeout(resolve, 1500));
       
       setGeneratedSite(`site-${Date.now()}`);
       setSitePreviewUrl(`https://${siteData.name.toLowerCase().replace(/\s+/g, '-')}.netlify.app`);
@@ -415,11 +651,25 @@ export function MyEasyWebsite() {
       
       const successMessage: Message = {
         role: 'assistant',
-        content: '🎊 Seu site foi gerado com sucesso!\n\nVocê pode visualizá-lo no preview ao lado.\n\nAgora você pode:\n✏️ Editar cores e textos\n👁️ Abrir em uma nova aba\n🚀 Publicar no Netlify!'
+        content: '🎊 Seu site foi gerado com sucesso!\n\n✨ Todos os textos foram otimizados por IA para máxima conversão!\n\nVocê pode visualizá-lo no preview ao lado.\n\nAgora você pode:\n✏️ Editar cores e textos\n👁️ Abrir em uma nova aba\n🚀 Publicar no Netlify!'
       };
       
       setMessages(prev => [...prev, successMessage]);
-    }, 3000);
+    } catch (error) {
+      console.error('Erro ao gerar site:', error);
+      setIsGenerating(false);
+      
+      setMessages(prev => [...prev, {
+        role: 'assistant',
+        content: '❌ Ocorreu um erro ao otimizar os textos.\n\nMas não se preocupe! Vou gerar seu site com os textos originais.\n\nVocê poderá editá-los manualmente depois.'
+      }]);
+      
+      // Gerar site mesmo com erro na IA
+      setTimeout(() => {
+        setGeneratedSite(`site-${Date.now()}`);
+        setSitePreviewUrl(`https://${siteData.name.toLowerCase().replace(/\s+/g, '-')}.netlify.app`);
+      }, 1000);
+    }
   };
 
   const handlePublishToNetlify = () => {
@@ -517,7 +767,7 @@ export function MyEasyWebsite() {
                       <span className="text-xs font-semibold text-purple-400">AI Assistant</span>
                     </div>
                   )}
-                  <p className="text-sm leading-relaxed whitespace-pre-line">{message.content}</p>
+                  <p className="text-sm leading-relaxed" style={{ whiteSpace: 'pre-wrap' }}>{message.content}</p>
                   
                   {message.options && (
                     <div className="mt-4 grid grid-cols-2 gap-2">
@@ -530,6 +780,10 @@ export function MyEasyWebsite() {
                             onClick={() => {
                               if (currentStep === 0) {
                                 handleAreaSelect(option.value as BusinessArea);
+                              } else if (currentStep === 3.5) {
+                                handleVibeSelect(option.value);
+                              } else if (currentStep === 4) {
+                                handleColorCategorySelect(option.value);
                               } else if (currentStep === 5) {
                                 handleSectionSelect(option.value);
                               } else if (option.value === 'more') {
@@ -554,7 +808,51 @@ export function MyEasyWebsite() {
                     </div>
                   )}
 
-{message.requiresImages && (
+                  {/* Color Palettes Grid */}
+                  {message.showColorPalettes && (
+                    <div className="mt-4 space-y-4">
+                      <div className="grid grid-cols-2 gap-2 max-h-[300px] overflow-y-auto pr-2">
+                        {colorPalettes.filter(p => selectedColorCategory ? p.category === selectedColorCategory : true).map((palette) => (
+                          <button
+                            key={palette.id}
+                            onClick={() => handlePaletteSelect(palette)}
+                            className={`flex items-center gap-2 p-2 rounded-lg border transition-all hover:scale-105 ${
+                              siteData.selectedPaletteId === palette.id
+                                ? 'border-purple-500 bg-purple-500/20'
+                                : 'border-slate-600 bg-slate-700 hover:border-purple-500'
+                            }`}
+                          >
+                            <div className="flex gap-1">
+                              <div className="w-4 h-8 rounded" style={{ backgroundColor: palette.primary }}></div>
+                              <div className="w-4 h-8 rounded" style={{ backgroundColor: palette.secondary }}></div>
+                              <div className="w-4 h-8 rounded" style={{ backgroundColor: palette.accent }}></div>
+                            </div>
+                            <span className="text-xs font-medium text-slate-200">{palette.name}</span>
+                          </button>
+                        ))}
+                      </div>
+                      
+                      {/* Custom Color Button */}
+                      {message.showCustomColorButton && (
+                        <div className="border-t border-slate-700 pt-4">
+                          <button
+                            onClick={() => {
+                              const description = prompt('💡 Descreva suas cores favoritas:\n\nExemplos:\n• "azul e amarelo"\n• "roxo com rosa"\n• "verde e laranja"\n• "preto e dourado"');
+                              if (description) {
+                                handleCustomColors(description);
+                              }
+                            }}
+                            className="w-full flex items-center justify-center gap-2 p-3 rounded-lg border-2 border-dashed border-purple-500/50 bg-purple-500/10 hover:bg-purple-500/20 transition-colors group"
+                          >
+                            <Palette className="h-5 w-5 text-purple-400 group-hover:scale-110 transition-transform" />
+                            <span className="text-sm font-semibold text-purple-300">💡 Ou clique aqui e descreva suas cores em uma frase</span>
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {message.requiresImages && (
                     <div className="mt-4">
                       <input
                         type="file"
@@ -611,26 +909,28 @@ export function MyEasyWebsite() {
           </div>
 
           {/* Input */}
-          <div className="border-t border-slate-800 p-4">
-            <div className="flex space-x-2">
-              <input
-                type="text"
-                value={inputMessage}
-                onChange={(e) => setInputMessage(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-                placeholder="Digite sua mensagem..."
-                disabled={currentStep === 0 || currentStep === 5 || isGenerating}
-                className="flex-1 rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-white placeholder-slate-500 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50"
-              />
-              <button
-                onClick={handleSendMessage}
-                disabled={!inputMessage.trim() || currentStep === 0 || currentStep === 5 || isGenerating}
-                className="rounded-lg bg-purple-600 p-2 text-white hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <Send className="h-5 w-5" />
-              </button>
+          {(
+            <div className="border-t border-slate-800 p-4">
+              <div className="flex space-x-2">
+                <input
+                  type="text"
+                  value={inputMessage}
+                  onChange={(e) => setInputMessage(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                  placeholder="Digite sua mensagem..."
+                  disabled={currentStep === 0 || currentStep === 3.5 || currentStep === 5 || isGenerating}
+                  className="flex-1 rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-white placeholder-slate-500 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50"
+                />
+                <button
+                  onClick={handleSendMessage}
+                  disabled={!inputMessage.trim() || currentStep === 0 || currentStep === 3.5 || currentStep === 5 || isGenerating}
+                  className="rounded-lg bg-purple-600 p-2 text-white hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Send className="h-5 w-5" />
+                </button>
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
         {/* Preview Section - 70% */}
@@ -652,20 +952,12 @@ export function MyEasyWebsite() {
               <div className="flex items-center space-x-2">
                 {generatedSite && (
                   <>
-                    <button className="flex items-center space-x-2 rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-slate-300 hover:bg-slate-700 transition-colors">
+                    <button 
+                      onClick={() => setShowEditor(true)}
+                      className="flex items-center space-x-2 rounded-lg border border-purple-600 bg-purple-600/10 px-3 py-2 text-purple-400 hover:bg-purple-600/20 transition-colors"
+                    >
                       <Save className="h-4 w-4" />
-                      <span className="text-sm">Editar</span>
-                    </button>
-                    <button className="flex items-center space-x-2 rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-slate-300 hover:bg-slate-700 transition-colors">
-                      <RefreshCw className="h-4 w-4" />
-                      <span className="text-sm">Atualizar</span>
-                    </button>
-                    <button className="flex items-center space-x-2 rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-slate-300 hover:bg-slate-700 transition-colors">
-                      <Palette className="h-4 w-4" />
-                      <span className="text-sm">Cores</span>
-                    </button>
-                    <button className="rounded-lg border border-slate-700 bg-slate-800 p-2 text-slate-300 hover:bg-slate-700 transition-colors">
-                      <Smartphone className="h-4 w-4" />
+                      <span className="text-sm">Editar Site</span>
                     </button>
                   </>
                 )}
@@ -698,6 +990,17 @@ export function MyEasyWebsite() {
           </div>
         </div>
       </div>
+
+      {/* Site Editor */}
+      {showEditor && (
+        <SiteEditor
+          siteData={siteData}
+          onUpdate={(updatedData) => {
+            setSiteData(updatedData);
+          }}
+          onClose={() => setShowEditor(false)}
+        />
+      )}
 
       {/* Netlify Modal */}
       {showNetlifyModal && (

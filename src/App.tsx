@@ -143,27 +143,47 @@ function App() {
     // Verificar sessão atual
     const checkUser = async () => {
       try {
+        console.log('🔍 Verificando sessão inicial...');
         const { data: { session } } = await supabase.auth.getSession();
         const currentUser = session?.user ?? null;
-        setUser(currentUser);
         
-        // Se há usuário logado, verificar se precisa de onboarding
         if (currentUser) {
+          console.log('✅ SESSÃO ENCONTRADA! Usuário:', currentUser.email);
+          console.log('📧 Email:', currentUser.email);
+          console.log('🆔 ID:', currentUser.id);
+          
+          setUser(currentUser);
+          
+          // Fechar modais que possam estar abertos
+          console.log('🔐 Fechando modais de login/signup (se abertos)...');
+          setIsLoginOpen(false);
+          setIsSignupOpen(false);
+          
+          console.log('💾 Registrando usuário no banco...');
           await ensureUserInDatabase(currentUser);
+          
+          console.log('🔍 Verificando necessidade de onboarding...');
           const needsOnboardingCheck = await checkUserNeedsOnboarding(currentUser);
           setNeedsOnboarding(needsOnboardingCheck);
+          console.log('📋 Precisa onboarding?', needsOnboardingCheck);
           
           // Abrir modal de onboarding automaticamente se necessário
           if (needsOnboardingCheck) {
-            console.log('✅ Usuário precisa de onboarding - abrindo modal');
+            console.log('✅ Abrindo modal de onboarding...');
             setIsOnboardingOpen(true);
           }
+          
+          console.log('✨ Sessão carregada com sucesso! NavBar deve mostrar Dashboard/Sair');
+        } else {
+          console.log('❌ Nenhuma sessão encontrada');
+          setUser(null);
         }
       } catch (error) {
-        console.error('Erro ao verificar sessão:', error);
+        console.error('❌ Erro ao verificar sessão:', error);
         setUser(null);
       } finally {
         setLoading(false);
+        console.log('✅ Carregamento inicial completo');
       }
     };
 
@@ -177,32 +197,44 @@ function App() {
     // Escutar mudanças de autenticação
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        setUser(session?.user ?? null);
+        console.log('🔔 Auth State Change:', event, 'User:', session?.user?.email);
+        
+        // Atualizar estado do usuário IMEDIATAMENTE
+        const newUser = session?.user ?? null;
+        setUser(newUser);
+        console.log('👤 Estado do usuário atualizado:', newUser?.email || 'nenhum usuário');
 
         // Fechar modais após login bem-sucedido
         if (event === 'SIGNED_IN') {
-          console.log('🔑 Evento SIGNED_IN detectado');
+          console.log('🔑 ✅ Evento SIGNED_IN detectado - Usuário:', session?.user?.email);
+          console.log('🔐 Fechando modais de login/signup...');
           setIsLoginOpen(false);
           setIsSignupOpen(false);
 
           // Registrar usuário na tabela users (especialmente para login social)
           if (session?.user) {
+            console.log('💾 Registrando usuário no banco...');
             await ensureUserInDatabase(session.user);
 
             // Verificar se precisa de onboarding
+            console.log('🔍 Verificando necessidade de onboarding...');
             const needsOnboardingCheck = await checkUserNeedsOnboarding(session.user);
             setNeedsOnboarding(needsOnboardingCheck);
+            console.log('📋 Precisa onboarding?', needsOnboardingCheck);
 
             // Se precisar de onboarding, abrir modal automaticamente
             if (needsOnboardingCheck) {
+              console.log('✅ Abrindo modal de onboarding...');
               setIsOnboardingOpen(true);
             }
           }
+          
+          console.log('✨ Login completo! Interface deve atualizar agora.');
         }
 
         // Limpar estados após logout
         if (event === 'SIGNED_OUT') {
-          console.log('🚪 Evento SIGNED_OUT detectado');
+          console.log('🚪 ✅ Evento SIGNED_OUT detectado');
           setUser(null);
           setCurrentView('home');
           setNeedsOnboarding(false);
