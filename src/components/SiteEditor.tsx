@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { X, Type, Palette, Image as ImageIcon, Layout, Sparkles, Undo, Redo, Download, Eye, EyeOff, Monitor, Tablet, Smartphone, Plus, Trash2, Save, Upload } from 'lucide-react';
+import { X, Type, Palette, Image as ImageIcon, Layout, Undo, Redo, Monitor, Tablet, Smartphone, Plus, Trash2, Save, Upload } from 'lucide-react';
 import { EditableSiteTemplate } from '../features/myeasywebsite/EditableSiteTemplate';
 
 interface SiteEditorProps {
@@ -17,8 +17,6 @@ export function SiteEditor({ siteData, onUpdate, onClose }: SiteEditorProps) {
   const [history, setHistory] = useState<any[]>([siteData]);
   const [historyIndex, setHistoryIndex] = useState(0);
   const [tempData, setTempData] = useState(siteData);
-  const [showPreview, setShowPreview] = useState(true);
-  const [editingElement, setEditingElement] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null);
 
@@ -183,11 +181,6 @@ export function SiteEditor({ siteData, onUpdate, onClose }: SiteEditorProps) {
       const newSections = [...currentSections, section];
       updateData({ ...tempData, sections: newSections });
     }
-  };
-
-  // Export HTML
-  const handleExport = () => {
-    alert('Funcionalidade de export será implementada em breve!');
   };
 
   // Salvar alterações

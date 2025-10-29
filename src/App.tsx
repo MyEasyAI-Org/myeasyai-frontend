@@ -46,7 +46,6 @@ function App() {
   const [needsOnboarding, setNeedsOnboarding] = useState(false);
   const [isAuthLoading, setIsAuthLoading] = useState(false);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
-  const [isLoadingDashboard, setIsLoadingDashboard] = useState(false);
   const [isCheckingAuth, setIsCheckingAuth] = useState(() => {
     // Se já tem dados no localStorage, não precisa mostrar loading
     return !localStorage.getItem('userName');
@@ -344,11 +343,9 @@ function App() {
         <LoadingBar isLoading={isAuthLoading} duration={2300} />
         <DashboardPreview
           key={dashboardKey}
-          onLogout={handleLogout}
           onGoHome={goToHome}
           onGoToMyEasyWebsite={goToMyEasyWebsite}
           onGoToBusinessGuru={goToBusinessGuru}
-          userName={userName}
           onLoadingComplete={() => {
             // Callback quando o carregamento do dashboard termina
             console.log('Dashboard carregado com sucesso!');
