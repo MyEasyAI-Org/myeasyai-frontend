@@ -2,6 +2,11 @@ import { useState, useRef, useEffect } from 'react';
 import { Button } from './Button';
 import { LogOut, Home } from 'lucide-react';
 import type { User } from '@supabase/supabase-js';
+import NotificationBell from './NotificationBell';
+import NotificationDropdown from './NotificationDropdown';
+import NotificationDetailModal from './NotificationDetailModal';
+import { useNotifications } from '../hooks/useNotifications';
+import type { Notification } from '../types/notification';
 
 type NavBarProps = {
   onLoginClick?: () => void;
@@ -27,24 +32,38 @@ export default function NavBar({
   isCheckingAuth = false
 }: NavBarProps) {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isNotificationDropdownOpen, setIsNotificationDropdownOpen] = useState(false);
+  const [selectedNotification, setSelectedNotification] = useState<Notification | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const notificationDropdownRef = useRef<HTMLDivElement>(null);
 
-  // Fechar dropdown ao clicar fora
+  // Hook de notificações
+  const {
+    getUnreadCount,
+    getLatest,
+    markAsRead,
+    markAllAsRead,
+  } = useNotifications();
+
+  // Fechar dropdowns ao clicar fora
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsDropdownOpen(false);
       }
+      if (notificationDropdownRef.current && !notificationDropdownRef.current.contains(event.target as Node)) {
+        setIsNotificationDropdownOpen(false);
+      }
     };
 
-    if (isDropdownOpen) {
+    if (isDropdownOpen || isNotificationDropdownOpen) {
       document.addEventListener('mousedown', handleClickOutside);
     }
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [isDropdownOpen]);
+  }, [isDropdownOpen, isNotificationDropdownOpen]);
 
   // Função para gerar iniciais do nome
   const getInitials = (name: string) => {
@@ -84,7 +103,29 @@ export default function NavBar({
       element.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
   };
+
+  // Handlers de notificações
+  const handleNotificationClick = (notification: Notification) => {
+    markAsRead(notification.id);
+    setSelectedNotification(notification);
+    setIsNotificationDropdownOpen(false);
+  };
+
+  const handleCloseNotificationModal = () => {
+    setSelectedNotification(null);
+  };
+
+  const handleMarkAllAsRead = () => {
+    markAllAsRead();
+  };
+
+  const handleViewAll = () => {
+    // TODO: Implementar navegação para página de histórico completo
+    setIsNotificationDropdownOpen(false);
+    alert('Página de histórico completo em desenvolvimento');
+  };
   return (
+    <>
     <nav className="fixed top-0 z-50 w-full border-b border-slate-800 bg-black-main/95 backdrop-blur-sm">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between">
@@ -147,10 +188,29 @@ export default function NavBar({
             </a>
           </div>
 
-          <div className="flex space-x-2 sm:space-x-3">
+          <div className="flex items-center space-x-2 sm:space-x-3">
             {user ? (
-              // Usuário logado - mostrar dropdown menu sofisticado
-              <div className="relative" ref={dropdownRef}>
+              <>
+                {/* Sino de notificações */}
+                <div className="relative" ref={notificationDropdownRef}>
+                  <NotificationBell
+                    unreadCount={getUnreadCount()}
+                    onClick={() => setIsNotificationDropdownOpen(!isNotificationDropdownOpen)}
+                    isOpen={isNotificationDropdownOpen}
+                  />
+
+                  {isNotificationDropdownOpen && (
+                    <NotificationDropdown
+                      notifications={getLatest(10)}
+                      onNotificationClick={handleNotificationClick}
+                      onMarkAllAsRead={handleMarkAllAsRead}
+                      onViewAll={handleViewAll}
+                    />
+                  )}
+                </div>
+
+                {/* Dropdown do usuário */}
+                <div className="relative" ref={dropdownRef}>
                 <button
                   onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                   className="flex items-center space-x-3 rounded-full border border-slate-700 bg-slate-700/30 px-3 py-2 transition-all hover:border-slate-600 hover:bg-slate-600/40 hover:shadow-lg hover:shadow-purple-500/20"
@@ -208,7 +268,8 @@ export default function NavBar({
                     </div>
                   </div>
                 )}
-              </div>
+                </div>
+              </>
             ) : isCheckingAuth ? (
               // Verificando autenticação - mostrar loading
               <div className="flex items-center space-x-2 px-4 py-2">
@@ -234,5 +295,14 @@ export default function NavBar({
         </div>
       </div>
     </nav>
+
+    {/* Modal de detalhes da notificação - renderizado fora da navbar */}
+    {selectedNotification && (
+      <NotificationDetailModal
+        notification={selectedNotification}
+        onClose={handleCloseNotificationModal}
+      />
+    )}
+    </>
   );
 }
