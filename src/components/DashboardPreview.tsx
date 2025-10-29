@@ -5,7 +5,6 @@ import {
   Clock,
   CreditCard,
   ExternalLink,
-  Home,
   LogOut,
   Package,
   TrendingUp,
@@ -14,7 +13,6 @@ import {
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { Footer } from './Footer';
-import { LoadingIntro } from './LoadingIntro';
 import { supabase, signOut } from '../lib/supabase';
 
 type SubscriptionPlan = 'free' | 'basic' | 'pro' | 'enterprise';
@@ -109,20 +107,16 @@ const PLANS = [
 ];
 
 type DashboardPreviewProps = {
-  onLogout?: () => void;
   onGoHome?: () => void;
   onGoToMyEasyWebsite?: () => void;
   onGoToBusinessGuru?: () => void;
-  userName?: string;
   onLoadingComplete?: () => void;
 };
 
 export function DashboardPreview({
-  onLogout,
   onGoHome,
   onGoToMyEasyWebsite,
   onGoToBusinessGuru,
-  userName = 'Usuário',
   onLoadingComplete,
 }: DashboardPreviewProps = {}) {
   const [activeTab, setActiveTab] = useState<
@@ -144,11 +138,6 @@ export function DashboardPreview({
     company: '',
   });
   const [userProducts, setUserProducts] = useState<UserProduct[]>([]);
-  const [notificationSettings, setNotificationSettings] = useState({
-    email_notifications: true,
-    token_alerts: true,
-    product_updates: false,
-  });
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [loadingProgress, setLoadingProgress] = useState(0);
@@ -307,13 +296,6 @@ export function DashboardPreview({
           next_billing_date: userData.next_billing_date,
           billing_cycle: userData.billing_cycle,
           payment_method: userData.payment_method,
-        });
-
-        // Atualizar configurações de notificação
-        setNotificationSettings({
-          email_notifications: userData.email_notifications ?? true,
-          token_alerts: userData.token_alerts ?? true,
-          product_updates: userData.product_updates ?? false,
         });
 
         // Preencher informações cadastrais
