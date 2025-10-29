@@ -16,6 +16,11 @@ import { useEffect, useRef, useState } from 'react';
 import { Footer } from './Footer';
 import { LoadingIntro } from './LoadingIntro';
 import { supabase, signOut } from '../lib/supabase';
+import NotificationBell from './NotificationBell';
+import NotificationDropdown from './NotificationDropdown';
+import NotificationDetailModal from './NotificationDetailModal';
+import { useNotifications } from '../hooks/useNotifications';
+import type { Notification } from '../types/notification';
 
 type SubscriptionPlan = 'free' | 'basic' | 'pro' | 'enterprise';
 
@@ -153,8 +158,11 @@ export function DashboardPreview({
   const [isLoading, setIsLoading] = useState(true);
   const [loadingProgress, setLoadingProgress] = useState(0);
   const [loadingStep, setLoadingStep] = useState('Inicializando...');
+  const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [userUuid, setUserUuid] = useState<string | null>(null);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isNotificationDropdownOpen, setIsNotificationDropdownOpen] = useState(false);
+  const [selectedNotification, setSelectedNotification] = useState<Notification | null>(null);
   const [cadastralInfo, setCadastralInfo] = useState({
     country: '',
     postal_code: '',
@@ -168,6 +176,15 @@ export function DashboardPreview({
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [confirmationText, setConfirmationText] = useState('');
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const notificationDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Hook de notificações
+  const {
+    getUnreadCount,
+    getLatest,
+    markAsRead,
+    markAllAsRead,
+  } = useNotifications();
 
   // Carregar dados do usuário logado
   useEffect(() => {
@@ -329,8 +346,9 @@ export function DashboardPreview({
 
       setLoadingProgress(100);
       setLoadingStep('Pronto!');
+      setIsLoadingProfile(false);
       await new Promise(resolve => setTimeout(resolve, 500));
-      
+
       console.log('🎉 Dashboard carregado com sucesso!');
 
     } catch (error) {
@@ -347,10 +365,11 @@ export function DashboardPreview({
       
       setLoadingStep('Erro no carregamento');
       setLoadingProgress(100);
-      
+      setIsLoadingProfile(false);
+
       // Mostrar erro por um momento antes de finalizar
       await new Promise(resolve => setTimeout(resolve, 2000));
-      
+
     } finally {
       // Limpar timeout de segurança
       if (timeoutId) {
@@ -415,16 +434,22 @@ export function DashboardPreview({
       ) {
         setIsDropdownOpen(false);
       }
+      if (
+        notificationDropdownRef.current &&
+        !notificationDropdownRef.current.contains(event.target as Node)
+      ) {
+        setIsNotificationDropdownOpen(false);
+      }
     };
 
-    if (isDropdownOpen) {
+    if (isDropdownOpen || isNotificationDropdownOpen) {
       document.addEventListener('mousedown', handleClickOutside);
     }
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [isDropdownOpen]);
+  }, [isDropdownOpen, isNotificationDropdownOpen]);
 
   const handleChangePlan = (newPlan: SubscriptionPlan) => {
     alert(`Solicitação de mudança para plano ${newPlan} enviada!`);
@@ -446,7 +471,7 @@ export function DashboardPreview({
 
   const handleAccessProduct = (productName: string) => {
     const name = productName.toLowerCase();
-    
+
     if (name.includes('website') || name.includes('site')) {
       // Redirecionar para MyEasyWebsite
       if (onGoToMyEasyWebsite) {
@@ -469,6 +494,26 @@ export function DashboardPreview({
         window.location.href = '/';
       }
     }
+  };
+
+  // Handlers de notificações
+  const handleNotificationClick = (notification: Notification) => {
+    markAsRead(notification.id);
+    setSelectedNotification(notification);
+    setIsNotificationDropdownOpen(false);
+  };
+
+  const handleCloseNotificationModal = () => {
+    setSelectedNotification(null);
+  };
+
+  const handleMarkAllAsRead = () => {
+    markAllAsRead();
+  };
+
+  const handleViewAll = () => {
+    setIsNotificationDropdownOpen(false);
+    alert('Página de histórico completo em desenvolvimento');
   };
 
   // Função para gerar iniciais do nome
@@ -652,20 +697,48 @@ export function DashboardPreview({
                 </span>
               </button>
             </div>
-            <div className="relative" ref={dropdownRef}>
-              <button
-                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                className="flex items-center space-x-3 rounded-full border border-slate-700 bg-slate-700/30 px-3 py-2 transition-all hover:border-slate-600 hover:bg-slate-600/40 hover:shadow-lg hover:shadow-purple-500/20"
-              >
-                <div className="h-9 w-9 flex-shrink-0 overflow-hidden rounded-full ring-2 ring-purple-500/30">
-                  {getAvatarContent()}
-                </div>
-                <span className="text-sm font-medium text-slate-200">
-                  Olá, {profile.preferred_name || profile.name.split(' ')[0]}
-                </span>
-              </button>
+            <div className="flex items-center space-x-3">
+              {/* Sino de notificações */}
+              <div className="relative z-20" ref={notificationDropdownRef}>
+                <NotificationBell
+                  unreadCount={getUnreadCount()}
+                  onClick={() => setIsNotificationDropdownOpen(!isNotificationDropdownOpen)}
+                  isOpen={isNotificationDropdownOpen}
+                />
 
-              {isDropdownOpen && (
+                {isNotificationDropdownOpen && (
+                  <NotificationDropdown
+                    notifications={getLatest(10)}
+                    onNotificationClick={handleNotificationClick}
+                    onMarkAllAsRead={handleMarkAllAsRead}
+                    onViewAll={handleViewAll}
+                  />
+                )}
+              </div>
+
+              {/* Dropdown do usuário */}
+              <div className="relative z-10" ref={dropdownRef}>
+                <button
+                  onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                  className="flex items-center space-x-3 rounded-full border border-slate-700 bg-slate-700/30 px-3 py-2 transition-all hover:border-slate-600 hover:bg-slate-600/40 hover:shadow-lg hover:shadow-purple-500/20"
+                >
+                  <div className="h-9 w-9 flex-shrink-0 overflow-hidden rounded-full ring-2 ring-purple-500/30">
+                    {getAvatarContent()}
+                  </div>
+                  <span className="text-sm font-medium text-slate-200">
+                    {isLoadingProfile ? (
+                      <span className="loading-dots">
+                        <span>.</span>
+                        <span>.</span>
+                        <span>.</span>
+                      </span>
+                    ) : (
+                      `Olá, ${profile.preferred_name || profile.name.split(' ')[0]}`
+                    )}
+                  </span>
+                </button>
+
+                {isDropdownOpen && (
                 <div className="absolute right-0 mt-2 w-64 origin-top-right animate-in fade-in slide-in-from-top-2 duration-200 rounded-xl border border-slate-700 bg-slate-800/95 backdrop-blur-xl shadow-2xl shadow-black/50">
                   <div className="p-4 border-b border-slate-700">
                     <div className="flex items-center space-x-3">
@@ -780,7 +853,15 @@ export function DashboardPreview({
           <div className="space-y-6">
             <div>
               <h1 className="text-3xl font-bold text-white">
-                Bem-vindo, {profile.preferred_name || profile.name}!
+                Bem-vindo, {isLoadingProfile ? (
+                  <span className="loading-dots">
+                    <span>.</span>
+                    <span>.</span>
+                    <span>.</span>
+                  </span>
+                ) : (
+                  profile.preferred_name || profile.name
+                )}!
               </h1>
               <p className="mt-2 text-slate-400">
                 Aqui está um resumo da sua conta e atividades recentes.
@@ -1671,6 +1752,14 @@ export function DashboardPreview({
 
       {/* Footer */}
       <Footer />
+
+      {/* Modal de detalhes da notificação - renderizado fora do container */}
+      {selectedNotification && (
+        <NotificationDetailModal
+          notification={selectedNotification}
+          onClose={handleCloseNotificationModal}
+        />
+      )}
     </div>
   );
 }
