@@ -796,6 +796,7 @@ export function DashboardPreview({
             </div>
           </div>
         </div>
+      </div>
       </header>
 
       {/* Navigation Tabs */}
