@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Sparkles, Palette, Check, Wand2, Loader2 } from 'lucide-react';
-import { colorPalettes, type ColorPalette, getCategoryColor, getCategoryIcon } from '../constants/colorPalettes';
+import { colorPalettes, type ColorPalette, getCategoryIcon } from '../constants/colorPalettes';
 import { generateCustomColorPalettes } from '../lib/gemini';
 
 interface ColorPaletteSelectorProps {
@@ -15,7 +15,6 @@ export function ColorPaletteSelector({ onSelectPalette, onCustomColors, selected
   const [customDescription, setCustomDescription] = useState('');
   const [isGeneratingPalettes, setIsGeneratingPalettes] = useState(false);
   const [customPalettes, setCustomPalettes] = useState<ColorPalette[]>([]);
-  const [showAIPalettes, setShowAIPalettes] = useState(false);
 
   const categories = Array.from(new Set(colorPalettes.map(p => p.category)));
   
@@ -42,7 +41,6 @@ export function ColorPaletteSelector({ onSelectPalette, onCustomColors, selected
       
       // Atualizar estado com as novas paletas
       setCustomPalettes(aiPalettes);
-      setShowAIPalettes(true);
       setSelectedCategory('custom'); // Mostrar categoria custom automaticamente
       
       // Ainda chamar o callback original para compatibilidade

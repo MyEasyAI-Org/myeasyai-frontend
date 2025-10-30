@@ -1,5 +1,3 @@
-import React from 'react';
-
 interface SiteTemplateProps {
   siteData: {
     area: string;
@@ -79,84 +77,35 @@ export function SiteTemplate({ siteData }: SiteTemplateProps) {
   };
 
   const primaryLight = lightenColor(primaryColor, 0.3);
-  const primaryDark = primaryColor;
-  const secondaryLight = lightenColor(secondaryColor, 0.2);
 
   // ========== CORES DINÂMICAS BASEADAS EM CONTRASTE ==========
-  
-  // Cores de texto para diferentes contextos
-  const heroTextColor = getContrastText(primaryColor);
-  const badgeTextColor = getContrastText(primaryColor);
-  const badgeBorderColor = `${badgeTextColor}20`;
-  
+
   // Aplicar estilos baseados na vibração/emoção escolhida
   const vibe = siteData.vibe || 'vibrant';
-  
-  // Definir backgrounds e cores de texto baseados na vibração
-  let heroBg = 'bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900';
+
+  // Definir backgrounds baseados na vibração
   let headerBg = 'bg-gray-900/95';
-  let sectionBg = 'bg-gray-50';
-  let darkSectionBg = 'bg-gray-900';
-  let textOnDark = 'text-white';
-  let textOnLight = 'text-gray-900';
-  let iconColor = primaryColor;
-  
+
   switch(vibe) {
     case 'light':
-      heroBg = 'bg-gradient-to-br from-white via-gray-50 to-gray-100';
       headerBg = 'bg-white/95 border-b border-gray-200';
-      sectionBg = 'bg-white';
-      darkSectionBg = 'bg-gray-50';
-      textOnDark = 'text-gray-900';
-      iconColor = primaryColor;
       break;
     case 'dark':
-      heroBg = 'bg-gradient-to-br from-black via-gray-900 to-black';
       headerBg = 'bg-black/95';
-      sectionBg = 'bg-gray-900';
-      darkSectionBg = 'bg-black';
-      textOnDark = 'text-white';
-      iconColor = primaryColor;
       break;
     case 'vibrant':
-      heroBg = `bg-gradient-to-br from-[${primaryColor}] via-[${secondaryColor}] to-[${primaryColor}]`;
       headerBg = `bg-[${primaryColor}]/95`;
-      sectionBg = 'bg-white';
-      darkSectionBg = `bg-gradient-to-br from-[${primaryColor}] to-[${secondaryColor}]`;
-      textOnDark = 'text-white';
-      iconColor = '#ffffff';
       break;
     case 'corporate':
-      heroBg = 'bg-gradient-to-br from-slate-800 via-slate-700 to-slate-800';
       headerBg = 'bg-slate-900/95';
-      sectionBg = 'bg-slate-50';
-      darkSectionBg = 'bg-slate-800';
-      textOnDark = 'text-white';
-      iconColor = primaryColor;
       break;
     case 'fun':
-      heroBg = 'bg-gradient-to-br from-pink-400 via-purple-400 to-blue-400';
       headerBg = 'bg-purple-600/95';
-      sectionBg = 'bg-gradient-to-br from-pink-50 to-purple-50';
-      darkSectionBg = 'bg-gradient-to-br from-purple-600 to-pink-600';
-      textOnDark = 'text-white';
-      iconColor = '#ffffff';
       break;
     case 'elegant':
-      heroBg = 'bg-gradient-to-br from-gray-100 via-white to-gray-100';
       headerBg = 'bg-white/95 border-b border-gray-100';
-      sectionBg = 'bg-gray-50';
-      darkSectionBg = 'bg-gray-900';
-      textOnDark = 'text-white';
-      textOnLight = 'text-gray-800';
-      iconColor = primaryColor;
       break;
   }
-
-  // Determinar cores para as estatísticas baseado no vibe
-  const isLightBackground = vibe === 'light' || vibe === 'elegant';
-  const statsNumberColor = isLightBackground ? primaryColor : '#ffffff';
-  const statsTextColor = isLightBackground ? '#4b5563' : '#ffffff';
 
   // SEO
   const seoTitle = `${siteData.name} - ${siteData.slogan || 'Seu negócio online'}`;
@@ -169,8 +118,6 @@ export function SiteTemplate({ siteData }: SiteTemplateProps) {
     'negócio',
     'serviços'
   ].filter(Boolean).join(', ');
-  
-  const siteUrl = `https://${siteData.name.toLowerCase().replace(/\s+/g, '-')}.netlify.app`;
   
   return (
     <div className="bg-white min-h-full relative">
