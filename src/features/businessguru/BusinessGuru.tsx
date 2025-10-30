@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { MessageSquare, Send, Lightbulb, TrendingUp, Users, DollarSign, Target, Loader2, Building2, ChevronRight, Briefcase, User, ArrowLeft } from 'lucide-react';
-import { businessAreas, onboardingQuestions, type BusinessArea } from '../../constants/businessQuestions';
+import { businessAreas, onboardingQuestions } from '../../constants/businessQuestions';
 
 type Message = {
   role: 'user' | 'assistant';

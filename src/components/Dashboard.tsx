@@ -12,11 +12,6 @@ import {
   ExternalLink,
 } from 'lucide-react';
 import { Footer } from './Footer';
-import NotificationBell from './NotificationBell';
-import NotificationDropdown from './NotificationDropdown';
-import NotificationDetailModal from './NotificationDetailModal';
-import { useNotifications } from '../hooks/useNotifications';
-import type { Notification } from '../types/notification';
 
 type DashboardProps = {
   onLogout: () => void;
@@ -134,43 +129,29 @@ export function Dashboard({ onLogout, onGoHome }: DashboardProps) {
   });
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [isNotificationDropdownOpen, setIsNotificationDropdownOpen] = useState(false);
-  const [selectedNotification, setSelectedNotification] = useState<Notification | null>(null);
   const [isLoadingProfile, setIsLoadingProfile] = useState(() => {
     // Se já tem dados no localStorage, não precisa mostrar loading
     const savedProfile = localStorage.getItem('userProfile');
     return !savedProfile;
   });
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const notificationDropdownRef = useRef<HTMLDivElement>(null);
 
-  // Hook de notificações
-  const {
-    getUnreadCount,
-    getLatest,
-    markAsRead,
-    markAllAsRead,
-  } = useNotifications();
-
-  // Fechar dropdowns ao clicar fora
+  // Fechar dropdown ao clicar fora
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsDropdownOpen(false);
       }
-      if (notificationDropdownRef.current && !notificationDropdownRef.current.contains(event.target as Node)) {
-        setIsNotificationDropdownOpen(false);
-      }
     };
 
-    if (isDropdownOpen || isNotificationDropdownOpen) {
+    if (isDropdownOpen) {
       document.addEventListener('mousedown', handleClickOutside);
     }
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [isDropdownOpen, isNotificationDropdownOpen]);
+  }, [isDropdownOpen]);
 
   useEffect(() => {
     const loadUserData = async () => {
@@ -254,59 +235,7 @@ export function Dashboard({ onLogout, onGoHome }: DashboardProps) {
     return (subscription.tokens_used / subscription.tokens_limit) * 100;
   };
 
-  // Handlers de notificações
-  const handleNotificationClick = (notification: Notification) => {
-    markAsRead(notification.id);
-    setSelectedNotification(notification);
-    setIsNotificationDropdownOpen(false);
-  };
-
-  const handleCloseNotificationModal = () => {
-    setSelectedNotification(null);
-  };
-
-  const handleMarkAllAsRead = () => {
-    markAllAsRead();
-  };
-
-  const handleViewAll = () => {
-    setIsNotificationDropdownOpen(false);
-    alert('Página de histórico completo em desenvolvimento');
-  };
-
-  // Função para gerar iniciais do nome
-  const getInitials = (name: string) => {
-    const names = name.trim().split(' ');
-    if (names.length >= 2) {
-      return `${names[0][0]}${names[names.length - 1][0]}`.toUpperCase();
-    }
-    return name.substring(0, 2).toUpperCase();
-  };
-
-  // Função para obter avatar (foto ou iniciais)
-  const getAvatarContent = () => {
-    // Se tiver avatar_url, exibir imagem
-    if (profile.avatar_url) {
-      return (
-        <img
-          src={profile.avatar_url}
-          alt={profile.name}
-          className="h-full w-full rounded-full object-cover"
-        />
-      );
-    }
-
-    // Caso contrário, exibir iniciais
-    const displayName = profile.preferredName || profile.name || 'Usuário';
-    return (
-      <div className="flex h-full w-full items-center justify-center rounded-full bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 text-white font-bold">
-        {getInitials(displayName)}
-      </div>
-    );
-  };
-
   return (
-    <>
     <div className="flex min-h-screen flex-col bg-gradient-to-br from-black-main to-blue-main">
       {/* Header */}
       <header className="border-b border-slate-800 bg-black-main/50 backdrop-blur-sm">
@@ -325,82 +254,65 @@ export function Dashboard({ onLogout, onGoHome }: DashboardProps) {
                 MyEasyAI Dashboard
               </span>
             </button>
-            <div className="flex items-center space-x-3">
-              {/* Sino de notificações */}
-              <div className="relative z-20" ref={notificationDropdownRef}>
-                <NotificationBell
-                  unreadCount={getUnreadCount()}
-                  onClick={() => setIsNotificationDropdownOpen(!isNotificationDropdownOpen)}
-                  isOpen={isNotificationDropdownOpen}
-                />
-
-                {isNotificationDropdownOpen && (
-                  <NotificationDropdown
-                    notifications={getLatest(10)}
-                    onNotificationClick={handleNotificationClick}
-                    onMarkAllAsRead={handleMarkAllAsRead}
-                    onViewAll={handleViewAll}
-                  />
-                )}
-              </div>
-
-              {/* Dropdown do usuário */}
-              <div className="relative z-10" ref={dropdownRef}>
-                <button
-                  onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                  className="flex items-center space-x-3 rounded-full border border-slate-700 bg-slate-700/30 px-3 py-2 transition-all hover:border-slate-600 hover:bg-slate-600/40 hover:shadow-lg hover:shadow-purple-500/20"
+            <div className="relative" ref={dropdownRef}>
+              <button
+                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                className={`flex items-center justify-center space-x-3 border border-slate-600 bg-slate-700/80 px-4 py-3 text-slate-100 transition-colors hover:border-slate-500 hover:bg-slate-600 min-w-[280px] ${
+                  isDropdownOpen ? 'rounded-t-2xl border-b-transparent' : 'rounded-2xl'
+                }`}
+              >
+                <svg
+                  className="h-5 w-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
                 >
-                  <div className="h-9 w-9 flex-shrink-0 overflow-hidden rounded-full ring-2 ring-purple-500/30">
-                    {getAvatarContent()}
-                  </div>
-                  <span className="text-sm font-medium text-slate-200">
-                    {isLoadingProfile ? (
-                      <span className="loading-dots">
-                        <span>.</span>
-                        <span>.</span>
-                        <span>.</span>
-                      </span>
-                    ) : (
-                      `Olá, ${profile.preferredName || (profile.name ? profile.name.split(' ')[0] : 'Usuário')}`
-                    )}
-                  </span>
-                </button>
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                  />
+                </svg>
+                <span>
+                  {isLoadingProfile ? (
+                    <span className="loading-dots">
+                      <span>.</span>
+                      <span>.</span>
+                      <span>.</span>
+                    </span>
+                  ) : (
+                    `Olá, ${profile.preferredName || (profile.name ? profile.name.split(' ')[0] : 'Usuário')}!`
+                  )}
+                </span>
+                <svg
+                  className={`h-4 w-4 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M19 9l-7 7-7-7"
+                  />
+                </svg>
+              </button>
 
-                {isDropdownOpen && (
-                  <div className="absolute right-0 mt-2 w-64 origin-top-right animate-in fade-in slide-in-from-top-2 duration-200 rounded-xl border border-slate-700 bg-slate-800/95 backdrop-blur-xl shadow-2xl shadow-black/50">
-                    <div className="p-4 border-b border-slate-700">
-                      <div className="flex items-center space-x-3">
-                        <div className="h-12 w-12 flex-shrink-0 overflow-hidden rounded-full ring-2 ring-purple-500/40">
-                          {getAvatarContent()}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-semibold text-white truncate">
-                            {profile.name || 'Usuário'}
-                          </p>
-                          <p className="text-xs text-slate-400 truncate">
-                            {profile.email}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="border-t border-slate-700 p-2">
-                      <button
-                        onClick={() => {
-                          setIsDropdownOpen(false);
-                          onLogout();
-                        }}
-                        className="flex w-full items-center space-x-3 rounded-lg px-3 py-2.5 text-left text-red-400 transition-colors hover:bg-red-500/10"
-                      >
-                        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                        </svg>
-                        <span className="text-sm font-medium">Sair</span>
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
+              {isDropdownOpen && (
+                <div className="absolute right-0 w-full rounded-b-2xl border border-t-0 border-slate-600 bg-slate-700/80 shadow-xl">
+                  <button
+                    onClick={() => {
+                      setIsDropdownOpen(false);
+                      onLogout();
+                    }}
+                    className="block w-full rounded-b-2xl px-4 py-3 text-left text-slate-100 transition-colors hover:bg-slate-600 hover:text-red-400"
+                  >
+                    Sair
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -1081,14 +993,5 @@ export function Dashboard({ onLogout, onGoHome }: DashboardProps) {
       {/* Footer */}
       <Footer />
     </div>
-
-    {/* Modal de detalhes da notificação - renderizado fora do container */}
-    {selectedNotification && (
-      <NotificationDetailModal
-        notification={selectedNotification}
-        onClose={handleCloseNotificationModal}
-      />
-    )}
-    </>
   );
 }

@@ -1,4 +1,16 @@
-import { Twitter, Linkedin, Instagram } from 'lucide-react';
+import { Youtube, Instagram } from 'lucide-react';
+
+// X (Twitter) icon component
+const XIcon = ({ className }: { className?: string }) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="currentColor"
+    className={className}
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+  </svg>
+);
 
 export function Footer() {
   return (
@@ -25,30 +37,34 @@ export function Footer() {
               necessidades.
             </p>
 
+            <h3 className="mb-4 text-lg font-bold text-white">
+              Vem com a gente nas redes também :)
+            </h3>
+
             <div className="flex space-x-4">
               <a
-                href="https://twitter.com"
+                href="https://x.com"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg bg-slate-800 transition-colors hover:bg-slate-700"
+                className="group flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg bg-black transition-all hover:bg-slate-900"
               >
-                <Twitter className="h-5 w-5 text-slate-400" />
+                <XIcon className="h-5 w-5 text-white" />
               </a>
               <a
-                href="https://linkedin.com"
+                href="https://youtube.com"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg bg-slate-800 transition-colors hover:bg-slate-700"
+                className="group flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg bg-[#FF0000] transition-all hover:bg-[#CC0000]"
               >
-                <Linkedin className="h-5 w-5 text-slate-400" />
+                <Youtube className="h-5 w-5 text-white" />
               </a>
               <a
                 href="https://instagram.com"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg bg-slate-800 transition-colors hover:bg-slate-700"
+                className="group flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg bg-gradient-to-br from-purple-600 via-pink-600 to-orange-500 transition-all hover:from-purple-700 hover:via-pink-700 hover:to-orange-600"
               >
-                <Instagram className="h-5 w-5 text-slate-400" />
+                <Instagram className="h-5 w-5 text-white" />
               </a>
             </div>
           </div>
