@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Sparkles, Upload, Eye, Loader2, Send, ArrowLeft, Globe, Lock, RefreshCw, Smartphone, Save, Palette, Rocket, MessageSquare, Laptop, Store, Handshake, Utensils, Heart, GraduationCap, Image as ImageIcon, X, MapPin, Check } from 'lucide-react';
+import { Sparkles, Upload, Eye, Loader2, Send, ArrowLeft, Globe, Lock, Save, Palette, Rocket, MessageSquare, Laptop, Store, Handshake, Utensils, Heart, GraduationCap, X, Check } from 'lucide-react';
 import { SiteTemplate } from './SiteTemplate';
 import { SiteEditor } from '../../components/SiteEditor';
 import { NetlifyDeploy } from '../../components/NetlifyDeploy';
@@ -107,16 +107,13 @@ export function MyEasyWebsite({ onBackToDashboard }: MyEasyWebsiteProps = {}) {
       { name: 'Pedro Costa', role: 'Gerente de Atendimento' }
     ]
   });
-  const [showColorSelector, setShowColorSelector] = useState(false);
   const [selectedColorCategory, setSelectedColorCategory] = useState<string | null>(null);
   const [showEditor, setShowEditor] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [sitePreviewUrl, setSitePreviewUrl] = useState('https://seu-site.netlify.app');
   const [uploadedImages, setUploadedImages] = useState<string[]>([]);
   const [showNetlifyModal, setShowNetlifyModal] = useState(false);
-  const [netlifyName, setNetlifyName] = useState('');
   const [selectedCountry, setSelectedCountry] = useState<CountryAddressConfig>(COUNTRIES[0]); // Brasil por padrão
-  const [phoneInput, setPhoneInput] = useState('');
   const [showCountrySelector, setShowCountrySelector] = useState(false);
   const [addressConfirmation, setAddressConfirmation] = useState<{ address: string; lat: number; lng: number } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -291,7 +288,6 @@ export function MyEasyWebsite({ onBackToDashboard }: MyEasyWebsiteProps = {}) {
             ...siteData, 
             colors: JSON.stringify(customColors)
           });
-          setShowColorSelector(false);
           assistantResponse = {
             role: 'assistant',
             content: 'Perfeito! ✨\n\nSua paleta personalizada foi criada!\n\nAgora selecione quais seções você quer no seu site:',
@@ -392,7 +388,6 @@ export function MyEasyWebsite({ onBackToDashboard }: MyEasyWebsiteProps = {}) {
           // Formatar e salvar telefone
           const formattedPhone = formatPhoneNumber(inputMessage, selectedCountry);
           setSiteData({ ...siteData, phone: `${selectedCountry.dial} ${formattedPhone}` });
-          setPhoneInput('');
           setShowCountrySelector(false);
           
           assistantResponse = {
@@ -554,8 +549,7 @@ export function MyEasyWebsite({ onBackToDashboard }: MyEasyWebsiteProps = {}) {
       colors: JSON.stringify(paletteColors),
       selectedPaletteId: palette.id
     });
-    setShowColorSelector(false);
-    
+
     // Adicionar mensagem do assistente
     setMessages(prev => [...prev, {
       role: 'assistant',
@@ -583,8 +577,6 @@ export function MyEasyWebsite({ onBackToDashboard }: MyEasyWebsiteProps = {}) {
       ...siteData, 
       colors: JSON.stringify(customColors)
     });
-    setShowColorSelector(false);
-    
     // Adicionar mensagens
     setMessages(prev => [...prev, 
       {
@@ -801,97 +793,43 @@ export function MyEasyWebsite({ onBackToDashboard }: MyEasyWebsiteProps = {}) {
     };
 
     const primaryLight = lightenColor(colors.primary, 0.3);
-    const primaryDark = colors.primary;
-    const secondaryLight = lightenColor(colors.secondary, 0.2);
-    
+
     // Definir vibe PRIMEIRO
     const vibe = siteData.vibe || 'vibrant';
     
     // Cores de texto para diferentes contextos (MESMAS do SiteTemplate.tsx)
     const heroTextColor = getContrastText(colors.primary);
-    const badgeTextColor = getContrastText(colors.primary);
-    const badgeBorderColor = `${badgeTextColor}20`;
-    
+
     // Determinar cor do header baseado no vibe
     const headerTextColor = vibe === 'light' || vibe === 'elegant' ? '#111827' : '#ffffff';
     
     // Definir backgrounds e cores baseadas no vibe (MESMAS do SiteTemplate.tsx)
-    let heroBg = 'bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900';
     let headerBg = 'bg-gray-900/95';
-    let sectionBg = 'bg-gray-50';
-    let darkSectionBg = 'bg-gray-900';
-    let textOnDark = 'text-white';
-    let textOnLight = 'text-gray-900';
-    let iconColor = colors.primary;
     
     switch(vibe) {
       case 'light':
-        heroBg = 'bg-gradient-to-br from-white via-gray-50 to-gray-100';
         headerBg = 'bg-white/95 border-b border-gray-200';
-        sectionBg = 'bg-white';
-        darkSectionBg = 'bg-gray-50';
-        textOnDark = 'text-gray-900';
-        iconColor = colors.primary;
         break;
       case 'dark':
-        heroBg = 'bg-gradient-to-br from-black via-gray-900 to-black';
         headerBg = 'bg-black/95';
-        sectionBg = 'bg-gray-900';
-        darkSectionBg = 'bg-black';
-        textOnDark = 'text-white';
-        iconColor = colors.primary;
         break;
       case 'vibrant':
-        heroBg = `bg-gradient-to-br from-[${colors.primary}] via-[${colors.secondary}] to-[${colors.primary}]`;
         headerBg = `bg-[${colors.primary}]/95`;
-        sectionBg = 'bg-white';
-        darkSectionBg = `bg-gradient-to-br from-[${colors.primary}] to-[${colors.secondary}]`;
-        textOnDark = 'text-white';
-        iconColor = '#ffffff';
         break;
       case 'corporate':
-        heroBg = 'bg-gradient-to-br from-slate-800 via-slate-700 to-slate-800';
         headerBg = 'bg-slate-900/95';
-        sectionBg = 'bg-slate-50';
-        darkSectionBg = 'bg-slate-800';
-        textOnDark = 'text-white';
-        iconColor = colors.primary;
         break;
       case 'fun':
-        heroBg = 'bg-gradient-to-br from-pink-400 via-purple-400 to-blue-400';
         headerBg = 'bg-purple-600/95';
-        sectionBg = 'bg-gradient-to-br from-pink-50 to-purple-50';
-        darkSectionBg = 'bg-gradient-to-br from-purple-600 to-pink-600';
-        textOnDark = 'text-white';
-        iconColor = '#ffffff';
         break;
       case 'elegant':
-        heroBg = 'bg-gradient-to-br from-gray-100 via-white to-gray-100';
         headerBg = 'bg-white/95 border-b border-gray-100';
-        sectionBg = 'bg-gray-50';
-        darkSectionBg = 'bg-gray-900';
-        textOnDark = 'text-white';
-        textOnLight = 'text-gray-800';
-        iconColor = colors.primary;
         break;
     }
-
-    // Determinar cores para estatísticas (MESMAS do SiteTemplate.tsx)
-    const isLightBackground = vibe === 'light' || vibe === 'elegant';
-    const statsNumberColor = isLightBackground ? colors.primary : '#ffffff';
-    const statsTextColor = isLightBackground ? '#4b5563' : '#ffffff';
 
     // SEO
     const seoTitle = `${siteData.name} - ${siteData.slogan || 'Seu negócio online'}`;
     const seoDescription = siteData.description || `${siteData.name} - ${siteData.slogan}. Conheça nossos serviços e entre em contato!`;
-    const seoKeywords = [
-      siteData.name,
-      siteData.area,
-      ...(siteData.services || []),
-      'empresa',
-      'negócio',
-      'serviços'
-    ].filter(Boolean).join(', ');
 
     return `<!DOCTYPE html>
 <html lang="pt-BR">
@@ -1772,7 +1710,7 @@ export function MyEasyWebsite({ onBackToDashboard }: MyEasyWebsiteProps = {}) {
                     { name: 'Ana Silva', role: 'Cliente desde 2024', text: 'Excelente serviço! Profissionais atenciosos e ambiente incrível. Recomendo muito!' },
                     { name: 'Carlos Santos', role: 'Cliente desde 2023', text: 'Superou todas as minhas expectativas! Qualidade premium com atendimento impecável.' },
                     { name: 'Maria Costa', role: 'Cliente desde 2024', text: 'Simplesmente perfeito! A melhor experiência que já tive. Voltarei sempre!' }
-                ]).map((testimonial, idx) => `
+                ]).map((testimonial) => `
                 <div class="feature-card">
                     <div style="margin-bottom: 24px; color: #fbbf24; display: flex; gap: 4px;">
                         ${'⭐'.repeat(5)}
@@ -1896,7 +1834,7 @@ export function MyEasyWebsite({ onBackToDashboard }: MyEasyWebsiteProps = {}) {
                 </h2>
             </div>
             <div style="max-width: 896px; margin: 0 auto;">
-                ${siteData.faq.map((item, idx) => `
+                ${siteData.faq.map((item) => `
                 <details style="background: #f9fafb; border-radius: 16px; overflow: hidden; border: 1px solid rgba(${parseInt(colors.primary.slice(1,3), 16)}, ${parseInt(colors.primary.slice(3,5), 16)}, ${parseInt(colors.primary.slice(5,7), 16)}, 0.13); margin-bottom: 16px;">
                     <summary style="display: flex; align-items: center; justify-content: between; padding: 24px; cursor: pointer; list-style: none;">
                         <h3 style="font-size: 18px; font-weight: bold; color: #111827; flex: 1;">${item.question}</h3>
@@ -2123,7 +2061,7 @@ export function MyEasyWebsite({ onBackToDashboard }: MyEasyWebsiteProps = {}) {
     setShowNetlifyModal(true);
   };
 
-  const handleDeploySuccess = (site: any, deploy: any) => {
+  const handleDeploySuccess = (site: any) => {
     setSitePreviewUrl(site.url);
     setShowNetlifyModal(false);
     

@@ -3,7 +3,7 @@ import { Modal } from './Modal';
 import { supabase } from '../lib/supabase';
 import type { User } from '@supabase/supabase-js';
 import * as flags from 'country-flag-icons/react/3x2';
-import { COUNTRIES, getCountryConfig, type CountryAddressConfig } from '../constants/countries';
+import { COUNTRIES, getCountryConfig } from '../constants/countries';
 
 type OnboardingModalProps = {
   isOpen: boolean;
@@ -69,7 +69,6 @@ export function OnboardingModal({ isOpen, onClose, onComplete, user }: Onboardin
     preferred_language: 'pt'
   });
   const [loading, setLoading] = useState(false);
-  const [isLoadingUserData, setIsLoadingUserData] = useState(true);
   const [errors, setErrors] = useState<Partial<FormData>>({});
   const [showCountryDropdown, setShowCountryDropdown] = useState(false);
   const [showLocationDropdown, setShowLocationDropdown] = useState(false);
@@ -694,8 +693,7 @@ export function OnboardingModal({ isOpen, onClose, onComplete, user }: Onboardin
   useEffect(() => {
     const loadUserData = async () => {
       if (!isOpen || !user.email) return;
-      
-      setIsLoadingUserData(true);
+
       try {
         const { data, error } = await supabase
           .from('users')
@@ -732,8 +730,6 @@ export function OnboardingModal({ isOpen, onClose, onComplete, user }: Onboardin
         }
       } catch (error) {
         console.error('Erro ao carregar dados:', error);
-      } finally {
-        setIsLoadingUserData(false);
       }
     };
 
