@@ -224,7 +224,7 @@ export default function NavBar({
                 </button>
 
                 {isDropdownOpen && (
-                  <div className="absolute right-0 mt-2 w-64 origin-top-right animate-in fade-in slide-in-from-top-2 duration-200 rounded-xl border border-slate-700 bg-slate-800/95 backdrop-blur-xl shadow-2xl shadow-black/50">
+                  <div className="absolute right-0 top-[59px] w-64 origin-top-right animate-in fade-in slide-in-from-top-2 duration-200 rounded-xl border border-slate-700 bg-slate-800/95 backdrop-blur-xl shadow-2xl shadow-black/50">
                     <div className="p-4 border-b border-slate-700">
                       <div className="flex items-center space-x-3">
                         <div className="h-12 w-12 flex-shrink-0 overflow-hidden rounded-full ring-2 ring-purple-500/40">
