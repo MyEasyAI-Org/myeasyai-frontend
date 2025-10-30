@@ -14,6 +14,11 @@ import {
 import { useEffect, useRef, useState } from 'react';
 import { Footer } from './Footer';
 import { supabase, signOut } from '../lib/supabase';
+import NotificationBell from './NotificationBell';
+import NotificationDropdown from './NotificationDropdown';
+import NotificationDetailModal from './NotificationDetailModal';
+import { useNotifications } from '../hooks/useNotifications';
+import type { Notification } from '../types/notification';
 
 type SubscriptionPlan = 'free' | 'basic' | 'pro' | 'enterprise';
 
@@ -156,7 +161,18 @@ export function DashboardPreview({
   const [showConfirmationModal, setShowConfirmationModal] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [confirmationText, setConfirmationText] = useState('');
+  const [isNotificationOpen, setIsNotificationOpen] = useState(false);
+  const [selectedNotification, setSelectedNotification] = useState<Notification | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const notificationRef = useRef<HTMLDivElement>(null);
+
+  // Hook de notificações
+  const {
+    getUnreadCount,
+    getLatest,
+    markAsRead,
+    markAllAsRead,
+  } = useNotifications();
 
   // Carregar dados do usuário logado
   useEffect(() => {
@@ -388,7 +404,7 @@ export function DashboardPreview({
     }
   };
 
-  // Fechar dropdown ao clicar fora
+  // Fechar dropdowns ao clicar fora
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -397,16 +413,22 @@ export function DashboardPreview({
       ) {
         setIsDropdownOpen(false);
       }
+      if (
+        notificationRef.current &&
+        !notificationRef.current.contains(event.target as Node)
+      ) {
+        setIsNotificationOpen(false);
+      }
     };
 
-    if (isDropdownOpen) {
+    if (isDropdownOpen || isNotificationOpen) {
       document.addEventListener('mousedown', handleClickOutside);
     }
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [isDropdownOpen]);
+  }, [isDropdownOpen, isNotificationOpen]);
 
   const handleChangePlan = (newPlan: SubscriptionPlan) => {
     alert(`Solicitação de mudança para plano ${newPlan} enviada!`);
@@ -467,20 +489,37 @@ export function DashboardPreview({
     // Se tiver avatar_url, exibir imagem
     if (profile.avatar_url) {
       return (
-        <img 
-          src={profile.avatar_url} 
+        <img
+          src={profile.avatar_url}
           alt={profile.name}
           className="h-full w-full rounded-full object-cover"
         />
       );
     }
-    
+
     // Caso contrário, exibir iniciais
     return (
       <div className="flex h-full w-full items-center justify-center rounded-full bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 text-white font-bold">
         {getInitials(profile.name)}
       </div>
     );
+  };
+
+  // Handlers de notificações
+  const handleNotificationClick = (notification: Notification) => {
+    markAsRead(notification.id);
+    setSelectedNotification(notification);
+    setIsNotificationOpen(false);
+  };
+
+  const handleMarkAllAsRead = () => {
+    markAllAsRead();
+  };
+
+  const handleViewAllNotifications = () => {
+    setIsNotificationOpen(false);
+    // Aqui você pode adicionar navegação para uma página de notificações se existir
+    console.log('Ver todas as notificações');
   };
 
   // Mostrar tela de carregamento enquanto dados estão sendo carregados
@@ -634,18 +673,37 @@ export function DashboardPreview({
                 </span>
               </button>
             </div>
-            <div className="relative" ref={dropdownRef}>
-              <button
-                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                className="flex items-center space-x-3 rounded-full border border-slate-700 bg-slate-700/30 px-3 py-2 transition-all hover:border-slate-600 hover:bg-slate-600/40 hover:shadow-lg hover:shadow-purple-500/20"
-              >
-                <div className="h-9 w-9 flex-shrink-0 overflow-hidden rounded-full ring-2 ring-purple-500/30">
-                  {getAvatarContent()}
-                </div>
-                <span className="text-sm font-medium text-slate-200">
-                  Olá, {profile.preferred_name || profile.name.split(' ')[0]}
-                </span>
-              </button>
+            <div className="flex items-center space-x-3">
+              {/* Sino de Notificação */}
+              <div className="relative" ref={notificationRef}>
+                <NotificationBell
+                  unreadCount={getUnreadCount()}
+                  onClick={() => setIsNotificationOpen(!isNotificationOpen)}
+                  isOpen={isNotificationOpen}
+                />
+                {isNotificationOpen && (
+                  <NotificationDropdown
+                    notifications={getLatest(10)}
+                    onNotificationClick={handleNotificationClick}
+                    onMarkAllAsRead={handleMarkAllAsRead}
+                    onViewAll={handleViewAllNotifications}
+                  />
+                )}
+              </div>
+
+              {/* Dropdown do Usuário */}
+              <div className="relative" ref={dropdownRef}>
+                <button
+                  onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                  className="flex items-center space-x-3 rounded-full border border-slate-700 bg-slate-700/30 px-3 py-2 transition-all hover:border-slate-600 hover:bg-slate-600/40 hover:shadow-lg hover:shadow-purple-500/20"
+                >
+                  <div className="h-9 w-9 flex-shrink-0 overflow-hidden rounded-full ring-2 ring-purple-500/30">
+                    {getAvatarContent()}
+                  </div>
+                  <span className="text-sm font-medium text-slate-200">
+                    Olá, {profile.preferred_name || profile.name.split(' ')[0]}
+                  </span>
+                </button>
 
               {isDropdownOpen && (
                 <div className="absolute right-0 mt-2 w-64 origin-top-right animate-in fade-in slide-in-from-top-2 duration-200 rounded-xl border border-slate-700 bg-slate-800/95 backdrop-blur-xl shadow-2xl shadow-black/50">
@@ -702,6 +760,7 @@ export function DashboardPreview({
                   </div>
                 </div>
               )}
+              </div>
             </div>
           </div>
         </div>
@@ -1653,6 +1712,12 @@ export function DashboardPreview({
 
       {/* Footer */}
       <Footer />
+
+      {/* Modal de Detalhes de Notificação */}
+      <NotificationDetailModal
+        notification={selectedNotification}
+        onClose={() => setSelectedNotification(null)}
+      />
     </div>
   );
 }
