@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { Save, X, Check, Image as ImageIcon, Plus, Trash2 } from 'lucide-react';
+import { X, Check, Image as ImageIcon, Plus, Trash2 } from 'lucide-react';
 
 interface EditableSiteTemplateProps {
   siteData: any;
