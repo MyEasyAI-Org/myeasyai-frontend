@@ -603,10 +603,10 @@ export function SiteTemplate({ siteData }: SiteTemplateProps) {
           <div className="container mx-auto px-6 py-4 flex items-center justify-between">
             <div className={`text-2xl font-bold ${vibe === 'light' || vibe === 'elegant' ? 'text-gray-900' : 'text-white'}`}>{siteData.name}</div>
             <nav className="hidden md:flex gap-8">
-              <a href="#" className={`${vibe === 'light' || vibe === 'elegant' ? 'text-gray-700' : 'text-white'} text-sm uppercase tracking-wide transition hover:opacity-70`}>Início</a>
-              {siteData.sections.includes('services') && <a href="#servicos" className={`${vibe === 'light' || vibe === 'elegant' ? 'text-gray-700' : 'text-white'} text-sm uppercase tracking-wide transition hover:opacity-70`}>Serviços</a>}
-              {siteData.sections.includes('gallery') && <a href="#galeria" className={`${vibe === 'light' || vibe === 'elegant' ? 'text-gray-700' : 'text-white'} text-sm uppercase tracking-wide transition hover:opacity-70`}>Galeria</a>}
-              {siteData.sections.includes('contact') && <a href="#contato" className={`${vibe === 'light' || vibe === 'elegant' ? 'text-gray-700' : 'text-white'} text-sm uppercase tracking-wide transition hover:opacity-70`}>Contato</a>}
+              <a href="#inicio" onClick={(e) => { e.preventDefault(); document.querySelector('.hero')?.scrollIntoView({ behavior: 'smooth' }); }} className={`${vibe === 'light' || vibe === 'elegant' ? 'text-gray-700' : 'text-white'} text-sm uppercase tracking-wide transition hover:opacity-70`}>Início</a>
+              {siteData.sections.includes('services') && <a href="#servicos" onClick={(e) => { e.preventDefault(); document.getElementById('servicos')?.scrollIntoView({ behavior: 'smooth' }); }} className={`${vibe === 'light' || vibe === 'elegant' ? 'text-gray-700' : 'text-white'} text-sm uppercase tracking-wide transition hover:opacity-70`}>Serviços</a>}
+              {siteData.sections.includes('gallery') && <a href="#galeria" onClick={(e) => { e.preventDefault(); document.getElementById('galeria')?.scrollIntoView({ behavior: 'smooth' }); }} className={`${vibe === 'light' || vibe === 'elegant' ? 'text-gray-700' : 'text-white'} text-sm uppercase tracking-wide transition hover:opacity-70`}>Galeria</a>}
+              {siteData.sections.includes('contact') && <a href="#contato" onClick={(e) => { e.preventDefault(); document.getElementById('contato')?.scrollIntoView({ behavior: 'smooth' }); }} className={`${vibe === 'light' || vibe === 'elegant' ? 'text-gray-700' : 'text-white'} text-sm uppercase tracking-wide transition hover:opacity-70`}>Contato</a>}
             </nav>
             <a 
               href={siteData.phone ? `https://wa.me/${siteData.phone.replace(/\D/g, '')}` : '#contato'}
@@ -663,9 +663,11 @@ export function SiteTemplate({ siteData }: SiteTemplateProps) {
         >
           <nav className="flex flex-col gap-6 px-6">
             <a 
-              href="#" 
+              href="#inicio" 
               className={`${vibe === 'light' || vibe === 'elegant' ? 'text-gray-700 border-gray-200' : 'text-white border-white/10'} text-base uppercase tracking-wide py-3 border-b transition hover:opacity-70`}
-              onClick={() => {
+              onClick={(e) => {
+                e.preventDefault();
+                document.querySelector('.hero')?.scrollIntoView({ behavior: 'smooth' });
                 const menu = document.getElementById('mobile-menu');
                 const overlay = document.getElementById('mobile-overlay');
                 const btn = document.getElementById('mobile-menu-btn');
@@ -680,7 +682,9 @@ export function SiteTemplate({ siteData }: SiteTemplateProps) {
               <a 
                 href="#servicos" 
                 className={`${vibe === 'light' || vibe === 'elegant' ? 'text-gray-700 border-gray-200' : 'text-white border-white/10'} text-base uppercase tracking-wide py-3 border-b transition hover:opacity-70`}
-                onClick={() => {
+                onClick={(e) => {
+                  e.preventDefault();
+                  document.getElementById('servicos')?.scrollIntoView({ behavior: 'smooth' });
                   const menu = document.getElementById('mobile-menu');
                   const overlay = document.getElementById('mobile-overlay');
                   const btn = document.getElementById('mobile-menu-btn');
@@ -696,7 +700,9 @@ export function SiteTemplate({ siteData }: SiteTemplateProps) {
               <a 
                 href="#galeria" 
                 className={`${vibe === 'light' || vibe === 'elegant' ? 'text-gray-700 border-gray-200' : 'text-white border-white/10'} text-base uppercase tracking-wide py-3 border-b transition hover:opacity-70`}
-                onClick={() => {
+                onClick={(e) => {
+                  e.preventDefault();
+                  document.getElementById('galeria')?.scrollIntoView({ behavior: 'smooth' });
                   const menu = document.getElementById('mobile-menu');
                   const overlay = document.getElementById('mobile-overlay');
                   const btn = document.getElementById('mobile-menu-btn');
@@ -712,7 +718,9 @@ export function SiteTemplate({ siteData }: SiteTemplateProps) {
               <a 
                 href="#contato" 
                 className={`${vibe === 'light' || vibe === 'elegant' ? 'text-gray-700 border-gray-200' : 'text-white border-white/10'} text-base uppercase tracking-wide py-3 border-b transition hover:opacity-70`}
-                onClick={() => {
+                onClick={(e) => {
+                  e.preventDefault();
+                  document.getElementById('contato')?.scrollIntoView({ behavior: 'smooth' });
                   const menu = document.getElementById('mobile-menu');
                   const overlay = document.getElementById('mobile-overlay');
                   const btn = document.getElementById('mobile-menu-btn');

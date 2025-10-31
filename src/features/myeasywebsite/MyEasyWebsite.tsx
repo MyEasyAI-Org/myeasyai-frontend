@@ -3,10 +3,12 @@ import { Sparkles, Upload, Eye, Loader2, Send, ArrowLeft, Globe, Lock, Save, Pal
 import { SiteTemplate } from './SiteTemplate';
 import { SiteEditor } from '../../components/SiteEditor';
 import { NetlifyDeploy } from '../../components/NetlifyDeploy';
+import { Modal } from '../../components/Modal';
 import type { ColorPalette } from '../../constants/colorPalettes';
 import { colorPalettes } from '../../constants/colorPalettes';
-import { rewriteAllContent, correctNameCapitalization } from '../../lib/gemini';
-import { COUNTRIES, type CountryAddressConfig } from '../../constants/countries';
+import { rewriteAllContent, correctNameCapitalization, generateCustomColorPalettes } from '../../lib/gemini';
+import { COUNTRIES, type CountryAddressConfig, getCountryConfig } from '../../constants/countries';
+import * as flags from 'country-flag-icons/react/3x2';
 
 type Message = {
   role: 'user' | 'assistant';
@@ -114,10 +116,155 @@ export function MyEasyWebsite({ onBackToDashboard }: MyEasyWebsiteProps = {}) {
   const [uploadedImages, setUploadedImages] = useState<string[]>([]);
   const [showNetlifyModal, setShowNetlifyModal] = useState(false);
   const [selectedCountry, setSelectedCountry] = useState<CountryAddressConfig>(COUNTRIES[0]); // Brasil por padrão
-  const [showCountrySelector, setShowCountrySelector] = useState(false);
+  const [showCountryDropdown, setShowCountryDropdown] = useState(false);
   const [addressConfirmation, setAddressConfirmation] = useState<{ address: string; lat: number; lng: number } | null>(null);
+  const [conversationHistory, setConversationHistory] = useState<Array<{ step: number; siteData: SiteData; messages: Message[] }>>([]);
+  const [showSummary, setShowSummary] = useState(false);
+  const [editingField, setEditingField] = useState<string | null>(null);
+  const [editingValue, setEditingValue] = useState<string>('');
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editModalTitle, setEditModalTitle] = useState<string>('');
+  const [editModalPlaceholder, setEditModalPlaceholder] = useState<string>('');
+  const [generatedPalettes, setGeneratedPalettes] = useState<ColorPalette[]>([]);
+  const [isGeneratingPalettes, setIsGeneratingPalettes] = useState(false);
+  const [summaryMessageIndex, setSummaryMessageIndex] = useState<number | null>(null);
+  const [showInputModal, setShowInputModal] = useState(false);
+  const [inputModalConfig, setInputModalConfig] = useState<{
+    title: string;
+    placeholder: string;
+    defaultValue: string;
+    onConfirm: (value: string) => void;
+    multiline?: boolean;
+  } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const countryDropdownRef = useRef<HTMLDivElement>(null);
+  const [modalInputValue, setModalInputValue] = useState('');
+
+  // Função auxiliar para abrir modal de entrada
+  const openInputModal = (config: {
+    title: string;
+    placeholder: string;
+    defaultValue: string;
+    onConfirm: (value: string) => void;
+    multiline?: boolean;
+  }) => {
+    setInputModalConfig(config);
+    setModalInputValue(config.defaultValue);
+    setShowInputModal(true);
+  };
+
+  // Função para fechar modal de entrada
+  const closeInputModal = () => {
+    setShowInputModal(false);
+    setInputModalConfig(null);
+    setModalInputValue('');
+  };
+
+  // Função para confirmar entrada do modal
+  const handleConfirmInput = () => {
+    if (inputModalConfig && modalInputValue.trim()) {
+      inputModalConfig.onConfirm(modalInputValue.trim());
+    }
+    closeInputModal();
+  };
+
+  // Função para salvar snapshot do estado atual antes de avançar
+  const saveSnapshot = () => {
+    setConversationHistory(prev => [...prev, {
+      step: currentStep,
+      siteData: { ...siteData },
+      messages: [...messages]
+    }]);
+  };
+
+  // Função para voltar para o estado anterior
+  const goBack = () => {
+    if (conversationHistory.length === 0) return;
+    
+    const lastSnapshot = conversationHistory[conversationHistory.length - 1];
+    setCurrentStep(lastSnapshot.step);
+    setSiteData(lastSnapshot.siteData);
+    setMessages(lastSnapshot.messages);
+    setConversationHistory(prev => prev.slice(0, -1));
+  };
+
+  // Função para confirmar endereço diretamente (sem precisar digitar)
+  const confirmAddress = () => {
+    if (!addressConfirmation) return;
+    
+    setSiteData({ ...siteData, address: addressConfirmation.address });
+    setAddressConfirmation(null);
+    
+    setMessages(prev => [...prev, {
+      role: 'assistant',
+      content: 'Perfeito! 📞\n\nAgora me diga o telefone de contato:'
+    }]);
+    setCurrentStep(8);
+  };
+
+  // Função para corrigir endereço
+  const correctAddress = () => {
+    setAddressConfirmation(null);
+    setMessages(prev => [...prev, {
+      role: 'assistant',
+      content: 'Ok! Digite o endereço correto:'
+    }]);
+    setCurrentStep(7.5);
+  };
+
+  // Função para abrir modal de edição
+  const openEditModal = (field: string, currentValue: string, title: string, placeholder: string) => {
+    setEditingField(field);
+    setEditingValue(currentValue);
+    setEditModalTitle(title);
+    setEditModalPlaceholder(placeholder);
+    setShowEditModal(true);
+  };
+
+  // Função para salvar edição do modal
+  const handleSaveEdit = async () => {
+    if (!editingField || !editingValue.trim()) return;
+
+    // Se for edição de endereço, fazer geocoding
+    if (editingField === 'address') {
+      const coords = await geocodeAddress(editingValue);
+      
+      if (coords) {
+        setAddressConfirmation({
+          address: editingValue,
+          lat: coords.lat,
+          lng: coords.lng
+        });
+        setSiteData({ ...siteData, address: '' }); // Limpar endereço temporariamente
+        
+        // Adicionar mensagem no chat mostrando o mapa
+        setMessages(prev => [...prev, {
+          role: 'assistant',
+          content: '📍 Encontrei a localização do novo endereço!\\n\\nVerifique no mapa abaixo se está correto:'
+        }]);
+      } else {
+        // Endereço não encontrado - Não fazer nada, apenas fechar o modal
+        // O usuário pode tentar novamente
+        return;
+      }
+    } else {
+      // Para outros campos, atualizar diretamente
+      setSiteData({ ...siteData, [editingField]: editingValue.trim() });
+    }
+
+    // Fechar modal
+    setShowEditModal(false);
+    setEditingField(null);
+    setEditingValue('');
+  };
+
+  // Função para fechar modal de edição
+  const handleCancelEdit = () => {
+    setShowEditModal(false);
+    setEditingField(null);
+    setEditingValue('');
+  };
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -127,13 +274,11 @@ export function MyEasyWebsite({ onBackToDashboard }: MyEasyWebsiteProps = {}) {
     scrollToBottom();
   }, [messages]);
 
-  // Função para converter código de país em emoji de bandeira
-  const getCountryFlag = (countryCode: string): string => {
-    const codePoints = countryCode
-      .toUpperCase()
-      .split('')
-      .map(char => 127397 + char.charCodeAt(0));
-    return String.fromCodePoint(...codePoints);
+  // Helper para renderizar bandeiras SVG
+  const FlagIcon = ({ countryCode, className = "w-6 h-4" }: { countryCode: string; className?: string }) => {
+    const Flag = flags[countryCode as keyof typeof flags];
+    if (!Flag) return null;
+    return <Flag className={className} />;
   };
 
   // Função para formatar telefone baseado no país
@@ -176,6 +321,8 @@ export function MyEasyWebsite({ onBackToDashboard }: MyEasyWebsiteProps = {}) {
   };
 
   const handleAreaSelect = (area: BusinessArea) => {
+    saveSnapshot(); // Salvar snapshot antes de avançar
+    
     const userMessage: Message = {
       role: 'user',
       content: `Selecionei: ${area}`
@@ -194,6 +341,8 @@ export function MyEasyWebsite({ onBackToDashboard }: MyEasyWebsiteProps = {}) {
 
   // Handler para seleção de vibração/emoção do site
   const handleVibeSelect = (vibe: string) => {
+    saveSnapshot(); // Salvar snapshot antes de avançar
+    
     const vibeLabels: Record<string, string> = {
       'vibrant': '🎨 Vibrante & Animado',
       'dark': '🌑 Dark & Profissional',
@@ -230,6 +379,8 @@ export function MyEasyWebsite({ onBackToDashboard }: MyEasyWebsiteProps = {}) {
 
   const handleSendMessage = async () => {
     if (!inputMessage.trim()) return;
+
+    saveSnapshot(); // Salvar snapshot antes de enviar mensagem
 
     const userMessage: Message = {
       role: 'user',
@@ -324,8 +475,14 @@ export function MyEasyWebsite({ onBackToDashboard }: MyEasyWebsiteProps = {}) {
               };
               setCurrentStep(7.5); // Mudança: aguardar endereço
             } else {
-              handleGenerateSite();
-              return;
+              // SEMPRE mostrar resumo antes de gerar o site
+              setShowSummary(true);
+              assistantResponse = {
+                role: 'assistant',
+                content: '📋 Perfeito! Agora vou mostrar um resumo de todas as suas informações para você confirmar:'
+              };
+              setSummaryMessageIndex(messages.length + 1);
+              setCurrentStep(9.5);
             }
           }
           // Processar endereço e buscar coordenadas
@@ -353,8 +510,39 @@ export function MyEasyWebsite({ onBackToDashboard }: MyEasyWebsiteProps = {}) {
             }
           }
           else {
-            handleGenerateSite();
-            return;
+            // SEMPRE mostrar resumo antes de gerar o site
+            setShowSummary(true);
+            assistantResponse = {
+              role: 'assistant',
+              content: '📋 Perfeito! Agora vou mostrar um resumo de todas as suas informações para você confirmar:'
+            };
+            setSummaryMessageIndex(messages.length + 1);
+            setCurrentStep(9.5);
+          }
+          break;
+        
+        case 7.5: // Correção de endereço (quando usuário digitou endereço incorreto)
+          // Buscar coordenadas do novo endereço
+          const newCoords = await geocodeAddress(inputMessage);
+          
+          if (newCoords) {
+            setAddressConfirmation({
+              address: inputMessage,
+              lat: newCoords.lat,
+              lng: newCoords.lng
+            });
+            
+            assistantResponse = {
+              role: 'assistant',
+              content: '📍 Encontrei a localização!\n\nVerifique no mapa abaixo se está correto:',
+            };
+            setCurrentStep(7.6); // Volta para confirmação
+          } else {
+            assistantResponse = {
+              role: 'assistant',
+              content: '❌ Não consegui encontrar esse endereço.\n\nPor favor, digite um endereço mais completo com cidade e estado.'
+            };
+            // Mantém no step 7.5 para tentar novamente
           }
           break;
         
@@ -368,10 +556,9 @@ export function MyEasyWebsite({ onBackToDashboard }: MyEasyWebsiteProps = {}) {
               
               assistantResponse = {
                 role: 'assistant',
-                content: 'Perfeito! 📞\n\nAgora me diga o telefone de contato com DDD:'
+                content: 'Perfeito! 📞\n\nAgora me diga o telefone de contato:'
               };
               setCurrentStep(8);
-              setShowCountrySelector(true);
             }
           } else {
             // Usuário quer corrigir
@@ -388,7 +575,6 @@ export function MyEasyWebsite({ onBackToDashboard }: MyEasyWebsiteProps = {}) {
           // Formatar e salvar telefone
           const formattedPhone = formatPhoneNumber(inputMessage, selectedCountry);
           setSiteData({ ...siteData, phone: `${selectedCountry.dial} ${formattedPhone}` });
-          setShowCountrySelector(false);
           
           assistantResponse = {
             role: 'assistant',
@@ -399,8 +585,29 @@ export function MyEasyWebsite({ onBackToDashboard }: MyEasyWebsiteProps = {}) {
         
         case 9: // Email
           setSiteData({ ...siteData, email: inputMessage });
-          handleGenerateSite();
-          return;
+          // Mostrar resumo antes de gerar o site
+          setShowSummary(true);
+          assistantResponse = {
+            role: 'assistant',
+            content: '📋 Perfeito! Agora vou mostrar um resumo de todas as suas informações para você confirmar:'
+          };
+          // Salvar o índice da mensagem do resumo
+          setSummaryMessageIndex(messages.length + 1); // +1 porque vamos adicionar a mensagem do assistente
+          setCurrentStep(9.5);
+          break;
+        
+        case 9.5: // Após confirmar o resumo
+          if (inputMessage.toLowerCase().includes('confirmar') || inputMessage.toLowerCase().includes('sim') || inputMessage.toLowerCase().includes('correto')) {
+            setShowSummary(false);
+            handleGenerateSite();
+            return;
+          } else {
+            assistantResponse = {
+              role: 'assistant',
+              content: 'Ok! Use os botões "Editar" ao lado de cada item para fazer correções.'
+            };
+          }
+          break;
         
         default:
           assistantResponse = {
@@ -473,8 +680,14 @@ export function MyEasyWebsite({ onBackToDashboard }: MyEasyWebsiteProps = {}) {
       return;
     }
 
-    // Se não há mais perguntas, gera o site
-    handleGenerateSite();
+    // SEMPRE mostrar resumo antes de gerar o site
+    setShowSummary(true);
+    setMessages(prev => [...prev, {
+      role: 'assistant',
+      content: '📋 Perfeito! Agora vou mostrar um resumo de todas as suas informações para você confirmar:'
+    }]);
+    setSummaryMessageIndex(messages.length); // Salvar índice da mensagem atual
+    setCurrentStep(9.5); // Ir direto para confirmação do resumo
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -506,6 +719,8 @@ export function MyEasyWebsite({ onBackToDashboard }: MyEasyWebsiteProps = {}) {
 
   // Handler para seleção de cor base
   const handleColorCategorySelect = (category: string) => {
+    saveSnapshot(); // Salvar snapshot antes de avançar
+    
     const categoryLabels: Record<string, string> = {
       'blue': '💙 Azul',
       'green': '💚 Verde',
@@ -536,6 +751,8 @@ export function MyEasyWebsite({ onBackToDashboard }: MyEasyWebsiteProps = {}) {
 
   // Handler para seleção de paleta
   const handlePaletteSelect = (palette: ColorPalette) => {
+    saveSnapshot(); // Salvar snapshot antes de avançar
+    
     const paletteColors = {
       primary: palette.primary,
       secondary: palette.secondary,
@@ -570,14 +787,11 @@ export function MyEasyWebsite({ onBackToDashboard }: MyEasyWebsiteProps = {}) {
     setCurrentStep(5);
   };
 
-  // Handler para descrição customizada de cores
-  const handleCustomColors = (description: string) => {
-    const customColors = processColors(description);
-    setSiteData({ 
-      ...siteData, 
-      colors: JSON.stringify(customColors)
-    });
-    // Adicionar mensagens
+  // Handler para descrição customizada de cores com IA
+  const handleCustomColors = async (description: string) => {
+    setIsGeneratingPalettes(true);
+    
+    // Adicionar mensagens de loading
     setMessages(prev => [...prev, 
       {
         role: 'user',
@@ -585,7 +799,34 @@ export function MyEasyWebsite({ onBackToDashboard }: MyEasyWebsiteProps = {}) {
       },
       {
         role: 'assistant',
-        content: `Perfeito! 🎨\n\nSua paleta personalizada foi criada com base em "${description}"!\n\nAgora selecione quais seções você quer no seu site:`,
+        content: `🎨 Entendi! Você quer cores "${description}"...\n\n🤖 Deixa eu criar algumas paletas profissionais para você escolher!\n\n✨ Usando IA para gerar 6 opções incríveis...`
+      }
+    ]);
+
+    try {
+      // Chamar IA para gerar 6 paletas
+      const palettes = await generateCustomColorPalettes(description);
+      setGeneratedPalettes(palettes);
+      
+      // Atualizar mensagem com as paletas geradas
+      setMessages(prev => [...prev, {
+        role: 'assistant',
+        content: `✅ Paletas geradas com sucesso!\n\n🎨 Criei ${palettes.length} opções de paletas baseadas em "${description}".\n\nEscolha sua favorita:`,
+        showColorPalettes: true
+      }]);
+      
+    } catch (error) {
+      console.error('Erro ao gerar paletas:', error);
+      // Fallback para processamento local
+      const customColors = processColors(description);
+      setSiteData({ 
+        ...siteData, 
+        colors: JSON.stringify(customColors)
+      });
+      
+      setMessages(prev => [...prev, {
+        role: 'assistant',
+        content: `✅ Paleta personalizada criada!\n\nAgora selecione quais seções você quer no seu site:`,
         options: [
           { label: 'Hero (Início)', value: 'hero' },
           { label: 'Sobre Nós', value: 'about' },
@@ -595,9 +836,11 @@ export function MyEasyWebsite({ onBackToDashboard }: MyEasyWebsiteProps = {}) {
           { label: 'Depoimentos', value: 'testimonials' },
           { label: 'Contato', value: 'contact' },
         ]
-      }
-    ]);
-    setCurrentStep(5);
+      }]);
+      setCurrentStep(5);
+    } finally {
+      setIsGeneratingPalettes(false);
+    }
   };
 
   // Função para processar cores descritas pelo usuário (IA personalizada)
@@ -2131,7 +2374,9 @@ export function MyEasyWebsite({ onBackToDashboard }: MyEasyWebsiteProps = {}) {
               <MessageSquare className="h-5 w-5 text-purple-400" />
               <h2 className="text-lg font-semibold text-white">Assistente de Criação</h2>
             </div>
-            <span className="inline-block h-2 w-2 rounded-full bg-green-400 animate-pulse"></span>
+            <div className="flex items-center space-x-2">
+              <span className="inline-block h-2 w-2 rounded-full bg-green-400 animate-pulse"></span>
+            </div>
           </div>
 
           {/* Messages */}
@@ -2199,7 +2444,7 @@ export function MyEasyWebsite({ onBackToDashboard }: MyEasyWebsiteProps = {}) {
                   {message.showColorPalettes && (
                     <div className="mt-4 space-y-4">
                       <div className="grid grid-cols-2 gap-2 max-h-[300px] overflow-y-auto pr-2">
-                        {colorPalettes.filter(p => selectedColorCategory ? p.category === selectedColorCategory : true).map((palette) => (
+                        {(generatedPalettes.length > 0 ? generatedPalettes : colorPalettes.filter(p => selectedColorCategory ? p.category === selectedColorCategory : true)).map((palette) => (
                           <button
                             key={palette.id}
                             onClick={() => handlePaletteSelect(palette)}
@@ -2224,10 +2469,15 @@ export function MyEasyWebsite({ onBackToDashboard }: MyEasyWebsiteProps = {}) {
                         <div className="border-t border-slate-700 pt-4">
                           <button
                             onClick={() => {
-                              const description = prompt('💡 Descreva suas cores favoritas:\n\nExemplos:\n• "azul e amarelo"\n• "roxo com rosa"\n• "verde e laranja"\n• "preto e dourado"');
-                              if (description) {
-                                handleCustomColors(description);
-                              }
+                              openInputModal({
+                                title: '💡 Descreva suas cores favoritas',
+                                placeholder: 'Ex: azul e amarelo, roxo com rosa, verde e laranja...',
+                                defaultValue: '',
+                                onConfirm: (description) => {
+                                  handleCustomColors(description);
+                                },
+                                multiline: false
+                              });
                             }}
                             className="w-full flex items-center justify-center gap-2 p-3 rounded-lg border-2 border-dashed border-purple-500/50 bg-purple-500/10 hover:bg-purple-500/20 transition-colors group"
                           >
@@ -2305,20 +2555,14 @@ export function MyEasyWebsite({ onBackToDashboard }: MyEasyWebsiteProps = {}) {
                       <p className="text-xs text-slate-300">📍 {addressConfirmation.address}</p>
                       <div className="flex gap-2">
                         <button
-                          onClick={() => {
-                            setInputMessage('sim, está correto');
-                            handleSendMessage();
-                          }}
+                          onClick={confirmAddress}
                           className="flex-1 flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-green-500 to-emerald-600 py-2 text-sm font-semibold text-white hover:from-green-600 hover:to-emerald-700 transition-colors"
                         >
                           <Check className="h-4 w-4" />
                           Confirmar
                         </button>
                         <button
-                          onClick={() => {
-                            setInputMessage('não, quero corrigir');
-                            handleSendMessage();
-                          }}
+                          onClick={correctAddress}
                           className="flex-1 rounded-lg border border-red-500 bg-red-500/10 py-2 text-sm font-semibold text-red-400 hover:bg-red-500/20 transition-colors"
                         >
                           Corrigir
@@ -2327,53 +2571,399 @@ export function MyEasyWebsite({ onBackToDashboard }: MyEasyWebsiteProps = {}) {
                     </div>
                   )}
                   
-                  {/* Seletor de País com Bandeiras para Telefone */}
-                  {showCountrySelector && currentStep === 8 && message.role === 'assistant' && index === messages.length - 1 && (
+                  {/* Resumo das Informações para Confirmação */}
+                  {showSummary && message.role === 'assistant' && index === summaryMessageIndex && (
                     <div className="mt-4 space-y-3">
-                      <p className="text-xs font-semibold text-purple-300 mb-2">🌍 Selecione o país do telefone:</p>
-                      <div className="max-h-64 overflow-y-auto border border-slate-700 rounded-lg bg-slate-900/50 p-2">
-                        <div className="grid grid-cols-1 gap-1">
-                          {COUNTRIES.map((country) => (
+                      <div className="rounded-lg border-2 border-purple-500/30 bg-slate-900/50 overflow-hidden">
+                        {/* Header do Resumo */}
+                        <div className="bg-gradient-to-r from-purple-600 to-blue-600 px-4 py-3">
+                          <h3 className="text-white font-bold text-center flex items-center justify-center gap-2">
+                            <Check className="h-5 w-5" />
+                            Resumo das Suas Informações
+                          </h3>
+                        </div>
+
+                        {/* Corpo do Resumo */}
+                        <div className="p-4 space-y-3 max-h-96 overflow-y-auto">
+                          {/* Nome da Empresa */}
+                          <div className="flex items-start justify-between p-3 rounded-lg bg-slate-800/50 border border-slate-700">
+                            <div className="flex-1">
+                              <p className="text-xs text-slate-400 mb-1">Nome da Empresa</p>
+                              <p className="text-sm font-semibold text-white">{siteData.name}</p>
+                            </div>
                             <button
-                              key={country.code}
                               onClick={() => {
-                                setSelectedCountry(country);
-                                setShowCountrySelector(false);
+                                openInputModal({
+                                  title: 'Editar Nome da Empresa',
+                                  placeholder: 'Digite o novo nome',
+                                  defaultValue: siteData.name,
+                                  onConfirm: (newValue) => {
+                                    setSiteData({ ...siteData, name: newValue });
+                                  }
+                                });
                               }}
-                              className={`flex items-center gap-3 p-2 rounded-lg text-left transition-all hover:bg-purple-500/20 ${
-                                selectedCountry.code === country.code
-                                  ? 'bg-purple-500/30 border border-purple-500'
-                                  : 'bg-slate-800/50 border border-transparent'
-                              }`}
+                              className="ml-2 px-3 py-1 rounded-lg bg-purple-600/20 border border-purple-500 text-purple-300 text-xs font-semibold hover:bg-purple-600/30 transition-colors"
                             >
-                              <span className="text-2xl">{getCountryFlag(country.code)}</span>
-                              <div className="flex-1 min-w-0">
-                                <p className="text-sm font-medium text-white truncate">{country.name}</p>
-                                <p className="text-xs text-slate-400">{country.dial}</p>
-                              </div>
+                              Editar
                             </button>
-                          ))}
+                          </div>
+
+                          {/* Slogan */}
+                          <div className="flex items-start justify-between p-3 rounded-lg bg-slate-800/50 border border-slate-700">
+                            <div className="flex-1">
+                              <p className="text-xs text-slate-400 mb-1">Slogan</p>
+                              <p className="text-sm font-semibold text-white">{siteData.slogan}</p>
+                            </div>
+                            <button
+                              onClick={() => {
+                                openInputModal({
+                                  title: 'Editar Slogan',
+                                  placeholder: 'Digite o novo slogan',
+                                  defaultValue: siteData.slogan,
+                                  onConfirm: (newValue) => {
+                                    setSiteData({ ...siteData, slogan: newValue });
+                                  }
+                                });
+                              }}
+                              className="ml-2 px-3 py-1 rounded-lg bg-purple-600/20 border border-purple-500 text-purple-300 text-xs font-semibold hover:bg-purple-600/30 transition-colors"
+                            >
+                              Editar
+                            </button>
+                          </div>
+
+                          {/* Descrição */}
+                          <div className="flex items-start justify-between p-3 rounded-lg bg-slate-800/50 border border-slate-700">
+                            <div className="flex-1">
+                              <p className="text-xs text-slate-400 mb-1">Descrição</p>
+                              <p className="text-sm text-white line-clamp-3">{siteData.description}</p>
+                            </div>
+                            <button
+                              onClick={() => {
+                                openInputModal({
+                                  title: 'Editar Descrição',
+                                  placeholder: 'Digite a nova descrição',
+                                  defaultValue: siteData.description,
+                                  onConfirm: (newValue) => {
+                                    setSiteData({ ...siteData, description: newValue });
+                                  },
+                                  multiline: true
+                                });
+                              }}
+                              className="ml-2 px-3 py-1 rounded-lg bg-purple-600/20 border border-purple-500 text-purple-300 text-xs font-semibold hover:bg-purple-600/30 transition-colors"
+                            >
+                              Editar
+                            </button>
+                          </div>
+
+                          {/* Cores */}
+                          {siteData.colors && (
+                            <div className="flex items-start justify-between p-3 rounded-lg bg-slate-800/50 border border-slate-700">
+                              <div className="flex-1">
+                                <p className="text-xs text-slate-400 mb-2">Paleta de Cores</p>
+                                <div className="flex gap-2">
+                                  {(() => {
+                                    const colors = JSON.parse(siteData.colors);
+                                    return (
+                                      <>
+                                        <div className="flex flex-col items-center gap-1">
+                                          <div className="w-10 h-10 rounded-lg border-2 border-white/20" style={{ backgroundColor: colors.primary }}></div>
+                                          <span className="text-xs text-slate-400">Principal</span>
+                                        </div>
+                                        <div className="flex flex-col items-center gap-1">
+                                          <div className="w-10 h-10 rounded-lg border-2 border-white/20" style={{ backgroundColor: colors.secondary }}></div>
+                                          <span className="text-xs text-slate-400">Secundária</span>
+                                        </div>
+                                        <div className="flex flex-col items-center gap-1">
+                                          <div className="w-10 h-10 rounded-lg border-2 border-white/20" style={{ backgroundColor: colors.accent }}></div>
+                                          <span className="text-xs text-slate-400">Destaque</span>
+                                        </div>
+                                      </>
+                                    );
+                                  })()}
+                                </div>
+                              </div>
+                              <button
+                                onClick={() => {
+                                  setShowEditModal(true);
+                                  setEditingField('colors');
+                                }}
+                                className="ml-2 px-3 py-1 rounded-lg bg-purple-600/20 border border-purple-500 text-purple-300 text-xs font-semibold hover:bg-purple-600/30 transition-colors"
+                              >
+                                Editar
+                              </button>
+                            </div>
+                          )}
+
+                          {/* Seções */}
+                          <div className="p-3 rounded-lg bg-slate-800/50 border border-slate-700">
+                            <div className="flex items-center justify-between mb-2">
+                              <p className="text-xs text-slate-400">Seções do Site</p>
+                              <button
+                                onClick={() => {
+                                  setEditingField('sections');
+                                  setShowEditModal(true);
+                                }}
+                                className="px-3 py-1 rounded-lg bg-purple-600/20 border border-purple-500 text-purple-300 text-xs font-semibold hover:bg-purple-600/30 transition-colors"
+                              >
+                                Editar
+                              </button>
+                            </div>
+                            <div className="flex flex-wrap gap-1">
+                              {siteData.sections.map(section => (
+                                <span key={section} className="px-2 py-1 rounded bg-purple-600/20 text-purple-300 text-xs font-medium">
+                                  {section}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Serviços */}
+                          {siteData.services.length > 0 && (
+                            <div className="flex items-start justify-between p-3 rounded-lg bg-slate-800/50 border border-slate-700">
+                              <div className="flex-1">
+                                <p className="text-xs text-slate-400 mb-1">Serviços</p>
+                                <p className="text-sm text-white">{siteData.services.join(', ')}</p>
+                              </div>
+                              <button
+                                onClick={() => {
+                                  openInputModal({
+                                    title: 'Editar Serviços',
+                                    placeholder: 'Digite os serviços separados por vírgula',
+                                    defaultValue: siteData.services.join(', '),
+                                    onConfirm: (newValue) => {
+                                      const servicesList = newValue.split(',').map(s => s.trim()).filter(s => s);
+                                      setSiteData({ ...siteData, services: servicesList });
+                                    }
+                                  });
+                                }}
+                                className="ml-2 px-3 py-1 rounded-lg bg-purple-600/20 border border-purple-500 text-purple-300 text-xs font-semibold hover:bg-purple-600/30 transition-colors"
+                              >
+                                Editar
+                              </button>
+                            </div>
+                          )}
+
+                          {/* Galeria */}
+                          {siteData.gallery.length > 0 && (
+                            <div className="p-3 rounded-lg bg-slate-800/50 border border-slate-700">
+                              <p className="text-xs text-slate-400 mb-2">Imagens da Galeria</p>
+                              <div className="grid grid-cols-3 gap-2">
+                                {siteData.gallery.map((img, idx) => (
+                                  <img key={idx} src={img} alt={`Galeria ${idx + 1}`} className="w-full h-16 object-cover rounded" />
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Contato */}
+                          {siteData.sections.includes('contact') && (
+                            <>
+                              {siteData.address && (
+                                <div className="flex items-start justify-between p-3 rounded-lg bg-slate-800/50 border border-slate-700">
+                                  <div className="flex-1">
+                                    <p className="text-xs text-slate-400 mb-1">📍 Endereço</p>
+                                    <p className="text-sm text-white">{siteData.address}</p>
+                                  </div>
+                                  <button
+                                    onClick={() => {
+                                      openInputModal({
+                                        title: 'Editar Endereço',
+                                        placeholder: 'Digite o novo endereço',
+                                        defaultValue: siteData.address,
+                                        onConfirm: (newValue) => {
+                                          setSiteData({ ...siteData, address: newValue });
+                                        }
+                                      });
+                                    }}
+                                    className="ml-2 px-3 py-1 rounded-lg bg-purple-600/20 border border-purple-500 text-purple-300 text-xs font-semibold hover:bg-purple-600/30 transition-colors"
+                                  >
+                                    Editar
+                                  </button>
+                                </div>
+                              )}
+
+                              {siteData.phone && (
+                                <div className="flex items-start justify-between p-3 rounded-lg bg-slate-800/50 border border-slate-700">
+                                  <div className="flex-1">
+                                    <p className="text-xs text-slate-400 mb-1">📞 Telefone</p>
+                                    <p className="text-sm text-white">{siteData.phone}</p>
+                                  </div>
+                                  <button
+                                    onClick={() => {
+                                      openInputModal({
+                                        title: 'Editar Telefone',
+                                        placeholder: 'Digite o novo telefone',
+                                        defaultValue: siteData.phone,
+                                        onConfirm: (newValue) => {
+                                          setSiteData({ ...siteData, phone: newValue });
+                                        }
+                                      });
+                                    }}
+                                    className="ml-2 px-3 py-1 rounded-lg bg-purple-600/20 border border-purple-500 text-purple-300 text-xs font-semibold hover:bg-purple-600/30 transition-colors"
+                                  >
+                                    Editar
+                                  </button>
+                                </div>
+                              )}
+
+                              {siteData.email && (
+                                <div className="flex items-start justify-between p-3 rounded-lg bg-slate-800/50 border border-slate-700">
+                                  <div className="flex-1">
+                                    <p className="text-xs text-slate-400 mb-1">✉️ E-mail</p>
+                                    <p className="text-sm text-white">{siteData.email}</p>
+                                  </div>
+                                  <button
+                                    onClick={() => {
+                                      openInputModal({
+                                        title: 'Editar E-mail',
+                                        placeholder: 'Digite o novo e-mail',
+                                        defaultValue: siteData.email,
+                                        onConfirm: (newValue) => {
+                                          setSiteData({ ...siteData, email: newValue });
+                                        }
+                                      });
+                                    }}
+                                    className="ml-2 px-3 py-1 rounded-lg bg-purple-600/20 border border-purple-500 text-purple-300 text-xs font-semibold hover:bg-purple-600/30 transition-colors"
+                                  >
+                                    Editar
+                                  </button>
+                                </div>
+                              )}
+                            </>
+                          )}
+                        </div>
+
+                        {/* Footer do Resumo */}
+                        <div className="border-t border-slate-700 p-4 bg-slate-800/30">
+                          <p className="text-xs text-slate-400 text-center">
+                            ✨ Revise suas informações e use os botões "Editar" para fazer correções
+                          </p>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2 p-2 rounded-lg bg-slate-800/50 border border-slate-700">
-                        <span className="text-2xl">{getCountryFlag(selectedCountry.code)}</span>
-                        <div className="flex-1">
-                          <p className="text-xs text-slate-400">País selecionado:</p>
-                          <p className="text-sm font-semibold text-white">{selectedCountry.name} {selectedCountry.dial}</p>
-                        </div>
-                      </div>
-                      <p className="text-xs text-slate-400 italic">💡 Digite apenas números, sem traços ou parênteses</p>
                     </div>
                   )}
+                  
                 </div>
               </div>
             ))}
             <div ref={messagesEndRef} />
           </div>
 
+          {/* Botões de Ação - Acima do Input */}
+          {(conversationHistory.length > 0 || showSummary) && (
+            <div className="border-t border-slate-800 px-4 pt-3 pb-2 space-y-2">
+              {conversationHistory.length > 0 && (
+                <button
+                  onClick={goBack}
+                  className="w-full flex items-center justify-center gap-2 rounded-lg border-2 border-purple-500/30 bg-purple-500/10 px-4 py-3 text-purple-300 hover:bg-purple-500/20 hover:border-purple-500/50 transition-all group"
+                >
+                  <ArrowLeft className="h-4 w-4 group-hover:translate-x-[-4px] transition-transform" />
+                  <span className="text-sm font-semibold">Voltar à pergunta anterior</span>
+                </button>
+              )}
+              
+              {showSummary && (
+                <button
+                  onClick={() => {
+                    // NÃO esconder o resumo, apenas gerar o site
+                    handleGenerateSite();
+                  }}
+                  className="w-full flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-green-500 to-emerald-600 px-4 py-3 text-white font-bold hover:from-green-600 hover:to-emerald-700 transition-all shadow-lg shadow-green-500/50"
+                >
+                  <Check className="h-5 w-5" />
+                  <span>Confirmar e Gerar Site</span>
+                </button>
+              )}
+            </div>
+          )}
+
           {/* Input */}
-          {(
-            <div className="border-t border-slate-800 p-4">
+          <div className="border-t border-slate-800 p-4">
+            {currentStep === 8 ? (
+              // Input especial para telefone com dropdown de país
+              <div className="space-y-2">
+                <p className="text-xs text-slate-400 text-center">
+                  💡 Selecione o país e digite o telefone
+                </p>
+                <div className="flex space-x-2">
+                  {/* Dropdown de País */}
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowCountryDropdown(!showCountryDropdown);
+                      }}
+                      className="flex items-center gap-2 px-3 py-3 rounded-lg border border-slate-700 bg-slate-800/60 hover:bg-slate-700/60 transition-colors"
+                    >
+                      <FlagIcon countryCode={selectedCountry.code} className="w-6 h-4" />
+                      <span className="text-slate-100 text-sm font-semibold">{selectedCountry.dial}</span>
+                      <svg className={`w-4 h-4 text-slate-400 transition-transform ${showCountryDropdown ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </button>
+                    
+                    {/* Dropdown Menu */}
+                    {showCountryDropdown && (
+                      <div className="absolute bottom-full left-0 mb-2 w-80 max-h-96 overflow-y-auto bg-slate-800 border border-slate-700 rounded-lg shadow-2xl z-50">
+                        <div className="p-2 border-b border-slate-700 bg-slate-900">
+                          <p className="text-xs font-semibold text-purple-300">🌍 Selecione o país</p>
+                        </div>
+                        <div className="p-2 space-y-1">
+                          {COUNTRIES.map((country) => (
+                            <button
+                              key={country.code}
+                              type="button"
+                              onClick={() => {
+                                setSelectedCountry(country);
+                                setShowCountryDropdown(false);
+                                setInputMessage('');
+                              }}
+                              className={`w-full flex items-center gap-3 p-2 rounded-lg text-left transition-all hover:bg-purple-500/20 ${
+                                selectedCountry.code === country.code
+                                  ? 'bg-purple-500/30 border border-purple-500'
+                                  : 'hover:bg-slate-700'
+                              }`}
+                            >
+                              <FlagIcon countryCode={country.code} className="w-6 h-4 flex-shrink-0" />
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium text-white truncate">{country.name}</p>
+                                <p className="text-xs text-slate-400">{country.dial}</p>
+                              </div>
+                              {selectedCountry.code === country.code && (
+                                <Check className="h-4 w-4 text-purple-400" />
+                              )}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Input de Telefone */}
+                  <input
+                    type="tel"
+                    value={inputMessage}
+                    onChange={(e) => {
+                      const formatted = formatPhoneNumber(e.target.value, selectedCountry);
+                      setInputMessage(formatted);
+                    }}
+                    onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                    placeholder={`Ex: ${selectedCountry.phoneFormat.replace(/#/g, '9')}`}
+                    className="flex-1 rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-white placeholder-slate-500 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  />
+                  
+                  <button
+                    onClick={handleSendMessage}
+                    disabled={!inputMessage.trim() || isGenerating}
+                    className="rounded-lg bg-purple-600 p-2 text-white hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <Send className="h-5 w-5" />
+                  </button>
+                </div>
+              </div>
+            ) : (
+              // Input padrão para outros steps
               <div className="flex space-x-2">
                 <input
                   type="text"
@@ -2392,8 +2982,8 @@ export function MyEasyWebsite({ onBackToDashboard }: MyEasyWebsiteProps = {}) {
                   <Send className="h-5 w-5" />
                 </button>
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
 
         {/* Preview Section - 70% */}
@@ -2465,6 +3055,242 @@ export function MyEasyWebsite({ onBackToDashboard }: MyEasyWebsiteProps = {}) {
         />
       )}
 
+      {/* Modal de Entrada Customizado */}
+      {showInputModal && inputModalConfig && (
+        <Modal
+          isOpen={showInputModal}
+          onClose={closeInputModal}
+          title={inputModalConfig.title}
+        >
+          <div className="space-y-4">
+            {inputModalConfig.multiline ? (
+              <textarea
+                value={modalInputValue}
+                onChange={(e) => setModalInputValue(e.target.value)}
+                placeholder={inputModalConfig.placeholder}
+                rows={4}
+                className="w-full rounded-lg border border-slate-600 bg-slate-800 px-4 py-3 text-white placeholder-slate-400 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none"
+                autoFocus
+              />
+            ) : (
+              <input
+                type="text"
+                value={modalInputValue}
+                onChange={(e) => setModalInputValue(e.target.value)}
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter' && modalInputValue.trim()) {
+                    handleConfirmInput();
+                  }
+                }}
+                placeholder={inputModalConfig.placeholder}
+                className="w-full rounded-lg border border-slate-600 bg-slate-800 px-4 py-3 text-white placeholder-slate-400 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                autoFocus
+              />
+            )}
+            
+            <div className="flex gap-2 justify-end">
+              <button
+                onClick={closeInputModal}
+                className="px-4 py-2 rounded-lg border border-slate-600 text-slate-300 hover:bg-slate-700 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleConfirmInput}
+                disabled={!modalInputValue.trim()}
+                className="px-4 py-2 rounded-lg bg-gradient-to-r from-purple-500 to-blue-600 text-white hover:from-purple-600 hover:to-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Confirmar
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* Modal de Edição de Seções */}
+      {showEditModal && editingField === 'sections' && (
+        <Modal
+          isOpen={showEditModal}
+          onClose={() => {
+            setShowEditModal(false);
+            setEditingField(null);
+          }}
+          title="📋 Selecione as Seções do Site"
+        >
+          <div className="space-y-4">
+            <p className="text-sm text-slate-400">Clique nas seções que você deseja incluir no seu site:</p>
+            
+            <div className="grid grid-cols-2 gap-3">
+              {[
+                { label: 'Hero (Início)', value: 'hero' },
+                { label: 'Sobre Nós', value: 'about' },
+                { label: 'Serviços', value: 'services' },
+                { label: 'Galeria', value: 'gallery' },
+                { label: 'Preços', value: 'pricing' },
+                { label: 'Equipe', value: 'team' },
+                { label: 'FAQ', value: 'faq' },
+                { label: 'App Download', value: 'app' },
+                { label: 'Depoimentos', value: 'testimonials' },
+                { label: 'Contato', value: 'contact' },
+              ].map((section) => {
+                const isSelected = siteData.sections.includes(section.value as SectionKey);
+                return (
+                  <button
+                    key={section.value}
+                    onClick={() => {
+                      const currentSections = [...siteData.sections];
+                      const sectionKey = section.value as SectionKey;
+                      
+                      if (currentSections.includes(sectionKey)) {
+                        setSiteData({
+                          ...siteData,
+                          sections: currentSections.filter(s => s !== sectionKey)
+                        });
+                      } else {
+                        setSiteData({
+                          ...siteData,
+                          sections: [...currentSections, sectionKey]
+                        });
+                      }
+                    }}
+                    className={`flex items-center justify-between p-4 rounded-lg border transition-all ${
+                      isSelected
+                        ? 'border-purple-500 bg-purple-500/20 text-purple-300'
+                        : 'border-slate-600 bg-slate-700 hover:border-purple-500 hover:bg-slate-600 text-slate-300'
+                    }`}
+                  >
+                    <span className="text-sm font-medium">{section.label}</span>
+                    {isSelected && <Check className="h-5 w-5 text-purple-400" />}
+                  </button>
+                );
+              })}
+            </div>
+            
+            <div className="flex gap-2 justify-end pt-4 border-t border-slate-700">
+              <button
+                onClick={() => {
+                  setShowEditModal(false);
+                  setEditingField(null);
+                }}
+                className="px-4 py-2 rounded-lg border border-slate-600 text-slate-300 hover:bg-slate-700 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => {
+                  setShowEditModal(false);
+                  setEditingField(null);
+                }}
+                disabled={siteData.sections.length === 0}
+                className="px-4 py-2 rounded-lg bg-gradient-to-r from-purple-500 to-blue-600 text-white hover:from-purple-600 hover:to-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Confirmar ({siteData.sections.length} seções)
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* Modal de Edição de Cores */}
+      {showEditModal && editingField === 'colors' && (
+        <Modal
+          isOpen={showEditModal}
+          onClose={() => {
+            setShowEditModal(false);
+            setEditingField(null);
+          }}
+          title="🎨 Escolha as Cores do Seu Site"
+        >
+          <div className="space-y-4">
+            <p className="text-sm text-slate-400">Selecione uma paleta de cores ou descreva suas cores customizadas:</p>
+            
+            {/* Paletas Sugeridas */}
+            <div className="space-y-3">
+              <h4 className="text-sm font-semibold text-white">Paletas Sugeridas:</h4>
+              <div className="grid grid-cols-2 gap-2 max-h-[400px] overflow-y-auto pr-2">
+                {colorPalettes.slice(0, 12).map((palette) => {
+                  const isSelected = siteData.selectedPaletteId === palette.id;
+                  return (
+                    <button
+                      key={palette.id}
+                      onClick={() => {
+                        const paletteColors = {
+                          primary: palette.primary,
+                          secondary: palette.secondary,
+                          accent: palette.accent,
+                          dark: palette.dark,
+                          light: palette.light
+                        };
+                        setSiteData({ 
+                          ...siteData, 
+                          colors: JSON.stringify(paletteColors),
+                          selectedPaletteId: palette.id
+                        });
+                      }}
+                      className={`flex items-center gap-2 p-3 rounded-lg border transition-all hover:scale-105 ${
+                        isSelected
+                          ? 'border-purple-500 bg-purple-500/20'
+                          : 'border-slate-600 bg-slate-700 hover:border-purple-500'
+                      }`}
+                    >
+                      <div className="flex gap-1">
+                        <div className="w-6 h-12 rounded" style={{ backgroundColor: palette.primary }}></div>
+                        <div className="w-6 h-12 rounded" style={{ backgroundColor: palette.secondary }}></div>
+                        <div className="w-6 h-12 rounded" style={{ backgroundColor: palette.accent }}></div>
+                      </div>
+                      <div className="flex-1 text-left">
+                        <span className="text-xs font-medium text-slate-200 block">{palette.name}</span>
+                        {isSelected && <Check className="h-4 w-4 text-purple-400 mt-1" />}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Ou Descrever Cores Customizadas */}
+            <div className="border-t border-slate-700 pt-4">
+              <p className="text-sm font-semibold text-white mb-3">Ou digite as cores do jeito que você imagina:</p>
+              <input
+                type="text"
+                placeholder="Ex: azul e amarelo, roxo com rosa, verde marinho..."
+                className="w-full rounded-lg border border-slate-600 bg-slate-800 px-4 py-3 text-white placeholder-slate-400 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                onKeyPress={async (e) => {
+                  if (e.key === 'Enter' && e.currentTarget.value.trim()) {
+                    const description = e.currentTarget.value.trim();
+                    setShowEditModal(false);
+                    setEditingField(null);
+                    await handleCustomColors(description);
+                  }
+                }}
+              />
+              <p className="text-xs text-slate-500 mt-2">💡 Pressione Enter para gerar paletas com IA baseadas na sua descrição</p>
+            </div>
+            
+            <div className="flex gap-2 justify-end pt-4 border-t border-slate-700">
+              <button
+                onClick={() => {
+                  setShowEditModal(false);
+                  setEditingField(null);
+                }}
+                className="px-4 py-2 rounded-lg border border-slate-600 text-slate-300 hover:bg-slate-700 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => {
+                  setShowEditModal(false);
+                  setEditingField(null);
+                }}
+                className="px-4 py-2 rounded-lg bg-gradient-to-r from-purple-500 to-blue-600 text-white hover:from-purple-600 hover:to-blue-700 transition-colors"
+              >
+                Confirmar
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
       {/* Netlify Deploy Modal */}
       {showNetlifyModal && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
@@ -2475,12 +3301,15 @@ export function MyEasyWebsite({ onBackToDashboard }: MyEasyWebsiteProps = {}) {
                   <Rocket className="h-6 w-6 text-purple-400" />
                   <span>Publicar no Netlify</span>
                 </h2>
-                <button
-                  onClick={() => setShowNetlifyModal(false)}
-                  className="text-slate-400 hover:text-white transition-colors"
-                >
-                  <X className="h-6 w-6" />
-                </button>
+                              <button
+                                onClick={() => {
+                                  setShowEditModal(true);
+                                  setEditingField('sections');
+                                }}
+                                className="px-3 py-1 rounded-lg bg-purple-600/20 border border-purple-500 text-purple-300 text-xs font-semibold hover:bg-purple-600/30 transition-colors"
+                              >
+                                Editar
+                              </button>
               </div>
               
               <NetlifyDeploy
