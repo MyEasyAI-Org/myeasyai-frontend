@@ -7,7 +7,7 @@ import { Modal } from '../../components/Modal';
 import type { ColorPalette } from '../../constants/colorPalettes';
 import { colorPalettes } from '../../constants/colorPalettes';
 import { rewriteAllContent, correctNameCapitalization, generateCustomColorPalettes } from '../../lib/gemini';
-import { COUNTRIES, type CountryAddressConfig, getCountryConfig } from '../../constants/countries';
+import { COUNTRIES, type CountryAddressConfig } from '../../constants/countries';
 import * as flags from 'country-flag-icons/react/3x2';
 
 type Message = {
@@ -121,12 +121,8 @@ export function MyEasyWebsite({ onBackToDashboard }: MyEasyWebsiteProps = {}) {
   const [conversationHistory, setConversationHistory] = useState<Array<{ step: number; siteData: SiteData; messages: Message[] }>>([]);
   const [showSummary, setShowSummary] = useState(false);
   const [editingField, setEditingField] = useState<string | null>(null);
-  const [editingValue, setEditingValue] = useState<string>('');
   const [showEditModal, setShowEditModal] = useState(false);
-  const [editModalTitle, setEditModalTitle] = useState<string>('');
-  const [editModalPlaceholder, setEditModalPlaceholder] = useState<string>('');
   const [generatedPalettes, setGeneratedPalettes] = useState<ColorPalette[]>([]);
-  const [isGeneratingPalettes, setIsGeneratingPalettes] = useState(false);
   const [summaryMessageIndex, setSummaryMessageIndex] = useState<number | null>(null);
   const [showInputModal, setShowInputModal] = useState(false);
   const [inputModalConfig, setInputModalConfig] = useState<{
@@ -138,7 +134,6 @@ export function MyEasyWebsite({ onBackToDashboard }: MyEasyWebsiteProps = {}) {
   } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const countryDropdownRef = useRef<HTMLDivElement>(null);
   const [modalInputValue, setModalInputValue] = useState('');
 
   // Função auxiliar para abrir modal de entrada
@@ -211,59 +206,6 @@ export function MyEasyWebsite({ onBackToDashboard }: MyEasyWebsiteProps = {}) {
       content: 'Ok! Digite o endereço correto:'
     }]);
     setCurrentStep(7.5);
-  };
-
-  // Função para abrir modal de edição
-  const openEditModal = (field: string, currentValue: string, title: string, placeholder: string) => {
-    setEditingField(field);
-    setEditingValue(currentValue);
-    setEditModalTitle(title);
-    setEditModalPlaceholder(placeholder);
-    setShowEditModal(true);
-  };
-
-  // Função para salvar edição do modal
-  const handleSaveEdit = async () => {
-    if (!editingField || !editingValue.trim()) return;
-
-    // Se for edição de endereço, fazer geocoding
-    if (editingField === 'address') {
-      const coords = await geocodeAddress(editingValue);
-      
-      if (coords) {
-        setAddressConfirmation({
-          address: editingValue,
-          lat: coords.lat,
-          lng: coords.lng
-        });
-        setSiteData({ ...siteData, address: '' }); // Limpar endereço temporariamente
-        
-        // Adicionar mensagem no chat mostrando o mapa
-        setMessages(prev => [...prev, {
-          role: 'assistant',
-          content: '📍 Encontrei a localização do novo endereço!\\n\\nVerifique no mapa abaixo se está correto:'
-        }]);
-      } else {
-        // Endereço não encontrado - Não fazer nada, apenas fechar o modal
-        // O usuário pode tentar novamente
-        return;
-      }
-    } else {
-      // Para outros campos, atualizar diretamente
-      setSiteData({ ...siteData, [editingField]: editingValue.trim() });
-    }
-
-    // Fechar modal
-    setShowEditModal(false);
-    setEditingField(null);
-    setEditingValue('');
-  };
-
-  // Função para fechar modal de edição
-  const handleCancelEdit = () => {
-    setShowEditModal(false);
-    setEditingField(null);
-    setEditingValue('');
   };
 
   const scrollToBottom = () => {
@@ -789,7 +731,6 @@ export function MyEasyWebsite({ onBackToDashboard }: MyEasyWebsiteProps = {}) {
 
   // Handler para descrição customizada de cores com IA
   const handleCustomColors = async (description: string) => {
-    setIsGeneratingPalettes(true);
     
     // Adicionar mensagens de loading
     setMessages(prev => [...prev, 
@@ -838,8 +779,6 @@ export function MyEasyWebsite({ onBackToDashboard }: MyEasyWebsiteProps = {}) {
         ]
       }]);
       setCurrentStep(5);
-    } finally {
-      setIsGeneratingPalettes(false);
     }
   };
 
