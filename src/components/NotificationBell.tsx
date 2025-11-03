@@ -10,7 +10,7 @@ export default function NotificationBell({ unreadCount, onClick, isOpen }: Notif
   return (
     <button
       onClick={onClick}
-      className={`relative rounded-lg p-2 transition-all ${
+      className={`relative rounded-lg h-[52px] w-[52px] flex items-center justify-center transition-all ${
         isOpen
           ? 'bg-slate-700/50 text-blue-400'
           : 'text-slate-300 hover:bg-slate-700/30 hover:text-blue-400'
