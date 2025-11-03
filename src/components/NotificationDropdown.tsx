@@ -50,7 +50,7 @@ export default function NotificationDropdown({
   const hasUnread = notifications.some(n => !n.isRead);
 
   return (
-    <div className="absolute right-0 mt-2 w-80 origin-top-right animate-in fade-in slide-in-from-top-2 duration-200 rounded-xl border border-slate-700 bg-slate-800/90 backdrop-blur-xl shadow-2xl shadow-black/50">
+    <div className="absolute right-0 top-[52px] w-80 origin-top-right animate-in fade-in slide-in-from-top-2 duration-200 rounded-xl border border-slate-700 bg-slate-800/95 backdrop-blur-xl shadow-2xl shadow-black/50">
       {/* Header */}
       <div className="flex items-center justify-between border-b border-slate-700 p-3">
         <h3 className="text-base font-semibold text-white">Notificações</h3>
