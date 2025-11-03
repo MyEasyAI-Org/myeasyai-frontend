@@ -21,8 +21,8 @@ export default function NotificationBell({ unreadCount, onClick, isOpen }: Notif
         <Bell className={`h-6 w-6 ${unreadCount > 0 ? 'animate-pulse' : ''}`} />
 
         {unreadCount > 0 && (
-          <span className="absolute top-[-6px] right-[-6px] flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white shadow-lg shadow-red-500/50 leading-none">
-            {unreadCount > 9 ? '9+' : unreadCount}
+          <span className="absolute top-[-12px] right-[-12px] flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white shadow-lg shadow-red-500/50 leading-none">
+            {unreadCount > 9 ? '9' : unreadCount}
           </span>
         )}
       </div>
