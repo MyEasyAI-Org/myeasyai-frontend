@@ -1,6 +1,6 @@
 // Serviço de integração com Google Gemini AI para reescrita de textos
 
-const GEMINI_API_KEY = 'AIzaSyCQ0z4kedDKW_kVr9f10o_t39NYLZmMjro';
+const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-001:generateContent';
 
 interface GeminiRequest {
