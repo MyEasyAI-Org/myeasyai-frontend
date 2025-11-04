@@ -2,7 +2,11 @@
   "permissions": {
     "allow": [
       "Bash(npm run build:*)",
-      "Read(//c/Users/Guilherme/Desktop/MyEasyAI/**)"
+      "Read(//c/Users/Guilherme/Desktop/MyEasyAI/**)",
+      "Bash(tree:*)",
+      "Bash(.gitignore)",
+      "Bash(.env.example)",
+      "Bash(.env)"
     ],
     "deny": [],
     "ask": []
