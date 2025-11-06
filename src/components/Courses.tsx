@@ -15,25 +15,25 @@ export function Courses() {
         <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
           {[
             {
-              color: "from-blue-500 to-cyan-400",
-              title: "Fundamentos de IA",
-              desc: "Aprenda os conceitos básicos de inteligência artificial e machine learning",
-              tagColor: "text-blue-400",
-              borderHover: "hover:border-blue-500/50",
+              color: 'from-blue-500 to-cyan-400',
+              title: 'Fundamentos de IA',
+              desc: 'Aprenda os conceitos básicos de inteligência artificial e machine learning',
+              tagColor: 'text-blue-400',
+              borderHover: 'hover:border-blue-500/50',
             },
             {
-              color: "from-purple-500 to-purple-600",
-              title: "Treinamento Avançado",
-              desc: "Técnicas avançadas para otimizar e personalizar seus assistentes virtuais",
-              tagColor: "text-purple-400",
-              borderHover: "hover:border-purple-500/50",
+              color: 'from-purple-500 to-purple-600',
+              title: 'Treinamento Avançado',
+              desc: 'Técnicas avançadas para otimizar e personalizar seus assistentes virtuais',
+              tagColor: 'text-purple-400',
+              borderHover: 'hover:border-purple-500/50',
             },
             {
-              color: "from-cyan-400 to-cyan-500",
-              title: "Integração Empresarial",
-              desc: "Como implementar IA em ambientes corporativos e escalar soluções",
-              tagColor: "text-cyan-400",
-              borderHover: "hover:border-cyan-500/50",
+              color: 'from-cyan-400 to-cyan-500',
+              title: 'Integração Empresarial',
+              desc: 'Como implementar IA em ambientes corporativos e escalar soluções',
+              tagColor: 'text-cyan-400',
+              borderHover: 'hover:border-cyan-500/50',
             },
           ].map((c) => (
             <div

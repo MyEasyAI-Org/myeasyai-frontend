@@ -1,8 +1,16 @@
-import { createContext, useContext, useState } from 'react';
 import type { ReactNode } from 'react';
+import { createContext, useContext, useState } from 'react';
 
 // Tipos de elementos editáveis
-export type ElementType = 'text' | 'icon' | 'image' | 'button' | 'section' | 'color' | 'background' | 'spacing';
+export type ElementType =
+  | 'text'
+  | 'icon'
+  | 'image'
+  | 'button'
+  | 'section'
+  | 'color'
+  | 'background'
+  | 'spacing';
 
 // Interface para elemento selecionado
 export interface SelectedElement {
@@ -32,14 +40,15 @@ interface EditingContextType {
 const EditingContext = createContext<EditingContextType | undefined>(undefined);
 
 // Provider
-export function EditingProvider({ 
+export function EditingProvider({
   children,
-  onUpdate
-}: { 
+  onUpdate,
+}: {
   children: ReactNode;
   onUpdate?: (updates: any) => void;
 }) {
-  const [selectedElement, setSelectedElement] = useState<SelectedElement | null>(null);
+  const [selectedElement, setSelectedElement] =
+    useState<SelectedElement | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [hoveredElement, setHoveredElement] = useState<string | null>(null);
   const [history, setHistory] = useState<any[]>([]);
@@ -50,7 +59,7 @@ export function EditingProvider({
       type: 'update',
       elementId: id,
       updates,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     });
 
     // Chamar callback de atualização se fornecido
@@ -60,15 +69,15 @@ export function EditingProvider({
   };
 
   const addToHistory = (action: any) => {
-    setHistory(prev => [...prev, action]);
+    setHistory((prev) => [...prev, action]);
   };
 
   const undo = () => {
     if (history.length > 0) {
       const lastAction = history[history.length - 1];
       // Implementar lógica de desfazer
-      setHistory(prev => prev.slice(0, -1));
-      
+      setHistory((prev) => prev.slice(0, -1));
+
       // Notificar sobre o undo
       if (onUpdate) {
         onUpdate({ type: 'undo', action: lastAction });
@@ -87,13 +96,11 @@ export function EditingProvider({
     history,
     addToHistory,
     undo,
-    canUndo: history.length > 0
+    canUndo: history.length > 0,
   };
 
   return (
-    <EditingContext.Provider value={value}>
-      {children}
-    </EditingContext.Provider>
+    <EditingContext.Provider value={value}>{children}</EditingContext.Provider>
   );
 }
 

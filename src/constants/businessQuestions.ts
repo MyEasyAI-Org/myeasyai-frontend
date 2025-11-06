@@ -15,11 +15,13 @@ export const businessAreas: Record<string, BusinessArea> = {
   technology: {
     id: 'technology',
     name: 'Tecnologia',
-    description: 'Empresas de software, hardware, desenvolvimento web/mobile, SaaS',
+    description:
+      'Empresas de software, hardware, desenvolvimento web/mobile, SaaS',
     icon: '💻',
     color: '#3B82F6',
     prompts: {
-      planning: 'Como especialista em negócios de tecnologia, vou te ajudar a criar um plano estratégico detalhado para sua empresa de tecnologia. Considerando aspectos como desenvolvimento de produto, escalabilidade técnica, aquisição de usuários, monetização e crescimento sustentável.',
+      planning:
+        'Como especialista em negócios de tecnologia, vou te ajudar a criar um plano estratégico detalhado para sua empresa de tecnologia. Considerando aspectos como desenvolvimento de produto, escalabilidade técnica, aquisição de usuários, monetização e crescimento sustentável.',
       parameters: [
         'Modelo de negócio',
         'Stack tecnológica',
@@ -29,9 +31,9 @@ export const businessAreas: Record<string, BusinessArea> = {
         'Time e recursos',
         'Investimento necessário',
         'Concorrência',
-        'Go-to-market strategy'
-      ]
-    }
+        'Go-to-market strategy',
+      ],
+    },
   },
   retail: {
     id: 'retail',
@@ -40,7 +42,8 @@ export const businessAreas: Record<string, BusinessArea> = {
     icon: '🛒',
     color: '#10B981',
     prompts: {
-      planning: 'Como especialista em varejo, vou desenvolver uma estratégia completa para sua empresa de varejo. Focando em experiência do cliente, gestão de estoque, canais de venda, marketing e crescimento sustentável.',
+      planning:
+        'Como especialista em varejo, vou desenvolver uma estratégia completa para sua empresa de varejo. Focando em experiência do cliente, gestão de estoque, canais de venda, marketing e crescimento sustentável.',
       parameters: [
         'Categoria de produtos',
         'Canal de vendas',
@@ -50,9 +53,9 @@ export const businessAreas: Record<string, BusinessArea> = {
         'Fornecedores',
         'Marketing e branding',
         'Experiência do cliente',
-        'Análise de mercado'
-      ]
-    }
+        'Análise de mercado',
+      ],
+    },
   },
   services: {
     id: 'services',
@@ -61,7 +64,8 @@ export const businessAreas: Record<string, BusinessArea> = {
     icon: '🤝',
     color: '#8B5CF6',
     prompts: {
-      planning: 'Como especialista em negócios de serviços, vou criar um plano estratégico para sua empresa de serviços. Considerando especialização, precificação de valor, aquisição de clientes, escalabilidade e diferenciação no mercado.',
+      planning:
+        'Como especialista em negócios de serviços, vou criar um plano estratégico para sua empresa de serviços. Considerando especialização, precificação de valor, aquisição de clientes, escalabilidade e diferenciação no mercado.',
       parameters: [
         'Tipo de serviço',
         'Especialização',
@@ -71,9 +75,9 @@ export const businessAreas: Record<string, BusinessArea> = {
         'Time e competências',
         'Escalabilidade',
         'Diferenciação',
-        'Parcerias estratégicas'
-      ]
-    }
+        'Parcerias estratégicas',
+      ],
+    },
   },
   food: {
     id: 'food',
@@ -82,7 +86,8 @@ export const businessAreas: Record<string, BusinessArea> = {
     icon: '🍔',
     color: '#F59E0B',
     prompts: {
-      planning: 'Como especialista no setor alimentício, vou desenvolver uma estratégia abrangente para seu negócio de alimentação. Incluindo conceito gastronômico, operações, marketing local, sustentabilidade e crescimento.',
+      planning:
+        'Como especialista no setor alimentício, vou desenvolver uma estratégia abrangente para seu negócio de alimentação. Incluindo conceito gastronômico, operações, marketing local, sustentabilidade e crescimento.',
       parameters: [
         'Conceito gastronômico',
         'Localização',
@@ -92,9 +97,9 @@ export const businessAreas: Record<string, BusinessArea> = {
         'Marketing local',
         'Experiência do cliente',
         'Regulamentações',
-        'Expansão e franchising'
-      ]
-    }
+        'Expansão e franchising',
+      ],
+    },
   },
   manufacturing: {
     id: 'manufacturing',
@@ -103,7 +108,8 @@ export const businessAreas: Record<string, BusinessArea> = {
     icon: '🏭',
     color: '#EF4444',
     prompts: {
-      planning: 'Como especialista em negócios industriais, vou criar um plano estratégico para sua empresa industrial. Focando em eficiência operacional, cadeia de suprimentos, qualidade, inovação e expansão de mercado.',
+      planning:
+        'Como especialista em negócios industriais, vou criar um plano estratégico para sua empresa industrial. Focando em eficiência operacional, cadeia de suprimentos, qualidade, inovação e expansão de mercado.',
       parameters: [
         'Produto/processo industrial',
         'Cadeia de suprimentos',
@@ -113,9 +119,9 @@ export const businessAreas: Record<string, BusinessArea> = {
         'Mercados B2B',
         'Regulamentações',
         'Sustentabilidade',
-        'Distribuição e logística'
-      ]
-    }
+        'Distribuição e logística',
+      ],
+    },
   },
   finance: {
     id: 'finance',
@@ -124,7 +130,8 @@ export const businessAreas: Record<string, BusinessArea> = {
     icon: '💰',
     color: '#EC4899',
     prompts: {
-      planning: 'Como especialista em negócios financeiros, vou desenvolver uma estratégia para sua empresa do setor financeiro. Considerando regulamentações, gestão de risco, produtos financeiros, tecnologia e compliance.',
+      planning:
+        'Como especialista em negócios financeiros, vou desenvolver uma estratégia para sua empresa do setor financeiro. Considerando regulamentações, gestão de risco, produtos financeiros, tecnologia e compliance.',
       parameters: [
         'Produtos financeiros',
         'Público-alvo',
@@ -134,10 +141,10 @@ export const businessAreas: Record<string, BusinessArea> = {
         'Compliance',
         'Partnerships bancárias',
         'Segurança e dados',
-        'Estratégia de crescimento'
-      ]
-    }
-  }
+        'Estratégia de crescimento',
+      ],
+    },
+  },
 };
 
 export interface OnboardingQuestion {
@@ -153,7 +160,7 @@ export const onboardingQuestions: OnboardingQuestion[] = [
     id: 'companyName',
     question: 'Qual é o nome da sua empresa?',
     type: 'text',
-    required: true
+    required: true,
   },
   {
     id: 'businessStage',
@@ -164,8 +171,8 @@ export const onboardingQuestions: OnboardingQuestion[] = [
       { value: 'idea', label: '💡 Ideia/Conceito' },
       { value: 'startup', label: '🚀 Startup (0-2 anos)' },
       { value: 'growth', label: '📈 Crescimento (2-5 anos)' },
-      { value: 'established', label: '🏢 Estabelecida (5+ anos)' }
-    ]
+      { value: 'established', label: '🏢 Estabelecida (5+ anos)' },
+    ],
   },
   {
     id: 'teamSize',
@@ -176,8 +183,8 @@ export const onboardingQuestions: OnboardingQuestion[] = [
       { value: 'solo', label: '👤 Apenas eu' },
       { value: 'small', label: '👥 2-10 pessoas' },
       { value: 'medium', label: '👨‍👩‍👧‍👦 11-50 pessoas' },
-      { value: 'large', label: '🏢 50+ pessoas' }
-    ]
+      { value: 'large', label: '🏢 50+ pessoas' },
+    ],
   },
   {
     id: 'currentRevenue',
@@ -189,8 +196,8 @@ export const onboardingQuestions: OnboardingQuestion[] = [
       { value: 'low', label: '💵 R$ 0 - R$ 10k/mês' },
       { value: 'medium', label: '💰 R$ 10k - R$ 100k/mês' },
       { value: 'high', label: '💎 R$ 100k - R$ 1M/mês' },
-      { value: 'enterprise', label: '🏆 R$ 1M+/mês' }
-    ]
+      { value: 'enterprise', label: '🏆 R$ 1M+/mês' },
+    ],
   },
   {
     id: 'mainGoal',
@@ -203,15 +210,15 @@ export const onboardingQuestions: OnboardingQuestion[] = [
       { value: 'scale', label: '⚡ Escalar operações' },
       { value: 'optimize', label: '🎯 Otimizar processos' },
       { value: 'expand', label: '🌍 Expandir mercado' },
-      { value: 'exit', label: '💼 Preparar para venda/IPO' }
-    ]
+      { value: 'exit', label: '💼 Preparar para venda/IPO' },
+    ],
   },
   {
     id: 'challenges',
     question: 'Quais são os principais desafios que você enfrenta?',
     type: 'text',
-    required: true
-  }
+    required: true,
+  },
 ];
 
 export const getBusinessAreaById = (id: string): BusinessArea | undefined => {

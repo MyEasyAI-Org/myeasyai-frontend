@@ -1,16 +1,26 @@
+import { Sparkles } from 'lucide-react';
 import { useState } from 'react';
 import { HexColorPicker } from 'react-colorful';
+import {
+  type ColorPalette,
+  colorPalettes,
+} from '../../../constants/colorPalettes';
 import { useEditing } from './EditingContext';
-import { colorPalettes, type ColorPalette } from '../../../constants/colorPalettes';
-import { Sparkles } from 'lucide-react';
 
 export function ColorPicker() {
   const { selectedElement, updateElement } = useEditing();
-  const [color, setColor] = useState(selectedElement?.currentValue || '#ea580c');
+  const [color, setColor] = useState(
+    selectedElement?.currentValue || '#ea580c',
+  );
   const [showAIInput, setShowAIInput] = useState(false);
   const [aiDescription, setAiDescription] = useState('');
   const [recentColors, setRecentColors] = useState<string[]>([
-    '#ea580c', '#1a1a1a', '#fb923c', '#3b82f6', '#10b981', '#f59e0b'
+    '#ea580c',
+    '#1a1a1a',
+    '#fb923c',
+    '#3b82f6',
+    '#10b981',
+    '#f59e0b',
   ]);
 
   const handleColorChange = (newColor: string) => {
@@ -22,7 +32,7 @@ export function ColorPicker() {
 
   const handleAddToRecent = () => {
     if (!recentColors.includes(color)) {
-      setRecentColors(prev => [color, ...prev].slice(0, 12));
+      setRecentColors((prev) => [color, ...prev].slice(0, 12));
     }
   };
 
@@ -44,8 +54,8 @@ export function ColorPicker() {
           Escolher Cor
         </label>
         <div className="rounded-lg overflow-hidden border-2 border-slate-700">
-          <HexColorPicker 
-            color={color} 
+          <HexColorPicker
+            color={color}
             onChange={handleColorChange}
             style={{ width: '100%', height: '200px' }}
           />
@@ -66,7 +76,7 @@ export function ColorPicker() {
             placeholder="#000000"
             maxLength={7}
           />
-          <div 
+          <div
             className="w-12 h-10 rounded-lg border-2 border-slate-700 shadow-inner"
             style={{ backgroundColor: color }}
           />
@@ -92,9 +102,9 @@ export function ColorPicker() {
               key={idx}
               onClick={() => handleColorChange(recentColor)}
               className="w-full aspect-square rounded-lg border-2 hover:scale-110 transition-transform"
-              style={{ 
+              style={{
                 backgroundColor: recentColor,
-                borderColor: color === recentColor ? '#a855f7' : '#475569'
+                borderColor: color === recentColor ? '#a855f7' : '#475569',
               }}
               title={recentColor}
             />
@@ -115,9 +125,18 @@ export function ColorPicker() {
               className="flex items-center gap-2 p-2 rounded-lg border border-slate-700 bg-slate-800/50 hover:bg-slate-700 hover:border-purple-500 transition-all hover:scale-105"
             >
               <div className="flex gap-1">
-                <div className="w-4 h-8 rounded" style={{ backgroundColor: palette.primary }}></div>
-                <div className="w-4 h-8 rounded" style={{ backgroundColor: palette.secondary }}></div>
-                <div className="w-4 h-8 rounded" style={{ backgroundColor: palette.accent }}></div>
+                <div
+                  className="w-4 h-8 rounded"
+                  style={{ backgroundColor: palette.primary }}
+                ></div>
+                <div
+                  className="w-4 h-8 rounded"
+                  style={{ backgroundColor: palette.secondary }}
+                ></div>
+                <div
+                  className="w-4 h-8 rounded"
+                  style={{ backgroundColor: palette.accent }}
+                ></div>
               </div>
               <span className="text-xs font-medium text-slate-200 truncate flex-1 text-left">
                 {palette.name}
@@ -138,7 +157,7 @@ export function ColorPicker() {
             💡 Ou digite as cores do jeito que você imagina
           </span>
         </button>
-        
+
         {showAIInput && (
           <div className="mt-3 space-y-2">
             <input
@@ -167,7 +186,9 @@ export function ColorPicker() {
       {/* Info */}
       <div className="p-3 bg-slate-800/50 rounded-lg border border-slate-700">
         <p className="text-xs text-slate-400">
-          💡 <strong className="text-slate-300">Dica:</strong> Esta cor será aplicada ao elemento selecionado quando você clicar em "Aplicar Mudanças"
+          💡 <strong className="text-slate-300">Dica:</strong> Esta cor será
+          aplicada ao elemento selecionado quando você clicar em "Aplicar
+          Mudanças"
         </p>
       </div>
     </div>

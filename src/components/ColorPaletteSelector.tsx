@@ -1,6 +1,10 @@
+import { Check, Loader2, Palette, Sparkles, Wand2 } from 'lucide-react';
 import { useState } from 'react';
-import { Sparkles, Palette, Check, Wand2, Loader2 } from 'lucide-react';
-import { colorPalettes, type ColorPalette, getCategoryIcon } from '../constants/colorPalettes';
+import {
+  type ColorPalette,
+  colorPalettes,
+  getCategoryIcon,
+} from '../constants/colorPalettes';
 import { generateCustomColorPalettes } from '../lib/gemini';
 
 interface ColorPaletteSelectorProps {
@@ -9,43 +13,46 @@ interface ColorPaletteSelectorProps {
   selectedPaletteId?: string;
 }
 
-export function ColorPaletteSelector({ onSelectPalette, onCustomColors, selectedPaletteId }: ColorPaletteSelectorProps) {
+export function ColorPaletteSelector({
+  onSelectPalette,
+  onCustomColors,
+  selectedPaletteId,
+}: ColorPaletteSelectorProps) {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [showCustom, setShowCustom] = useState(false);
   const [customDescription, setCustomDescription] = useState('');
   const [isGeneratingPalettes, setIsGeneratingPalettes] = useState(false);
   const [customPalettes, setCustomPalettes] = useState<ColorPalette[]>([]);
 
-  const categories = Array.from(new Set(colorPalettes.map(p => p.category)));
-  
+  const categories = Array.from(new Set(colorPalettes.map((p) => p.category)));
+
   // Combinar paletas predefinidas com paletas customizadas
   const allPalettes = [...colorPalettes, ...customPalettes];
-  
-  const filteredPalettes = selectedCategory 
-    ? allPalettes.filter(p => p.category === selectedCategory)
+
+  const filteredPalettes = selectedCategory
+    ? allPalettes.filter((p) => p.category === selectedCategory)
     : allPalettes;
 
   const handleCustomSubmit = async () => {
     if (!customDescription.trim()) return;
-    
+
     setIsGeneratingPalettes(true);
     setShowCustom(false);
-    
+
     try {
       console.log('🎨 Gerando paletas customizadas para:', customDescription);
-      
+
       // Chamar a IA do Gemini para gerar paletas
       const aiPalettes = await generateCustomColorPalettes(customDescription);
-      
+
       console.log('✅ Paletas geradas pela IA:', aiPalettes.length);
-      
+
       // Atualizar estado com as novas paletas
       setCustomPalettes(aiPalettes);
       setSelectedCategory('custom'); // Mostrar categoria custom automaticamente
-      
+
       // Ainda chamar o callback original para compatibilidade
       onCustomColors(customDescription);
-      
     } catch (error) {
       console.error('❌ Erro ao gerar paletas customizadas:', error);
       // Em caso de erro, usar o método antigo
@@ -62,9 +69,13 @@ export function ColorPaletteSelector({ onSelectPalette, onCustomColors, selected
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-3">
           <Palette className="h-6 w-6 text-purple-400" />
-          <h3 className="text-xl font-bold text-white">Escolha as Cores do Seu Site</h3>
+          <h3 className="text-xl font-bold text-white">
+            Escolha as Cores do Seu Site
+          </h3>
         </div>
-        <span className="text-sm text-slate-400">{filteredPalettes.length} paletas disponíveis</span>
+        <span className="text-sm text-slate-400">
+          {filteredPalettes.length} paletas disponíveis
+        </span>
       </div>
 
       {/* Custom Colors Button */}
@@ -82,14 +93,19 @@ export function ColorPaletteSelector({ onSelectPalette, onCustomColors, selected
       {showCustom && (
         <div className="rounded-lg border border-purple-500 bg-slate-800 p-4 space-y-3 animate-in slide-in-from-top">
           <p className="text-sm text-slate-300">
-            Descreva as cores que você imagina para seu site. A IA vai criar uma paleta perfeita!
+            Descreva as cores que você imagina para seu site. A IA vai criar uma
+            paleta perfeita!
           </p>
           <div className="space-y-2">
             <input
               type="text"
               value={customDescription}
               onChange={(e) => setCustomDescription(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && !isGeneratingPalettes && handleCustomSubmit()}
+              onKeyPress={(e) =>
+                e.key === 'Enter' &&
+                !isGeneratingPalettes &&
+                handleCustomSubmit()
+              }
               placeholder='Ex: "azul e laranja vibrante" ou "verde escuro com dourado"'
               disabled={isGeneratingPalettes}
               className="w-full rounded-lg border border-slate-700 bg-slate-900 px-4 py-3 text-white placeholder-slate-500 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50"
@@ -132,7 +148,9 @@ export function ColorPaletteSelector({ onSelectPalette, onCustomColors, selected
         <div className="rounded-lg border border-purple-500 bg-purple-500/10 p-6 text-center animate-in slide-in-from-top">
           <div className="flex items-center justify-center space-x-3 mb-3">
             <Loader2 className="h-6 w-6 text-purple-400 animate-spin" />
-            <h4 className="text-lg font-semibold text-purple-300">IA Criando suas Paletas...</h4>
+            <h4 className="text-lg font-semibold text-purple-300">
+              IA Criando suas Paletas...
+            </h4>
           </div>
           <p className="text-sm text-purple-200 mb-2">
             🤖 Analisando suas preferências de cores
@@ -155,7 +173,7 @@ export function ColorPaletteSelector({ onSelectPalette, onCustomColors, selected
         >
           <span>🎨 Todas ({allPalettes.length})</span>
         </button>
-        
+
         {/* Categoria Personalizadas (apenas se tiver paletas customizadas) */}
         {customPalettes.length > 0 && (
           <button
@@ -170,9 +188,11 @@ export function ColorPaletteSelector({ onSelectPalette, onCustomColors, selected
             <span>Personalizadas ({customPalettes.length})</span>
           </button>
         )}
-        
+
         {categories.map((category) => {
-          const count = colorPalettes.filter(p => p.category === category).length;
+          const count = colorPalettes.filter(
+            (p) => p.category === category,
+          ).length;
           return (
             <button
               key={category}
@@ -184,7 +204,9 @@ export function ColorPaletteSelector({ onSelectPalette, onCustomColors, selected
               }`}
             >
               <span>{getCategoryIcon(category)}</span>
-              <span className="capitalize">{category === 'neutral' ? 'Neutro' : category} ({count})</span>
+              <span className="capitalize">
+                {category === 'neutral' ? 'Neutro' : category} ({count})
+              </span>
             </button>
           );
         })}
@@ -213,34 +235,38 @@ export function ColorPaletteSelector({ onSelectPalette, onCustomColors, selected
 
               {/* Palette Name */}
               <div className="mb-3">
-                <h4 className="text-sm font-bold text-white text-left">{palette.name}</h4>
-                <span className="text-xs text-slate-400 capitalize">{palette.category}</span>
+                <h4 className="text-sm font-bold text-white text-left">
+                  {palette.name}
+                </h4>
+                <span className="text-xs text-slate-400 capitalize">
+                  {palette.category}
+                </span>
               </div>
 
               {/* Color Swatches */}
               <div className="grid grid-cols-5 gap-1 mb-3">
-                <div 
-                  className="h-8 rounded" 
+                <div
+                  className="h-8 rounded"
                   style={{ backgroundColor: palette.primary }}
                   title="Primary"
                 />
-                <div 
-                  className="h-8 rounded" 
+                <div
+                  className="h-8 rounded"
                   style={{ backgroundColor: palette.secondary }}
                   title="Secondary"
                 />
-                <div 
-                  className="h-8 rounded" 
+                <div
+                  className="h-8 rounded"
                   style={{ backgroundColor: palette.accent }}
                   title="Accent"
                 />
-                <div 
-                  className="h-8 rounded" 
+                <div
+                  className="h-8 rounded"
                   style={{ backgroundColor: palette.dark }}
                   title="Dark"
                 />
-                <div 
-                  className="h-8 rounded border border-slate-600" 
+                <div
+                  className="h-8 rounded border border-slate-600"
                   style={{ backgroundColor: palette.light }}
                   title="Light"
                 />
@@ -249,11 +275,17 @@ export function ColorPaletteSelector({ onSelectPalette, onCustomColors, selected
               {/* Preview Text */}
               <div className="text-xs text-left space-y-1">
                 <div className="flex items-center space-x-2">
-                  <div className="h-2 w-2 rounded-full" style={{ backgroundColor: palette.primary }} />
+                  <div
+                    className="h-2 w-2 rounded-full"
+                    style={{ backgroundColor: palette.primary }}
+                  />
                   <span className="text-slate-400">Primária</span>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <div className="h-2 w-2 rounded-full" style={{ backgroundColor: palette.secondary }} />
+                  <div
+                    className="h-2 w-2 rounded-full"
+                    style={{ backgroundColor: palette.secondary }}
+                  />
                   <span className="text-slate-400">Secundária</span>
                 </div>
               </div>
@@ -265,8 +297,9 @@ export function ColorPaletteSelector({ onSelectPalette, onCustomColors, selected
       {/* Info */}
       <div className="rounded-lg bg-blue-900/30 border border-blue-700 p-4">
         <p className="text-sm text-blue-300">
-          💡 <strong>Dica:</strong> Escolha cores que representem a identidade da sua marca. 
-          Use a opção de IA para criar paletas totalmente personalizadas!
+          💡 <strong>Dica:</strong> Escolha cores que representem a identidade
+          da sua marca. Use a opção de IA para criar paletas totalmente
+          personalizadas!
         </p>
       </div>
     </div>

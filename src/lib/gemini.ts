@@ -1,7 +1,8 @@
 // Serviço de integração com Google Gemini AI para reescrita de textos
 
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
-const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-001:generateContent';
+const GEMINI_API_URL =
+  'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-001:generateContent';
 
 interface GeminiRequest {
   contents: Array<{
@@ -30,27 +31,30 @@ interface GeminiResponse {
 /**
  * Função genérica para chamar a API do Gemini
  */
-async function callGemini(prompt: string, temperature: number = 0.9): Promise<string> {
+async function callGemini(
+  prompt: string,
+  temperature: number = 0.9,
+): Promise<string> {
   try {
     console.log('🤖 [GEMINI AI] Enviando prompt para o Gemini 2.0 Flash...');
     console.log('📝 Prompt:', prompt.substring(0, 150) + '...');
-    
+
     const requestBody: GeminiRequest = {
       contents: [
         {
           parts: [
             {
-              text: prompt
-            }
-          ]
-        }
+              text: prompt,
+            },
+          ],
+        },
       ],
       generationConfig: {
         temperature,
         topK: 40,
         topP: 0.95,
         maxOutputTokens: 2048,
-      }
+      },
     };
 
     const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
@@ -58,7 +62,7 @@ async function callGemini(prompt: string, temperature: number = 0.9): Promise<st
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(requestBody)
+      body: JSON.stringify(requestBody),
     });
 
     if (!response.ok) {
@@ -69,10 +73,10 @@ async function callGemini(prompt: string, temperature: number = 0.9): Promise<st
 
     const data: GeminiResponse = await response.json();
     const result = data.candidates[0]?.content?.parts[0]?.text || '';
-    
+
     console.log('✅ [GEMINI AI] Resposta recebida!');
     console.log('📄 Conteúdo:', result.substring(0, 200) + '...');
-    
+
     return result;
   } catch (error) {
     console.error('❌ [GEMINI AI] Erro ao chamar Gemini API:', error);
@@ -197,14 +201,14 @@ Formato:
 etc.`;
 
   const response = await callGemini(prompt, 0.7);
-  
+
   // Extrair lista numerada
   const services = response
     .split('\n')
-    .filter(line => line.trim().match(/^\d+\./))
-    .map(line => line.replace(/^\d+\.\s*/, '').trim())
-    .filter(s => s.length > 0);
-  
+    .filter((line) => line.trim().match(/^\d+\./))
+    .map((line) => line.replace(/^\d+\.\s*/, '').trim())
+    .filter((s) => s.length > 0);
+
   return services.length > 0 ? services : businessInfo.originalServices;
 }
 
@@ -244,14 +248,14 @@ A: Resposta completa da pergunta 2.
 Retorne APENAS no formato especificado, sem introduções ou comentários adicionais.`;
 
   const response = await callGemini(prompt, 0.7);
-  
+
   // Parse do formato Q: / A:
   const faqItems: Array<{ question: string; answer: string }> = [];
   const lines = response.split('\n');
-  
+
   let currentQuestion = '';
   let currentAnswer = '';
-  
+
   for (const line of lines) {
     const trimmed = line.trim();
     if (trimmed.startsWith('Q:')) {
@@ -268,17 +272,29 @@ Retorne APENAS no formato especificado, sem introduções ou comentários adicio
       currentAnswer += ' ' + trimmed;
     }
   }
-  
+
   // Adicionar última FAQ
   if (currentQuestion && currentAnswer) {
     faqItems.push({ question: currentQuestion, answer: currentAnswer });
   }
-  
-  return faqItems.length > 0 ? faqItems.slice(0, 5) : [
-    { question: 'Como posso agendar um horário?', answer: 'Você pode agendar através do nosso site, WhatsApp ou telefone.' },
-    { question: 'Quais formas de pagamento são aceitas?', answer: 'Aceitamos dinheiro, cartão de crédito, débito e PIX.' },
-    { question: 'Qual o horário de funcionamento?', answer: 'Atendemos de segunda a sábado, das 9h às 18h.' }
-  ];
+
+  return faqItems.length > 0
+    ? faqItems.slice(0, 5)
+    : [
+        {
+          question: 'Como posso agendar um horário?',
+          answer:
+            'Você pode agendar através do nosso site, WhatsApp ou telefone.',
+        },
+        {
+          question: 'Quais formas de pagamento são aceitas?',
+          answer: 'Aceitamos dinheiro, cartão de crédito, débito e PIX.',
+        },
+        {
+          question: 'Qual o horário de funcionamento?',
+          answer: 'Atendemos de segunda a sábado, das 9h às 18h.',
+        },
+      ];
 }
 
 /**
@@ -315,26 +331,28 @@ STAT3: 8 Anos|de Experiência
 Retorne APENAS no formato especificado, sem comentários adicionais.`;
 
   const response = await callGemini(prompt, 0.7);
-  
+
   // Parse do formato STAT1: valor|label
   const stats: Array<{ value: string; label: string }> = [];
-  const lines = response.split('\n').filter(l => l.trim().startsWith('STAT'));
-  
+  const lines = response.split('\n').filter((l) => l.trim().startsWith('STAT'));
+
   for (const line of lines) {
     const match = line.match(/STAT\d+:\s*(.+)\|(.+)/);
     if (match) {
       stats.push({
         value: match[1].trim(),
-        label: match[2].trim()
+        label: match[2].trim(),
       });
     }
   }
-  
-  return stats.length === 3 ? stats : [
-    { value: '500+', label: 'Clientes Satisfeitos' },
-    { value: '4.9★', label: 'Avaliação Média' },
-    { value: '10+', label: 'Anos de Experiência' }
-  ];
+
+  return stats.length === 3
+    ? stats
+    : [
+        { value: '500+', label: 'Clientes Satisfeitos' },
+        { value: '4.9★', label: 'Avaliação Média' },
+        { value: '10+', label: 'Anos de Experiência' },
+      ];
 }
 
 /**
@@ -374,25 +392,39 @@ FEATURE3: Agendamento Rápido|Agende seu horário em segundos pelo app ou WhatsA
 Retorne APENAS no formato especificado, sem comentários adicionais.`;
 
   const response = await callGemini(prompt, 0.8);
-  
+
   const features: Array<{ title: string; description: string }> = [];
-  const lines = response.split('\n').filter(l => l.trim().startsWith('FEATURE'));
-  
+  const lines = response
+    .split('\n')
+    .filter((l) => l.trim().startsWith('FEATURE'));
+
   for (const line of lines) {
     const match = line.match(/FEATURE\d+:\s*(.+)\|(.+)/);
     if (match) {
       features.push({
         title: match[1].trim(),
-        description: match[2].trim()
+        description: match[2].trim(),
       });
     }
   }
-  
-  return features.length === 3 ? features : [
-    { title: 'Experiência Premium', description: 'Muito mais que um serviço, uma verdadeira experiência de qualidade' },
-    { title: 'Profissionais Qualificados', description: 'Equipe altamente treinada e experiente no que faz' },
-    { title: 'Atendimento Fácil', description: 'Agende com total praticidade e rapidez' }
-  ];
+
+  return features.length === 3
+    ? features
+    : [
+        {
+          title: 'Experiência Premium',
+          description:
+            'Muito mais que um serviço, uma verdadeira experiência de qualidade',
+        },
+        {
+          title: 'Profissionais Qualificados',
+          description: 'Equipe altamente treinada e experiente no que faz',
+        },
+        {
+          title: 'Atendimento Fácil',
+          description: 'Agende com total praticidade e rapidez',
+        },
+      ];
 }
 
 /**
@@ -438,12 +470,12 @@ CHECK3: Ambiente Motivador
 Retorne APENAS no formato especificado.`;
 
   const response = await callGemini(prompt, 0.8);
-  
-  const lines = response.split('\n').filter(l => l.trim());
+
+  const lines = response.split('\n').filter((l) => l.trim());
   let title = 'Do Sonho à Realidade';
   let subtitle = 'Nossa empresa foi projetada para ser referência em qualidade';
   const checklist: string[] = [];
-  
+
   for (const line of lines) {
     if (line.startsWith('TITLE:')) {
       title = line.replace('TITLE:', '').trim();
@@ -454,11 +486,15 @@ Retorne APENAS no formato especificado.`;
       if (item) checklist.push(item);
     }
   }
-  
+
   if (checklist.length === 0) {
-    checklist.push('Profissionais certificados', 'Produtos premium', 'Ambiente climatizado');
+    checklist.push(
+      'Profissionais certificados',
+      'Produtos premium',
+      'Ambiente climatizado',
+    );
   }
-  
+
   return { title, subtitle, checklist: checklist.slice(0, 3) };
 }
 
@@ -494,25 +530,27 @@ etc.
 Retorne APENAS no formato especificado.`;
 
   const response = await callGemini(prompt, 0.7);
-  
+
   const descriptions: Array<{ name: string; description: string }> = [];
-  const lines = response.split('\n').filter(l => l.trim().match(/SERVICE\d+:/));
-  
+  const lines = response
+    .split('\n')
+    .filter((l) => l.trim().match(/SERVICE\d+:/));
+
   for (let i = 0; i < businessInfo.services.length; i++) {
     const line = lines[i];
     let desc = 'Serviço de qualidade premium com resultados excepcionais';
-    
+
     if (line) {
       const match = line.match(/SERVICE\d+:\s*(.+)/);
       if (match) desc = match[1].trim();
     }
-    
+
     descriptions.push({
       name: businessInfo.services[i],
-      description: desc
+      description: desc,
     });
   }
-  
+
   return descriptions;
 }
 
@@ -553,26 +591,42 @@ TESTIMONIAL3: Marina Costa Silva|Cliente VIP|Simplesmente perfeito! Da entrada �
 Retorne APENAS no formato especificado.`;
 
   const response = await callGemini(prompt, 0.9);
-  
+
   const testimonials: Array<{ name: string; role: string; text: string }> = [];
-  const lines = response.split('\n').filter(l => l.trim().startsWith('TESTIMONIAL'));
-  
+  const lines = response
+    .split('\n')
+    .filter((l) => l.trim().startsWith('TESTIMONIAL'));
+
   for (const line of lines) {
     const match = line.match(/TESTIMONIAL\d+:\s*(.+)\|(.+)\|(.+)/);
     if (match) {
       testimonials.push({
         name: match[1].trim(),
         role: match[2].trim(),
-        text: match[3].trim()
+        text: match[3].trim(),
       });
     }
   }
-  
-  return testimonials.length === 3 ? testimonials : [
-    { name: 'Ana Silva', role: 'Cliente desde 2024', text: 'Excelente serviço! Profissionais atenciosos e ambiente incrível. Recomendo muito!' },
-    { name: 'Carlos Santos', role: 'Cliente desde 2023', text: 'Superou todas as minhas expectativas! Qualidade premium com atendimento impecável.' },
-    { name: 'Maria Costa', role: 'Cliente desde 2024', text: 'Simplesmente perfeito! A melhor experiência que já tive. Voltarei sempre!' }
-  ];
+
+  return testimonials.length === 3
+    ? testimonials
+    : [
+        {
+          name: 'Ana Silva',
+          role: 'Cliente desde 2024',
+          text: 'Excelente serviço! Profissionais atenciosos e ambiente incrível. Recomendo muito!',
+        },
+        {
+          name: 'Carlos Santos',
+          role: 'Cliente desde 2023',
+          text: 'Superou todas as minhas expectativas! Qualidade premium com atendimento impecável.',
+        },
+        {
+          name: 'Maria Costa',
+          role: 'Cliente desde 2024',
+          text: 'Simplesmente perfeito! A melhor experiência que já tive. Voltarei sempre!',
+        },
+      ];
 }
 
 /**
@@ -604,16 +658,20 @@ Retorne APENAS o nome corrigido, sem aspas ou comentários.`;
 /**
  * Gera paletas de cores personalizadas usando IA
  */
-export async function generateCustomColorPalettes(colorDescription: string): Promise<Array<{
-  id: string;
-  name: string;
-  category: 'custom';
-  primary: string;
-  secondary: string;
-  accent: string;
-  dark: string;
-  light: string;
-}>> {
+export async function generateCustomColorPalettes(
+  colorDescription: string,
+): Promise<
+  Array<{
+    id: string;
+    name: string;
+    category: 'custom';
+    primary: string;
+    secondary: string;
+    accent: string;
+    dark: string;
+    light: string;
+  }>
+> {
   const prompt = `Você é um especialista em design de cores e paletas profissionais.
 
 TAREFA: Crie 6 paletas de cores PROFISSIONAIS baseadas nesta descrição: "${colorDescription}"
@@ -646,7 +704,7 @@ Retorne APENAS no formato especificado, sem comentários adicionais.`;
 
   try {
     const response = await callGemini(prompt, 0.8);
-    
+
     const palettes: Array<{
       id: string;
       name: string;
@@ -657,21 +715,31 @@ Retorne APENAS no formato especificado, sem comentários adicionais.`;
       dark: string;
       light: string;
     }> = [];
-    
-    const lines = response.split('\n').filter(l => l.trim().startsWith('PALETTE'));
-    
+
+    const lines = response
+      .split('\n')
+      .filter((l) => l.trim().startsWith('PALETTE'));
+
     for (let i = 0; i < lines.length && i < 6; i++) {
       const line = lines[i];
-      const match = line.match(/PALETTE\d+:\s*(.+)\|(.+)\|(.+)\|(.+)\|(.+)\|(.+)/);
-      
+      const match = line.match(
+        /PALETTE\d+:\s*(.+)\|(.+)\|(.+)\|(.+)\|(.+)\|(.+)/,
+      );
+
       if (match) {
         const [, name, primary, secondary, accent, dark, light] = match;
-        
+
         // Validar se são códigos HEX válidos
-        const isValidHex = (color: string) => /^#[0-9A-Fa-f]{6}$/.test(color.trim());
-        
-        if (isValidHex(primary) && isValidHex(secondary) && isValidHex(accent) && 
-            isValidHex(dark) && isValidHex(light)) {
+        const isValidHex = (color: string) =>
+          /^#[0-9A-Fa-f]{6}$/.test(color.trim());
+
+        if (
+          isValidHex(primary) &&
+          isValidHex(secondary) &&
+          isValidHex(accent) &&
+          isValidHex(dark) &&
+          isValidHex(light)
+        ) {
           palettes.push({
             id: `custom-${Date.now()}-${i}`,
             name: name.trim(),
@@ -680,22 +748,23 @@ Retorne APENAS no formato especificado, sem comentários adicionais.`;
             secondary: secondary.trim(),
             accent: accent.trim(),
             dark: dark.trim(),
-            light: light.trim()
+            light: light.trim(),
           });
         }
       }
     }
-    
-    console.log(`✅ [GEMINI AI] Geradas ${palettes.length} paletas customizadas para: "${colorDescription}"`);
-    
+
+    console.log(
+      `✅ [GEMINI AI] Geradas ${palettes.length} paletas customizadas para: "${colorDescription}"`,
+    );
+
     // Se não conseguiu gerar nenhuma paleta válida, retorna paletas de fallback
     if (palettes.length === 0) {
       console.warn('⚠️ [GEMINI AI] Falha ao gerar paletas, usando fallbacks');
       return generateFallbackPalettes(colorDescription);
     }
-    
+
     return palettes;
-    
   } catch (error) {
     console.error('❌ [GEMINI AI] Erro ao gerar paletas customizadas:', error);
     return generateFallbackPalettes(colorDescription);
@@ -716,58 +785,194 @@ function generateFallbackPalettes(description: string): Array<{
   light: string;
 }> {
   const desc = description.toLowerCase();
-  
+
   // Mapear cores comuns para paletas de fallback
-  const colorMap: Record<string, Array<{name: string, primary: string, secondary: string, accent: string, dark: string, light: string}>> = {
-    'azul': [
-      { name: 'Azul Oceano', primary: '#1E40AF', secondary: '#3B82F6', accent: '#60A5FA', dark: '#1E3A8A', light: '#DBEAFE' },
-      { name: 'Azul Celeste', primary: '#0EA5E9', secondary: '#38BDF8', accent: '#7DD3FC', dark: '#0C4A6E', light: '#E0F2FE' }
+  const colorMap: Record<
+    string,
+    Array<{
+      name: string;
+      primary: string;
+      secondary: string;
+      accent: string;
+      dark: string;
+      light: string;
+    }>
+  > = {
+    azul: [
+      {
+        name: 'Azul Oceano',
+        primary: '#1E40AF',
+        secondary: '#3B82F6',
+        accent: '#60A5FA',
+        dark: '#1E3A8A',
+        light: '#DBEAFE',
+      },
+      {
+        name: 'Azul Celeste',
+        primary: '#0EA5E9',
+        secondary: '#38BDF8',
+        accent: '#7DD3FC',
+        dark: '#0C4A6E',
+        light: '#E0F2FE',
+      },
     ],
-    'verde': [
-      { name: 'Verde Esmeralda', primary: '#059669', secondary: '#10B981', accent: '#34D399', dark: '#065F46', light: '#D1FAE5' },
-      { name: 'Verde Menta', primary: '#10B981', secondary: '#34D399', accent: '#6EE7B7', dark: '#047857', light: '#ECFDF5' }
+    verde: [
+      {
+        name: 'Verde Esmeralda',
+        primary: '#059669',
+        secondary: '#10B981',
+        accent: '#34D399',
+        dark: '#065F46',
+        light: '#D1FAE5',
+      },
+      {
+        name: 'Verde Menta',
+        primary: '#10B981',
+        secondary: '#34D399',
+        accent: '#6EE7B7',
+        dark: '#047857',
+        light: '#ECFDF5',
+      },
     ],
-    'roxo': [
-      { name: 'Roxo Místico', primary: '#7C3AED', secondary: '#8B5CF6', accent: '#A78BFA', dark: '#5B21B6', light: '#F5F3FF' },
-      { name: 'Roxo Real', primary: '#6B21A8', secondary: '#7C3AED', accent: '#8B5CF6', dark: '#581C87', light: '#F3E8FF' }
+    roxo: [
+      {
+        name: 'Roxo Místico',
+        primary: '#7C3AED',
+        secondary: '#8B5CF6',
+        accent: '#A78BFA',
+        dark: '#5B21B6',
+        light: '#F5F3FF',
+      },
+      {
+        name: 'Roxo Real',
+        primary: '#6B21A8',
+        secondary: '#7C3AED',
+        accent: '#8B5CF6',
+        dark: '#581C87',
+        light: '#F3E8FF',
+      },
     ],
-    'rosa': [
-      { name: 'Rosa Paixão', primary: '#E11D48', secondary: '#F43F5E', accent: '#FB7185', dark: '#9F1239', light: '#FFE4E6' },
-      { name: 'Rosa Delicado', primary: '#EC4899', secondary: '#F472B6', accent: '#F9A8D4', dark: '#BE185D', light: '#FCE7F3' }
+    rosa: [
+      {
+        name: 'Rosa Paixão',
+        primary: '#E11D48',
+        secondary: '#F43F5E',
+        accent: '#FB7185',
+        dark: '#9F1239',
+        light: '#FFE4E6',
+      },
+      {
+        name: 'Rosa Delicado',
+        primary: '#EC4899',
+        secondary: '#F472B6',
+        accent: '#F9A8D4',
+        dark: '#BE185D',
+        light: '#FCE7F3',
+      },
     ],
-    'vermelho': [
-      { name: 'Vermelho Rubi', primary: '#DC2626', secondary: '#EF4444', accent: '#F87171', dark: '#991B1B', light: '#FEE2E2' },
-      { name: 'Vermelho Fogo', primary: '#B91C1C', secondary: '#DC2626', accent: '#EF4444', dark: '#7F1D1D', light: '#FEF2F2' }
+    vermelho: [
+      {
+        name: 'Vermelho Rubi',
+        primary: '#DC2626',
+        secondary: '#EF4444',
+        accent: '#F87171',
+        dark: '#991B1B',
+        light: '#FEE2E2',
+      },
+      {
+        name: 'Vermelho Fogo',
+        primary: '#B91C1C',
+        secondary: '#DC2626',
+        accent: '#EF4444',
+        dark: '#7F1D1D',
+        light: '#FEF2F2',
+      },
     ],
-    'laranja': [
-      { name: 'Laranja Sunset', primary: '#EA580C', secondary: '#F97316', accent: '#FB923C', dark: '#C2410C', light: '#FFEDD5' },
-      { name: 'Laranja Vibrante', primary: '#F97316', secondary: '#FB923C', accent: '#FDBA74', dark: '#EA580C', light: '#FFF7ED' }
+    laranja: [
+      {
+        name: 'Laranja Sunset',
+        primary: '#EA580C',
+        secondary: '#F97316',
+        accent: '#FB923C',
+        dark: '#C2410C',
+        light: '#FFEDD5',
+      },
+      {
+        name: 'Laranja Vibrante',
+        primary: '#F97316',
+        secondary: '#FB923C',
+        accent: '#FDBA74',
+        dark: '#EA580C',
+        light: '#FFF7ED',
+      },
     ],
-    'amarelo': [
-      { name: 'Amarelo Sol', primary: '#EAB308', secondary: '#FACC15', accent: '#FDE047', dark: '#A16207', light: '#FEF9C3' },
-      { name: 'Amarelo Dourado', primary: '#F59E0B', secondary: '#FBBF24', accent: '#FCD34D', dark: '#D97706', light: '#FEF3C7' }
-    ]
+    amarelo: [
+      {
+        name: 'Amarelo Sol',
+        primary: '#EAB308',
+        secondary: '#FACC15',
+        accent: '#FDE047',
+        dark: '#A16207',
+        light: '#FEF9C3',
+      },
+      {
+        name: 'Amarelo Dourado',
+        primary: '#F59E0B',
+        secondary: '#FBBF24',
+        accent: '#FCD34D',
+        dark: '#D97706',
+        light: '#FEF3C7',
+      },
+    ],
   };
 
   // Encontrar cor relevante na descrição
-  let selectedPalettes: Array<{name: string, primary: string, secondary: string, accent: string, dark: string, light: string}> = [];
-  
+  let selectedPalettes: Array<{
+    name: string;
+    primary: string;
+    secondary: string;
+    accent: string;
+    dark: string;
+    light: string;
+  }> = [];
+
   for (const [color, palettes] of Object.entries(colorMap)) {
     if (desc.includes(color)) {
       selectedPalettes.push(...palettes);
       break;
     }
   }
-  
+
   // Se não encontrou nenhuma cor específica, usar paletas neutras
   if (selectedPalettes.length === 0) {
     selectedPalettes = [
-      { name: 'Personalizada 1', primary: '#3B82F6', secondary: '#60A5FA', accent: '#93C5FD', dark: '#1E3A8A', light: '#DBEAFE' },
-      { name: 'Personalizada 2', primary: '#10B981', secondary: '#34D399', accent: '#6EE7B7', dark: '#047857', light: '#ECFDF5' },
-      { name: 'Personalizada 3', primary: '#8B5CF6', secondary: '#A78BFA', accent: '#C4B5FD', dark: '#6B21A8', light: '#FAF5FF' }
+      {
+        name: 'Personalizada 1',
+        primary: '#3B82F6',
+        secondary: '#60A5FA',
+        accent: '#93C5FD',
+        dark: '#1E3A8A',
+        light: '#DBEAFE',
+      },
+      {
+        name: 'Personalizada 2',
+        primary: '#10B981',
+        secondary: '#34D399',
+        accent: '#6EE7B7',
+        dark: '#047857',
+        light: '#ECFDF5',
+      },
+      {
+        name: 'Personalizada 3',
+        primary: '#8B5CF6',
+        secondary: '#A78BFA',
+        accent: '#C4B5FD',
+        dark: '#6B21A8',
+        light: '#FAF5FF',
+      },
     ];
   }
-  
+
   return selectedPalettes.slice(0, 6).map((palette, index) => ({
     id: `fallback-${Date.now()}-${index}`,
     name: palette.name,
@@ -776,7 +981,7 @@ function generateFallbackPalettes(description: string): Array<{
     secondary: palette.secondary,
     accent: palette.accent,
     dark: palette.dark,
-    light: palette.light
+    light: palette.light,
   }));
 }
 
@@ -811,39 +1016,73 @@ export async function rewriteAllContent(siteData: {
     heroStats: [
       { value: '500+', label: 'Clientes Satisfeitos' },
       { value: '4.9★', label: 'Avaliação Média' },
-      { value: '10+', label: 'Anos de Experiência' }
+      { value: '10+', label: 'Anos de Experiência' },
     ],
     features: [
-      { title: 'Experiência Premium', description: 'Muito mais que um serviço, uma verdadeira experiência de qualidade' },
-      { title: 'Profissionais Qualificados', description: 'Equipe altamente treinada e experiente no que faz' },
-      { title: 'Atendimento Fácil', description: 'Agende com total praticidade e rapidez' }
+      {
+        title: 'Experiência Premium',
+        description:
+          'Muito mais que um serviço, uma verdadeira experiência de qualidade',
+      },
+      {
+        title: 'Profissionais Qualificados',
+        description: 'Equipe altamente treinada e experiente no que faz',
+      },
+      {
+        title: 'Atendimento Fácil',
+        description: 'Agende com total praticidade e rapidez',
+      },
     ],
     aboutContent: {
       title: 'Do Sonho à Realidade',
       subtitle: 'Nossa empresa foi projetada para ser referência em qualidade',
-      checklist: ['Profissionais certificados', 'Produtos premium', 'Ambiente climatizado']
+      checklist: [
+        'Profissionais certificados',
+        'Produtos premium',
+        'Ambiente climatizado',
+      ],
     },
-    serviceDescriptions: siteData.services.map(s => ({
+    serviceDescriptions: siteData.services.map((s) => ({
       name: s,
-      description: 'Serviço de qualidade premium com resultados excepcionais'
+      description: 'Serviço de qualidade premium com resultados excepcionais',
     })),
     testimonials: [
-      { name: 'Ana Silva', role: 'Cliente Satisfeita', text: 'Excelente serviço! Profissionais atenciosos e ambiente incrível.' },
-      { name: 'Carlos Santos', role: 'Cliente Fiel', text: 'Superou todas as minhas expectativas! Qualidade premium.' },
-      { name: 'Maria Costa', role: 'Cliente VIP', text: 'Simplesmente perfeito! A melhor experiência que já tive.' }
-    ]
+      {
+        name: 'Ana Silva',
+        role: 'Cliente Satisfeita',
+        text: 'Excelente serviço! Profissionais atenciosos e ambiente incrível.',
+      },
+      {
+        name: 'Carlos Santos',
+        role: 'Cliente Fiel',
+        text: 'Superou todas as minhas expectativas! Qualidade premium.',
+      },
+      {
+        name: 'Maria Costa',
+        role: 'Cliente VIP',
+        text: 'Simplesmente perfeito! A melhor experiência que já tive.',
+      },
+    ],
   };
 
   // Helper to process settled promises
-  const getValue = <T>(result: PromiseSettledResult<T>, fallback: T, logName: string): T => {
+  const getValue = <T>(
+    result: PromiseSettledResult<T>,
+    fallback: T,
+    logName: string,
+  ): T => {
     if (result.status === 'fulfilled') {
       // Check for empty or invalid responses from the AI
       if (Array.isArray(result.value) && result.value.length === 0) {
-        console.warn(`IA retornou array vazio para ${logName}, usando fallback.`);
+        console.warn(
+          `IA retornou array vazio para ${logName}, usando fallback.`,
+        );
         return fallback;
       }
       if (typeof result.value === 'string' && !result.value.trim()) {
-        console.warn(`IA retornou string vazia para ${logName}, usando fallback.`);
+        console.warn(
+          `IA retornou string vazia para ${logName}, usando fallback.`,
+        );
         return fallback;
       }
       return result.value;
@@ -861,23 +1100,39 @@ export async function rewriteAllContent(siteData: {
       slogan: siteData.slogan,
       originalDescription: siteData.description,
       targetAudience: siteData.targetAudience,
-      differentials: siteData.differentials
+      differentials: siteData.differentials,
     }),
     rewriteServices({
       name: siteData.name,
       area: siteData.area,
-      originalServices: siteData.services
+      originalServices: siteData.services,
     }),
     generateFAQ({
       name: siteData.name,
       area: siteData.area,
-      services: siteData.services
+      services: siteData.services,
     }),
     generateHeroStats({ name: siteData.name, area: siteData.area }),
-    generateFeatures({ name: siteData.name, area: siteData.area, services: siteData.services }),
-    generateAboutContent({ name: siteData.name, area: siteData.area, description: siteData.description }),
-    generateServiceDescriptions({ name: siteData.name, area: siteData.area, services: siteData.services }),
-    generateTestimonials({ name: siteData.name, area: siteData.area, services: siteData.services })
+    generateFeatures({
+      name: siteData.name,
+      area: siteData.area,
+      services: siteData.services,
+    }),
+    generateAboutContent({
+      name: siteData.name,
+      area: siteData.area,
+      description: siteData.description,
+    }),
+    generateServiceDescriptions({
+      name: siteData.name,
+      area: siteData.area,
+      services: siteData.services,
+    }),
+    generateTestimonials({
+      name: siteData.name,
+      area: siteData.area,
+      services: siteData.services,
+    }),
   ]);
 
   // Process results, using fallbacks for failed promises
@@ -885,11 +1140,27 @@ export async function rewriteAllContent(siteData: {
   const description = getValue(results[1], fallbacks.description, 'descrição');
   const services = getValue(results[2], fallbacks.services, 'serviços');
   const faq = getValue(results[3], fallbacks.faq, 'FAQ');
-  const heroStats = getValue(results[4], fallbacks.heroStats, 'estatísticas da hero');
+  const heroStats = getValue(
+    results[4],
+    fallbacks.heroStats,
+    'estatísticas da hero',
+  );
   const features = getValue(results[5], fallbacks.features, 'features');
-  const aboutContent = getValue(results[6], fallbacks.aboutContent, 'conteúdo sobre');
-  const serviceDescriptions = getValue(results[7], fallbacks.serviceDescriptions, 'descrições de serviços');
-  const testimonials = getValue(results[8], fallbacks.testimonials, 'depoimentos');
+  const aboutContent = getValue(
+    results[6],
+    fallbacks.aboutContent,
+    'conteúdo sobre',
+  );
+  const serviceDescriptions = getValue(
+    results[7],
+    fallbacks.serviceDescriptions,
+    'descrições de serviços',
+  );
+  const testimonials = getValue(
+    results[8],
+    fallbacks.testimonials,
+    'depoimentos',
+  );
 
   return {
     slogan,
@@ -900,6 +1171,6 @@ export async function rewriteAllContent(siteData: {
     features,
     aboutContent,
     serviceDescriptions,
-    testimonials
+    testimonials,
   };
 }

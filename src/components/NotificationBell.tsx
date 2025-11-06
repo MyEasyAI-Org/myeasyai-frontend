@@ -6,7 +6,11 @@ type NotificationBellProps = {
   isOpen: boolean;
 };
 
-export default function NotificationBell({ unreadCount, onClick, isOpen }: NotificationBellProps) {
+export default function NotificationBell({
+  unreadCount,
+  onClick,
+  isOpen,
+}: NotificationBellProps) {
   return (
     <button
       onClick={onClick}
