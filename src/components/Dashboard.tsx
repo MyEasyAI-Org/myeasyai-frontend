@@ -53,7 +53,7 @@ export function Dashboard({ onLogout, onGoHome }: DashboardProps) {
     requests_this_month: 45,
   });
   const [profile, setProfile] = useState<UserProfile>(() => {
-    // Tentar carregar do localStorage na inicialização
+    // Try to load from localStorage on initialization
     const savedProfile = localStorage.getItem('userProfile');
     if (savedProfile) {
       try {
@@ -74,13 +74,13 @@ export function Dashboard({ onLogout, onGoHome }: DashboardProps) {
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isLoadingProfile, setIsLoadingProfile] = useState(() => {
-    // Se já tem dados no localStorage, não precisa mostrar loading
+    // If already has data in localStorage, no need to show loading
     const savedProfile = localStorage.getItem('userProfile');
     return !savedProfile;
   });
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Fechar dropdown ao clicar fora
+  // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -109,7 +109,7 @@ export function Dashboard({ onLogout, onGoHome }: DashboardProps) {
         if (currentUser) {
           setUser(currentUser);
 
-          // Buscar dados do banco, incluindo preferred_name
+          // Fetch data from database, including preferred_name
           const { data: userData, error: dbError } = await supabase
             .from('users')
             .select('name, preferred_name')
@@ -135,13 +135,13 @@ export function Dashboard({ onLogout, onGoHome }: DashboardProps) {
           };
 
           setProfile(profileData);
-          // Salvar no localStorage para persistir entre recarregamentos
+          // Save to localStorage to persist between reloads
           localStorage.setItem('userProfile', JSON.stringify(profileData));
         }
       } catch (error) {
         console.error('Erro ao carregar dados do usuário:', error);
       } finally {
-        // Marcar como carregado independente de sucesso ou erro
+        // Mark as loaded regardless of success or error
         setIsLoadingProfile(false);
       }
     };
@@ -170,7 +170,7 @@ export function Dashboard({ onLogout, onGoHome }: DashboardProps) {
   };
 
   const handleChangePlan = (newPlan: SubscriptionPlan) => {
-    // Aqui você implementaria a lógica de mudança de plano
+    // Here you would implement plan change logic
     alert(`Solicitação de mudança para plano ${newPlan} enviada!`);
   };
 

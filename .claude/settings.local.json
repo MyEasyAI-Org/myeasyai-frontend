@@ -12,7 +12,8 @@
       "Bash(.env.example)",
       "Bash(.env)",
       "Bash(claude config set:*)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(npx @biomejs/biome format:*)"
     ],
     "deny": [],
     "ask": []

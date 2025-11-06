@@ -43,7 +43,7 @@ export function Courses() {
               <div
                 className={`mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-gradient-to-r ${c.color}`}
               >
-                {/* ícone genérico de categoria */}
+                {/* generic category icon */}
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   width="24"

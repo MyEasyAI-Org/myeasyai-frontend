@@ -38,11 +38,11 @@ export default function NavBar({
   const dropdownRef = useRef<HTMLDivElement>(null);
   const notificationRef = useRef<HTMLDivElement>(null);
 
-  // Hook de notificações
+  // Notifications hook
   const { getUnreadCount, getLatest, markAsRead, markAllAsRead } =
     useNotifications();
 
-  // Fechar dropdowns ao clicar fora
+  // Close dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -68,7 +68,7 @@ export default function NavBar({
     };
   }, [isDropdownOpen, isNotificationOpen]);
 
-  // Função para gerar iniciais do nome
+  // Function to generate name initials
   const getInitials = (name: string) => {
     const names = name.trim().split(' ');
     if (names.length >= 2) {
@@ -77,9 +77,9 @@ export default function NavBar({
     return name.substring(0, 2).toUpperCase();
   };
 
-  // Função para obter avatar (foto ou iniciais)
+  // Function to get avatar (photo or initials)
   const getAvatarContent = () => {
-    // Se tiver avatar_url, exibir imagem
+    // If has avatar_url, display image
     if (userAvatarUrl) {
       return (
         <img
@@ -90,7 +90,7 @@ export default function NavBar({
       );
     }
 
-    // Caso contrário, exibir iniciais
+    // Otherwise, display initials
     return (
       <div className="flex h-full w-full items-center justify-center rounded-full bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 text-white font-bold">
         {getInitials(userName)}
@@ -98,7 +98,7 @@ export default function NavBar({
     );
   };
 
-  // Função para smooth scroll
+  // Function for smooth scroll
   const handleSmoothScroll = (
     e: React.MouseEvent<HTMLAnchorElement>,
     targetId: string,
@@ -110,7 +110,7 @@ export default function NavBar({
     }
   };
 
-  // Handlers de notificações
+  // Notification handlers
   const handleNotificationClick = (notification: Notification) => {
     markAsRead(notification.id);
     setSelectedNotification(notification);
@@ -123,7 +123,7 @@ export default function NavBar({
 
   const handleViewAllNotifications = () => {
     setIsNotificationOpen(false);
-    // Aqui você pode adicionar navegação para uma página de notificações se existir
+    // Here you can add navigation to a notifications page if it exists
     console.log('Ver todas as notificações');
   };
 
@@ -186,9 +186,9 @@ export default function NavBar({
 
           <div className="flex space-x-2 sm:space-x-3">
             {user ? (
-              // Usuário logado - mostrar sino de notificação e dropdown menu
+              // Logged in user - show notification bell and dropdown menu
               <div className="flex items-center space-x-3">
-                {/* Sino de Notificação */}
+                {/* Notification Bell */}
                 <div className="relative" ref={notificationRef}>
                   <NotificationBell
                     unreadCount={getUnreadCount()}
@@ -205,7 +205,7 @@ export default function NavBar({
                   )}
                 </div>
 
-                {/* Dropdown do Usuário */}
+                {/* User Dropdown */}
                 <div className="relative" ref={dropdownRef}>
                   <button
                     onClick={() => setIsDropdownOpen(!isDropdownOpen)}
@@ -267,7 +267,7 @@ export default function NavBar({
                 </div>
               </div>
             ) : isCheckingAuth ? (
-              // Verificando autenticação - mostrar loading
+              // Checking authentication - show loading
               <div className="flex items-center space-x-2 px-4 py-2">
                 <span className="loading-dots text-slate-300">
                   <span>.</span>
@@ -276,7 +276,7 @@ export default function NavBar({
                 </span>
               </div>
             ) : (
-              // Usuário não logado - mostrar Inscreva-se e Login
+              // User not logged in - show Sign up and Login
               <>
                 <Button variant="ghostNav" onClick={onSignupClick}>
                   <span className="hidden sm:inline">Inscreva-se</span>
@@ -291,7 +291,7 @@ export default function NavBar({
         </div>
       </div>
 
-      {/* Modal de Detalhes de Notificação */}
+      {/* Notification Details Modal */}
       <NotificationDetailModal
         notification={selectedNotification}
         onClose={() => setSelectedNotification(null)}

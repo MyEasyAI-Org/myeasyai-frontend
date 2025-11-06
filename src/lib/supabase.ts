@@ -87,10 +87,10 @@ export const getCurrentSession = () => {
   return supabase.auth.getSession();
 };
 
-// Função para registrar usuário na tabela users após login social
+// Function to register user in users table after social login
 export const ensureUserInDatabase = async (user: any) => {
   try {
-    // Verificar se o usuário já existe na tabela users
+    // Check if user already exists in users table
     const { data: existingUser, error: checkError } = await supabase
       .from('users')
       .select('uuid')
@@ -98,12 +98,12 @@ export const ensureUserInDatabase = async (user: any) => {
       .single();
 
     if (checkError && checkError.code !== 'PGRST116') {
-      // PGRST116 = "The result contains 0 rows" - usuário não encontrado
+      // PGRST116 = "The result contains 0 rows" - user not found
       console.error('Erro ao verificar usuário existente:', checkError);
       return;
     }
 
-    // Se o usuário não existe, criar registro
+    // If user doesn't exist, create record
     if (!existingUser) {
       const fullName =
         user.user_metadata?.full_name || user.user_metadata?.name || 'Usuário';
@@ -125,7 +125,7 @@ export const ensureUserInDatabase = async (user: any) => {
         console.log('Usuário registrado na tabela users:', user.email);
       }
     } else {
-      // Atualizar last_online se o usuário já existe
+      // Update last_online if user already exists
       const { error: updateError } = await supabase
         .from('users')
         .update({ last_online: new Date().toISOString() })
@@ -140,7 +140,7 @@ export const ensureUserInDatabase = async (user: any) => {
   }
 };
 
-// Função para verificar se o usuário precisa completar o onboarding
+// Function to check if user needs to complete onboarding
 export const checkUserNeedsOnboarding = async (user: any) => {
   try {
     const { data: userData, error } = await supabase
@@ -153,18 +153,18 @@ export const checkUserNeedsOnboarding = async (user: any) => {
 
     if (error) {
       console.error('Erro ao verificar dados do usuário:', error);
-      return true; // Se houver erro, assumir que precisa onboarding
+      return true; // If there's an error, assume needs onboarding
     }
 
-    // Verificar se campos essenciais estão faltando
+    // Check if essential fields are missing
     const missingRequiredFields =
       !userData.name || !userData.country || !userData.preferred_language;
 
-    // Verificar se pelo menos alguns campos opcionais estão preenchidos
+    // Check if at least some optional fields are filled
     const hasOptionalData =
       userData.mobile_phone || userData.postal_code || userData.address;
 
-    // Precisa onboarding se campos obrigatórios estão faltando OU se não tem nenhum dado opcional
+    // Needs onboarding if required fields are missing OR has no optional data
     return missingRequiredFields || !hasOptionalData;
   } catch (error) {
     console.error('Erro na verificação de onboarding:', error);
