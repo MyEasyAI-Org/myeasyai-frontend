@@ -109,11 +109,11 @@ export function DashboardPreview({
   const dropdownRef = useRef<HTMLDivElement>(null);
   const notificationRef = useRef<HTMLDivElement>(null);
 
-  // Hook de notificações
+  // Notifications hook
   const { getUnreadCount, getLatest, markAsRead, markAllAsRead } =
     useNotifications();
 
-  // Carregar dados do usuário logado
+  // Load logged in user data
   useEffect(() => {
     loadUserData();
   }, []);
@@ -126,7 +126,7 @@ export function DashboardPreview({
       setLoadingProgress(20);
       setLoadingStep('Carregando seu perfil...');
 
-      // Timeout de segurança - forçar finalização após 10 segundos
+      // Safety timeout - force completion after 10 seconds
       timeoutId = setTimeout(() => {
         console.warn(
           '⏰ Timeout no carregamento do dashboard - forçando finalização',
@@ -139,12 +139,12 @@ export function DashboardPreview({
         }, 1000);
       }, 10000);
 
-      // Delay visual menor para não travar muito tempo se houver erro
+      // Smaller visual delay to not freeze too long if there's an error
       await new Promise((resolve) => setTimeout(resolve, 500));
 
       console.log('🔄 Iniciando carregamento do dashboard...');
 
-      // Verificar sessão com timeout
+      // Check session with timeout
       const sessionPromise = supabase.auth.getSession();
       const sessionTimeout = new Promise((_, reject) =>
         setTimeout(
@@ -177,7 +177,7 @@ export function DashboardPreview({
       setUserUuid(user.id);
       setLoadingProgress(40);
 
-      // Buscar dados do usuário com timeout
+      // Fetch user data with timeout
       setLoadingStep('Buscando dados...');
       await new Promise((resolve) => setTimeout(resolve, 300));
 
@@ -205,7 +205,7 @@ export function DashboardPreview({
       setLoadingProgress(60);
       setLoadingStep('Configurando dashboard...');
 
-      // Buscar produtos com timeout
+      // Fetch products with timeout
       const productsPromise = supabase
         .from('user_products')
         .select('*')
@@ -230,7 +230,7 @@ export function DashboardPreview({
       await new Promise((resolve) => setTimeout(resolve, 500));
       setLoadingProgress(80);
 
-      // Configurar dados do perfil
+      // Configure profile data
       if (userDataResult.error || !userDataResult.data) {
         console.warn('⚠️ Usando dados básicos do usuário');
         setProfile({
@@ -247,7 +247,7 @@ export function DashboardPreview({
         const userData = userDataResult.data;
         console.log('✅ Dados do usuário carregados com sucesso');
 
-        // Preencher perfil com dados da tabela users
+        // Fill profile with data from users table
         setProfile({
           name: userData.name || user.user_metadata?.name || 'Usuário',
           preferred_name:
@@ -261,7 +261,7 @@ export function DashboardPreview({
           avatar_url: userData.avatar_url,
         });
 
-        // Atualizar dados de assinatura com dados reais
+        // Update subscription data with real data
         setSubscription({
           plan: (userData.subscription_plan || 'free') as SubscriptionPlan,
           status: userData.subscription_status || 'active',
@@ -275,7 +275,7 @@ export function DashboardPreview({
           payment_method: userData.payment_method,
         });
 
-        // Preencher informações cadastrais
+        // Fill registration information
         setCadastralInfo({
           country: userData.country || '',
           postal_code: userData.postal_code || '',
@@ -294,7 +294,7 @@ export function DashboardPreview({
     } catch (error) {
       console.error('💥 Erro crítico no carregamento:', error);
 
-      // Configurar perfil básico em caso de erro
+      // Configure basic profile in case of error
       setProfile({
         name: 'Usuário',
         email: '',
@@ -306,15 +306,15 @@ export function DashboardPreview({
       setLoadingStep('Erro no carregamento');
       setLoadingProgress(100);
 
-      // Mostrar erro por um momento antes de finalizar
+      // Show error for a moment before finishing
       await new Promise((resolve) => setTimeout(resolve, 2000));
     } finally {
-      // Limpar timeout de segurança
+      // Clear safety timeout
       if (timeoutId) {
         clearTimeout(timeoutId);
       }
 
-      // Garantir que o loading sempre termine, mesmo em caso de erro
+      // Ensure loading always finishes, even in case of error
       setIsLoading(false);
       onLoadingComplete?.();
       console.log('🏁 Carregamento finalizado');
@@ -364,7 +364,7 @@ export function DashboardPreview({
     }
   };
 
-  // Fechar dropdowns ao clicar fora
+  // Close dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -412,21 +412,21 @@ export function DashboardPreview({
     const name = productName.toLowerCase();
 
     if (name.includes('website') || name.includes('site')) {
-      // Redirecionar para MyEasyWebsite
+      // Redirect to MyEasyWebsite
       if (onGoToMyEasyWebsite) {
         onGoToMyEasyWebsite();
       } else {
         window.location.href = '/#myeasywebsite';
       }
     } else if (name.includes('guru') || name.includes('business')) {
-      // Redirecionar para BusinessGuru
+      // Redirect to BusinessGuru
       if (onGoToBusinessGuru) {
         onGoToBusinessGuru();
       } else {
         window.location.href = '/#businessguru';
       }
     } else {
-      // Produto genérico - voltar para home
+      // Generic product - go back to home
       if (onGoHome) {
         onGoHome();
       } else {
@@ -435,7 +435,7 @@ export function DashboardPreview({
     }
   };
 
-  // Função para gerar iniciais do nome
+  // Function to generate name initials
   const getInitials = (name: string) => {
     const names = name.trim().split(' ');
     if (names.length >= 2) {
@@ -444,9 +444,9 @@ export function DashboardPreview({
     return name.substring(0, 2).toUpperCase();
   };
 
-  // Função para obter avatar (foto ou iniciais)
+  // Function to get avatar (photo or initials)
   const getAvatarContent = () => {
-    // Se tiver avatar_url, exibir imagem
+    // If has avatar_url, display image
     if (profile.avatar_url) {
       return (
         <img
@@ -457,7 +457,7 @@ export function DashboardPreview({
       );
     }
 
-    // Caso contrário, exibir iniciais
+    // Otherwise, display initials
     return (
       <div className="flex h-full w-full items-center justify-center rounded-full bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 text-white font-bold">
         {getInitials(profile.name)}
@@ -465,7 +465,7 @@ export function DashboardPreview({
     );
   };
 
-  // Handlers de notificações
+  // Notification handlers
   const handleNotificationClick = (notification: Notification) => {
     markAsRead(notification.id);
     setSelectedNotification(notification);
@@ -478,15 +478,15 @@ export function DashboardPreview({
 
   const handleViewAllNotifications = () => {
     setIsNotificationOpen(false);
-    // Aqui você pode adicionar navegação para uma página de notificações se existir
+    // Here you can add navigation to a notifications page if it exists
     console.log('Ver todas as notificações');
   };
 
-  // Mostrar tela de carregamento enquanto dados estão sendo carregados
+  // Show loading screen while data is being loaded
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-black-main to-blue-main flex flex-col items-center justify-center relative overflow-hidden">
-        {/* Background animated particles (estrelas) */}
+        {/* Background animated particles (stars) */}
         <div className="absolute inset-0">
           {[...Array(25)].map((_, i) => (
             <div
@@ -506,7 +506,7 @@ export function DashboardPreview({
 
         {/* Main content */}
         <div className="relative z-10 flex flex-col items-center space-y-8">
-          {/* Logo container com efeitos de glow */}
+          {/* Logo container with glow effects */}
           <div className="relative">
             {/* Glow effect rings */}
             <div className="absolute inset-0 animate-pulse">
@@ -535,7 +535,7 @@ export function DashboardPreview({
             </div>
           </div>
 
-          {/* Text container com efeito shimmer */}
+          {/* Text container with shimmer effect */}
           <div className="relative">
             {/* Text glow background */}
             <div className="absolute inset-0 blur-xl">
@@ -553,7 +553,7 @@ export function DashboardPreview({
             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent transform -skew-x-12 animate-shimmer" />
           </div>
 
-          {/* Subtitle com status dinâmico */}
+          {/* Subtitle with dynamic status */}
           <div className="text-center space-y-2">
             <p className="text-slate-200 text-lg font-medium tracking-wide">
               {loadingStep}
@@ -567,7 +567,7 @@ export function DashboardPreview({
             </p>
           </div>
 
-          {/* Loading dots melhorados */}
+          {/* Improved loading dots */}
           <div className="flex space-x-3">
             {[0, 1, 2].map((i) => (
               <div
@@ -581,7 +581,7 @@ export function DashboardPreview({
             ))}
           </div>
 
-          {/* Progress indicator dinâmico */}
+          {/* Dynamic progress indicator */}
           <div className="w-80 space-y-2">
             <div className="flex items-center justify-between text-sm">
               <span className="text-slate-300 font-medium">Progresso</span>

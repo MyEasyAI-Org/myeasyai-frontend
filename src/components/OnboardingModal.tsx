@@ -29,7 +29,7 @@ type FormData = {
   preferred_language?: string;
 };
 
-// Helper para renderizar bandeiras SVG
+// Helper to render SVG flags
 const FlagIcon = ({
   countryCode,
   className = 'w-6 h-4',
@@ -99,7 +99,7 @@ export function OnboardingModal({
   const locationDropdownRef = useRef<HTMLDivElement>(null);
   const languageDropdownRef = useRef<HTMLDivElement>(null);
 
-  // Função para capitalizar nomes
+  // Function to capitalize names
   const capitalizeName = (name: string): string => {
     const lowercaseWords = ['de', 'da', 'do', 'dos', 'das', 'e'];
 
@@ -115,7 +115,7 @@ export function OnboardingModal({
       .join(' ');
   };
 
-  // Função para formatar telefone baseado no país
+  // Function to format phone based on country
   const formatPhone = (phone: string, countryCode: string): string => {
     const country = getCountryConfig(countryCode);
     if (!country) return phone;
@@ -142,7 +142,7 @@ export function OnboardingModal({
     return formatted;
   };
 
-  // Função para buscar CEP (ViaCEP - Brasil)
+  // Function to fetch postal code (ViaCEP - Brazil)
   const fetchBrazilianAddress = async (cep: string) => {
     const cleanCep = cep.replace(/\D/g, '');
     if (cleanCep.length !== 8) return;
@@ -170,18 +170,18 @@ export function OnboardingModal({
     }
   };
 
-  // Handler para mudança de CEP/Postal Code
+  // Handler for postal code change
   const handlePostalCodeChange = async (value: string) => {
     const cleanValue = value.replace(/\D/g, '');
     setFormData((prev) => ({ ...prev, postal_code: cleanValue }));
 
-    // Se for Brasil e tiver 8 dígitos, buscar endereço
+    // If Brazil and has 8 digits, fetch address
     if (formData.country === 'BR' && cleanValue.length === 8) {
       await fetchBrazilianAddress(cleanValue);
     }
   };
 
-  // Handler para mudança de nome com capitalização automática
+  // Handler for name change with automatic capitalization
   const handleNameChange = (value: string) => {
     const capitalizedName = capitalizeName(value);
     setFormData((prev) => ({ ...prev, name: capitalizedName }));
@@ -192,7 +192,7 @@ export function OnboardingModal({
     }
   };
 
-  // Handler para mudança de telefone com formatação automática
+  // Handler for phone change with automatic formatting
   const handlePhoneChange = (value: string) => {
     const formatted = formatPhone(value, formData.country_code || 'BR');
     setFormData((prev) => ({ ...prev, mobile_phone: formatted }));
@@ -206,7 +206,7 @@ export function OnboardingModal({
     }
   };
 
-  // Handler para mudança de país (código de telefone)
+  // Handler for country change (phone code)
   const handleCountryCodeChange = (countryCode: string) => {
     setFormData((prev) => ({
       ...prev,
@@ -221,7 +221,7 @@ export function OnboardingModal({
     setCountrySearch('');
   };
 
-  // Handler para mudança de país (localização)
+  // Handler for country change (location)
   const handleLocationCountryChange = (countryCode: string) => {
     setFormData((prev) => ({
       ...prev,
@@ -241,19 +241,19 @@ export function OnboardingModal({
     setLocationSearch('');
   };
 
-  // Filtrar países para dropdown de telefone
+  // Filter countries for phone dropdown
   const filteredPhoneCountries = COUNTRIES.filter(
     (country) =>
       country.name.toLowerCase().includes(countrySearch.toLowerCase()) ||
       country.dial.includes(countrySearch),
   );
 
-  // Filtrar países para dropdown de localização
+  // Filter countries for location dropdown
   const filteredLocationCountries = COUNTRIES.filter((country) =>
     country.name.toLowerCase().includes(locationSearch.toLowerCase()),
   );
 
-  // Idiomas disponíveis
+  // Available languages
   const languages = [
     { code: 'pt', name: 'Português', countryFlag: 'BR' },
     { code: 'en', name: 'English', countryFlag: 'US' },
@@ -261,12 +261,12 @@ export function OnboardingModal({
     { code: 'fr', name: 'Français', countryFlag: 'FR' },
   ];
 
-  // Filtrar idiomas
+  // Filter languages
   const filteredLanguages = languages.filter((lang) =>
     lang.name.toLowerCase().includes(languageSearch.toLowerCase()),
   );
 
-  // Handler para mudança de idioma
+  // Handler for language change
   const handleLanguageChange = (languageCode: string) => {
     setFormData((prev) => ({ ...prev, preferred_language: languageCode }));
     setIsClosingLanguageDropdown(true);
@@ -277,17 +277,17 @@ export function OnboardingModal({
     setLanguageSearch('');
   };
 
-  // Validar se pode avançar para próximo passo
+  // Validate if can proceed to next step
   const canProceed = (): boolean => {
     switch (currentStep) {
-      case 0: // Dados Pessoais
+      case 0: // Personal Data
         return !!(
           formData.name &&
           formData.name.trim().split(' ').length >= 2 &&
           !errors.name
         );
       case 1: {
-        // Contato
+        // Contact
         const country = getCountryConfig(formData.country_code || 'BR');
         const numbers = (formData.mobile_phone || '').replace(/\D/g, '');
         return !!(
@@ -297,11 +297,11 @@ export function OnboardingModal({
         );
       }
       case 2: {
-        // Localização
+        // Location
         const locationCountry = getCountryConfig(formData.country || 'BR');
         if (!locationCountry) return false;
 
-        // Validar campos obrigatórios baseados no país
+        // Validate required fields based on country
         const hasPostalCode = !!formData.postal_code;
         const hasStreet = !!formData.street;
         const hasNumber = !!formData.number;
@@ -322,7 +322,7 @@ export function OnboardingModal({
           hasState
         );
       }
-      case 3: // Preferências
+      case 3: // Preferences
         return !!formData.preferred_language;
       default:
         return true;
@@ -344,7 +344,7 @@ export function OnboardingModal({
   const handleSubmit = async () => {
     if (!canProceed()) return;
 
-    // Monta o endereço completo concatenando os campos
+    // Build full address by concatenating fields
     const fullAddress = [
       formData.street,
       formData.number,
@@ -398,7 +398,7 @@ export function OnboardingModal({
 
   const renderStepContent = () => {
     switch (currentStep) {
-      case 0: // Dados Pessoais
+      case 0: // Personal Data
         return (
           <div className="space-y-4">
             <label className="block text-left">
@@ -441,7 +441,7 @@ export function OnboardingModal({
         );
 
       case 1: {
-        // Contato
+        // Contact
         const selectedCountry =
           getCountryConfig(formData.country_code || 'BR') || COUNTRIES[0];
         return (
@@ -545,7 +545,7 @@ export function OnboardingModal({
       }
 
       case 2: {
-        // Localização
+        // Location
         const locationCountry =
           getCountryConfig(formData.country || 'BR') || COUNTRIES[0];
         return (
@@ -763,7 +763,7 @@ export function OnboardingModal({
       }
 
       case 3: {
-        // Preferências
+        // Preferences
         const selectedLanguage =
           languages.find((lang) => lang.code === formData.preferred_language) ||
           languages[0];
@@ -851,7 +851,7 @@ export function OnboardingModal({
 
   const progressPercentage = ((currentStep + 1) / steps.length) * 100;
 
-  // Carregar dados do usuário ao abrir o modal
+  // Load user data when opening modal
   useEffect(() => {
     const loadUserData = async () => {
       if (!isOpen || !user.email) return;
@@ -867,7 +867,7 @@ export function OnboardingModal({
 
         if (error) {
           console.error('Erro ao carregar dados do usuário:', error);
-          // Usar dados do user_metadata como fallback
+          // Use user_metadata data as fallback
           setFormData((prev) => ({
             ...prev,
             name:
@@ -875,7 +875,7 @@ export function OnboardingModal({
             preferred_name: user.user_metadata?.preferred_name || '',
           }));
         } else if (data) {
-          // Preencher formulário com dados do banco
+          // Fill form with database data
           setFormData((prev) => ({
             ...prev,
             name:
@@ -906,7 +906,7 @@ export function OnboardingModal({
     loadUserData();
   }, [isOpen, user]);
 
-  // Fechar dropdowns ao clicar fora
+  // Close dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
