@@ -1,16 +1,26 @@
-import { X, Undo, Palette, Image, Type, Box, Sparkles, Layout } from 'lucide-react';
-import { useEditing } from './EditingContext';
+import {
+  Box,
+  Image,
+  Layout,
+  Palette,
+  Sparkles,
+  Type,
+  Undo,
+  X,
+} from 'lucide-react';
 import { ColorPicker } from './ColorPicker';
+import { useEditing } from './EditingContext';
+import { GalleryStyleSelector } from './GalleryStyleSelector';
 import { IconSelector } from './IconSelector';
 import { ImageUploader } from './ImageUploader';
-import { GalleryStyleSelector } from './GalleryStyleSelector';
 
 interface EditingPanelProps {
   onClose: () => void;
 }
 
 export function EditingPanel({ onClose }: EditingPanelProps) {
-  const { selectedElement, setSelectedElement, updateElement, undo, canUndo } = useEditing();
+  const { selectedElement, setSelectedElement, updateElement, undo, canUndo } =
+    useEditing();
 
   if (!selectedElement) return null;
 
@@ -27,7 +37,11 @@ export function EditingPanel({ onClose }: EditingPanelProps) {
         if (selectedElement.id === 'gallery-style') {
           return <GalleryStyleSelector />;
         }
-        return <div className="p-4 text-slate-400">Editor de seção em desenvolvimento</div>;
+        return (
+          <div className="p-4 text-slate-400">
+            Editor de seção em desenvolvimento
+          </div>
+        );
       case 'text':
         return (
           <div className="p-4 space-y-4">
@@ -40,10 +54,14 @@ export function EditingPanel({ onClose }: EditingPanelProps) {
                   className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
                   rows={4}
                   defaultValue={selectedElement.currentValue}
-                  placeholder={selectedElement.metadata?.placeholder || "Digite o texto..."}
+                  placeholder={
+                    selectedElement.metadata?.placeholder || 'Digite o texto...'
+                  }
                   onChange={(e) => {
                     if (selectedElement) {
-                      updateElement(selectedElement.id, { text: e.target.value });
+                      updateElement(selectedElement.id, {
+                        text: e.target.value,
+                      });
                     }
                   }}
                 />
@@ -52,16 +70,20 @@ export function EditingPanel({ onClose }: EditingPanelProps) {
                   type="text"
                   className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
                   defaultValue={selectedElement.currentValue}
-                  placeholder={selectedElement.metadata?.placeholder || "Digite o texto..."}
+                  placeholder={
+                    selectedElement.metadata?.placeholder || 'Digite o texto...'
+                  }
                   onChange={(e) => {
                     if (selectedElement) {
-                      updateElement(selectedElement.id, { text: e.target.value });
+                      updateElement(selectedElement.id, {
+                        text: e.target.value,
+                      });
                     }
                   }}
                 />
               )}
             </div>
-            
+
             {/* Preview */}
             <div className="p-3 bg-slate-800/50 rounded-lg border border-slate-700">
               <p className="text-xs text-slate-400 mb-2">
@@ -81,28 +103,26 @@ export function EditingPanel({ onClose }: EditingPanelProps) {
             </label>
             <div className="space-y-4">
               <div>
-                <label className="block text-xs text-slate-400 mb-2">Padding</label>
-                <input
-                  type="range"
-                  min="0"
-                  max="100"
-                  className="w-full"
-                />
+                <label className="block text-xs text-slate-400 mb-2">
+                  Padding
+                </label>
+                <input type="range" min="0" max="100" className="w-full" />
               </div>
               <div>
-                <label className="block text-xs text-slate-400 mb-2">Margin</label>
-                <input
-                  type="range"
-                  min="0"
-                  max="100"
-                  className="w-full"
-                />
+                <label className="block text-xs text-slate-400 mb-2">
+                  Margin
+                </label>
+                <input type="range" min="0" max="100" className="w-full" />
               </div>
             </div>
           </div>
         );
       default:
-        return <div className="p-4 text-slate-400">Selecione um elemento para editar</div>;
+        return (
+          <div className="p-4 text-slate-400">
+            Selecione um elemento para editar
+          </div>
+        );
     }
   };
 
@@ -135,7 +155,7 @@ export function EditingPanel({ onClose }: EditingPanelProps) {
       text: 'Editar Texto',
       spacing: 'Ajustar Espaçamento',
       section: 'Configurar Seção',
-      background: 'Editar Background'
+      background: 'Editar Background',
     };
     return titles[selectedElement.type] || 'Editar Elemento';
   };
@@ -149,7 +169,9 @@ export function EditingPanel({ onClose }: EditingPanelProps) {
             {getElementIcon()}
           </div>
           <div>
-            <h3 className="text-lg font-bold text-white">{getElementTitle()}</h3>
+            <h3 className="text-lg font-bold text-white">
+              {getElementTitle()}
+            </h3>
             {selectedElement.parentSection && (
               <p className="text-xs text-slate-400">
                 Seção: {selectedElement.parentSection}
@@ -190,9 +212,7 @@ export function EditingPanel({ onClose }: EditingPanelProps) {
       </div>
 
       {/* Content - Editor específico */}
-      <div className="flex-1 overflow-y-auto">
-        {renderEditor()}
-      </div>
+      <div className="flex-1 overflow-y-auto">{renderEditor()}</div>
 
       {/* Footer com ações */}
       <div className="p-4 border-t border-slate-800 bg-slate-900/95 backdrop-blur-sm">
@@ -203,9 +223,7 @@ export function EditingPanel({ onClose }: EditingPanelProps) {
           >
             Cancelar
           </button>
-          <button
-            className="px-6 py-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-blue-700 transition-colors text-sm font-semibold shadow-lg shadow-purple-500/50"
-          >
+          <button className="px-6 py-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-blue-700 transition-colors text-sm font-semibold shadow-lg shadow-purple-500/50">
             Aplicar Mudanças
           </button>
         </div>

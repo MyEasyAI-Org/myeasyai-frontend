@@ -19,16 +19,16 @@ export function Preview() {
             <div className="space-y-4">
               {[
                 {
-                  title: "Treinamento simplificado",
-                  desc: "Configure seu assistente em minutos através de conversas naturais",
+                  title: 'Treinamento simplificado',
+                  desc: 'Configure seu assistente em minutos através de conversas naturais',
                 },
                 {
-                  title: "Respostas personalizadas",
-                  desc: "IA que entende seu negócio e oferece soluções específicas",
+                  title: 'Respostas personalizadas',
+                  desc: 'IA que entende seu negócio e oferece soluções específicas',
                 },
                 {
-                  title: "Integração fácil",
-                  desc: "Conecte com suas ferramentas favoritas sem complicação",
+                  title: 'Integração fácil',
+                  desc: 'Conecte com suas ferramentas favoritas sem complicação',
                 },
               ].map((item) => (
                 <div key={item.title} className="flex items-start space-x-3">

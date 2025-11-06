@@ -1051,12 +1051,17 @@ export const COUNTRIES: CountryAddressConfig[] = [
 ];
 
 // Criar um mapa para busca rápida por código
-export const COUNTRIES_MAP = COUNTRIES.reduce((acc, country) => {
-  acc[country.code] = country;
-  return acc;
-}, {} as Record<string, CountryAddressConfig>);
+export const COUNTRIES_MAP = COUNTRIES.reduce(
+  (acc, country) => {
+    acc[country.code] = country;
+    return acc;
+  },
+  {} as Record<string, CountryAddressConfig>,
+);
 
 // Função para obter configuração de país
-export const getCountryConfig = (code: string): CountryAddressConfig | undefined => {
+export const getCountryConfig = (
+  code: string,
+): CountryAddressConfig | undefined => {
   return COUNTRIES_MAP[code];
 };

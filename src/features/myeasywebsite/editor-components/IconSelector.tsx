@@ -1,25 +1,100 @@
-import { useState } from 'react';
-import { Search, X } from 'lucide-react';
 import * as LucideIcons from 'lucide-react';
+import { Search, X } from 'lucide-react';
+import { useState } from 'react';
 import { useEditing } from './EditingContext';
 
 // Lista de ícones populares do Lucide (adicione mais conforme necessário)
 const popularIcons = [
-  'Heart', 'Star', 'Sparkles', 'Zap', 'Flame', 'Award', 'TrendingUp',
-  'ShoppingCart', 'CreditCard', 'DollarSign', 'Gift', 'Package',
-  'Home', 'Building', 'Store', 'MapPin', 'Globe', 'Map',
-  'Users', 'User', 'UserPlus', 'Mail', 'Phone', 'MessageCircle',
-  'Calendar', 'Clock', 'Bell', 'AlertCircle', 'CheckCircle', 'Info',
-  'Settings', 'Search', 'Filter', 'Menu', 'MoreHorizontal', 'ChevronRight',
-  'Camera', 'Image', 'Video', 'Music', 'Headphones', 'Mic',
-  'Briefcase', 'FileText', 'Folder', 'Download', 'Upload', 'Link',
-  'Laptop', 'Smartphone', 'Tablet', 'Monitor', 'Wifi', 'Bluetooth',
-  'Sun', 'Moon', 'Cloud', 'CloudRain', 'Snowflake', 'Wind',
-  'Coffee', 'Pizza', 'Utensils', 'Wine', 'IceCream', 'Cake',
-  'Palette', 'Brush', 'Scissors', 'Ruler', 'Pen', 'Edit',
-  'Target', 'TrendingDown', 'Activity', 'BarChart', 'PieChart', 'LineChart',
-  'Lock', 'Unlock', 'Shield', 'Eye', 'EyeOff', 'Key',
-  'ThumbsUp', 'ThumbsDown', 'Smile', 'Frown', 'Meh', 'Laugh'
+  'Heart',
+  'Star',
+  'Sparkles',
+  'Zap',
+  'Flame',
+  'Award',
+  'TrendingUp',
+  'ShoppingCart',
+  'CreditCard',
+  'DollarSign',
+  'Gift',
+  'Package',
+  'Home',
+  'Building',
+  'Store',
+  'MapPin',
+  'Globe',
+  'Map',
+  'Users',
+  'User',
+  'UserPlus',
+  'Mail',
+  'Phone',
+  'MessageCircle',
+  'Calendar',
+  'Clock',
+  'Bell',
+  'AlertCircle',
+  'CheckCircle',
+  'Info',
+  'Settings',
+  'Search',
+  'Filter',
+  'Menu',
+  'MoreHorizontal',
+  'ChevronRight',
+  'Camera',
+  'Image',
+  'Video',
+  'Music',
+  'Headphones',
+  'Mic',
+  'Briefcase',
+  'FileText',
+  'Folder',
+  'Download',
+  'Upload',
+  'Link',
+  'Laptop',
+  'Smartphone',
+  'Tablet',
+  'Monitor',
+  'Wifi',
+  'Bluetooth',
+  'Sun',
+  'Moon',
+  'Cloud',
+  'CloudRain',
+  'Snowflake',
+  'Wind',
+  'Coffee',
+  'Pizza',
+  'Utensils',
+  'Wine',
+  'IceCream',
+  'Cake',
+  'Palette',
+  'Brush',
+  'Scissors',
+  'Ruler',
+  'Pen',
+  'Edit',
+  'Target',
+  'TrendingDown',
+  'Activity',
+  'BarChart',
+  'PieChart',
+  'LineChart',
+  'Lock',
+  'Unlock',
+  'Shield',
+  'Eye',
+  'EyeOff',
+  'Key',
+  'ThumbsUp',
+  'ThumbsDown',
+  'Smile',
+  'Frown',
+  'Meh',
+  'Laugh',
 ];
 
 type IconSize = 'sm' | 'md' | 'lg' | 'xl';
@@ -28,19 +103,25 @@ const iconSizes = {
   sm: 16,
   md: 24,
   lg: 32,
-  xl: 48
+  xl: 48,
 };
 
 export function IconSelector() {
   const { selectedElement, updateElement } = useEditing();
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedIcon, setSelectedIcon] = useState(selectedElement?.currentValue?.name || 'Star');
-  const [selectedSize, setSelectedSize] = useState<IconSize>(selectedElement?.currentValue?.size || 'md');
-  const [selectedColor, setSelectedColor] = useState(selectedElement?.currentValue?.color || '#ea580c');
+  const [selectedIcon, setSelectedIcon] = useState(
+    selectedElement?.currentValue?.name || 'Star',
+  );
+  const [selectedSize, setSelectedSize] = useState<IconSize>(
+    selectedElement?.currentValue?.size || 'md',
+  );
+  const [selectedColor, setSelectedColor] = useState(
+    selectedElement?.currentValue?.color || '#ea580c',
+  );
 
   // Filtrar ícones baseado na busca
-  const filteredIcons = popularIcons.filter(icon =>
-    icon.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredIcons = popularIcons.filter((icon) =>
+    icon.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
   const handleIconSelect = (iconName: string) => {
@@ -50,8 +131,8 @@ export function IconSelector() {
         icon: {
           name: iconName,
           size: selectedSize,
-          color: selectedColor
-        }
+          color: selectedColor,
+        },
       });
     }
   };
@@ -63,8 +144,8 @@ export function IconSelector() {
         icon: {
           name: selectedIcon,
           size,
-          color: selectedColor
-        }
+          color: selectedColor,
+        },
       });
     }
   };
@@ -77,8 +158,8 @@ export function IconSelector() {
         icon: {
           name: selectedIcon,
           size: selectedSize,
-          color
-        }
+          color,
+        },
       });
     }
   };
@@ -104,7 +185,9 @@ export function IconSelector() {
         </div>
         <div className="mt-3 text-center">
           <p className="text-sm font-medium text-white">{selectedIcon}</p>
-          <p className="text-xs text-slate-400">Tamanho: {selectedSize.toUpperCase()}</p>
+          <p className="text-xs text-slate-400">
+            Tamanho: {selectedSize.toUpperCase()}
+          </p>
         </div>
       </div>
 
@@ -149,9 +232,10 @@ export function IconSelector() {
                 onClick={() => handleIconSelect(iconName)}
                 className={`
                   p-3 rounded-lg transition-all duration-200 flex items-center justify-center
-                  ${selectedIcon === iconName
-                    ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/50 scale-110'
-                    : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white'
+                  ${
+                    selectedIcon === iconName
+                      ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/50 scale-110'
+                      : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white'
                   }
                 `}
                 title={iconName}
@@ -175,13 +259,23 @@ export function IconSelector() {
               onClick={() => handleSizeChange(size)}
               className={`
                 p-4 rounded-lg border-2 transition-all duration-200 flex flex-col items-center justify-center space-y-2
-                ${selectedSize === size
-                  ? 'border-purple-500 bg-purple-500/10 text-white'
-                  : 'border-slate-700 bg-slate-800 text-slate-400 hover:border-slate-600'
+                ${
+                  selectedSize === size
+                    ? 'border-purple-500 bg-purple-500/10 text-white'
+                    : 'border-slate-700 bg-slate-800 text-slate-400 hover:border-slate-600'
                 }
               `}
             >
-              {renderIcon(selectedIcon, size === 'sm' ? 12 : size === 'md' ? 16 : size === 'lg' ? 20 : 24)}
+              {renderIcon(
+                selectedIcon,
+                size === 'sm'
+                  ? 12
+                  : size === 'md'
+                    ? 16
+                    : size === 'lg'
+                      ? 20
+                      : 24,
+              )}
               <span className="text-xs font-semibold uppercase">{size}</span>
             </button>
           ))}
@@ -221,14 +315,25 @@ export function IconSelector() {
           Cores Rápidas
         </label>
         <div className="grid grid-cols-8 gap-2">
-          {['#ea580c', '#fb923c', '#3b82f6', '#60a5fa', '#10b981', '#f59e0b', '#a855f7', '#ec4899'].map((color) => (
+          {[
+            '#ea580c',
+            '#fb923c',
+            '#3b82f6',
+            '#60a5fa',
+            '#10b981',
+            '#f59e0b',
+            '#a855f7',
+            '#ec4899',
+          ].map((color) => (
             <button
               key={color}
-              onClick={() => handleColorChange({ target: { value: color } } as any)}
+              onClick={() =>
+                handleColorChange({ target: { value: color } } as any)
+              }
               className="w-full aspect-square rounded-lg border-2 hover:scale-110 transition-transform"
               style={{
                 backgroundColor: color,
-                borderColor: selectedColor === color ? '#a855f7' : '#475569'
+                borderColor: selectedColor === color ? '#a855f7' : '#475569',
               }}
               title={color}
             />
@@ -239,7 +344,9 @@ export function IconSelector() {
       {/* Info */}
       <div className="p-3 bg-slate-800/50 rounded-lg border border-slate-700">
         <p className="text-xs text-slate-400">
-          💡 <strong className="text-slate-300">Dica:</strong> Use a busca para encontrar ícones rapidamente. Todos os ícones são da biblioteca Lucide React.
+          💡 <strong className="text-slate-300">Dica:</strong> Use a busca para
+          encontrar ícones rapidamente. Todos os ícones são da biblioteca Lucide
+          React.
         </p>
       </div>
     </div>

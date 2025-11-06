@@ -1,76 +1,20 @@
+import type { User } from '@supabase/supabase-js';
 import { Check } from 'lucide-react';
 import { useState } from 'react';
-import { SignupModal } from './SignupModal';
+import { PLANS, type SubscriptionPlan } from '../constants/plans';
 import { LoginModal } from './LoginModal';
-import type { User } from '@supabase/supabase-js';
-
-type SubscriptionPlan = 'free' | 'basic' | 'pro' | 'enterprise';
+import { SignupModal } from './SignupModal';
 
 type PackagesProps = {
   user?: User | null;
 };
 
-const PLANS = [
-  {
-    name: 'Free',
-    value: 'free' as SubscriptionPlan,
-    price: 'R$ 0',
-    tokens: '1.000',
-    features: [
-      'Acesso básico à plataforma',
-      '1.000 tokens por mês',
-      'Suporte por email',
-      'Documentação completa',
-    ],
-  },
-  {
-    name: 'Basic',
-    value: 'basic' as SubscriptionPlan,
-    price: 'R$ 49',
-    tokens: '10.000',
-    features: [
-      'Tudo do plano Free',
-      '10.000 tokens por mês',
-      'Suporte prioritário',
-      'API Access',
-      'Analytics básico',
-    ],
-    popular: true,
-  },
-  {
-    name: 'Pro',
-    value: 'pro' as SubscriptionPlan,
-    price: 'R$ 149',
-    tokens: '50.000',
-    features: [
-      'Tudo do plano Basic',
-      '50.000 tokens por mês',
-      'Suporte 24/7',
-      'Analytics avançado',
-      'Integrações customizadas',
-      'Acesso a modelos premium',
-    ],
-  },
-  {
-    name: 'Enterprise',
-    value: 'enterprise' as SubscriptionPlan,
-    price: 'Custom',
-    tokens: 'Ilimitado',
-    features: [
-      'Tudo do plano Pro',
-      'Tokens ilimitados',
-      'Suporte dedicado',
-      'SLA garantido',
-      'Treinamento personalizado',
-      'Deploy on-premise',
-    ],
-  },
-];
-
 export function Packages({ user }: PackagesProps) {
   const [isSignupOpen, setIsSignupOpen] = useState(false);
   const [isLoginOpen, setIsLoginOpen] = useState(false);
-  const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan | null>(null);
+  const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan | null>(
+    null,
+  );
 
   const handleSelectPlan = (plan: SubscriptionPlan) => {
     setSelectedPlan(plan);

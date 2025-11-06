@@ -7,11 +7,14 @@
 }
 
 @keyframes pulse-subtle {
-  0%, 100% {
+  0%,
+  100% {
     box-shadow: 0 0 20px rgba(59, 130, 246, 0.4);
   }
   50% {
-    box-shadow: 0 0 35px rgba(59, 130, 246, 0.7), 0 0 15px rgba(147, 51, 234, 0.4);
+    box-shadow:
+      0 0 35px rgba(59, 130, 246, 0.7),
+      0 0 15px rgba(147, 51, 234, 0.4);
   }
 }
 
@@ -20,7 +23,8 @@
 }
 
 @keyframes loading-dots {
-  0%, 20% {
+  0%,
+  20% {
     opacity: 0.2;
   }
   50% {

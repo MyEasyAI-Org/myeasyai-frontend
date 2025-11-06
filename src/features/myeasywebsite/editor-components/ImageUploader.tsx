@@ -1,5 +1,11 @@
-import { useState, useRef } from 'react';
-import { Upload, Image as ImageIcon, Link as LinkIcon, X, Check } from 'lucide-react';
+import {
+  Check,
+  Image as ImageIcon,
+  Link as LinkIcon,
+  Upload,
+  X,
+} from 'lucide-react';
+import { useRef, useState } from 'react';
 import { useEditing } from './EditingContext';
 
 export function ImageUploader() {
@@ -14,28 +20,30 @@ export function ImageUploader() {
   const handleFileSelect = async (file: File) => {
     if (!file.type.startsWith('image/')) {
       // Mostrar mensagem de erro no console ao invés de alert
-      console.error('Por favor, selecione apenas arquivos de imagem (JPG, PNG, WebP, SVG)');
+      console.error(
+        'Por favor, selecione apenas arquivos de imagem (JPG, PNG, WebP, SVG)',
+      );
       return;
     }
 
     setIsLoading(true);
-    
+
     // Criar preview local
     const reader = new FileReader();
     reader.onload = (e) => {
       const url = e.target?.result as string;
       setPreviewUrl(url);
-      
+
       if (selectedElement) {
         updateElement(selectedElement.id, {
           image: {
             url,
             type: 'local',
-            filename: file.name
-          }
+            filename: file.name,
+          },
         });
       }
-      
+
       setIsLoading(false);
     };
     reader.readAsDataURL(file);
@@ -44,7 +52,7 @@ export function ImageUploader() {
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
-    
+
     const files = Array.from(e.dataTransfer.files);
     if (files.length > 0) {
       handleFileSelect(files[0]);
@@ -62,9 +70,9 @@ export function ImageUploader() {
 
   const handleUrlSubmit = () => {
     if (!imageUrl.trim()) return;
-    
+
     setIsLoading(true);
-    
+
     // Validar URL da imagem
     const img = new Image();
     img.onload = () => {
@@ -73,15 +81,17 @@ export function ImageUploader() {
         updateElement(selectedElement.id, {
           image: {
             url: imageUrl,
-            type: 'url'
-          }
+            type: 'url',
+          },
         });
       }
       setIsLoading(false);
     };
     img.onerror = () => {
       // Mostrar mensagem de erro no console ao invés de alert
-      console.error('Não foi possível carregar a imagem. Verifique se a URL está correta.');
+      console.error(
+        'Não foi possível carregar a imagem. Verifique se a URL está correta.',
+      );
       setIsLoading(false);
     };
     img.src = imageUrl;
@@ -107,9 +117,10 @@ export function ImageUploader() {
             onClick={() => setUploadMethod('file')}
             className={`
               p-3 rounded-lg border-2 transition-all duration-200 flex items-center justify-center space-x-2
-              ${uploadMethod === 'file'
-                ? 'border-purple-500 bg-purple-500/10 text-white'
-                : 'border-slate-700 bg-slate-800 text-slate-400 hover:border-slate-600'
+              ${
+                uploadMethod === 'file'
+                  ? 'border-purple-500 bg-purple-500/10 text-white'
+                  : 'border-slate-700 bg-slate-800 text-slate-400 hover:border-slate-600'
               }
             `}
           >
@@ -120,9 +131,10 @@ export function ImageUploader() {
             onClick={() => setUploadMethod('url')}
             className={`
               p-3 rounded-lg border-2 transition-all duration-200 flex items-center justify-center space-x-2
-              ${uploadMethod === 'url'
-                ? 'border-purple-500 bg-purple-500/10 text-white'
-                : 'border-slate-700 bg-slate-800 text-slate-400 hover:border-slate-600'
+              ${
+                uploadMethod === 'url'
+                  ? 'border-purple-500 bg-purple-500/10 text-white'
+                  : 'border-slate-700 bg-slate-800 text-slate-400 hover:border-slate-600'
               }
             `}
           >
@@ -144,9 +156,10 @@ export function ImageUploader() {
             onDragLeave={handleDragLeave}
             className={`
               relative border-2 border-dashed rounded-lg transition-all duration-200
-              ${isDragging
-                ? 'border-purple-500 bg-purple-500/10'
-                : 'border-slate-700 bg-slate-800/50 hover:border-slate-600'
+              ${
+                isDragging
+                  ? 'border-purple-500 bg-purple-500/10'
+                  : 'border-slate-700 bg-slate-800/50 hover:border-slate-600'
               }
             `}
           >
@@ -154,7 +167,9 @@ export function ImageUploader() {
               ref={fileInputRef}
               type="file"
               accept="image/*"
-              onChange={(e) => e.target.files?.[0] && handleFileSelect(e.target.files[0])}
+              onChange={(e) =>
+                e.target.files?.[0] && handleFileSelect(e.target.files[0])
+              }
               className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
             />
             <div className="p-8 text-center">
@@ -225,7 +240,9 @@ export function ImageUploader() {
               className="w-full h-auto max-h-64 object-contain"
             />
             <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-3">
-              <p className="text-xs text-white font-semibold">Imagem carregada com sucesso</p>
+              <p className="text-xs text-white font-semibold">
+                Imagem carregada com sucesso
+              </p>
             </div>
           </div>
         </div>
@@ -257,7 +274,8 @@ export function ImageUploader() {
       {/* Dicas */}
       <div className="p-3 bg-purple-500/10 rounded-lg border border-purple-500/30">
         <p className="text-xs text-purple-300">
-          💡 <strong>Dica:</strong> Para melhor desempenho, use imagens otimizadas. Recomendamos dimensões de até 1920x1080px.
+          💡 <strong>Dica:</strong> Para melhor desempenho, use imagens
+          otimizadas. Recomendamos dimensões de até 1920x1080px.
         </p>
       </div>
     </div>

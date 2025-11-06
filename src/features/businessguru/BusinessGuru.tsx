@@ -1,6 +1,23 @@
+import {
+  ArrowLeft,
+  Briefcase,
+  Building2,
+  ChevronRight,
+  DollarSign,
+  Lightbulb,
+  Loader2,
+  MessageSquare,
+  Send,
+  Target,
+  TrendingUp,
+  User,
+  Users,
+} from 'lucide-react';
 import { useState } from 'react';
-import { MessageSquare, Send, Lightbulb, TrendingUp, Users, DollarSign, Target, Loader2, Building2, ChevronRight, Briefcase, User, ArrowLeft } from 'lucide-react';
-import { businessAreas, onboardingQuestions } from '../../constants/businessQuestions';
+import {
+  businessAreas,
+  onboardingQuestions,
+} from '../../constants/businessQuestions';
 
 type Message = {
   role: 'user' | 'assistant';
@@ -18,14 +35,19 @@ interface BusinessInfo {
   challenges?: string;
 }
 
-type OnboardingState = 'not_started' | 'selecting_area' | 'answering_questions' | 'completed';
+type OnboardingState =
+  | 'not_started'
+  | 'selecting_area'
+  | 'answering_questions'
+  | 'completed';
 
 type BusinessGuruProps = {
   onBackToDashboard?: () => void;
 };
 
 export function BusinessGuru({ onBackToDashboard }: BusinessGuruProps = {}) {
-  const [onboardingState, setOnboardingState] = useState<OnboardingState>('not_started');
+  const [onboardingState, setOnboardingState] =
+    useState<OnboardingState>('not_started');
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [businessInfo, setBusinessInfo] = useState<BusinessInfo>({});
   const [messages, setMessages] = useState<Message[]>([]);
@@ -45,24 +67,24 @@ export function BusinessGuru({ onBackToDashboard }: BusinessGuruProps = {}) {
     setBusinessInfo({ ...businessInfo, area: areaId });
     setOnboardingState('answering_questions');
     setCurrentQuestionIndex(0);
-    
+
     const area = businessAreas[areaId];
     setMessages([
       {
         role: 'assistant',
-        content: `Excelente! Você selecionou ${area.name}. 🎯\n\nAgora vou fazer algumas perguntas para conhecer melhor seu negócio e poder te ajudar de forma personalizada.\n\nVamos começar!`
+        content: `Excelente! Você selecionou ${area.name}. 🎯\n\nAgora vou fazer algumas perguntas para conhecer melhor seu negócio e poder te ajudar de forma personalizada.\n\nVamos começar!`,
       },
       {
         role: 'assistant',
         content: onboardingQuestions[0].question,
-      }
+      },
     ]);
   };
 
   // Handler para respostas do questionário
   const handleQuestionAnswer = (answer: string) => {
     const currentQuestion = onboardingQuestions[currentQuestionIndex];
-    
+
     // Salvar resposta
     const updatedInfo = { ...businessInfo };
     switch (currentQuestion.id) {
@@ -90,19 +112,22 @@ export function BusinessGuru({ onBackToDashboard }: BusinessGuruProps = {}) {
     // Adicionar mensagem do usuário
     const userMessage: Message = {
       role: 'user',
-      content: answer
+      content: answer,
     };
-    setMessages(prev => [...prev, userMessage]);
+    setMessages((prev) => [...prev, userMessage]);
 
     // Próxima pergunta ou finalizar
     if (currentQuestionIndex < onboardingQuestions.length - 1) {
       const nextQuestion = onboardingQuestions[currentQuestionIndex + 1];
       setTimeout(() => {
-        setMessages(prev => [...prev, {
-          role: 'assistant',
-          content: nextQuestion.question,
-          options: nextQuestion.options
-        }]);
+        setMessages((prev) => [
+          ...prev,
+          {
+            role: 'assistant',
+            content: nextQuestion.question,
+            options: nextQuestion.options,
+          },
+        ]);
         setCurrentQuestionIndex(currentQuestionIndex + 1);
       }, 500);
     } else {
@@ -117,9 +142,10 @@ export function BusinessGuru({ onBackToDashboard }: BusinessGuruProps = {}) {
   const completeOnboarding = (info: BusinessInfo) => {
     setOnboardingState('completed');
     setShowOnboarding(false);
-    
+
     const area = businessAreas[info.area!];
-    const welcomeMessage = `Perfeito, ${info.companyName}! 🎉\n\n` +
+    const welcomeMessage =
+      `Perfeito, ${info.companyName}! 🎉\n\n` +
       `Agora conheço melhor seu negócio:\n` +
       `• Área: ${area.name}\n` +
       `• Estágio: ${info.businessStage}\n` +
@@ -128,11 +154,14 @@ export function BusinessGuru({ onBackToDashboard }: BusinessGuruProps = {}) {
       `• Objetivo: ${info.mainGoal}\n\n` +
       `${area.prompts.planning}\n\n` +
       `Como posso te ajudar hoje?`;
-    
-    setMessages(prev => [...prev, {
-      role: 'assistant',
-      content: welcomeMessage
-    }]);
+
+    setMessages((prev) => [
+      ...prev,
+      {
+        role: 'assistant',
+        content: welcomeMessage,
+      },
+    ]);
   };
 
   const handleSend = async () => {
@@ -140,7 +169,7 @@ export function BusinessGuru({ onBackToDashboard }: BusinessGuruProps = {}) {
 
     const userMessage: Message = {
       role: 'user',
-      content: inputMessage
+      content: inputMessage,
     };
 
     setMessages([...messages, userMessage]);
@@ -150,15 +179,15 @@ export function BusinessGuru({ onBackToDashboard }: BusinessGuruProps = {}) {
     // Simulação de resposta personalizada baseada no businessInfo
     setTimeout(() => {
       const area = businessInfo.area ? businessAreas[businessInfo.area] : null;
-      const contextualResponse = area 
+      const contextualResponse = area
         ? `Considerando que você está no setor de ${area.name} e seu objetivo é ${businessInfo.mainGoal}, `
         : '';
-      
+
       const assistantMessage: Message = {
         role: 'assistant',
-        content: `${contextualResponse}vou te ajudar com "${inputMessage}". Para seu negócio, recomendo focar em estratégias que priorizem ${businessInfo.mainGoal?.toLowerCase() || 'crescimento sustentável'}...`
+        content: `${contextualResponse}vou te ajudar com "${inputMessage}". Para seu negócio, recomendo focar em estratégias que priorizem ${businessInfo.mainGoal?.toLowerCase() || 'crescimento sustentável'}...`,
       };
-      setMessages(prev => [...prev, assistantMessage]);
+      setMessages((prev) => [...prev, assistantMessage]);
       setIsTyping(false);
     }, 2000);
   };
@@ -186,11 +215,17 @@ export function BusinessGuru({ onBackToDashboard }: BusinessGuruProps = {}) {
                   <span className="bg-gradient-to-r from-green-400 to-blue-400 bg-clip-text text-xl font-bold text-transparent">
                     Business Guru
                   </span>
-                  <p className="text-xs text-slate-400">Consultoria de Negócios com IA</p>
+                  <p className="text-xs text-slate-400">
+                    Consultoria de Negócios com IA
+                  </p>
                 </div>
               </div>
               <button
-                onClick={() => onBackToDashboard ? onBackToDashboard() : window.location.href = '/'}
+                onClick={() =>
+                  onBackToDashboard
+                    ? onBackToDashboard()
+                    : (window.location.href = '/')
+                }
                 className="flex items-center space-x-2 text-slate-300 hover:text-white transition-colors"
               >
                 <ArrowLeft className="h-5 w-5" />
@@ -212,7 +247,8 @@ export function BusinessGuru({ onBackToDashboard }: BusinessGuruProps = {}) {
                   Seu consultor de negócios especializado com IA
                 </p>
                 <p className="text-slate-400">
-                  Para começar, vou fazer algumas perguntas para conhecer melhor seu negócio
+                  Para começar, vou fazer algumas perguntas para conhecer melhor
+                  seu negócio
                 </p>
               </div>
 
@@ -224,8 +260,12 @@ export function BusinessGuru({ onBackToDashboard }: BusinessGuruProps = {}) {
                     className="group relative overflow-hidden rounded-xl border-2 border-slate-700 bg-slate-900/50 p-6 hover:border-green-500 hover:bg-slate-800 transition-all duration-300"
                   >
                     <div className="text-4xl mb-4">{area.icon}</div>
-                    <h3 className="text-lg font-bold text-white mb-2">{area.name}</h3>
-                    <p className="text-sm text-slate-400 mb-4">{area.description}</p>
+                    <h3 className="text-lg font-bold text-white mb-2">
+                      {area.name}
+                    </h3>
+                    <p className="text-sm text-slate-400 mb-4">
+                      {area.description}
+                    </p>
                     <ChevronRight className="h-5 w-5 text-green-400 mx-auto group-hover:translate-x-1 transition-transform" />
                   </button>
                 ))}
@@ -237,9 +277,12 @@ export function BusinessGuru({ onBackToDashboard }: BusinessGuruProps = {}) {
             <div className="space-y-6">
               <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-6">
                 <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-xl font-bold text-white">Questionário Inicial</h2>
+                  <h2 className="text-xl font-bold text-white">
+                    Questionário Inicial
+                  </h2>
                   <span className="text-sm text-slate-400">
-                    Pergunta {currentQuestionIndex + 1} de {onboardingQuestions.length}
+                    Pergunta {currentQuestionIndex + 1} de{' '}
+                    {onboardingQuestions.length}
                   </span>
                 </div>
 
@@ -261,17 +304,23 @@ export function BusinessGuru({ onBackToDashboard }: BusinessGuruProps = {}) {
                         {message.role === 'assistant' && (
                           <div className="flex items-center space-x-2 mb-2">
                             <User className="h-4 w-4 text-green-400" />
-                            <span className="text-xs font-semibold text-green-400">Business Guru</span>
+                            <span className="text-xs font-semibold text-green-400">
+                              Business Guru
+                            </span>
                           </div>
                         )}
-                        <p className="text-sm leading-relaxed whitespace-pre-line">{message.content}</p>
+                        <p className="text-sm leading-relaxed whitespace-pre-line">
+                          {message.content}
+                        </p>
 
                         {message.options && index === messages.length - 1 && (
                           <div className="mt-4 grid grid-cols-1 gap-2">
                             {message.options.map((option) => (
                               <button
                                 key={option.value}
-                                onClick={() => handleQuestionAnswer(option.label)}
+                                onClick={() =>
+                                  handleQuestionAnswer(option.label)
+                                }
                                 className="text-left px-4 py-3 rounded-lg bg-slate-700 hover:bg-slate-600 border border-slate-600 hover:border-green-500 transition-colors text-white"
                               >
                                 {option.label}
@@ -290,7 +339,11 @@ export function BusinessGuru({ onBackToDashboard }: BusinessGuruProps = {}) {
                       type="text"
                       value={inputMessage}
                       onChange={(e) => setInputMessage(e.target.value)}
-                      onKeyPress={(e) => e.key === 'Enter' && inputMessage.trim() && handleQuestionAnswer(inputMessage)}
+                      onKeyPress={(e) =>
+                        e.key === 'Enter' &&
+                        inputMessage.trim() &&
+                        handleQuestionAnswer(inputMessage)
+                      }
                       placeholder="Digite sua resposta..."
                       className="flex-1 rounded-lg border border-slate-700 bg-slate-800 px-4 py-3 text-white placeholder-slate-500 focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-500"
                     />
@@ -332,11 +385,17 @@ export function BusinessGuru({ onBackToDashboard }: BusinessGuruProps = {}) {
                 <span className="bg-gradient-to-r from-green-400 to-blue-400 bg-clip-text text-xl font-bold text-transparent">
                   Business Guru
                 </span>
-                <p className="text-xs text-slate-400">Consultoria de Negócios com IA</p>
+                <p className="text-xs text-slate-400">
+                  Consultoria de Negócios com IA
+                </p>
               </div>
             </div>
             <button
-              onClick={() => onBackToDashboard ? onBackToDashboard() : window.location.href = '/'}
+              onClick={() =>
+                onBackToDashboard
+                  ? onBackToDashboard()
+                  : (window.location.href = '/')
+              }
               className="flex items-center space-x-2 text-slate-300 hover:text-white transition-colors"
             >
               <ArrowLeft className="h-5 w-5" />
@@ -361,19 +420,28 @@ export function BusinessGuru({ onBackToDashboard }: BusinessGuruProps = {}) {
                 <div className="space-y-3 text-sm">
                   <div>
                     <p className="text-slate-400">Empresa</p>
-                    <p className="text-white font-medium">{businessInfo.companyName}</p>
+                    <p className="text-white font-medium">
+                      {businessInfo.companyName}
+                    </p>
                   </div>
                   <div>
                     <p className="text-slate-400">Área</p>
-                    <p className="text-white font-medium">{businessInfo.area && businessAreas[businessInfo.area]?.name}</p>
+                    <p className="text-white font-medium">
+                      {businessInfo.area &&
+                        businessAreas[businessInfo.area]?.name}
+                    </p>
                   </div>
                   <div>
                     <p className="text-slate-400">Estágio</p>
-                    <p className="text-white font-medium">{businessInfo.businessStage}</p>
+                    <p className="text-white font-medium">
+                      {businessInfo.businessStage}
+                    </p>
                   </div>
                   <div>
                     <p className="text-slate-400">Objetivo Principal</p>
-                    <p className="text-white font-medium">{businessInfo.mainGoal}</p>
+                    <p className="text-white font-medium">
+                      {businessInfo.mainGoal}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -382,7 +450,9 @@ export function BusinessGuru({ onBackToDashboard }: BusinessGuruProps = {}) {
             <div className="rounded-lg border border-slate-800 bg-slate-900/50 p-6">
               <div className="flex items-center space-x-3 mb-6">
                 <Lightbulb className="h-6 w-6 text-yellow-400" />
-                <h2 className="text-xl font-bold text-white">Tópicos Rápidos</h2>
+                <h2 className="text-xl font-bold text-white">
+                  Tópicos Rápidos
+                </h2>
               </div>
 
               <div className="space-y-3">
@@ -395,7 +465,9 @@ export function BusinessGuru({ onBackToDashboard }: BusinessGuruProps = {}) {
                       className={`w-full flex items-center space-x-3 rounded-lg border border-slate-700 bg-slate-800 p-4 hover:border-${topic.color}-500 hover:bg-slate-700 transition-colors text-left`}
                     >
                       <Icon className={`h-5 w-5 text-${topic.color}-400`} />
-                      <span className="text-white font-medium">{topic.label}</span>
+                      <span className="text-white font-medium">
+                        {topic.label}
+                      </span>
                     </button>
                   );
                 })}
@@ -404,7 +476,9 @@ export function BusinessGuru({ onBackToDashboard }: BusinessGuruProps = {}) {
 
             {/* Stats */}
             <div className="rounded-lg border border-slate-800 bg-slate-900/50 p-6">
-              <h3 className="text-lg font-bold text-white mb-4">Suas Estatísticas</h3>
+              <h3 className="text-lg font-bold text-white mb-4">
+                Suas Estatísticas
+              </h3>
               <div className="space-y-4">
                 <div>
                   <p className="text-2xl font-bold text-white">47</p>
@@ -416,7 +490,9 @@ export function BusinessGuru({ onBackToDashboard }: BusinessGuruProps = {}) {
                 </div>
                 <div>
                   <p className="text-2xl font-bold text-white">8</p>
-                  <p className="text-sm text-slate-400">Estratégias Implementadas</p>
+                  <p className="text-sm text-slate-400">
+                    Estratégias Implementadas
+                  </p>
                 </div>
               </div>
             </div>
@@ -424,7 +500,10 @@ export function BusinessGuru({ onBackToDashboard }: BusinessGuruProps = {}) {
 
           {/* Chat Area */}
           <div className="md:col-span-2">
-            <div className="rounded-lg border border-slate-800 bg-slate-900/50 overflow-hidden flex flex-col" style={{ height: 'calc(100vh - 200px)' }}>
+            <div
+              className="rounded-lg border border-slate-800 bg-slate-900/50 overflow-hidden flex flex-col"
+              style={{ height: 'calc(100vh - 200px)' }}
+            >
               {/* Messages */}
               <div className="flex-1 overflow-y-auto p-6 space-y-4">
                 {messages.map((message, index) => (
@@ -442,10 +521,14 @@ export function BusinessGuru({ onBackToDashboard }: BusinessGuruProps = {}) {
                       {message.role === 'assistant' && (
                         <div className="flex items-center space-x-2 mb-2">
                           <MessageSquare className="h-4 w-4 text-green-400" />
-                          <span className="text-xs font-semibold text-green-400">Business Guru</span>
+                          <span className="text-xs font-semibold text-green-400">
+                            Business Guru
+                          </span>
                         </div>
                       )}
-                      <p className="text-sm leading-relaxed">{message.content}</p>
+                      <p className="text-sm leading-relaxed">
+                        {message.content}
+                      </p>
                     </div>
                   </div>
                 ))}
@@ -455,7 +538,9 @@ export function BusinessGuru({ onBackToDashboard }: BusinessGuruProps = {}) {
                     <div className="max-w-[80%] rounded-lg p-4 bg-slate-800 border border-slate-700">
                       <div className="flex items-center space-x-2">
                         <Loader2 className="h-4 w-4 text-green-400 animate-spin" />
-                        <span className="text-sm text-slate-400">Business Guru está digitando...</span>
+                        <span className="text-sm text-slate-400">
+                          Business Guru está digitando...
+                        </span>
                       </div>
                     </div>
                   </div>

@@ -15,8 +15,8 @@ import { OnboardingModal } from './components/OnboardingModal';
 import { Packages } from './components/Packages';
 import { Preview } from './components/Preview';
 import { PWAInstallBanner } from './components/PWAInstallBanner';
-import { MyEasyWebsite } from './features/myeasywebsite/MyEasyWebsite';
 import { BusinessGuru } from './features/businessguru/BusinessGuru';
+import { MyEasyWebsite } from './features/myeasywebsite/MyEasyWebsite';
 import { useInactivityTimeout } from './hooks/useInactivityTimeout';
 import {
   checkUserNeedsOnboarding,
@@ -41,7 +41,9 @@ function App() {
     return localStorage.getItem('userAvatarUrl') || undefined;
   });
   const [loading, setLoading] = useState(true);
-  const [currentView, setCurrentView] = useState<'home' | 'dashboard' | 'preview' | 'myeasywebsite' | 'businessguru'>('home');
+  const [currentView, setCurrentView] = useState<
+    'home' | 'dashboard' | 'preview' | 'myeasywebsite' | 'businessguru'
+  >('home');
   const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
   const [needsOnboarding, setNeedsOnboarding] = useState(false);
   const [isAuthLoading, setIsAuthLoading] = useState(false);
@@ -195,7 +197,7 @@ function App() {
     const handleNavigationClick = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
       const link = target.closest('a');
-      
+
       if (link && link.href) {
         const url = new URL(link.href);
         if (url.pathname === '/myeasywebsite') {
@@ -333,7 +335,6 @@ function App() {
   if (loading && ENABLE_SPLASH_SCREEN) {
     return <LoadingIntro />;
   }
-
 
   // Renderização baseada na view atual e estado do usuário
   if (user && currentView === 'dashboard') {

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 
 interface UseInactivityTimeoutProps {
   timeout: number; // tempo em milissegundos
@@ -6,10 +6,10 @@ interface UseInactivityTimeoutProps {
   enabled?: boolean;
 }
 
-export const useInactivityTimeout = ({ 
-  timeout, 
-  onTimeout, 
-  enabled = true 
+export const useInactivityTimeout = ({
+  timeout,
+  onTimeout,
+  enabled = true,
 }: UseInactivityTimeoutProps) => {
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -43,12 +43,12 @@ export const useInactivityTimeout = ({
     // Lista de eventos que indicam atividade do usuário
     const events = [
       'mousedown',
-      'mousemove', 
+      'mousemove',
       'keypress',
       'scroll',
       'touchstart',
       'click',
-      'wheel'
+      'wheel',
     ];
 
     // Função para resetar o timer em qualquer atividade
@@ -57,7 +57,7 @@ export const useInactivityTimeout = ({
     };
 
     // Adicionar listeners para todos os eventos
-    events.forEach(event => {
+    events.forEach((event) => {
       document.addEventListener(event, handleActivity, true);
     });
 
@@ -66,7 +66,7 @@ export const useInactivityTimeout = ({
 
     // Cleanup
     return () => {
-      events.forEach(event => {
+      events.forEach((event) => {
         document.removeEventListener(event, handleActivity, true);
       });
       clearTimer();

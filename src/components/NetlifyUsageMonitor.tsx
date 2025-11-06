@@ -1,12 +1,26 @@
-import { useState, useEffect } from 'react';
-import { Activity, Server, Clock, AlertTriangle, CheckCircle, XCircle } from 'lucide-react';
-import { getNetlifyUsage, formatBytes, getUsageColor, type NetlifyUsage } from '../lib/netlify';
+import {
+  Activity,
+  AlertTriangle,
+  CheckCircle,
+  Clock,
+  Server,
+  XCircle,
+} from 'lucide-react';
+import { useEffect, useState } from 'react';
+import {
+  formatBytes,
+  getNetlifyUsage,
+  getUsageColor,
+  type NetlifyUsage,
+} from '../lib/netlify';
 
 interface NetlifyUsageMonitorProps {
   className?: string;
 }
 
-export function NetlifyUsageMonitor({ className = '' }: NetlifyUsageMonitorProps) {
+export function NetlifyUsageMonitor({
+  className = '',
+}: NetlifyUsageMonitorProps) {
   const [usage, setUsage] = useState<NetlifyUsage | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -30,8 +44,10 @@ export function NetlifyUsageMonitor({ className = '' }: NetlifyUsageMonitorProps
   };
 
   const getStatusIcon = (percentage: number) => {
-    if (percentage < 50) return <CheckCircle className="h-4 w-4 text-green-500" />;
-    if (percentage < 80) return <AlertTriangle className="h-4 w-4 text-yellow-500" />;
+    if (percentage < 50)
+      return <CheckCircle className="h-4 w-4 text-green-500" />;
+    if (percentage < 80)
+      return <AlertTriangle className="h-4 w-4 text-yellow-500" />;
     return <XCircle className="h-4 w-4 text-red-500" />;
   };
 
@@ -43,7 +59,9 @@ export function NetlifyUsageMonitor({ className = '' }: NetlifyUsageMonitorProps
 
   if (loading) {
     return (
-      <div className={`rounded-lg border border-slate-700 bg-slate-800 p-4 ${className}`}>
+      <div
+        className={`rounded-lg border border-slate-700 bg-slate-800 p-4 ${className}`}
+      >
         <div className="flex items-center space-x-3">
           <Activity className="h-5 w-5 text-blue-400 animate-pulse" />
           <span className="text-slate-300">Carregando uso do Netlify...</span>
@@ -54,11 +72,15 @@ export function NetlifyUsageMonitor({ className = '' }: NetlifyUsageMonitorProps
 
   if (error || !usage) {
     return (
-      <div className={`rounded-lg border border-red-700 bg-red-900/20 p-4 ${className}`}>
+      <div
+        className={`rounded-lg border border-red-700 bg-red-900/20 p-4 ${className}`}
+      >
         <div className="flex items-center space-x-3">
           <XCircle className="h-5 w-5 text-red-400" />
           <div>
-            <p className="text-red-300 font-medium">Erro ao conectar com Netlify</p>
+            <p className="text-red-300 font-medium">
+              Erro ao conectar com Netlify
+            </p>
             <p className="text-red-400 text-sm">{error}</p>
             <button
               onClick={loadUsage}
@@ -73,7 +95,9 @@ export function NetlifyUsageMonitor({ className = '' }: NetlifyUsageMonitorProps
   }
 
   return (
-    <div className={`rounded-lg border border-slate-700 bg-slate-800 p-4 space-y-4 ${className}`}>
+    <div
+      className={`rounded-lg border border-slate-700 bg-slate-800 p-4 space-y-4 ${className}`}
+    >
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-3">
@@ -99,17 +123,21 @@ export function NetlifyUsageMonitor({ className = '' }: NetlifyUsageMonitorProps
             </div>
             {getStatusIcon(usage.bandwidth.percentage)}
           </div>
-          
+
           <div className="space-y-2">
             <div className="flex justify-between text-sm">
               <span className="text-slate-400">Usado:</span>
-              <span className="text-white">{formatBytes(usage.bandwidth.used)}</span>
+              <span className="text-white">
+                {formatBytes(usage.bandwidth.used)}
+              </span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-slate-400">Limite:</span>
-              <span className="text-white">{formatBytes(usage.bandwidth.limit)}</span>
+              <span className="text-white">
+                {formatBytes(usage.bandwidth.limit)}
+              </span>
             </div>
-            
+
             {/* Progress Bar */}
             <div className="w-full bg-slate-700 rounded-full h-2">
               <div
@@ -117,13 +145,15 @@ export function NetlifyUsageMonitor({ className = '' }: NetlifyUsageMonitorProps
                   usage.bandwidth.percentage < 50
                     ? 'bg-green-500'
                     : usage.bandwidth.percentage < 80
-                    ? 'bg-yellow-500'
-                    : 'bg-red-500'
+                      ? 'bg-yellow-500'
+                      : 'bg-red-500'
                 }`}
-                style={{ width: `${Math.min(usage.bandwidth.percentage, 100)}%` }}
+                style={{
+                  width: `${Math.min(usage.bandwidth.percentage, 100)}%`,
+                }}
               />
             </div>
-            
+
             <div className="flex justify-between text-xs">
               <span className={getUsageColor(usage.bandwidth.percentage)}>
                 {usage.bandwidth.percentage.toFixed(1)}%
@@ -144,7 +174,7 @@ export function NetlifyUsageMonitor({ className = '' }: NetlifyUsageMonitorProps
             </div>
             {getStatusIcon(usage.buildMinutes.percentage)}
           </div>
-          
+
           <div className="space-y-2">
             <div className="flex justify-between text-sm">
               <span className="text-slate-400">Usado:</span>
@@ -154,7 +184,7 @@ export function NetlifyUsageMonitor({ className = '' }: NetlifyUsageMonitorProps
               <span className="text-slate-400">Limite:</span>
               <span className="text-white">{usage.buildMinutes.limit} min</span>
             </div>
-            
+
             {/* Progress Bar */}
             <div className="w-full bg-slate-700 rounded-full h-2">
               <div
@@ -162,13 +192,15 @@ export function NetlifyUsageMonitor({ className = '' }: NetlifyUsageMonitorProps
                   usage.buildMinutes.percentage < 50
                     ? 'bg-green-500'
                     : usage.buildMinutes.percentage < 80
-                    ? 'bg-yellow-500'
-                    : 'bg-red-500'
+                      ? 'bg-yellow-500'
+                      : 'bg-red-500'
                 }`}
-                style={{ width: `${Math.min(usage.buildMinutes.percentage, 100)}%` }}
+                style={{
+                  width: `${Math.min(usage.buildMinutes.percentage, 100)}%`,
+                }}
               />
             </div>
-            
+
             <div className="flex justify-between text-xs">
               <span className={getUsageColor(usage.buildMinutes.percentage)}>
                 {usage.buildMinutes.percentage.toFixed(1)}%
@@ -189,7 +221,7 @@ export function NetlifyUsageMonitor({ className = '' }: NetlifyUsageMonitorProps
             </div>
             {getStatusIcon((usage.sites.count / usage.sites.limit) * 100)}
           </div>
-          
+
           <div className="space-y-2">
             <div className="flex justify-between text-sm">
               <span className="text-slate-400">Criados:</span>
@@ -199,7 +231,7 @@ export function NetlifyUsageMonitor({ className = '' }: NetlifyUsageMonitorProps
               <span className="text-slate-400">Limite:</span>
               <span className="text-white">{usage.sites.limit}</span>
             </div>
-            
+
             {/* Progress Bar */}
             <div className="w-full bg-slate-700 rounded-full h-2">
               <div
@@ -207,19 +239,27 @@ export function NetlifyUsageMonitor({ className = '' }: NetlifyUsageMonitorProps
                   (usage.sites.count / usage.sites.limit) * 100 < 50
                     ? 'bg-green-500'
                     : (usage.sites.count / usage.sites.limit) * 100 < 80
-                    ? 'bg-yellow-500'
-                    : 'bg-red-500'
+                      ? 'bg-yellow-500'
+                      : 'bg-red-500'
                 }`}
-                style={{ width: `${Math.min((usage.sites.count / usage.sites.limit) * 100, 100)}%` }}
+                style={{
+                  width: `${Math.min((usage.sites.count / usage.sites.limit) * 100, 100)}%`,
+                }}
               />
             </div>
-            
+
             <div className="flex justify-between text-xs">
-              <span className={getUsageColor((usage.sites.count / usage.sites.limit) * 100)}>
+              <span
+                className={getUsageColor(
+                  (usage.sites.count / usage.sites.limit) * 100,
+                )}
+              >
                 {((usage.sites.count / usage.sites.limit) * 100).toFixed(1)}%
               </span>
               <span className="text-slate-500">
-                {getStatusMessage((usage.sites.count / usage.sites.limit) * 100)}
+                {getStatusMessage(
+                  (usage.sites.count / usage.sites.limit) * 100,
+                )}
               </span>
             </div>
           </div>
@@ -227,7 +267,8 @@ export function NetlifyUsageMonitor({ className = '' }: NetlifyUsageMonitorProps
       </div>
 
       {/* Warning/Info */}
-      {(usage.bandwidth.percentage > 80 || usage.buildMinutes.percentage > 80 || 
+      {(usage.bandwidth.percentage > 80 ||
+        usage.buildMinutes.percentage > 80 ||
         (usage.sites.count / usage.sites.limit) * 100 > 80) && (
         <div className="rounded-lg bg-yellow-900/30 border border-yellow-700 p-3">
           <div className="flex items-start space-x-3">
@@ -235,8 +276,8 @@ export function NetlifyUsageMonitor({ className = '' }: NetlifyUsageMonitorProps
             <div>
               <p className="text-yellow-300 font-medium">Atenção aos Limites</p>
               <p className="text-yellow-200 text-sm mt-1">
-                Você está próximo dos limites do plano gratuito. Considere fazer upgrade ou 
-                otimizar o uso para evitar interrupções.
+                Você está próximo dos limites do plano gratuito. Considere fazer
+                upgrade ou otimizar o uso para evitar interrupções.
               </p>
             </div>
           </div>

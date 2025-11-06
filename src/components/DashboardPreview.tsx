@@ -7,20 +7,19 @@ import {
   ExternalLink,
   LogOut,
   Package,
+  Settings,
   TrendingUp,
   User as UserIcon,
-  Settings,
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-import { Footer } from './Footer';
-import { supabase, signOut } from '../lib/supabase';
-import NotificationBell from './NotificationBell';
-import NotificationDropdown from './NotificationDropdown';
-import NotificationDetailModal from './NotificationDetailModal';
+import { PLANS, type SubscriptionPlan } from '../constants/plans';
 import { useNotifications } from '../hooks/useNotifications';
+import { signOut, supabase } from '../lib/supabase';
 import type { Notification } from '../types/notification';
-
-type SubscriptionPlan = 'free' | 'basic' | 'pro' | 'enterprise';
+import { Footer } from './Footer';
+import NotificationBell from './NotificationBell';
+import NotificationDetailModal from './NotificationDetailModal';
+import NotificationDropdown from './NotificationDropdown';
 
 type UserProfile = {
   name: string;
@@ -53,63 +52,6 @@ type UserProduct = {
   sites_created: number;
   consultations_made: number;
 };
-
-const PLANS = [
-  {
-    name: 'Free',
-    value: 'free' as SubscriptionPlan,
-    price: 'R$ 0',
-    tokens: '1.000',
-    features: [
-      'Acesso básico à plataforma',
-      '1.000 tokens por mês',
-      'Suporte por email',
-      'Documentação completa',
-    ],
-  },
-  {
-    name: 'Basic',
-    value: 'basic' as SubscriptionPlan,
-    price: 'R$ 49',
-    tokens: '10.000',
-    features: [
-      'Tudo do plano Free',
-      '10.000 tokens por mês',
-      'Suporte prioritário',
-      'API Access',
-      'Analytics básico',
-    ],
-    popular: true,
-  },
-  {
-    name: 'Pro',
-    value: 'pro' as SubscriptionPlan,
-    price: 'R$ 149',
-    tokens: '50.000',
-    features: [
-      'Tudo do plano Basic',
-      '50.000 tokens por mês',
-      'Suporte 24/7',
-      'Analytics avançado',
-      'Integrações customizadas',
-      'Acesso a modelos premium',
-    ],
-  },
-  {
-    name: 'Enterprise',
-    value: 'enterprise' as SubscriptionPlan,
-    price: 'Customizado',
-    tokens: 'Ilimitado',
-    features: [
-      'Tudo do plano Pro',
-      'Tokens ilimitados',
-      'Suporte dedicado',
-      'SLA garantido',
-      'Treinamento personalizado',
-      'Deploy on-premise',
-    ],
-  },
-];
 
 type DashboardPreviewProps = {
   onGoHome?: () => void;
@@ -162,17 +104,14 @@ export function DashboardPreview({
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [confirmationText, setConfirmationText] = useState('');
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
-  const [selectedNotification, setSelectedNotification] = useState<Notification | null>(null);
+  const [selectedNotification, setSelectedNotification] =
+    useState<Notification | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const notificationRef = useRef<HTMLDivElement>(null);
 
   // Hook de notificações
-  const {
-    getUnreadCount,
-    getLatest,
-    markAsRead,
-    markAllAsRead,
-  } = useNotifications();
+  const { getUnreadCount, getLatest, markAsRead, markAllAsRead } =
+    useNotifications();
 
   // Carregar dados do usuário logado
   useEffect(() => {
@@ -181,15 +120,17 @@ export function DashboardPreview({
 
   const loadUserData = async () => {
     let timeoutId: NodeJS.Timeout | undefined;
-    
+
     try {
       setIsLoading(true);
       setLoadingProgress(20);
       setLoadingStep('Carregando seu perfil...');
-      
+
       // Timeout de segurança - forçar finalização após 10 segundos
       timeoutId = setTimeout(() => {
-        console.warn('⏰ Timeout no carregamento do dashboard - forçando finalização');
+        console.warn(
+          '⏰ Timeout no carregamento do dashboard - forçando finalização',
+        );
         setLoadingStep('Finalizando carregamento...');
         setLoadingProgress(100);
         setTimeout(() => {
@@ -197,31 +138,36 @@ export function DashboardPreview({
           onLoadingComplete?.();
         }, 1000);
       }, 10000);
-      
+
       // Delay visual menor para não travar muito tempo se houver erro
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
       console.log('🔄 Iniciando carregamento do dashboard...');
-      
+
       // Verificar sessão com timeout
       const sessionPromise = supabase.auth.getSession();
-      const sessionTimeout = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Timeout na verificação de sessão')), 8000)
+      const sessionTimeout = new Promise((_, reject) =>
+        setTimeout(
+          () => reject(new Error('Timeout na verificação de sessão')),
+          8000,
+        ),
       );
-      
-      const { data: { session }, error: sessionError } = await Promise.race([
-        sessionPromise,
-        sessionTimeout
-      ]) as any;
-      
+
+      const {
+        data: { session },
+        error: sessionError,
+      } = (await Promise.race([sessionPromise, sessionTimeout])) as any;
+
       if (sessionError) {
         console.error('❌ Erro de sessão:', sessionError);
         throw new Error('Erro na sessão do usuário');
       }
-      
+
       if (!session || !session.user) {
         console.error('❌ Nenhuma sessão ativa');
-        alert('Sessão expirada. Você será redirecionado para fazer login novamente.');
+        alert(
+          'Sessão expirada. Você será redirecionado para fazer login novamente.',
+        );
         window.location.href = '/';
         return;
       }
@@ -233,22 +179,28 @@ export function DashboardPreview({
 
       // Buscar dados do usuário com timeout
       setLoadingStep('Buscando dados...');
-      await new Promise(resolve => setTimeout(resolve, 300));
-      
+      await new Promise((resolve) => setTimeout(resolve, 300));
+
       const userDataPromise = supabase
         .from('users')
         .select('*')
         .eq('uuid', user.id)
         .single();
-        
-      const userDataTimeout = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Timeout ao buscar dados do usuário')), 6000)
+
+      const userDataTimeout = new Promise((_, reject) =>
+        setTimeout(
+          () => reject(new Error('Timeout ao buscar dados do usuário')),
+          6000,
+        ),
       );
 
-      const userDataResult = await Promise.race([userDataPromise, userDataTimeout]).catch(error => {
+      const userDataResult = (await Promise.race([
+        userDataPromise,
+        userDataTimeout,
+      ]).catch((error) => {
         console.warn('⚠️ Erro ao buscar dados do usuário:', error);
         return { data: null, error };
-      }) as any;
+      })) as any;
 
       setLoadingProgress(60);
       setLoadingStep('Configurando dashboard...');
@@ -258,28 +210,34 @@ export function DashboardPreview({
         .from('user_products')
         .select('*')
         .eq('user_uuid', user.id);
-        
-      const productsTimeout = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Timeout ao buscar produtos')), 5000)
+
+      const productsTimeout = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Timeout ao buscar produtos')), 5000),
       );
 
-      const productsResult = await Promise.race([productsPromise, productsTimeout]).catch(error => {
+      const productsResult = (await Promise.race([
+        productsPromise,
+        productsTimeout,
+      ]).catch((error) => {
         console.warn('⚠️ Erro ao buscar produtos:', error);
         return { data: [], error };
-      }) as any;
+      })) as any;
 
       if (productsResult.data) {
         setUserProducts(productsResult.data || []);
       }
 
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await new Promise((resolve) => setTimeout(resolve, 500));
       setLoadingProgress(80);
 
       // Configurar dados do perfil
       if (userDataResult.error || !userDataResult.data) {
         console.warn('⚠️ Usando dados básicos do usuário');
         setProfile({
-          name: user.user_metadata?.name || user.user_metadata?.full_name || 'Usuário',
+          name:
+            user.user_metadata?.name ||
+            user.user_metadata?.full_name ||
+            'Usuário',
           email: user.email || '',
           bio: '',
           phone: '',
@@ -288,11 +246,14 @@ export function DashboardPreview({
       } else {
         const userData = userDataResult.data;
         console.log('✅ Dados do usuário carregados com sucesso');
-        
+
         // Preencher perfil com dados da tabela users
         setProfile({
           name: userData.name || user.user_metadata?.name || 'Usuário',
-          preferred_name: userData.preferred_name || userData.name?.split(' ')[0] || 'Usuário',
+          preferred_name:
+            userData.preferred_name ||
+            userData.name?.split(' ')[0] ||
+            'Usuário',
           email: userData.email || user.email || '',
           bio: userData.bio || '',
           phone: userData.mobile_phone || '',
@@ -327,13 +288,12 @@ export function DashboardPreview({
 
       setLoadingProgress(100);
       setLoadingStep('Pronto!');
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      console.log('🎉 Dashboard carregado com sucesso!');
+      await new Promise((resolve) => setTimeout(resolve, 500));
 
+      console.log('🎉 Dashboard carregado com sucesso!');
     } catch (error) {
       console.error('💥 Erro crítico no carregamento:', error);
-      
+
       // Configurar perfil básico em caso de erro
       setProfile({
         name: 'Usuário',
@@ -342,19 +302,18 @@ export function DashboardPreview({
         phone: '',
         company: '',
       });
-      
+
       setLoadingStep('Erro no carregamento');
       setLoadingProgress(100);
-      
+
       // Mostrar erro por um momento antes de finalizar
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
+      await new Promise((resolve) => setTimeout(resolve, 2000));
     } finally {
       // Limpar timeout de segurança
       if (timeoutId) {
         clearTimeout(timeoutId);
       }
-      
+
       // Garantir que o loading sempre termine, mesmo em caso de erro
       setIsLoading(false);
       onLoadingComplete?.();
@@ -383,7 +342,8 @@ export function DashboardPreview({
         .from('users')
         .update({
           name: profile.name,
-          preferred_name: profile.preferred_name || profile.name?.split(' ')[0] || 'Usuário',
+          preferred_name:
+            profile.preferred_name || profile.name?.split(' ')[0] || 'Usuário',
           mobile_phone: profile.phone,
           company_name: profile.company,
           bio: profile.bio,
@@ -450,7 +410,7 @@ export function DashboardPreview({
 
   const handleAccessProduct = (productName: string) => {
     const name = productName.toLowerCase();
-    
+
     if (name.includes('website') || name.includes('site')) {
       // Redirecionar para MyEasyWebsite
       if (onGoToMyEasyWebsite) {
@@ -526,7 +486,6 @@ export function DashboardPreview({
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-black-main to-blue-main flex flex-col items-center justify-center relative overflow-hidden">
-        
         {/* Background animated particles (estrelas) */}
         <div className="absolute inset-0">
           {[...Array(25)].map((_, i) => (
@@ -537,7 +496,7 @@ export function DashboardPreview({
                 left: `${Math.random() * 100}%`,
                 top: `${Math.random() * 100}%`,
                 animationDelay: `${Math.random() * 3}s`,
-                animationDuration: `${2 + Math.random() * 2}s`
+                animationDuration: `${2 + Math.random() * 2}s`,
               }}
             >
               <div className="w-1 h-1 bg-blue-400/40 rounded-full" />
@@ -547,21 +506,25 @@ export function DashboardPreview({
 
         {/* Main content */}
         <div className="relative z-10 flex flex-col items-center space-y-8">
-          
           {/* Logo container com efeitos de glow */}
           <div className="relative">
-            
             {/* Glow effect rings */}
             <div className="absolute inset-0 animate-pulse">
               <div className="w-32 h-32 bg-gradient-to-r from-blue-500/20 to-purple-600/20 rounded-full blur-xl" />
             </div>
-            <div className="absolute inset-0 animate-ping" style={{ animationDuration: '2s' }}>
+            <div
+              className="absolute inset-0 animate-ping"
+              style={{ animationDuration: '2s' }}
+            >
               <div className="w-28 h-28 bg-gradient-to-r from-blue-400/30 to-purple-500/30 rounded-full blur-lg mx-auto my-auto" />
             </div>
-            <div className="absolute inset-0 animate-pulse" style={{ animationDuration: '3s' }}>
+            <div
+              className="absolute inset-0 animate-pulse"
+              style={{ animationDuration: '3s' }}
+            >
               <div className="w-36 h-36 bg-gradient-to-r from-purple-500/10 to-blue-500/10 rounded-full blur-2xl -mx-2 -my-2" />
             </div>
-            
+
             {/* Logo icon */}
             <div className="relative animate-pulse">
               <img
@@ -574,19 +537,18 @@ export function DashboardPreview({
 
           {/* Text container com efeito shimmer */}
           <div className="relative">
-            
             {/* Text glow background */}
             <div className="absolute inset-0 blur-xl">
               <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-4xl font-bold text-transparent opacity-30 animate-pulse">
                 MyEasyAI Dashboard
               </span>
             </div>
-            
+
             {/* Main text */}
             <h1 className="relative bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-4xl font-bold text-transparent drop-shadow-2xl">
               MyEasyAI Dashboard
             </h1>
-            
+
             {/* Shimmer effect */}
             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent transform -skew-x-12 animate-shimmer" />
           </div>
@@ -597,9 +559,11 @@ export function DashboardPreview({
               {loadingStep}
             </p>
             <p className="text-slate-400 text-sm">
-              {loadingProgress < 50 && "✨ Preparando sua experiência..."}
-              {loadingProgress >= 50 && loadingProgress < 100 && "🚀 Quase lá..."}
-              {loadingProgress >= 100 && "🎉 Tudo pronto!"}
+              {loadingProgress < 50 && '✨ Preparando sua experiência...'}
+              {loadingProgress >= 50 &&
+                loadingProgress < 100 &&
+                '🚀 Quase lá...'}
+              {loadingProgress >= 100 && '🎉 Tudo pronto!'}
             </p>
           </div>
 
@@ -611,7 +575,7 @@ export function DashboardPreview({
                 className="w-3 h-3 bg-gradient-to-r from-blue-400 to-purple-400 rounded-full animate-pulse"
                 style={{
                   animationDelay: `${i * 0.3}s`,
-                  animationDuration: '1.5s'
+                  animationDuration: '1.5s',
                 }}
               />
             ))}
@@ -621,10 +585,12 @@ export function DashboardPreview({
           <div className="w-80 space-y-2">
             <div className="flex items-center justify-between text-sm">
               <span className="text-slate-300 font-medium">Progresso</span>
-              <span className="text-slate-400">{Math.round(loadingProgress)}%</span>
+              <span className="text-slate-400">
+                {Math.round(loadingProgress)}%
+              </span>
             </div>
             <div className="h-2 bg-slate-700/50 rounded-full overflow-hidden">
-              <div 
+              <div
                 className="h-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-full transition-all duration-500 ease-out relative"
                 style={{ width: `${loadingProgress}%` }}
               >
@@ -705,61 +671,61 @@ export function DashboardPreview({
                   </span>
                 </button>
 
-              {isDropdownOpen && (
-                <div className="absolute right-0 mt-2 w-64 origin-top-right animate-in fade-in slide-in-from-top-2 duration-200 rounded-xl border border-slate-700 bg-slate-800/99 backdrop-blur-xl shadow-2xl shadow-black/50">
-                  <div className="p-4 border-b border-slate-700">
-                    <div className="flex items-center space-x-3">
-                      <div className="h-12 w-12 flex-shrink-0 overflow-hidden rounded-full ring-2 ring-purple-500/40">
-                        {getAvatarContent()}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-white truncate">
-                          {profile.name}
-                        </p>
-                        <p className="text-xs text-slate-400 truncate">
-                          {profile.email}
-                        </p>
+                {isDropdownOpen && (
+                  <div className="absolute right-0 mt-2 w-64 origin-top-right animate-in fade-in slide-in-from-top-2 duration-200 rounded-xl border border-slate-700 bg-slate-800/99 backdrop-blur-xl shadow-2xl shadow-black/50">
+                    <div className="p-4 border-b border-slate-700">
+                      <div className="flex items-center space-x-3">
+                        <div className="h-12 w-12 flex-shrink-0 overflow-hidden rounded-full ring-2 ring-purple-500/40">
+                          {getAvatarContent()}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold text-white truncate">
+                            {profile.name}
+                          </p>
+                          <p className="text-xs text-slate-400 truncate">
+                            {profile.email}
+                          </p>
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  <div className="p-2">
-                    <button
-                      onClick={() => {
-                        setIsDropdownOpen(false);
-                        setActiveTab('profile');
-                      }}
-                      className="flex w-full items-center space-x-3 rounded-lg px-3 py-2.5 text-left text-slate-200 transition-colors hover:bg-slate-700"
-                    >
-                      <UserIcon className="h-4 w-4" />
-                      <span className="text-sm">Perfil</span>
-                    </button>
-                    <button
-                      onClick={() => {
-                        setIsDropdownOpen(false);
-                        setActiveTab('settings');
-                      }}
-                      className="flex w-full items-center space-x-3 rounded-lg px-3 py-2.5 text-left text-slate-200 transition-colors hover:bg-slate-700"
-                    >
-                      <Settings className="h-4 w-4" />
-                      <span className="text-sm">Configurações</span>
-                    </button>
-                  </div>
+                    <div className="p-2">
+                      <button
+                        onClick={() => {
+                          setIsDropdownOpen(false);
+                          setActiveTab('profile');
+                        }}
+                        className="flex w-full items-center space-x-3 rounded-lg px-3 py-2.5 text-left text-slate-200 transition-colors hover:bg-slate-700"
+                      >
+                        <UserIcon className="h-4 w-4" />
+                        <span className="text-sm">Perfil</span>
+                      </button>
+                      <button
+                        onClick={() => {
+                          setIsDropdownOpen(false);
+                          setActiveTab('settings');
+                        }}
+                        className="flex w-full items-center space-x-3 rounded-lg px-3 py-2.5 text-left text-slate-200 transition-colors hover:bg-slate-700"
+                      >
+                        <Settings className="h-4 w-4" />
+                        <span className="text-sm">Configurações</span>
+                      </button>
+                    </div>
 
-                  <div className="border-t border-slate-700 p-2">
-                    <button
-                      onClick={() => {
-                        setIsDropdownOpen(false);
-                        handleLogout();
-                      }}
-                      className="flex w-full items-center space-x-3 rounded-lg px-3 py-2.5 text-left text-red-400 transition-colors hover:bg-red-500/10"
-                    >
-                      <LogOut className="h-4 w-4" />
-                      <span className="text-sm font-medium">Sair</span>
-                    </button>
+                    <div className="border-t border-slate-700 p-2">
+                      <button
+                        onClick={() => {
+                          setIsDropdownOpen(false);
+                          handleLogout();
+                        }}
+                        className="flex w-full items-center space-x-3 rounded-lg px-3 py-2.5 text-left text-red-400 transition-colors hover:bg-red-500/10"
+                      >
+                        <LogOut className="h-4 w-4" />
+                        <span className="text-sm font-medium">Sair</span>
+                      </button>
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
               </div>
             </div>
           </div>
@@ -1020,19 +986,28 @@ export function DashboardPreview({
                     const colors = ['blue', 'purple', 'amber', 'green', 'pink'];
                     const color = colors[index % colors.length];
                     const isActive = product.product_status === 'active';
-                    
+
                     return (
-                      <div key={product.id} className="rounded-lg border border-slate-800 bg-slate-900/50 p-6 hover:border-blue-500 transition-colors">
+                      <div
+                        key={product.id}
+                        className="rounded-lg border border-slate-800 bg-slate-900/50 p-6 hover:border-blue-500 transition-colors"
+                      >
                         <div className="flex items-start justify-between">
                           <div className="flex items-center space-x-3">
-                            <div className={`rounded-lg bg-${color}-500/20 p-3`}>
-                              <Package className={`h-6 w-6 text-${color}-400`} />
+                            <div
+                              className={`rounded-lg bg-${color}-500/20 p-3`}
+                            >
+                              <Package
+                                className={`h-6 w-6 text-${color}-400`}
+                              />
                             </div>
                             <div>
                               <h3 className="text-lg font-semibold text-white">
                                 {product.product_name}
                               </h3>
-                              <span className={`inline-block mt-1 rounded-full ${isActive ? 'bg-green-500/20 text-green-400' : 'bg-slate-500/20 text-slate-400'} px-2 py-1 text-xs font-semibold`}>
+                              <span
+                                className={`inline-block mt-1 rounded-full ${isActive ? 'bg-green-500/20 text-green-400' : 'bg-slate-500/20 text-slate-400'} px-2 py-1 text-xs font-semibold`}
+                              >
                                 {isActive ? 'Ativo' : product.product_status}
                               </span>
                             </div>
@@ -1043,26 +1018,38 @@ export function DashboardPreview({
                           <div className="flex justify-between text-slate-400">
                             <span>Assinado em:</span>
                             <span className="text-white">
-                              {new Date(product.subscribed_at).toLocaleDateString('pt-BR')}
+                              {new Date(
+                                product.subscribed_at,
+                              ).toLocaleDateString('pt-BR')}
                             </span>
                           </div>
-                          {product.product_name.toLowerCase().includes('website') && (
+                          {product.product_name
+                            .toLowerCase()
+                            .includes('website') && (
                             <div className="flex justify-between text-slate-400">
                               <span>Sites criados:</span>
-                              <span className="text-white font-semibold">{product.sites_created || 0}</span>
+                              <span className="text-white font-semibold">
+                                {product.sites_created || 0}
+                              </span>
                             </div>
                           )}
-                          {product.product_name.toLowerCase().includes('guru') && (
+                          {product.product_name
+                            .toLowerCase()
+                            .includes('guru') && (
                             <div className="flex justify-between text-slate-400">
                               <span>Consultas:</span>
-                              <span className="text-white font-semibold">{product.consultations_made || 0}</span>
+                              <span className="text-white font-semibold">
+                                {product.consultations_made || 0}
+                              </span>
                             </div>
                           )}
                         </div>
 
                         <div className="mt-6 flex space-x-2">
-                          <button 
-                            onClick={() => handleAccessProduct(product.product_name)}
+                          <button
+                            onClick={() =>
+                              handleAccessProduct(product.product_name)
+                            }
                             className="flex-1 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 transition-colors flex items-center justify-center space-x-2"
                           >
                             <ExternalLink className="h-4 w-4" />
@@ -1084,12 +1071,26 @@ export function DashboardPreview({
                   </h2>
                   <div className="mt-4 grid gap-4 md:grid-cols-3">
                     <div className="text-center">
-                      <p className="text-3xl font-bold text-white">{userProducts.filter(p => p.product_status === 'active').length}</p>
-                      <p className="mt-1 text-sm text-slate-400">Produtos Ativos</p>
+                      <p className="text-3xl font-bold text-white">
+                        {
+                          userProducts.filter(
+                            (p) => p.product_status === 'active',
+                          ).length
+                        }
+                      </p>
+                      <p className="mt-1 text-sm text-slate-400">
+                        Produtos Ativos
+                      </p>
                     </div>
                     <div className="text-center">
                       <p className="text-3xl font-bold text-white">
-                        {userProducts.reduce((sum, p) => sum + (p.sites_created || 0) + (p.consultations_made || 0), 0)}
+                        {userProducts.reduce(
+                          (sum, p) =>
+                            sum +
+                            (p.sites_created || 0) +
+                            (p.consultations_made || 0),
+                          0,
+                        )}
                       </p>
                       <p className="mt-1 text-sm text-slate-400">
                         Total de Uso
@@ -1097,7 +1098,13 @@ export function DashboardPreview({
                     </div>
                     <div className="text-center">
                       <p className="text-3xl font-bold text-green-400">
-                        {new Date(Math.min(...userProducts.map(p => new Date(p.subscribed_at).getTime()))).toLocaleDateString('pt-BR')}
+                        {new Date(
+                          Math.min(
+                            ...userProducts.map((p) =>
+                              new Date(p.subscribed_at).getTime(),
+                            ),
+                          ),
+                        ).toLocaleDateString('pt-BR')}
                       </p>
                       <p className="mt-1 text-sm text-slate-400">
                         Primeiro Produto
@@ -1109,9 +1116,12 @@ export function DashboardPreview({
             ) : (
               <div className="rounded-lg border border-slate-800 bg-slate-900/50 p-12 text-center">
                 <Package className="mx-auto h-16 w-16 text-slate-600" />
-                <h3 className="mt-4 text-xl font-semibold text-white">Nenhum produto ativo</h3>
+                <h3 className="mt-4 text-xl font-semibold text-white">
+                  Nenhum produto ativo
+                </h3>
                 <p className="mt-2 text-slate-400">
-                  Você ainda não possui produtos ativos. Explore os produtos disponíveis abaixo!
+                  Você ainda não possui produtos ativos. Explore os produtos
+                  disponíveis abaixo!
                 </p>
               </div>
             )}
@@ -1484,8 +1494,10 @@ export function DashboardPreview({
 
             {/* Informações de Cadastro */}
             <div className="rounded-lg border border-slate-800 bg-slate-900/50 p-6">
-              <h2 className="text-xl font-bold text-white mb-6">Informações de Cadastro</h2>
-              
+              <h2 className="text-xl font-bold text-white mb-6">
+                Informações de Cadastro
+              </h2>
+
               <div className="grid gap-6 md:grid-cols-2">
                 <div>
                   <label className="block text-sm font-medium text-slate-400">
@@ -1519,11 +1531,15 @@ export function DashboardPreview({
                     Idioma Preferido
                   </label>
                   <div className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-white opacity-50">
-                    {cadastralInfo.preferred_language === 'pt' ? 'Português' :
-                     cadastralInfo.preferred_language === 'en' ? 'English' :
-                     cadastralInfo.preferred_language === 'es' ? 'Español' :
-                     cadastralInfo.preferred_language === 'fr' ? 'Français' :
-                     'Não informado'}
+                    {cadastralInfo.preferred_language === 'pt'
+                      ? 'Português'
+                      : cadastralInfo.preferred_language === 'en'
+                        ? 'English'
+                        : cadastralInfo.preferred_language === 'es'
+                          ? 'Español'
+                          : cadastralInfo.preferred_language === 'fr'
+                            ? 'Français'
+                            : 'Não informado'}
                   </div>
                 </div>
 
@@ -1532,8 +1548,10 @@ export function DashboardPreview({
                     Última vez online
                   </label>
                   <div className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-white opacity-50">
-                    {cadastralInfo.last_online 
-                      ? new Date(cadastralInfo.last_online).toLocaleString('pt-BR')
+                    {cadastralInfo.last_online
+                      ? new Date(cadastralInfo.last_online).toLocaleString(
+                          'pt-BR',
+                        )
                       : 'Agora'}
                   </div>
                 </div>
@@ -1543,15 +1561,18 @@ export function DashboardPreview({
                     Membro desde
                   </label>
                   <div className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-white opacity-50">
-                    {cadastralInfo.created_at 
-                      ? new Date(cadastralInfo.created_at).toLocaleDateString('pt-BR')
+                    {cadastralInfo.created_at
+                      ? new Date(cadastralInfo.created_at).toLocaleDateString(
+                          'pt-BR',
+                        )
                       : 'Não informado'}
                   </div>
                 </div>
               </div>
 
               <p className="mt-6 text-sm text-slate-500">
-                💡 Essas informações foram coletadas durante seu cadastro. Para atualizar, entre em contato com o suporte.
+                💡 Essas informações foram coletadas durante seu cadastro. Para
+                atualizar, entre em contato com o suporte.
               </p>
 
               {/* Zona de Perigo - Acordeão */}
@@ -1561,8 +1582,12 @@ export function DashboardPreview({
                   className="flex w-full items-center justify-between text-left"
                 >
                   <div>
-                    <h3 className="text-sm font-medium text-rose-300">Zona de Perigo</h3>
-                    <p className="text-xs text-slate-500 mt-1">Ações irreversíveis que afetam sua conta</p>
+                    <h3 className="text-sm font-medium text-rose-300">
+                      Zona de Perigo
+                    </h3>
+                    <p className="text-xs text-slate-500 mt-1">
+                      Ações irreversíveis que afetam sua conta
+                    </p>
                   </div>
                   <svg
                     className={`h-5 w-5 text-rose-300 transition-transform ${isDangerZoneOpen ? 'rotate-180' : ''}`}
@@ -1570,14 +1595,20 @@ export function DashboardPreview({
                     stroke="currentColor"
                     viewBox="0 0 24 24"
                   >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 9l-7 7-7-7"
+                    />
                   </svg>
                 </button>
 
                 {isDangerZoneOpen && (
                   <div className="mt-4 rounded-lg border border-rose-900/30 bg-rose-950/20 p-4">
                     <p className="text-sm text-slate-400 mb-4">
-                      As ações aqui realizadas são permanentes e não podem ser desfeitas.
+                      As ações aqui realizadas são permanentes e não podem ser
+                      desfeitas.
                     </p>
                     <button
                       onClick={() => setShowConfirmationModal(true)}
@@ -1597,18 +1628,25 @@ export function DashboardPreview({
       {showConfirmationModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
           <div className="mx-4 max-w-md rounded-lg border border-rose-900/50 bg-slate-900 p-6 shadow-2xl">
-            <h2 className="text-2xl font-bold text-rose-300">⚠️ Zona de Perigo</h2>
+            <h2 className="text-2xl font-bold text-rose-300">
+              ⚠️ Zona de Perigo
+            </h2>
             <p className="mt-4 text-slate-300">
-              Você está prestes a acessar a <strong className="text-rose-300">Zona de Perigo</strong>.
+              Você está prestes a acessar a{' '}
+              <strong className="text-rose-300">Zona de Perigo</strong>.
             </p>
             <p className="mt-2 text-sm text-slate-400">
-              As ações realizadas aqui são <strong className="text-rose-400">permanentes e irreversíveis</strong>. 
-              Tenha certeza absoluta antes de prosseguir.
+              As ações realizadas aqui são{' '}
+              <strong className="text-rose-400">
+                permanentes e irreversíveis
+              </strong>
+              . Tenha certeza absoluta antes de prosseguir.
             </p>
-            
+
             <div className="mt-6">
               <label className="block text-sm font-medium text-slate-400 mb-2">
-                Digite <strong className="text-rose-300">YES</strong> (em maiúsculas) para confirmar:
+                Digite <strong className="text-rose-300">YES</strong> (em
+                maiúsculas) para confirmar:
               </label>
               <input
                 type="text"
@@ -1656,27 +1694,38 @@ export function DashboardPreview({
       {showCancelModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
           <div className="mx-4 max-w-lg rounded-lg border border-rose-900/50 bg-slate-900 p-6 shadow-2xl">
-            <h2 className="text-2xl font-bold text-rose-400">🚨 Cancelar Assinatura</h2>
-            
+            <h2 className="text-2xl font-bold text-rose-400">
+              🚨 Cancelar Assinatura
+            </h2>
+
             <div className="mt-4 space-y-3">
               <p className="text-slate-300">
                 Tem certeza que deseja cancelar sua assinatura?
               </p>
-              
+
               <div className="rounded-lg border border-blue-900/50 bg-blue-950/30 p-4">
-                <p className="text-sm text-blue-300 font-semibold mb-2">💡 Considere antes de cancelar:</p>
+                <p className="text-sm text-blue-300 font-semibold mb-2">
+                  💡 Considere antes de cancelar:
+                </p>
                 <ul className="text-sm text-slate-400 space-y-1">
                   <li>• Você perderá acesso a todos os recursos premium</li>
-                  <li>• Seus dados e projetos serão mantidos por apenas 30 dias</li>
+                  <li>
+                    • Seus dados e projetos serão mantidos por apenas 30 dias
+                  </li>
                   <li>• Tokens não utilizados serão perdidos</li>
                   <li>• Esta ação não pode ser desfeita</li>
                 </ul>
               </div>
 
               <div className="rounded-lg border border-amber-900/50 bg-amber-950/30 p-4">
-                <p className="text-sm text-amber-300 font-semibold mb-2">✨ O que você está deixando para trás:</p>
+                <p className="text-sm text-amber-300 font-semibold mb-2">
+                  ✨ O que você está deixando para trás:
+                </p>
                 <ul className="text-sm text-slate-400 space-y-1">
-                  <li>• {subscription.tokens_limit.toLocaleString()} tokens por mês</li>
+                  <li>
+                    • {subscription.tokens_limit.toLocaleString()} tokens por
+                    mês
+                  </li>
                   <li>• Suporte prioritário</li>
                   <li>• Analytics avançado</li>
                   <li>• {userProducts.length} produto(s) ativo(s)</li>
@@ -1684,7 +1733,8 @@ export function DashboardPreview({
               </div>
 
               <p className="text-xs text-slate-500 italic">
-                💬 Que tal conversar com nosso suporte antes? Podemos ajudar com qualquer problema que esteja enfrentando.
+                💬 Que tal conversar com nosso suporte antes? Podemos ajudar com
+                qualquer problema que esteja enfrentando.
               </p>
             </div>
 
@@ -1697,7 +1747,9 @@ export function DashboardPreview({
               </button>
               <button
                 onClick={() => {
-                  alert('Cancelamento solicitado. Nossa equipe entrará em contato em breve.');
+                  alert(
+                    'Cancelamento solicitado. Nossa equipe entrará em contato em breve.',
+                  );
                   setShowCancelModal(false);
                   setIsDangerZoneOpen(false);
                 }}

@@ -1,5 +1,20 @@
-import { useState, useRef } from 'react';
-import { X, Type, Palette, Image as ImageIcon, Layout, Undo, Redo, Monitor, Tablet, Smartphone, Plus, Trash2, Save, Upload } from 'lucide-react';
+import {
+  Image as ImageIcon,
+  Layout,
+  Monitor,
+  Palette,
+  Plus,
+  Redo,
+  Save,
+  Smartphone,
+  Tablet,
+  Trash2,
+  Type,
+  Undo,
+  Upload,
+  X,
+} from 'lucide-react';
+import { useRef, useState } from 'react';
 import { EditableSiteTemplate } from '../features/myeasywebsite/EditableSiteTemplate';
 
 interface SiteEditorProps {
@@ -18,7 +33,9 @@ export function SiteEditor({ siteData, onUpdate, onClose }: SiteEditorProps) {
   const [historyIndex, setHistoryIndex] = useState(0);
   const [tempData, setTempData] = useState(siteData);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null);
+  const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(
+    null,
+  );
 
   // Parse cores
   let colors = {
@@ -26,7 +43,7 @@ export function SiteEditor({ siteData, onUpdate, onClose }: SiteEditorProps) {
     secondary: '#facc15',
     accent: '#f97316',
     dark: '#1a1a1a',
-    light: '#f5f5f5'
+    light: '#f5f5f5',
   };
 
   try {
@@ -57,7 +74,7 @@ export function SiteEditor({ siteData, onUpdate, onClose }: SiteEditorProps) {
       const previousData = history[newIndex];
       setTempData(previousData);
       onUpdate(previousData);
-      
+
       // Atualizar cores
       try {
         if (previousData.colors) {
@@ -76,7 +93,7 @@ export function SiteEditor({ siteData, onUpdate, onClose }: SiteEditorProps) {
       const nextData = history[newIndex];
       setTempData(nextData);
       onUpdate(nextData);
-      
+
       // Atualizar cores
       try {
         if (nextData.colors) {
@@ -105,18 +122,18 @@ export function SiteEditor({ siteData, onUpdate, onClose }: SiteEditorProps) {
   // Adicionar serviço
   const handleAddService = () => {
     const newService = 'Novo Serviço';
-    const updated = { 
-      ...tempData, 
-      services: [...(tempData.services || []), newService] 
+    const updated = {
+      ...tempData,
+      services: [...(tempData.services || []), newService],
     };
     updateData(updated);
   };
 
   // Remover serviço
   const handleRemoveService = (index: number) => {
-    const updated = { 
-      ...tempData, 
-      services: tempData.services.filter((_: any, i: number) => i !== index)
+    const updated = {
+      ...tempData,
+      services: tempData.services.filter((_: any, i: number) => i !== index),
     };
     updateData(updated);
   };
@@ -136,10 +153,10 @@ export function SiteEditor({ siteData, onUpdate, onClose }: SiteEditorProps) {
 
     const file = files[0];
     const reader = new FileReader();
-    
+
     reader.onloadend = () => {
       const imageUrl = reader.result as string;
-      
+
       if (selectedImageIndex !== null) {
         // Substituir imagem existente
         const newGallery = [...(tempData.gallery || [])];
@@ -149,20 +166,22 @@ export function SiteEditor({ siteData, onUpdate, onClose }: SiteEditorProps) {
         setSelectedImageIndex(null);
       } else {
         // Adicionar nova imagem
-        const updated = { 
-          ...tempData, 
-          gallery: [...(tempData.gallery || []), imageUrl] 
+        const updated = {
+          ...tempData,
+          gallery: [...(tempData.gallery || []), imageUrl],
         };
         updateData(updated);
       }
     };
-    
+
     reader.readAsDataURL(file);
   };
 
   // Remover imagem
   const handleRemoveImage = (index: number) => {
-    const newGallery = tempData.gallery.filter((_: any, i: number) => i !== index);
+    const newGallery = tempData.gallery.filter(
+      (_: any, i: number) => i !== index,
+    );
     const updated = { ...tempData, gallery: newGallery };
     updateData(updated);
   };
@@ -171,7 +190,7 @@ export function SiteEditor({ siteData, onUpdate, onClose }: SiteEditorProps) {
   const handleToggleSection = (section: string) => {
     const currentSections = tempData.sections || [];
     const sectionIndex = currentSections.indexOf(section);
-    
+
     if (sectionIndex > -1) {
       // Remover seção
       const newSections = currentSections.filter((s: string) => s !== section);
@@ -222,44 +241,46 @@ export function SiteEditor({ siteData, onUpdate, onClose }: SiteEditorProps) {
         <button
           onClick={() => setEditMode(editMode === 'text' ? null : 'text')}
           className={`p-3 rounded-lg transition-colors ${
-            editMode === 'text' 
-              ? 'bg-purple-600 text-white' 
+            editMode === 'text'
+              ? 'bg-purple-600 text-white'
               : 'text-slate-400 hover:text-white hover:bg-slate-800'
           }`}
           title="Editar Textos"
         >
           <Type className="h-6 w-6" />
         </button>
-        
+
         <button
           onClick={() => setEditMode(editMode === 'colors' ? null : 'colors')}
           className={`p-3 rounded-lg transition-colors ${
-            editMode === 'colors' 
-              ? 'bg-purple-600 text-white' 
+            editMode === 'colors'
+              ? 'bg-purple-600 text-white'
               : 'text-slate-400 hover:text-white hover:bg-slate-800'
           }`}
           title="Editar Cores"
         >
           <Palette className="h-6 w-6" />
         </button>
-        
+
         <button
           onClick={() => setEditMode(editMode === 'images' ? null : 'images')}
           className={`p-3 rounded-lg transition-colors ${
-            editMode === 'images' 
-              ? 'bg-purple-600 text-white' 
+            editMode === 'images'
+              ? 'bg-purple-600 text-white'
               : 'text-slate-400 hover:text-white hover:bg-slate-800'
           }`}
           title="Editar Imagens"
         >
           <ImageIcon className="h-6 w-6" />
         </button>
-        
+
         <button
-          onClick={() => setEditMode(editMode === 'sections' ? null : 'sections')}
+          onClick={() =>
+            setEditMode(editMode === 'sections' ? null : 'sections')
+          }
           className={`p-3 rounded-lg transition-colors ${
-            editMode === 'sections' 
-              ? 'bg-purple-600 text-white' 
+            editMode === 'sections'
+              ? 'bg-purple-600 text-white'
               : 'text-slate-400 hover:text-white hover:bg-slate-800'
           }`}
           title="Gerenciar Seções"
@@ -301,10 +322,30 @@ export function SiteEditor({ siteData, onUpdate, onClose }: SiteEditorProps) {
         <div className="w-80 bg-slate-900 border-r border-slate-800 overflow-y-auto">
           <div className="p-6">
             <h3 className="text-lg font-bold text-white mb-6 flex items-center space-x-2">
-              {editMode === 'text' && <><Type className="h-5 w-5" /><span>Editar Textos</span></>}
-              {editMode === 'colors' && <><Palette className="h-5 w-5" /><span>Editar Cores</span></>}
-              {editMode === 'images' && <><ImageIcon className="h-5 w-5" /><span>Editar Imagens</span></>}
-              {editMode === 'sections' && <><Layout className="h-5 w-5" /><span>Gerenciar Seções</span></>}
+              {editMode === 'text' && (
+                <>
+                  <Type className="h-5 w-5" />
+                  <span>Editar Textos</span>
+                </>
+              )}
+              {editMode === 'colors' && (
+                <>
+                  <Palette className="h-5 w-5" />
+                  <span>Editar Cores</span>
+                </>
+              )}
+              {editMode === 'images' && (
+                <>
+                  <ImageIcon className="h-5 w-5" />
+                  <span>Editar Imagens</span>
+                </>
+              )}
+              {editMode === 'sections' && (
+                <>
+                  <Layout className="h-5 w-5" />
+                  <span>Gerenciar Seções</span>
+                </>
+              )}
             </h3>
 
             {/* TEXT EDIT MODE */}
@@ -340,7 +381,9 @@ export function SiteEditor({ siteData, onUpdate, onClose }: SiteEditorProps) {
                   </label>
                   <textarea
                     value={tempData.description}
-                    onChange={(e) => handleTextUpdate('description', e.target.value)}
+                    onChange={(e) =>
+                      handleTextUpdate('description', e.target.value)
+                    }
                     rows={4}
                     className="w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-white focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
                   />
@@ -361,23 +404,30 @@ export function SiteEditor({ siteData, onUpdate, onClose }: SiteEditorProps) {
                       </button>
                     </div>
                     <div className="space-y-2">
-                      {(tempData.services || []).map((service: string, index: number) => (
-                        <div key={index} className="flex items-center space-x-2">
-                          <input
-                            type="text"
-                            value={service}
-                            onChange={(e) => handleServiceUpdate(index, e.target.value)}
-                            className="flex-1 rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:border-purple-500 focus:outline-none focus:ring-1 focus:ring-purple-500"
-                          />
-                          <button
-                            onClick={() => handleRemoveService(index)}
-                            className="p-2 text-red-400 hover:text-red-300 transition-colors"
-                            title="Remover"
+                      {(tempData.services || []).map(
+                        (service: string, index: number) => (
+                          <div
+                            key={index}
+                            className="flex items-center space-x-2"
                           >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        </div>
-                      ))}
+                            <input
+                              type="text"
+                              value={service}
+                              onChange={(e) =>
+                                handleServiceUpdate(index, e.target.value)
+                              }
+                              className="flex-1 rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:border-purple-500 focus:outline-none focus:ring-1 focus:ring-purple-500"
+                            />
+                            <button
+                              onClick={() => handleRemoveService(index)}
+                              className="p-2 text-red-400 hover:text-red-300 transition-colors"
+                              title="Remover"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
+                        ),
+                      )}
                     </div>
                   </div>
                 )}
@@ -391,7 +441,9 @@ export function SiteEditor({ siteData, onUpdate, onClose }: SiteEditorProps) {
                       <input
                         type="text"
                         value={tempData.address || ''}
-                        onChange={(e) => handleTextUpdate('address', e.target.value)}
+                        onChange={(e) =>
+                          handleTextUpdate('address', e.target.value)
+                        }
                         className="w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-white focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
                       />
                     </div>
@@ -403,7 +455,9 @@ export function SiteEditor({ siteData, onUpdate, onClose }: SiteEditorProps) {
                       <input
                         type="text"
                         value={tempData.phone || ''}
-                        onChange={(e) => handleTextUpdate('phone', e.target.value)}
+                        onChange={(e) =>
+                          handleTextUpdate('phone', e.target.value)
+                        }
                         className="w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-white focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
                       />
                     </div>
@@ -415,7 +469,9 @@ export function SiteEditor({ siteData, onUpdate, onClose }: SiteEditorProps) {
                       <input
                         type="email"
                         value={tempData.email || ''}
-                        onChange={(e) => handleTextUpdate('email', e.target.value)}
+                        onChange={(e) =>
+                          handleTextUpdate('email', e.target.value)
+                        }
                         className="w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-white focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
                       />
                     </div>
@@ -435,13 +491,17 @@ export function SiteEditor({ siteData, onUpdate, onClose }: SiteEditorProps) {
                     <input
                       type="color"
                       value={selectedColors.primary}
-                      onChange={(e) => handleColorUpdate('primary', e.target.value)}
+                      onChange={(e) =>
+                        handleColorUpdate('primary', e.target.value)
+                      }
                       className="h-12 w-12 rounded-lg cursor-pointer border-2 border-slate-700"
                     />
                     <input
                       type="text"
                       value={selectedColors.primary}
-                      onChange={(e) => handleColorUpdate('primary', e.target.value)}
+                      onChange={(e) =>
+                        handleColorUpdate('primary', e.target.value)
+                      }
                       className="flex-1 rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-white focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500 font-mono text-sm"
                     />
                   </div>
@@ -455,13 +515,17 @@ export function SiteEditor({ siteData, onUpdate, onClose }: SiteEditorProps) {
                     <input
                       type="color"
                       value={selectedColors.secondary}
-                      onChange={(e) => handleColorUpdate('secondary', e.target.value)}
+                      onChange={(e) =>
+                        handleColorUpdate('secondary', e.target.value)
+                      }
                       className="h-12 w-12 rounded-lg cursor-pointer border-2 border-slate-700"
                     />
                     <input
                       type="text"
                       value={selectedColors.secondary}
-                      onChange={(e) => handleColorUpdate('secondary', e.target.value)}
+                      onChange={(e) =>
+                        handleColorUpdate('secondary', e.target.value)
+                      }
                       className="flex-1 rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-white focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500 font-mono text-sm"
                     />
                   </div>
@@ -475,13 +539,17 @@ export function SiteEditor({ siteData, onUpdate, onClose }: SiteEditorProps) {
                     <input
                       type="color"
                       value={selectedColors.accent}
-                      onChange={(e) => handleColorUpdate('accent', e.target.value)}
+                      onChange={(e) =>
+                        handleColorUpdate('accent', e.target.value)
+                      }
                       className="h-12 w-12 rounded-lg cursor-pointer border-2 border-slate-700"
                     />
                     <input
                       type="text"
                       value={selectedColors.accent}
-                      onChange={(e) => handleColorUpdate('accent', e.target.value)}
+                      onChange={(e) =>
+                        handleColorUpdate('accent', e.target.value)
+                      }
                       className="flex-1 rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-white focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500 font-mono text-sm"
                     />
                   </div>
@@ -495,13 +563,17 @@ export function SiteEditor({ siteData, onUpdate, onClose }: SiteEditorProps) {
                     <input
                       type="color"
                       value={selectedColors.dark}
-                      onChange={(e) => handleColorUpdate('dark', e.target.value)}
+                      onChange={(e) =>
+                        handleColorUpdate('dark', e.target.value)
+                      }
                       className="h-12 w-12 rounded-lg cursor-pointer border-2 border-slate-700"
                     />
                     <input
                       type="text"
                       value={selectedColors.dark}
-                      onChange={(e) => handleColorUpdate('dark', e.target.value)}
+                      onChange={(e) =>
+                        handleColorUpdate('dark', e.target.value)
+                      }
                       className="flex-1 rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-white focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500 font-mono text-sm"
                     />
                   </div>
@@ -515,13 +587,17 @@ export function SiteEditor({ siteData, onUpdate, onClose }: SiteEditorProps) {
                     <input
                       type="color"
                       value={selectedColors.light}
-                      onChange={(e) => handleColorUpdate('light', e.target.value)}
+                      onChange={(e) =>
+                        handleColorUpdate('light', e.target.value)
+                      }
                       className="h-12 w-12 rounded-lg cursor-pointer border-2 border-slate-700"
                     />
                     <input
                       type="text"
                       value={selectedColors.light}
-                      onChange={(e) => handleColorUpdate('light', e.target.value)}
+                      onChange={(e) =>
+                        handleColorUpdate('light', e.target.value)
+                      }
                       className="flex-1 rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-white focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500 font-mono text-sm"
                     />
                   </div>
@@ -567,10 +643,10 @@ export function SiteEditor({ siteData, onUpdate, onClose }: SiteEditorProps) {
                     <div className="grid grid-cols-2 gap-3">
                       {tempData.gallery.map((img: string, idx: number) => (
                         <div key={idx} className="relative group">
-                          <img 
-                            src={img} 
-                            alt={`Galeria ${idx + 1}`} 
-                            className="w-full h-32 object-cover rounded-lg border border-slate-700" 
+                          <img
+                            src={img}
+                            alt={`Galeria ${idx + 1}`}
+                            className="w-full h-32 object-cover rounded-lg border border-slate-700"
                           />
                           <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center space-x-2">
                             <button
@@ -597,7 +673,9 @@ export function SiteEditor({ siteData, onUpdate, onClose }: SiteEditorProps) {
                   ) : (
                     <div className="text-center py-12 border-2 border-dashed border-slate-700 rounded-lg">
                       <ImageIcon className="h-12 w-12 text-slate-600 mx-auto mb-3" />
-                      <p className="text-sm text-slate-400 mb-3">Nenhuma imagem adicionada</p>
+                      <p className="text-sm text-slate-400 mb-3">
+                        Nenhuma imagem adicionada
+                      </p>
                       <button
                         onClick={() => fileInputRef.current?.click()}
                         className="px-4 py-2 bg-purple-600 text-white rounded-lg text-sm hover:bg-purple-700 transition-colors"
@@ -610,7 +688,8 @@ export function SiteEditor({ siteData, onUpdate, onClose }: SiteEditorProps) {
 
                 <div className="pt-4 border-t border-slate-800">
                   <p className="text-xs text-slate-400">
-                    💡 Clique em "Substituir" para trocar uma imagem ou "Remover" para excluí-la
+                    💡 Clique em "Substituir" para trocar uma imagem ou
+                    "Remover" para excluí-la
                   </p>
                 </div>
               </div>
@@ -640,12 +719,16 @@ export function SiteEditor({ siteData, onUpdate, onClose }: SiteEditorProps) {
                           <span className="text-2xl">{section.icon}</span>
                           <span className="font-medium">{section.label}</span>
                         </div>
-                        <div className={`w-12 h-6 rounded-full transition-colors ${
-                          isActive ? 'bg-purple-600' : 'bg-slate-700'
-                        }`}>
-                          <div className={`w-5 h-5 rounded-full bg-white transition-transform mt-0.5 ${
-                            isActive ? 'ml-6' : 'ml-0.5'
-                          }`} />
+                        <div
+                          className={`w-12 h-6 rounded-full transition-colors ${
+                            isActive ? 'bg-purple-600' : 'bg-slate-700'
+                          }`}
+                        >
+                          <div
+                            className={`w-5 h-5 rounded-full bg-white transition-transform mt-0.5 ${
+                              isActive ? 'ml-6' : 'ml-0.5'
+                            }`}
+                          />
                         </div>
                       </button>
                     );
@@ -708,7 +791,8 @@ export function SiteEditor({ siteData, onUpdate, onClose }: SiteEditorProps) {
 
           <div className="flex items-center space-x-3">
             <div className="text-sm text-slate-400">
-              {historyIndex > 0 && `${historyIndex} alteração${historyIndex > 1 ? 'ões' : ''}`}
+              {historyIndex > 0 &&
+                `${historyIndex} alteração${historyIndex > 1 ? 'ões' : ''}`}
             </div>
 
             <button
@@ -723,8 +807,15 @@ export function SiteEditor({ siteData, onUpdate, onClose }: SiteEditorProps) {
 
         {/* Preview Area */}
         <div className="flex-1 overflow-auto p-8 flex justify-center bg-slate-900">
-          <div className={`${getViewportDimensions().width} transition-all duration-300 shadow-2xl origin-top`} style={{ transform: getViewportDimensions().scale }}>
-            <EditableSiteTemplate siteData={tempData} onUpdate={updateData} viewportMode={viewportMode} />
+          <div
+            className={`${getViewportDimensions().width} transition-all duration-300 shadow-2xl origin-top`}
+            style={{ transform: getViewportDimensions().scale }}
+          >
+            <EditableSiteTemplate
+              siteData={tempData}
+              onUpdate={updateData}
+              viewportMode={viewportMode}
+            />
           </div>
         </div>
       </div>

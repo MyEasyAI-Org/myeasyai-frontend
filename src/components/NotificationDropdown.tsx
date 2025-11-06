@@ -1,4 +1,4 @@
-import { Sparkles, User, CheckCheck } from 'lucide-react';
+import { CheckCheck, Sparkles, User } from 'lucide-react';
 import type { Notification } from '../types/notification';
 
 type NotificationDropdownProps = {
@@ -47,7 +47,7 @@ export default function NotificationDropdown({
   onMarkAllAsRead,
   onViewAll,
 }: NotificationDropdownProps) {
-  const hasUnread = notifications.some(n => !n.isRead);
+  const hasUnread = notifications.some((n) => !n.isRead);
 
   return (
     <div className="absolute right-0 top-[52px] w-80 origin-top-right animate-in fade-in slide-in-from-top-2 duration-200 rounded-xl border border-slate-700 bg-slate-800/99 backdrop-blur-xl shadow-2xl shadow-black/50">
@@ -73,7 +73,9 @@ export default function NotificationDropdown({
             <div className="rounded-full bg-slate-700/50 p-4">
               <Sparkles className="h-8 w-8 text-slate-500" />
             </div>
-            <p className="text-sm font-medium text-slate-400">Nenhuma notificação</p>
+            <p className="text-sm font-medium text-slate-400">
+              Nenhuma notificação
+            </p>
             <p className="text-xs text-slate-500">Você está em dia!</p>
           </div>
         ) : (

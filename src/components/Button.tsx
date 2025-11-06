@@ -1,6 +1,12 @@
 import type { ReactNode } from 'react';
 
-type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'log' | 'nav' | 'ghostNav';
+type ButtonVariant =
+  | 'primary'
+  | 'secondary'
+  | 'outline'
+  | 'log'
+  | 'nav'
+  | 'ghostNav';
 
 type ButtonProps = {
   children: ReactNode;
@@ -53,5 +59,3 @@ export function Button({
     </button>
   );
 }
-
-// comentário para commit

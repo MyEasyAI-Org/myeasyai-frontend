@@ -1,3 +1,5 @@
+import { useState } from 'react';
+import type { SubscriptionPlan } from '../constants/plans';
 import {
   signInWithFacebook,
   signInWithGoogle,
@@ -5,9 +7,6 @@ import {
 } from '../lib/supabase';
 import { Button } from './Button';
 import { Modal } from './Modal';
-import { useState } from 'react';
-
-type SubscriptionPlan = 'free' | 'basic' | 'pro' | 'enterprise';
 
 type SignupModalProps = {
   isOpen: boolean;
@@ -45,17 +44,22 @@ export function SignupModal({
     }
 
     try {
-      const { error } = await signUpWithEmail(email, password, fullName, preferredName);
+      const { error } = await signUpWithEmail(
+        email,
+        password,
+        fullName,
+        preferredName,
+      );
       if (error) {
         alert(`Erro ao criar conta: ${error.message}`);
         return;
       }
-      
+
       // Se há um plano selecionado, salvar para vincular depois do login
       if (selectedPlan) {
         localStorage.setItem('selectedPlan', selectedPlan);
       }
-      
+
       alert('Conta criada com sucesso! Verifique seu email para confirmar.');
       // O modal será fechado automaticamente pelo listener de auth no App.tsx
     } catch (error) {
@@ -111,18 +115,18 @@ export function SignupModal({
         free: 'Plano Free',
         basic: 'Plano Basic',
         pro: 'Plano Pro',
-        enterprise: 'Plano Enterprise'
+        enterprise: 'Plano Enterprise',
       };
       return `Cadastre-se no ${planNames[selectedPlan]}`;
     }
-    return "Chega mais!";
+    return 'Chega mais!';
   };
 
   const getModalDescription = () => {
     if (selectedPlan) {
       return `Crie sua conta para começar a usar o ${selectedPlan.toUpperCase()} e aproveitar todos os benefícios.`;
     }
-    return "Conta nova, possibilidades infinitas. Comece a criar seus assistentes em minutos.";
+    return 'Conta nova, possibilidades infinitas. Comece a criar seus assistentes em minutos.';
   };
 
   return (
@@ -157,7 +161,9 @@ export function SignupModal({
             placeholder="Ex: João, Joãozinho, JJ..."
             className="w-full rounded-lg border border-slate-700 bg-slate-800/60 px-4 py-3 text-slate-100 placeholder-slate-500 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/40"
           />
-          <span className="text-xs text-slate-500 mt-1">Escreva um nome amigável para usarmos com você 😊</span>
+          <span className="text-xs text-slate-500 mt-1">
+            Escreva um nome amigável para usarmos com você 😊
+          </span>
         </label>
 
         <label className="block text-left">
@@ -219,9 +225,25 @@ export function SignupModal({
           >
             {isGoogleLoading ? (
               <>
-                <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                <svg
+                  className="animate-spin h-5 w-5"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  ></circle>
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  ></path>
                 </svg>
                 <span className="font-medium">Conectando...</span>
               </>
@@ -267,9 +289,25 @@ export function SignupModal({
           >
             {isFacebookLoading ? (
               <>
-                <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                <svg
+                  className="animate-spin h-5 w-5"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  ></circle>
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  ></path>
                 </svg>
                 <span className="font-medium">Conectando...</span>
               </>

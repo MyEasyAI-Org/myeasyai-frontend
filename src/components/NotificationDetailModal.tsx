@@ -1,4 +1,4 @@
-import { X, Sparkles, User } from 'lucide-react';
+import { Sparkles, User, X } from 'lucide-react';
 import type { Notification } from '../types/notification';
 
 type NotificationDetailModalProps = {

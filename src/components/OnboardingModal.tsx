@@ -1,9 +1,9 @@
-import { useState, useEffect, useRef } from 'react';
-import { Modal } from './Modal';
-import { supabase } from '../lib/supabase';
 import type { User } from '@supabase/supabase-js';
 import * as flags from 'country-flag-icons/react/3x2';
+import { useEffect, useRef, useState } from 'react';
 import { COUNTRIES, getCountryConfig } from '../constants/countries';
+import { supabase } from '../lib/supabase';
+import { Modal } from './Modal';
 
 type OnboardingModalProps = {
   isOpen: boolean;
@@ -30,7 +30,13 @@ type FormData = {
 };
 
 // Helper para renderizar bandeiras SVG
-const FlagIcon = ({ countryCode, className = "w-6 h-4" }: { countryCode: string; className?: string }) => {
+const FlagIcon = ({
+  countryCode,
+  className = 'w-6 h-4',
+}: {
+  countryCode: string;
+  className?: string;
+}) => {
   const Flag = flags[countryCode as keyof typeof flags];
   if (!Flag) return null;
   return <Flag className={className} />;
@@ -40,33 +46,38 @@ const steps = [
   {
     id: 'personal',
     title: 'Dados Pessoais',
-    description: 'Vamos começar com suas informações básicas'
+    description: 'Vamos começar com suas informações básicas',
   },
   {
     id: 'contact',
     title: 'Contato',
-    description: 'Como podemos entrar em contato com você?'
+    description: 'Como podemos entrar em contato com você?',
   },
   {
     id: 'location',
     title: 'Localização',
-    description: 'Onde você está localizado?'
+    description: 'Onde você está localizado?',
   },
   {
     id: 'preferences',
     title: 'Preferências',
-    description: 'Personalize sua experiência'
-  }
+    description: 'Personalize sua experiência',
+  },
 ];
 
-export function OnboardingModal({ isOpen, onClose, onComplete, user }: OnboardingModalProps) {
+export function OnboardingModal({
+  isOpen,
+  onClose,
+  onComplete,
+  user,
+}: OnboardingModalProps) {
   const [currentStep, setCurrentStep] = useState(0);
   const [formData, setFormData] = useState<FormData>({
     name: '',
     preferred_name: '',
     country_code: 'BR',
     country: 'BR',
-    preferred_language: 'pt'
+    preferred_language: 'pt',
   });
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Partial<FormData>>({});
@@ -77,9 +88,12 @@ export function OnboardingModal({ isOpen, onClose, onComplete, user }: Onboardin
   const [locationSearch, setLocationSearch] = useState('');
   const [languageSearch, setLanguageSearch] = useState('');
   const [isLoadingAddress, setIsLoadingAddress] = useState(false);
-  const [isClosingCountryDropdown, setIsClosingCountryDropdown] = useState(false);
-  const [isClosingLocationDropdown, setIsClosingLocationDropdown] = useState(false);
-  const [isClosingLanguageDropdown, setIsClosingLanguageDropdown] = useState(false);
+  const [isClosingCountryDropdown, setIsClosingCountryDropdown] =
+    useState(false);
+  const [isClosingLocationDropdown, setIsClosingLocationDropdown] =
+    useState(false);
+  const [isClosingLanguageDropdown, setIsClosingLanguageDropdown] =
+    useState(false);
 
   const countryDropdownRef = useRef<HTMLDivElement>(null);
   const locationDropdownRef = useRef<HTMLDivElement>(null);
@@ -88,7 +102,7 @@ export function OnboardingModal({ isOpen, onClose, onComplete, user }: Onboardin
   // Função para capitalizar nomes
   const capitalizeName = (name: string): string => {
     const lowercaseWords = ['de', 'da', 'do', 'dos', 'das', 'e'];
-    
+
     return name
       .toLowerCase()
       .split(' ')
@@ -108,11 +122,15 @@ export function OnboardingModal({ isOpen, onClose, onComplete, user }: Onboardin
 
     const numbers = phone.replace(/\D/g, '');
     const limitedNumbers = numbers.slice(0, country.phoneLength);
-    
+
     let formatted = '';
     let numberIndex = 0;
-    
-    for (let i = 0; i < country.phoneFormat.length && numberIndex < limitedNumbers.length; i++) {
+
+    for (
+      let i = 0;
+      i < country.phoneFormat.length && numberIndex < limitedNumbers.length;
+      i++
+    ) {
       if (country.phoneFormat[i] === '#') {
         formatted += limitedNumbers[numberIndex];
         numberIndex++;
@@ -120,7 +138,7 @@ export function OnboardingModal({ isOpen, onClose, onComplete, user }: Onboardin
         formatted += country.phoneFormat[i];
       }
     }
-    
+
     return formatted;
   };
 
@@ -131,11 +149,13 @@ export function OnboardingModal({ isOpen, onClose, onComplete, user }: Onboardin
 
     setIsLoadingAddress(true);
     try {
-      const response = await fetch(`https://viacep.com.br/ws/${cleanCep}/json/`);
+      const response = await fetch(
+        `https://viacep.com.br/ws/${cleanCep}/json/`,
+      );
       const data = await response.json();
 
       if (!data.erro) {
-        setFormData(prev => ({
+        setFormData((prev) => ({
           ...prev,
           street: data.logradouro || '',
           neighborhood: data.bairro || '',
@@ -153,7 +173,7 @@ export function OnboardingModal({ isOpen, onClose, onComplete, user }: Onboardin
   // Handler para mudança de CEP/Postal Code
   const handlePostalCodeChange = async (value: string) => {
     const cleanValue = value.replace(/\D/g, '');
-    setFormData(prev => ({ ...prev, postal_code: cleanValue }));
+    setFormData((prev) => ({ ...prev, postal_code: cleanValue }));
 
     // Se for Brasil e tiver 8 dígitos, buscar endereço
     if (formData.country === 'BR' && cleanValue.length === 8) {
@@ -164,34 +184,34 @@ export function OnboardingModal({ isOpen, onClose, onComplete, user }: Onboardin
   // Handler para mudança de nome com capitalização automática
   const handleNameChange = (value: string) => {
     const capitalizedName = capitalizeName(value);
-    setFormData(prev => ({ ...prev, name: capitalizedName }));
+    setFormData((prev) => ({ ...prev, name: capitalizedName }));
     if (value.trim().split(' ').length < 2) {
-      setErrors(prev => ({ ...prev, name: 'Digite nome e sobrenome' }));
+      setErrors((prev) => ({ ...prev, name: 'Digite nome e sobrenome' }));
     } else {
-      setErrors(prev => ({ ...prev, name: undefined }));
+      setErrors((prev) => ({ ...prev, name: undefined }));
     }
   };
 
   // Handler para mudança de telefone com formatação automática
   const handlePhoneChange = (value: string) => {
     const formatted = formatPhone(value, formData.country_code || 'BR');
-    setFormData(prev => ({ ...prev, mobile_phone: formatted }));
-    
+    setFormData((prev) => ({ ...prev, mobile_phone: formatted }));
+
     const country = getCountryConfig(formData.country_code || 'BR');
     const numbers = value.replace(/\D/g, '');
     if (country && numbers.length < country.phoneLength) {
-      setErrors(prev => ({ ...prev, mobile_phone: 'Telefone incompleto' }));
+      setErrors((prev) => ({ ...prev, mobile_phone: 'Telefone incompleto' }));
     } else {
-      setErrors(prev => ({ ...prev, mobile_phone: undefined }));
+      setErrors((prev) => ({ ...prev, mobile_phone: undefined }));
     }
   };
 
   // Handler para mudança de país (código de telefone)
   const handleCountryCodeChange = (countryCode: string) => {
-    setFormData(prev => ({ 
-      ...prev, 
+    setFormData((prev) => ({
+      ...prev,
       country_code: countryCode,
-      mobile_phone: ''
+      mobile_phone: '',
     }));
     setIsClosingCountryDropdown(true);
     setTimeout(() => {
@@ -203,8 +223,8 @@ export function OnboardingModal({ isOpen, onClose, onComplete, user }: Onboardin
 
   // Handler para mudança de país (localização)
   const handleLocationCountryChange = (countryCode: string) => {
-    setFormData(prev => ({ 
-      ...prev, 
+    setFormData((prev) => ({
+      ...prev,
       country: countryCode,
       postal_code: '',
       street: '',
@@ -222,14 +242,15 @@ export function OnboardingModal({ isOpen, onClose, onComplete, user }: Onboardin
   };
 
   // Filtrar países para dropdown de telefone
-  const filteredPhoneCountries = COUNTRIES.filter(country =>
-    country.name.toLowerCase().includes(countrySearch.toLowerCase()) ||
-    country.dial.includes(countrySearch)
+  const filteredPhoneCountries = COUNTRIES.filter(
+    (country) =>
+      country.name.toLowerCase().includes(countrySearch.toLowerCase()) ||
+      country.dial.includes(countrySearch),
   );
 
   // Filtrar países para dropdown de localização
-  const filteredLocationCountries = COUNTRIES.filter(country =>
-    country.name.toLowerCase().includes(locationSearch.toLowerCase())
+  const filteredLocationCountries = COUNTRIES.filter((country) =>
+    country.name.toLowerCase().includes(locationSearch.toLowerCase()),
   );
 
   // Idiomas disponíveis
@@ -241,13 +262,13 @@ export function OnboardingModal({ isOpen, onClose, onComplete, user }: Onboardin
   ];
 
   // Filtrar idiomas
-  const filteredLanguages = languages.filter(lang =>
-    lang.name.toLowerCase().includes(languageSearch.toLowerCase())
+  const filteredLanguages = languages.filter((lang) =>
+    lang.name.toLowerCase().includes(languageSearch.toLowerCase()),
   );
 
   // Handler para mudança de idioma
   const handleLanguageChange = (languageCode: string) => {
-    setFormData(prev => ({ ...prev, preferred_language: languageCode }));
+    setFormData((prev) => ({ ...prev, preferred_language: languageCode }));
     setIsClosingLanguageDropdown(true);
     setTimeout(() => {
       setShowLanguageDropdown(false);
@@ -260,26 +281,49 @@ export function OnboardingModal({ isOpen, onClose, onComplete, user }: Onboardin
   const canProceed = (): boolean => {
     switch (currentStep) {
       case 0: // Dados Pessoais
-        return !!(formData.name && formData.name.trim().split(' ').length >= 2 && !errors.name);
-      case 1: // Contato
+        return !!(
+          formData.name &&
+          formData.name.trim().split(' ').length >= 2 &&
+          !errors.name
+        );
+      case 1: {
+        // Contato
         const country = getCountryConfig(formData.country_code || 'BR');
         const numbers = (formData.mobile_phone || '').replace(/\D/g, '');
-        return !!(country && numbers.length === country.phoneLength && !errors.mobile_phone);
-      case 2: // Localização
+        return !!(
+          country &&
+          numbers.length === country.phoneLength &&
+          !errors.mobile_phone
+        );
+      }
+      case 2: {
+        // Localização
         const locationCountry = getCountryConfig(formData.country || 'BR');
         if (!locationCountry) return false;
-        
+
         // Validar campos obrigatórios baseados no país
         const hasPostalCode = !!formData.postal_code;
         const hasStreet = !!formData.street;
         const hasNumber = !!formData.number;
         const hasCity = !!formData.city;
-        const hasNeighborhood = locationCountry.addressFields.neighborhoodLabel ? !!formData.neighborhood : true;
-        const hasState = locationCountry.addressFields.stateLabel ? !!formData.state : true;
-        
-        return hasPostalCode && hasStreet && hasNumber && hasCity && hasNeighborhood && hasState;
+        const hasNeighborhood = locationCountry.addressFields.neighborhoodLabel
+          ? !!formData.neighborhood
+          : true;
+        const hasState = locationCountry.addressFields.stateLabel
+          ? !!formData.state
+          : true;
+
+        return (
+          hasPostalCode &&
+          hasStreet &&
+          hasNumber &&
+          hasCity &&
+          hasNeighborhood &&
+          hasState
+        );
+      }
       case 3: // Preferências
-        return !!(formData.preferred_language);
+        return !!formData.preferred_language;
       default:
         return true;
     }
@@ -307,25 +351,33 @@ export function OnboardingModal({ isOpen, onClose, onComplete, user }: Onboardin
       formData.complement,
       formData.neighborhood,
       formData.city,
-      formData.state
-    ].filter(Boolean).join(', ');
+      formData.state,
+    ]
+      .filter(Boolean)
+      .join(', ');
 
     setLoading(true);
     try {
       const country = getCountryConfig(formData.country_code || 'BR');
-      const fullPhoneNumber = country ? `${country.dial} ${formData.mobile_phone}` : formData.mobile_phone;
+      const fullPhoneNumber = country
+        ? `${country.dial} ${formData.mobile_phone}`
+        : formData.mobile_phone;
 
       const { error } = await supabase
         .from('users')
         .update({
           name: formData.name || 'Usuário',
           preferred_name: formData.preferred_name || null,
-          mobile_phone: fullPhoneNumber ? parseInt(fullPhoneNumber.replace(/\D/g, '')) : null,
+          mobile_phone: fullPhoneNumber
+            ? parseInt(fullPhoneNumber.replace(/\D/g, ''))
+            : null,
           country: formData.country,
-          postal_code: formData.postal_code ? parseInt(formData.postal_code) : null,
+          postal_code: formData.postal_code
+            ? parseInt(formData.postal_code)
+            : null,
           address: fullAddress,
           preferred_language: formData.preferred_language || 'pt',
-          last_online: new Date().toISOString()
+          last_online: new Date().toISOString(),
         })
         .eq('email', user.email);
 
@@ -372,17 +424,26 @@ export function OnboardingModal({ isOpen, onClose, onComplete, user }: Onboardin
               <input
                 type="text"
                 value={formData.preferred_name || ''}
-                onChange={(e) => setFormData(prev => ({ ...prev, preferred_name: e.target.value }))}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    preferred_name: e.target.value,
+                  }))
+                }
                 placeholder="Ex: João, Joãozinho, JJ..."
                 className="w-full rounded-lg border border-slate-700 bg-slate-800/60 px-4 py-3 text-slate-100 placeholder-slate-500 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/40"
               />
-              <span className="text-xs text-slate-500 mt-1">Escreva um nome amigável para usarmos com você 😊</span>
+              <span className="text-xs text-slate-500 mt-1">
+                Escreva um nome amigável para usarmos com você 😊
+              </span>
             </label>
           </div>
         );
 
-      case 1: // Contato
-        const selectedCountry = getCountryConfig(formData.country_code || 'BR') || COUNTRIES[0];
+      case 1: {
+        // Contato
+        const selectedCountry =
+          getCountryConfig(formData.country_code || 'BR') || COUNTRIES[0];
         return (
           <div className="space-y-4">
             <label className="block text-left">
@@ -400,15 +461,32 @@ export function OnboardingModal({ isOpen, onClose, onComplete, user }: Onboardin
                     }}
                     className="flex items-center gap-2 px-3 py-3 rounded-lg border border-slate-700 bg-slate-800/60 hover:bg-slate-700/60 transition-colors"
                   >
-                    <FlagIcon countryCode={selectedCountry.code} className="w-6 h-4" />
-                    <span className="text-slate-100">{selectedCountry.dial}</span>
-                    <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    <FlagIcon
+                      countryCode={selectedCountry.code}
+                      className="w-6 h-4"
+                    />
+                    <span className="text-slate-100">
+                      {selectedCountry.dial}
+                    </span>
+                    <svg
+                      className="w-4 h-4 text-slate-400"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M19 9l-7 7-7-7"
+                      />
                     </svg>
                   </button>
-                  
+
                   {showCountryDropdown && (
-                    <div className={`absolute z-10 mt-1 w-80 rounded-lg border border-slate-700 bg-slate-800 shadow-xl transition-opacity duration-700 ${isClosingCountryDropdown ? 'opacity-0' : 'opacity-100'}`}>
+                    <div
+                      className={`absolute z-10 mt-1 w-80 rounded-lg border border-slate-700 bg-slate-800 shadow-xl transition-opacity duration-700 ${isClosingCountryDropdown ? 'opacity-0' : 'opacity-100'}`}
+                    >
                       <div className="p-2 border-b border-slate-700">
                         <input
                           type="text"
@@ -420,7 +498,7 @@ export function OnboardingModal({ isOpen, onClose, onComplete, user }: Onboardin
                         />
                       </div>
                       <div className="max-h-60 overflow-y-auto">
-                        {filteredPhoneCountries.map(country => (
+                        {filteredPhoneCountries.map((country) => (
                           <button
                             key={country.code}
                             type="button"
@@ -430,9 +508,16 @@ export function OnboardingModal({ isOpen, onClose, onComplete, user }: Onboardin
                             }}
                             className="flex items-center gap-3 w-full px-4 py-2 hover:bg-slate-700 transition-colors text-left"
                           >
-                            <FlagIcon countryCode={country.code} className="w-6 h-4 flex-shrink-0" />
-                            <span className="text-slate-100 flex-1 truncate">{country.name}</span>
-                            <span className="text-slate-400">{country.dial}</span>
+                            <FlagIcon
+                              countryCode={country.code}
+                              className="w-6 h-4 flex-shrink-0"
+                            />
+                            <span className="text-slate-100 flex-1 truncate">
+                              {country.name}
+                            </span>
+                            <span className="text-slate-400">
+                              {country.dial}
+                            </span>
                           </button>
                         ))}
                       </div>
@@ -450,14 +535,19 @@ export function OnboardingModal({ isOpen, onClose, onComplete, user }: Onboardin
                 />
               </div>
               {errors.mobile_phone && (
-                <span className="text-xs text-red-400 mt-1">{errors.mobile_phone}</span>
+                <span className="text-xs text-red-400 mt-1">
+                  {errors.mobile_phone}
+                </span>
               )}
             </label>
           </div>
         );
+      }
 
-      case 2: // Localização
-        const locationCountry = getCountryConfig(formData.country || 'BR') || COUNTRIES[0];
+      case 2: {
+        // Localização
+        const locationCountry =
+          getCountryConfig(formData.country || 'BR') || COUNTRIES[0];
         return (
           <div className="space-y-4">
             <label className="block text-left">
@@ -470,15 +560,32 @@ export function OnboardingModal({ isOpen, onClose, onComplete, user }: Onboardin
                   onClick={() => setShowLocationDropdown(!showLocationDropdown)}
                   className="w-full flex items-center gap-3 px-4 py-3 rounded-lg border border-slate-700 bg-slate-800/60 hover:bg-slate-700/60 transition-colors text-left"
                 >
-                  <FlagIcon countryCode={locationCountry.code} className="w-6 h-4" />
-                  <span className="text-slate-100 flex-1">{locationCountry.name}</span>
-                  <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  <FlagIcon
+                    countryCode={locationCountry.code}
+                    className="w-6 h-4"
+                  />
+                  <span className="text-slate-100 flex-1">
+                    {locationCountry.name}
+                  </span>
+                  <svg
+                    className="w-4 h-4 text-slate-400"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 9l-7 7-7-7"
+                    />
                   </svg>
                 </button>
-                
+
                 {showLocationDropdown && (
-                  <div className={`absolute z-10 mt-1 w-full rounded-lg border border-slate-700 bg-slate-800 shadow-xl transition-opacity duration-700 ${isClosingLocationDropdown ? 'opacity-0' : 'opacity-100'}`}>
+                  <div
+                    className={`absolute z-10 mt-1 w-full rounded-lg border border-slate-700 bg-slate-800 shadow-xl transition-opacity duration-700 ${isClosingLocationDropdown ? 'opacity-0' : 'opacity-100'}`}
+                  >
                     <div className="p-2 border-b border-slate-700">
                       <input
                         type="text"
@@ -490,7 +597,7 @@ export function OnboardingModal({ isOpen, onClose, onComplete, user }: Onboardin
                       />
                     </div>
                     <div className="max-h-60 overflow-y-auto">
-                      {filteredLocationCountries.map(country => (
+                      {filteredLocationCountries.map((country) => (
                         <button
                           key={country.code}
                           type="button"
@@ -500,8 +607,13 @@ export function OnboardingModal({ isOpen, onClose, onComplete, user }: Onboardin
                           }}
                           className="flex items-center gap-3 w-full px-4 py-2 hover:bg-slate-700 transition-colors text-left"
                         >
-                          <FlagIcon countryCode={country.code} className="w-6 h-4 flex-shrink-0" />
-                          <span className="text-slate-100 truncate">{country.name}</span>
+                          <FlagIcon
+                            countryCode={country.code}
+                            className="w-6 h-4 flex-shrink-0"
+                          />
+                          <span className="text-slate-100 truncate">
+                            {country.name}
+                          </span>
                         </button>
                       ))}
                     </div>
@@ -512,7 +624,8 @@ export function OnboardingModal({ isOpen, onClose, onComplete, user }: Onboardin
 
             <label className="block text-left">
               <span className="mb-1 block text-sm font-medium text-slate-300">
-                {locationCountry.postalCodeLabel} * {isLoadingAddress && '(Buscando...)'}
+                {locationCountry.postalCodeLabel} *{' '}
+                {isLoadingAddress && '(Buscando...)'}
               </span>
               <input
                 type="text"
@@ -538,7 +651,9 @@ export function OnboardingModal({ isOpen, onClose, onComplete, user }: Onboardin
                 <input
                   type="text"
                   value={formData.street || ''}
-                  onChange={(e) => setFormData(prev => ({ ...prev, street: e.target.value }))}
+                  onChange={(e) =>
+                    setFormData((prev) => ({ ...prev, street: e.target.value }))
+                  }
                   placeholder={`Ex: ${locationCountry.addressFields.line1Label}`}
                   className="w-full rounded-lg border border-slate-700 bg-slate-800/60 px-4 py-3 text-slate-100 placeholder-slate-500 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/40"
                 />
@@ -551,7 +666,9 @@ export function OnboardingModal({ isOpen, onClose, onComplete, user }: Onboardin
                 <input
                   type="text"
                   value={formData.number || ''}
-                  onChange={(e) => setFormData(prev => ({ ...prev, number: e.target.value }))}
+                  onChange={(e) =>
+                    setFormData((prev) => ({ ...prev, number: e.target.value }))
+                  }
                   placeholder="123"
                   className="w-full rounded-lg border border-slate-700 bg-slate-800/60 px-4 py-3 text-slate-100 placeholder-slate-500 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/40"
                 />
@@ -565,7 +682,12 @@ export function OnboardingModal({ isOpen, onClose, onComplete, user }: Onboardin
               <input
                 type="text"
                 value={formData.complement || ''}
-                onChange={(e) => setFormData(prev => ({ ...prev, complement: e.target.value }))}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    complement: e.target.value,
+                  }))
+                }
                 placeholder="Ex.: Bloco 2 / Apartamento 602"
                 className="w-full rounded-lg border border-slate-700 bg-slate-800/60 px-4 py-3 text-slate-100 placeholder-slate-500 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/40"
               />
@@ -579,7 +701,12 @@ export function OnboardingModal({ isOpen, onClose, onComplete, user }: Onboardin
                 <input
                   type="text"
                   value={formData.neighborhood || ''}
-                  onChange={(e) => setFormData(prev => ({ ...prev, neighborhood: e.target.value }))}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      neighborhood: e.target.value,
+                    }))
+                  }
                   placeholder={`Ex: ${locationCountry.addressFields.neighborhoodLabel}`}
                   className="w-full rounded-lg border border-slate-700 bg-slate-800/60 px-4 py-3 text-slate-100 placeholder-slate-500 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/40"
                 />
@@ -594,7 +721,9 @@ export function OnboardingModal({ isOpen, onClose, onComplete, user }: Onboardin
                 <input
                   type="text"
                   value={formData.city || ''}
-                  onChange={(e) => setFormData(prev => ({ ...prev, city: e.target.value }))}
+                  onChange={(e) =>
+                    setFormData((prev) => ({ ...prev, city: e.target.value }))
+                  }
                   placeholder={`Ex: ${locationCountry.addressFields.cityLabel}`}
                   className="w-full rounded-lg border border-slate-700 bg-slate-800/60 px-4 py-3 text-slate-100 placeholder-slate-500 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/40"
                 />
@@ -609,14 +738,20 @@ export function OnboardingModal({ isOpen, onClose, onComplete, user }: Onboardin
                     type="text"
                     value={formData.state || ''}
                     onChange={(e) => {
-                      const maxLength = locationCountry.addressFields.stateMaxLength;
+                      const maxLength =
+                        locationCountry.addressFields.stateMaxLength;
                       let value = e.target.value;
                       if (maxLength) {
-                        value = value.toUpperCase().replace(/[^A-Z]/g, '').slice(0, maxLength);
+                        value = value
+                          .toUpperCase()
+                          .replace(/[^A-Z]/g, '')
+                          .slice(0, maxLength);
                       }
-                      setFormData(prev => ({ ...prev, state: value }));
+                      setFormData((prev) => ({ ...prev, state: value }));
                     }}
-                    placeholder={locationCountry.addressFields.statePlaceholder || 'Estado'}
+                    placeholder={
+                      locationCountry.addressFields.statePlaceholder || 'Estado'
+                    }
                     maxLength={locationCountry.addressFields.stateMaxLength}
                     className="w-full rounded-lg border border-slate-700 bg-slate-800/60 px-4 py-3 text-slate-100 placeholder-slate-500 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/40"
                   />
@@ -625,9 +760,13 @@ export function OnboardingModal({ isOpen, onClose, onComplete, user }: Onboardin
             </div>
           </div>
         );
+      }
 
-      case 3: // Preferências
-        const selectedLanguage = languages.find(lang => lang.code === formData.preferred_language) || languages[0];
+      case 3: {
+        // Preferências
+        const selectedLanguage =
+          languages.find((lang) => lang.code === formData.preferred_language) ||
+          languages[0];
         return (
           <div className="space-y-4">
             <label className="block text-left">
@@ -640,15 +779,32 @@ export function OnboardingModal({ isOpen, onClose, onComplete, user }: Onboardin
                   onClick={() => setShowLanguageDropdown(!showLanguageDropdown)}
                   className="w-full flex items-center gap-3 px-4 py-3 rounded-lg border border-slate-700 bg-slate-800/60 hover:bg-slate-700/60 transition-colors text-left"
                 >
-                  <FlagIcon countryCode={selectedLanguage.countryFlag} className="w-6 h-4" />
-                  <span className="text-slate-100 flex-1">{selectedLanguage.name}</span>
-                  <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  <FlagIcon
+                    countryCode={selectedLanguage.countryFlag}
+                    className="w-6 h-4"
+                  />
+                  <span className="text-slate-100 flex-1">
+                    {selectedLanguage.name}
+                  </span>
+                  <svg
+                    className="w-4 h-4 text-slate-400"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 9l-7 7-7-7"
+                    />
                   </svg>
                 </button>
-                
+
                 {showLanguageDropdown && (
-                  <div className={`absolute z-10 mt-1 w-full rounded-lg border border-slate-700 bg-slate-800 shadow-xl transition-opacity duration-700 ${isClosingLanguageDropdown ? 'opacity-0' : 'opacity-100'}`}>
+                  <div
+                    className={`absolute z-10 mt-1 w-full rounded-lg border border-slate-700 bg-slate-800 shadow-xl transition-opacity duration-700 ${isClosingLanguageDropdown ? 'opacity-0' : 'opacity-100'}`}
+                  >
                     <div className="p-2 border-b border-slate-700">
                       <input
                         type="text"
@@ -660,7 +816,7 @@ export function OnboardingModal({ isOpen, onClose, onComplete, user }: Onboardin
                       />
                     </div>
                     <div className="max-h-60 overflow-y-auto">
-                      {filteredLanguages.map(language => (
+                      {filteredLanguages.map((language) => (
                         <button
                           key={language.code}
                           type="button"
@@ -670,8 +826,13 @@ export function OnboardingModal({ isOpen, onClose, onComplete, user }: Onboardin
                           }}
                           className="flex items-center gap-3 w-full px-4 py-2 hover:bg-slate-700 transition-colors text-left"
                         >
-                          <FlagIcon countryCode={language.countryFlag} className="w-6 h-4 flex-shrink-0" />
-                          <span className="text-slate-100 truncate">{language.name}</span>
+                          <FlagIcon
+                            countryCode={language.countryFlag}
+                            className="w-6 h-4 flex-shrink-0"
+                          />
+                          <span className="text-slate-100 truncate">
+                            {language.name}
+                          </span>
                         </button>
                       ))}
                     </div>
@@ -681,6 +842,7 @@ export function OnboardingModal({ isOpen, onClose, onComplete, user }: Onboardin
             </label>
           </div>
         );
+      }
 
       default:
         return null;
@@ -697,24 +859,32 @@ export function OnboardingModal({ isOpen, onClose, onComplete, user }: Onboardin
       try {
         const { data, error } = await supabase
           .from('users')
-          .select('name, preferred_name, mobile_phone, country, postal_code, address, street, number, complement, neighborhood, city, state, preferred_language, country_code')
+          .select(
+            'name, preferred_name, mobile_phone, country, postal_code, address, street, number, complement, neighborhood, city, state, preferred_language, country_code',
+          )
           .eq('email', user.email)
           .single();
 
         if (error) {
           console.error('Erro ao carregar dados do usuário:', error);
           // Usar dados do user_metadata como fallback
-          setFormData(prev => ({
+          setFormData((prev) => ({
             ...prev,
-            name: user.user_metadata?.full_name || user.user_metadata?.name || '',
-            preferred_name: user.user_metadata?.preferred_name || ''
+            name:
+              user.user_metadata?.full_name || user.user_metadata?.name || '',
+            preferred_name: user.user_metadata?.preferred_name || '',
           }));
         } else if (data) {
           // Preencher formulário com dados do banco
-          setFormData(prev => ({
+          setFormData((prev) => ({
             ...prev,
-            name: data.name || user.user_metadata?.full_name || user.user_metadata?.name || '',
-            preferred_name: data.preferred_name || user.user_metadata?.preferred_name || '',
+            name:
+              data.name ||
+              user.user_metadata?.full_name ||
+              user.user_metadata?.name ||
+              '',
+            preferred_name:
+              data.preferred_name || user.user_metadata?.preferred_name || '',
             mobile_phone: data.mobile_phone ? String(data.mobile_phone) : '',
             country_code: data.country_code || 'BR',
             country: data.country || 'BR',
@@ -725,7 +895,7 @@ export function OnboardingModal({ isOpen, onClose, onComplete, user }: Onboardin
             neighborhood: data.neighborhood || '',
             city: data.city || '',
             state: data.state || '',
-            preferred_language: data.preferred_language || 'pt'
+            preferred_language: data.preferred_language || 'pt',
           }));
         }
       } catch (error) {
@@ -783,9 +953,9 @@ export function OnboardingModal({ isOpen, onClose, onComplete, user }: Onboardin
             {Math.round(progressPercentage)}% concluído
           </span>
         </div>
-        
+
         <div className="w-full bg-slate-700 rounded-full h-2">
-          <div 
+          <div
             className="bg-gradient-to-r from-purple-500 to-blue-500 h-2 rounded-full transition-all duration-300"
             style={{ width: `${progressPercentage}%` }}
           />
@@ -804,8 +974,8 @@ export function OnboardingModal({ isOpen, onClose, onComplete, user }: Onboardin
                   index < currentStep
                     ? 'bg-purple-500 text-white'
                     : index === currentStep
-                    ? 'bg-purple-500 text-white'
-                    : 'bg-slate-700 text-slate-400'
+                      ? 'bg-purple-500 text-white'
+                      : 'bg-slate-700 text-slate-400'
                 }`}
               >
                 {index < currentStep ? '✓' : index + 1}
@@ -826,7 +996,7 @@ export function OnboardingModal({ isOpen, onClose, onComplete, user }: Onboardin
         <p className="text-sm text-slate-400 mb-6">
           {steps[currentStep].description}
         </p>
-        
+
         {renderStepContent()}
       </div>
 

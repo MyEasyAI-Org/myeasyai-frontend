@@ -1,24 +1,23 @@
-import { useState, useEffect, useRef } from 'react';
-import { supabase } from '../lib/supabase';
 import type { User } from '@supabase/supabase-js';
 import {
-  CreditCard,
-  TrendingUp,
-  Check,
   ArrowUpCircle,
   BarChart3,
+  Check,
   Clock,
-  Package,
+  CreditCard,
   ExternalLink,
+  Package,
+  TrendingUp,
 } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { PLANS, type SubscriptionPlan } from '../constants/plans';
+import { supabase } from '../lib/supabase';
 import { Footer } from './Footer';
 
 type DashboardProps = {
   onLogout: () => void;
   onGoHome: () => void;
 };
-
-type SubscriptionPlan = 'free' | 'basic' | 'pro' | 'enterprise';
 
 type UserProfile = {
   name: string;
@@ -40,66 +39,11 @@ type SubscriptionData = {
   requests_this_month: number;
 };
 
-const PLANS = [
-  {
-    name: 'Free',
-    value: 'free' as SubscriptionPlan,
-    price: 'R$ 0',
-    tokens: '1.000',
-    features: [
-      'Acesso básico à plataforma',
-      '1.000 tokens por mês',
-      'Suporte por email',
-      'Documentação completa',
-    ],
-  },
-  {
-    name: 'Basic',
-    value: 'basic' as SubscriptionPlan,
-    price: 'R$ 49',
-    tokens: '10.000',
-    features: [
-      'Tudo do plano Free',
-      '10.000 tokens por mês',
-      'Suporte prioritário',
-      'API Access',
-      'Analytics básico',
-    ],
-    popular: true,
-  },
-  {
-    name: 'Pro',
-    value: 'pro' as SubscriptionPlan,
-    price: 'R$ 149',
-    tokens: '50.000',
-    features: [
-      'Tudo do plano Basic',
-      '50.000 tokens por mês',
-      'Suporte 24/7',
-      'Analytics avançado',
-      'Integrações customizadas',
-      'Acesso a modelos premium',
-    ],
-  },
-  {
-    name: 'Enterprise',
-    value: 'enterprise' as SubscriptionPlan,
-    price: 'Customizado',
-    tokens: 'Ilimitado',
-    features: [
-      'Tudo do plano Pro',
-      'Tokens ilimitados',
-      'Suporte dedicado',
-      'SLA garantido',
-      'Treinamento personalizado',
-      'Deploy on-premise',
-    ],
-  },
-];
-
 export function Dashboard({ onLogout, onGoHome }: DashboardProps) {
   const [, setUser] = useState<User | null>(null);
-  const [activeTab, setActiveTab] = useState<'overview' | 'subscription' | 'products' | 'usage' | 'settings' | 'profile'>('overview');
+  const [activeTab, setActiveTab] = useState<
+    'overview' | 'subscription' | 'products' | 'usage' | 'settings' | 'profile'
+  >('overview');
   const [subscription] = useState<SubscriptionData>({
     plan: 'free',
     status: 'active',
@@ -139,7 +83,10 @@ export function Dashboard({ onLogout, onGoHome }: DashboardProps) {
   // Fechar dropdown ao clicar fora
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
         setIsDropdownOpen(false);
       }
     };
@@ -156,7 +103,9 @@ export function Dashboard({ onLogout, onGoHome }: DashboardProps) {
   useEffect(() => {
     const loadUserData = async () => {
       try {
-        const { data: { user: currentUser } } = await supabase.auth.getUser();
+        const {
+          data: { user: currentUser },
+        } = await supabase.auth.getUser();
         if (currentUser) {
           setUser(currentUser);
 
@@ -172,7 +121,11 @@ export function Dashboard({ onLogout, onGoHome }: DashboardProps) {
           }
 
           const profileData = {
-            name: userData?.name || currentUser.user_metadata?.name || currentUser.user_metadata?.full_name || '',
+            name:
+              userData?.name ||
+              currentUser.user_metadata?.name ||
+              currentUser.user_metadata?.full_name ||
+              '',
             preferredName: userData?.preferred_name || '',
             email: currentUser.email || '',
             avatar_url: currentUser.user_metadata?.avatar_url,
@@ -258,7 +211,9 @@ export function Dashboard({ onLogout, onGoHome }: DashboardProps) {
               <button
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                 className={`flex items-center justify-center space-x-3 border border-slate-600 bg-slate-700/80 px-4 py-3 text-slate-100 transition-colors hover:border-slate-500 hover:bg-slate-600 min-w-[280px] ${
-                  isDropdownOpen ? 'rounded-t-2xl border-b-transparent' : 'rounded-2xl'
+                  isDropdownOpen
+                    ? 'rounded-t-2xl border-b-transparent'
+                    : 'rounded-2xl'
                 }`}
               >
                 <svg
@@ -393,15 +348,18 @@ export function Dashboard({ onLogout, onGoHome }: DashboardProps) {
           <div className="space-y-6">
             <div>
               <h1 className="text-3xl font-bold text-white">
-                Bem-vindo, {isLoadingProfile ? (
+                Bem-vindo,{' '}
+                {isLoadingProfile ? (
                   <span className="loading-dots">
                     <span>.</span>
                     <span>.</span>
                     <span>.</span>
                   </span>
                 ) : (
-                  profile.preferredName || (profile.name ? profile.name.split(' ')[0] : 'Usuário')
-                )}!
+                  profile.preferredName ||
+                  (profile.name ? profile.name.split(' ')[0] : 'Usuário')
+                )}
+                !
               </h1>
               <p className="mt-2 text-slate-400">
                 Aqui está um resumo da sua conta e atividades recentes.
@@ -412,12 +370,19 @@ export function Dashboard({ onLogout, onGoHome }: DashboardProps) {
             <div className="rounded-lg border border-slate-800 bg-slate-900/50 p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="text-lg font-semibold text-white">Assinatura Atual</h2>
-                  <div className={`mt-2 inline-block rounded-full bg-gradient-to-r ${getPlanColor(subscription.plan)} px-4 py-1 text-sm font-semibold text-white`}>
+                  <h2 className="text-lg font-semibold text-white">
+                    Assinatura Atual
+                  </h2>
+                  <div
+                    className={`mt-2 inline-block rounded-full bg-gradient-to-r ${getPlanColor(subscription.plan)} px-4 py-1 text-sm font-semibold text-white`}
+                  >
                     {subscription.plan.toUpperCase()}
                   </div>
                   <p className="mt-2 text-slate-400">
-                    Status: <span className="text-green-400">{subscription.status === 'active' ? 'Ativo' : 'Inativo'}</span>
+                    Status:{' '}
+                    <span className="text-green-400">
+                      {subscription.status === 'active' ? 'Ativo' : 'Inativo'}
+                    </span>
                   </p>
                 </div>
                 <CreditCard className="h-16 w-16 text-blue-400" />
@@ -450,7 +415,9 @@ export function Dashboard({ onLogout, onGoHome }: DashboardProps) {
               <div className="rounded-lg border border-slate-800 bg-slate-900/50 p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-slate-400">Requisições este Mês</p>
+                    <p className="text-sm text-slate-400">
+                      Requisições este Mês
+                    </p>
                     <p className="mt-2 text-3xl font-bold text-white">
                       {subscription.requests_this_month}
                     </p>
@@ -464,7 +431,9 @@ export function Dashboard({ onLogout, onGoHome }: DashboardProps) {
                   <div>
                     <p className="text-sm text-slate-400">Membro desde</p>
                     <p className="mt-2 text-xl font-bold text-white">
-                      {new Date(subscription.start_date).toLocaleDateString('pt-BR')}
+                      {new Date(subscription.start_date).toLocaleDateString(
+                        'pt-BR',
+                      )}
                     </p>
                   </div>
                   <Clock className="h-10 w-10 text-amber-400" />
@@ -478,7 +447,9 @@ export function Dashboard({ onLogout, onGoHome }: DashboardProps) {
         {activeTab === 'subscription' && (
           <div className="space-y-6">
             <div>
-              <h1 className="text-3xl font-bold text-white">Planos de Assinatura</h1>
+              <h1 className="text-3xl font-bold text-white">
+                Planos de Assinatura
+              </h1>
               <p className="mt-2 text-slate-400">
                 Escolha o plano ideal para suas necessidades.
               </p>
@@ -503,19 +474,29 @@ export function Dashboard({ onLogout, onGoHome }: DashboardProps) {
                   )}
 
                   <div className="text-center">
-                    <h3 className="text-xl font-bold text-white">{plan.name}</h3>
+                    <h3 className="text-xl font-bold text-white">
+                      {plan.name}
+                    </h3>
                     <div className="mt-4">
-                      <span className="text-4xl font-bold text-white">{plan.price}</span>
-                      {plan.price !== 'Customizado' && <span className="text-slate-400">/mês</span>}
+                      <span className="text-4xl font-bold text-white">
+                        {plan.price}
+                      </span>
+                      {plan.price !== 'Customizado' && (
+                        <span className="text-slate-400">/mês</span>
+                      )}
                     </div>
-                    <p className="mt-2 text-sm text-slate-400">{plan.tokens} tokens</p>
+                    <p className="mt-2 text-sm text-slate-400">
+                      {plan.tokens} tokens
+                    </p>
                   </div>
 
                   <ul className="mt-6 space-y-3">
                     {plan.features.map((feature, index) => (
                       <li key={index} className="flex items-start">
                         <Check className="mr-2 h-5 w-5 flex-shrink-0 text-green-400" />
-                        <span className="text-sm text-slate-300">{feature}</span>
+                        <span className="text-sm text-slate-300">
+                          {feature}
+                        </span>
                       </li>
                     ))}
                   </ul>
@@ -529,7 +510,9 @@ export function Dashboard({ onLogout, onGoHome }: DashboardProps) {
                         : 'bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700'
                     }`}
                   >
-                    {subscription.plan === plan.value ? 'Plano Atual' : 'Selecionar Plano'}
+                    {subscription.plan === plan.value
+                      ? 'Plano Atual'
+                      : 'Selecionar Plano'}
                   </button>
                 </div>
               ))}
@@ -539,8 +522,11 @@ export function Dashboard({ onLogout, onGoHome }: DashboardProps) {
             <div className="rounded-lg border border-slate-800 bg-slate-900/50 p-6">
               <h2 className="text-xl font-bold text-white">Trocar de Plano</h2>
               <p className="mt-2 text-slate-400">
-                Você está atualmente no plano <span className="font-semibold text-blue-400">{subscription.plan.toUpperCase()}</span>.
-                Selecione um novo plano acima para fazer upgrade ou downgrade.
+                Você está atualmente no plano{' '}
+                <span className="font-semibold text-blue-400">
+                  {subscription.plan.toUpperCase()}
+                </span>
+                . Selecione um novo plano acima para fazer upgrade ou downgrade.
               </p>
               <div className="mt-4 flex items-center space-x-2 text-sm text-slate-400">
                 <ArrowUpCircle className="h-5 w-5 text-green-400" />
@@ -570,7 +556,9 @@ export function Dashboard({ onLogout, onGoHome }: DashboardProps) {
                       <Package className="h-6 w-6 text-green-400" />
                     </div>
                     <div>
-                      <h3 className="text-lg font-semibold text-white">Business Guru</h3>
+                      <h3 className="text-lg font-semibold text-white">
+                        Business Guru
+                      </h3>
                       <span className="inline-block mt-1 rounded-full bg-green-500/20 px-2 py-1 text-xs font-semibold text-green-400">
                         Ativo
                       </span>
@@ -579,7 +567,8 @@ export function Dashboard({ onLogout, onGoHome }: DashboardProps) {
                 </div>
 
                 <p className="mt-4 text-sm text-slate-400">
-                  Consultoria de negócios com IA para impulsionar seu empreendimento.
+                  Consultoria de negócios com IA para impulsionar seu
+                  empreendimento.
                 </p>
 
                 <div className="mt-4 space-y-2 text-sm">
@@ -619,7 +608,9 @@ export function Dashboard({ onLogout, onGoHome }: DashboardProps) {
                       <Package className="h-6 w-6 text-purple-400" />
                     </div>
                     <div>
-                      <h3 className="text-lg font-semibold text-white">MyEasyWebsite</h3>
+                      <h3 className="text-lg font-semibold text-white">
+                        MyEasyWebsite
+                      </h3>
                       <span className="inline-block mt-1 rounded-full bg-green-500/20 px-2 py-1 text-xs font-semibold text-green-400">
                         Ativo
                       </span>
@@ -628,7 +619,8 @@ export function Dashboard({ onLogout, onGoHome }: DashboardProps) {
                 </div>
 
                 <p className="mt-4 text-sm text-slate-400">
-                  Criador de sites inteligente com IA para criar seu site profissional.
+                  Criador de sites inteligente com IA para criar seu site
+                  profissional.
                 </p>
 
                 <div className="mt-4 space-y-2 text-sm">
@@ -663,7 +655,9 @@ export function Dashboard({ onLogout, onGoHome }: DashboardProps) {
 
             {/* Summary Card */}
             <div className="rounded-lg border border-slate-800 bg-slate-900/50 p-6">
-              <h2 className="text-xl font-bold text-white">Resumo de Assinaturas</h2>
+              <h2 className="text-xl font-bold text-white">
+                Resumo de Assinaturas
+              </h2>
               <div className="mt-4 grid gap-4 md:grid-cols-3">
                 <div className="text-center">
                   <p className="text-3xl font-bold text-white">2</p>
@@ -671,18 +665,24 @@ export function Dashboard({ onLogout, onGoHome }: DashboardProps) {
                 </div>
                 <div className="text-center">
                   <p className="text-3xl font-bold text-white">R$ 248</p>
-                  <p className="mt-1 text-sm text-slate-400">Gasto Mensal Total</p>
+                  <p className="mt-1 text-sm text-slate-400">
+                    Gasto Mensal Total
+                  </p>
                 </div>
                 <div className="text-center">
                   <p className="text-3xl font-bold text-green-400">R$ 52</p>
-                  <p className="mt-1 text-sm text-slate-400">Economia vs. Separado</p>
+                  <p className="mt-1 text-sm text-slate-400">
+                    Economia vs. Separado
+                  </p>
                 </div>
               </div>
             </div>
 
             {/* Available Products */}
             <div>
-              <h2 className="text-2xl font-bold text-white">Produtos Disponíveis</h2>
+              <h2 className="text-2xl font-bold text-white">
+                Produtos Disponíveis
+              </h2>
               <p className="mt-2 text-slate-400">
                 Explore outros produtos que podem ajudar seu negócio.
               </p>
@@ -693,13 +693,17 @@ export function Dashboard({ onLogout, onGoHome }: DashboardProps) {
                     <div className="rounded-lg bg-slate-700 p-3">
                       <Package className="h-6 w-6 text-slate-400" />
                     </div>
-                    <h3 className="text-lg font-semibold text-white">Image Generator</h3>
+                    <h3 className="text-lg font-semibold text-white">
+                      Image Generator
+                    </h3>
                   </div>
                   <p className="mt-4 text-sm text-slate-400">
                     Gere imagens de alta qualidade usando IA.
                   </p>
                   <div className="mt-4">
-                    <p className="text-2xl font-bold text-white">R$ 59<span className="text-sm text-slate-400">/mês</span></p>
+                    <p className="text-2xl font-bold text-white">
+                      R$ 59<span className="text-sm text-slate-400">/mês</span>
+                    </p>
                   </div>
                   <button className="mt-4 w-full rounded-lg border border-blue-600 bg-blue-600/10 px-4 py-2 text-sm font-semibold text-blue-400 hover:bg-blue-600/20 transition-colors">
                     Adicionar Produto
@@ -711,13 +715,17 @@ export function Dashboard({ onLogout, onGoHome }: DashboardProps) {
                     <div className="rounded-lg bg-slate-700 p-3">
                       <Package className="h-6 w-6 text-slate-400" />
                     </div>
-                    <h3 className="text-lg font-semibold text-white">Voice AI</h3>
+                    <h3 className="text-lg font-semibold text-white">
+                      Voice AI
+                    </h3>
                   </div>
                   <p className="mt-4 text-sm text-slate-400">
                     Sintetização e reconhecimento de voz avançado.
                   </p>
                   <div className="mt-4">
-                    <p className="text-2xl font-bold text-white">R$ 89<span className="text-sm text-slate-400">/mês</span></p>
+                    <p className="text-2xl font-bold text-white">
+                      R$ 89<span className="text-sm text-slate-400">/mês</span>
+                    </p>
                   </div>
                   <button className="mt-4 w-full rounded-lg border border-blue-600 bg-blue-600/10 px-4 py-2 text-sm font-semibold text-blue-400 hover:bg-blue-600/20 transition-colors">
                     Adicionar Produto
@@ -729,13 +737,17 @@ export function Dashboard({ onLogout, onGoHome }: DashboardProps) {
                     <div className="rounded-lg bg-slate-700 p-3">
                       <Package className="h-6 w-6 text-slate-400" />
                     </div>
-                    <h3 className="text-lg font-semibold text-white">Custom Models</h3>
+                    <h3 className="text-lg font-semibold text-white">
+                      Custom Models
+                    </h3>
                   </div>
                   <p className="mt-4 text-sm text-slate-400">
                     Treine seus próprios modelos de IA personalizados.
                   </p>
                   <div className="mt-4">
-                    <p className="text-2xl font-bold text-white">R$ 299<span className="text-sm text-slate-400">/mês</span></p>
+                    <p className="text-2xl font-bold text-white">
+                      R$ 299<span className="text-sm text-slate-400">/mês</span>
+                    </p>
                   </div>
                   <button className="mt-4 w-full rounded-lg border border-blue-600 bg-blue-600/10 px-4 py-2 text-sm font-semibold text-blue-400 hover:bg-blue-600/20 transition-colors">
                     Adicionar Produto
@@ -763,7 +775,8 @@ export function Dashboard({ onLogout, onGoHome }: DashboardProps) {
                 <div className="flex items-center justify-between text-sm text-slate-400">
                   <span>Tokens usados este mês</span>
                   <span className="font-semibold text-white">
-                    {subscription.tokens_used.toLocaleString()} / {subscription.tokens_limit.toLocaleString()}
+                    {subscription.tokens_used.toLocaleString()} /{' '}
+                    {subscription.tokens_limit.toLocaleString()}
                   </span>
                 </div>
                 <div className="mt-2 h-4 w-full rounded-full bg-slate-800">
@@ -781,34 +794,46 @@ export function Dashboard({ onLogout, onGoHome }: DashboardProps) {
             {/* Usage Stats */}
             <div className="grid gap-6 md:grid-cols-2">
               <div className="rounded-lg border border-slate-800 bg-slate-900/50 p-6">
-                <h3 className="text-lg font-semibold text-white">Requisições</h3>
+                <h3 className="text-lg font-semibold text-white">
+                  Requisições
+                </h3>
                 <div className="mt-4 space-y-4">
                   <div className="flex items-center justify-between">
                     <span className="text-slate-400">Este mês</span>
-                    <span className="text-2xl font-bold text-white">{subscription.requests_this_month}</span>
+                    <span className="text-2xl font-bold text-white">
+                      {subscription.requests_this_month}
+                    </span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-slate-400">Média diária</span>
                     <span className="text-2xl font-bold text-white">
-                      {Math.round(subscription.requests_this_month / new Date().getDate())}
+                      {Math.round(
+                        subscription.requests_this_month / new Date().getDate(),
+                      )}
                     </span>
                   </div>
                 </div>
               </div>
 
               <div className="rounded-lg border border-slate-800 bg-slate-900/50 p-6">
-                <h3 className="text-lg font-semibold text-white">Período de Renovação</h3>
+                <h3 className="text-lg font-semibold text-white">
+                  Período de Renovação
+                </h3>
                 <div className="mt-4 space-y-4">
                   <div className="flex items-center justify-between">
                     <span className="text-slate-400">Início do ciclo</span>
                     <span className="font-semibold text-white">
-                      {new Date(subscription.start_date).toLocaleDateString('pt-BR')}
+                      {new Date(subscription.start_date).toLocaleDateString(
+                        'pt-BR',
+                      )}
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-slate-400">Próxima renovação</span>
                     <span className="font-semibold text-white">
-                      {new Date(new Date().setMonth(new Date().getMonth() + 1)).toLocaleDateString('pt-BR')}
+                      {new Date(
+                        new Date().setMonth(new Date().getMonth() + 1),
+                      ).toLocaleDateString('pt-BR')}
                     </span>
                   </div>
                 </div>
@@ -832,22 +857,41 @@ export function Dashboard({ onLogout, onGoHome }: DashboardProps) {
                 <h2 className="text-xl font-bold text-white">Notificações</h2>
                 <div className="mt-4 space-y-4">
                   <label className="flex items-center justify-between">
-                    <span className="text-slate-300">Notificações por email</span>
-                    <input type="checkbox" className="h-5 w-5 rounded border-slate-700 bg-slate-800" defaultChecked />
+                    <span className="text-slate-300">
+                      Notificações por email
+                    </span>
+                    <input
+                      type="checkbox"
+                      className="h-5 w-5 rounded border-slate-700 bg-slate-800"
+                      defaultChecked
+                    />
                   </label>
                   <label className="flex items-center justify-between">
-                    <span className="text-slate-300">Alertas de uso de tokens</span>
-                    <input type="checkbox" className="h-5 w-5 rounded border-slate-700 bg-slate-800" defaultChecked />
+                    <span className="text-slate-300">
+                      Alertas de uso de tokens
+                    </span>
+                    <input
+                      type="checkbox"
+                      className="h-5 w-5 rounded border-slate-700 bg-slate-800"
+                      defaultChecked
+                    />
                   </label>
                   <label className="flex items-center justify-between">
-                    <span className="text-slate-300">Atualizações de produto</span>
-                    <input type="checkbox" className="h-5 w-5 rounded border-slate-700 bg-slate-800" />
+                    <span className="text-slate-300">
+                      Atualizações de produto
+                    </span>
+                    <input
+                      type="checkbox"
+                      className="h-5 w-5 rounded border-slate-700 bg-slate-800"
+                    />
                   </label>
                 </div>
               </div>
 
               <div className="rounded-lg border border-slate-800 bg-slate-900/50 p-6">
-                <h2 className="text-xl font-bold text-white">API e Integrações</h2>
+                <h2 className="text-xl font-bold text-white">
+                  API e Integrações
+                </h2>
                 <div className="mt-4 space-y-4">
                   <div>
                     <label className="text-sm text-slate-400">API Key</label>
@@ -870,7 +914,9 @@ export function Dashboard({ onLogout, onGoHome }: DashboardProps) {
               </div>
 
               <div className="rounded-lg border border-red-900 bg-red-950/30 p-6">
-                <h2 className="text-xl font-bold text-red-400">Zona de Perigo</h2>
+                <h2 className="text-xl font-bold text-red-400">
+                  Zona de Perigo
+                </h2>
                 <p className="mt-2 text-sm text-slate-400">
                   Ações irreversíveis que afetam sua conta.
                 </p>
@@ -895,42 +941,58 @@ export function Dashboard({ onLogout, onGoHome }: DashboardProps) {
             <div className="rounded-lg border border-slate-800 bg-slate-900/50 p-6">
               <div className="flex items-center space-x-4">
                 <div className="h-20 w-20 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center text-white text-3xl font-bold">
-                  {profile.name ? profile.name[0].toUpperCase() : profile.email[0].toUpperCase()}
+                  {profile.name
+                    ? profile.name[0].toUpperCase()
+                    : profile.email[0].toUpperCase()}
                 </div>
                 <div>
-                  <h2 className="text-2xl font-bold text-white">{profile.name || 'Usuário'}</h2>
+                  <h2 className="text-2xl font-bold text-white">
+                    {profile.name || 'Usuário'}
+                  </h2>
                   <p className="text-slate-400">{profile.email}</p>
                 </div>
               </div>
 
               <div className="mt-6 space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-400">Nome</label>
+                  <label className="block text-sm font-medium text-slate-400">
+                    Nome
+                  </label>
                   <input
                     type="text"
                     value={profile.name}
-                    onChange={(e) => setProfile({ ...profile, name: e.target.value })}
+                    onChange={(e) =>
+                      setProfile({ ...profile, name: e.target.value })
+                    }
                     disabled={!isEditingProfile}
                     className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-white disabled:opacity-50"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-400">Email</label>
+                  <label className="block text-sm font-medium text-slate-400">
+                    Email
+                  </label>
                   <input
                     type="email"
                     value={profile.email}
                     disabled
                     className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-white opacity-50"
                   />
-                  <p className="mt-1 text-xs text-slate-500">O email não pode ser alterado</p>
+                  <p className="mt-1 text-xs text-slate-500">
+                    O email não pode ser alterado
+                  </p>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-400">Biografia</label>
+                  <label className="block text-sm font-medium text-slate-400">
+                    Biografia
+                  </label>
                   <textarea
                     value={profile.bio}
-                    onChange={(e) => setProfile({ ...profile, bio: e.target.value })}
+                    onChange={(e) =>
+                      setProfile({ ...profile, bio: e.target.value })
+                    }
                     disabled={!isEditingProfile}
                     rows={3}
                     className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-white disabled:opacity-50"
@@ -938,22 +1000,30 @@ export function Dashboard({ onLogout, onGoHome }: DashboardProps) {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-400">Telefone</label>
+                  <label className="block text-sm font-medium text-slate-400">
+                    Telefone
+                  </label>
                   <input
                     type="tel"
                     value={profile.phone}
-                    onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
+                    onChange={(e) =>
+                      setProfile({ ...profile, phone: e.target.value })
+                    }
                     disabled={!isEditingProfile}
                     className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-white disabled:opacity-50"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-400">Empresa</label>
+                  <label className="block text-sm font-medium text-slate-400">
+                    Empresa
+                  </label>
                   <input
                     type="text"
                     value={profile.company}
-                    onChange={(e) => setProfile({ ...profile, company: e.target.value })}
+                    onChange={(e) =>
+                      setProfile({ ...profile, company: e.target.value })
+                    }
                     disabled={!isEditingProfile}
                     className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-white disabled:opacity-50"
                   />
