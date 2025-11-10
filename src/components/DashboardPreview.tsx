@@ -16,7 +16,7 @@ import { PLANS, type SubscriptionPlan } from '../constants/plans';
 import { useNotifications } from '../hooks/useNotifications';
 import { supabase } from '../lib/api-clients/supabase-client';
 import { authService } from '../services/AuthService';
-import type { Notification } from '../types/notification';
+import type { Notification } from '../types/Notification';
 import { Footer } from './Footer';
 import NotificationBell from './NotificationBell';
 import NotificationDetailModal from './NotificationDetailModal';

@@ -44,7 +44,7 @@ export function SignupModal({
         email,
         password,
         fullName,
-        preferredName,
+        preferredName
       );
       if (error) {
         alert(`Erro ao criar conta: ${error.message}`);
