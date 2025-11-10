@@ -262,7 +262,7 @@ function App() {
           }
 
           const needsOnboardingCheck = await userManagementService.checkUserNeedsOnboarding(
-            session.user.id,
+            session.user,
           );
           setNeedsOnboarding(needsOnboardingCheck);
         }
@@ -289,7 +289,7 @@ function App() {
 
           // Check if needs onboarding
           const needsOnboardingCheck = await userManagementService.checkUserNeedsOnboarding(
-            session.user.id,
+            session.user,
           );
           setNeedsOnboarding(needsOnboardingCheck);
 
