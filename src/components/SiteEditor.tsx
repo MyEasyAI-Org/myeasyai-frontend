@@ -15,7 +15,7 @@ import {
   X,
 } from 'lucide-react';
 import { useRef, useState } from 'react';
-import { EditableSiteTemplate } from '../features/myeasywebsite/EditableSiteTemplate';
+import { EditableSiteTemplate } from '../features/my-easy-website/EditableSiteTemplate';
 
 interface SiteEditorProps {
   siteData: any;

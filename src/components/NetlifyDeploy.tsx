@@ -8,11 +8,8 @@ import {
   XCircle,
 } from 'lucide-react';
 import { useState } from 'react';
-import {
-  type DeployResult,
-  deployWebsite,
-  type NetlifySite,
-} from '../lib/netlify';
+import { type NetlifySite } from '../lib/api-clients/netlify-client';
+import { type DeployResult, deploymentService } from '../services/DeploymentService';
 import { NetlifyUsageMonitor } from './NetlifyUsageMonitor';
 
 interface NetlifyDeployProps {
@@ -51,7 +48,7 @@ export function NetlifyDeploy({
       setDeployProgress(0);
       setDeployMessage('Iniciando deploy...');
 
-      const result = await deployWebsite(
+      const result = await deploymentService.deployWebsite(
         customSiteName.trim(),
         htmlContent,
         (progress, message) => {

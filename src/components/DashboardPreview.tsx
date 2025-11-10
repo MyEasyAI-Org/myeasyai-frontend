@@ -14,8 +14,9 @@ import {
 import { useEffect, useRef, useState } from 'react';
 import { PLANS, type SubscriptionPlan } from '../constants/plans';
 import { useNotifications } from '../hooks/useNotifications';
-import { signOut, supabase } from '../lib/supabase';
-import type { Notification } from '../types/notification';
+import { supabase } from '../lib/api-clients/supabase-client';
+import { authService } from '../services/AuthService';
+import type { Notification } from '../types/Notification';
 import { Footer } from './Footer';
 import NotificationBell from './NotificationBell';
 import NotificationDetailModal from './NotificationDetailModal';
@@ -323,7 +324,7 @@ export function DashboardPreview({
 
   const handleLogout = async () => {
     try {
-      const { error } = await signOut();
+      const { error } = await authService.signOut();
       if (error) {
         console.error('Erro ao fazer logout:', error);
       }
