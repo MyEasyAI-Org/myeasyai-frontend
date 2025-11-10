@@ -1,9 +1,5 @@
 import { useState } from 'react';
-import {
-  signInWithEmail,
-  signInWithFacebook,
-  signInWithGoogle,
-} from '../lib/supabase';
+import { authService } from '../services/AuthService';
 import { Button } from './Button';
 import { Modal } from './Modal';
 
@@ -27,7 +23,7 @@ export function LoginModal({
     const password = formData.get('password') as string;
 
     try {
-      const { error } = await signInWithEmail(email, password);
+      const { error } = await authService.signInWithEmail(email, password);
       if (error) {
         alert(`Erro ao fazer login: ${error.message}`);
         return;
@@ -49,10 +45,10 @@ export function LoginModal({
       let result;
       switch (provider) {
         case 'google':
-          result = await signInWithGoogle();
+          result = await authService.signInWithGoogle();
           break;
         case 'facebook':
-          result = await signInWithFacebook();
+          result = await authService.signInWithFacebook();
           break;
         case 'apple':
           alert('Login com Apple não está disponível no momento.');

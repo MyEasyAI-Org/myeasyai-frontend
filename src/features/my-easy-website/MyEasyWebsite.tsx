@@ -31,11 +31,7 @@ import {
   COUNTRIES,
   type CountryAddressConfig,
 } from '../../constants/countries';
-import {
-  correctNameCapitalization,
-  generateCustomColorPalettes,
-  rewriteAllContent,
-} from '../../lib/gemini';
+import { contentRewritingService } from '../../services/ContentRewritingService';
 import { SiteTemplate } from './SiteTemplate';
 
 type Message = {
@@ -931,7 +927,7 @@ export function MyEasyWebsite({ onBackToDashboard }: MyEasyWebsiteProps = {}) {
 
     try {
       // Chamar IA para gerar 6 paletas
-      const palettes = await generateCustomColorPalettes(description);
+      const palettes = await contentRewritingService.generateCustomColorPalettes(description);
       setGeneratedPalettes(palettes);
 
       // Atualizar mensagem com as paletas geradas
@@ -1068,10 +1064,10 @@ export function MyEasyWebsite({ onBackToDashboard }: MyEasyWebsiteProps = {}) {
 
     try {
       // Primeiro, corrigir a capitalização do nome da empresa
-      const correctedName = await correctNameCapitalization(siteData.name);
+      const correctedName = await contentRewritingService.correctNameCapitalization(siteData.name);
 
       // Chamar a IA do Gemini para reescrever TODOS os textos
-      const rewrittenContent = await rewriteAllContent({
+      const rewrittenContent = await contentRewritingService.rewriteAllContent({
         name: correctedName,
         area: siteData.area,
         slogan: siteData.slogan,

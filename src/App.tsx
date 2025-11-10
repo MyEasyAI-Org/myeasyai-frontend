@@ -15,14 +15,11 @@ import { OnboardingModal } from './components/OnboardingModal';
 import { Packages } from './components/Packages';
 import { Preview } from './components/Preview';
 import { PWAInstallBanner } from './components/PWAInstallBanner';
-import { BusinessGuru } from './features/businessguru/BusinessGuru';
-import { MyEasyWebsite } from './features/myeasywebsite/MyEasyWebsite';
+import { BusinessGuru } from './features/business-guru/BusinessGuru';
+import { MyEasyWebsite } from './features/my-easy-website/MyEasyWebsite';
 import { useInactivityTimeout } from './hooks/useInactivityTimeout';
-import {
-  checkUserNeedsOnboarding,
-  ensureUserInDatabase,
-  supabase,
-} from './lib/supabase';
+import { supabase } from './lib/api-clients/supabase-client';
+import { userManagementService } from './services/UserManagementService';
 
 // 🎬 CONFIGURATION: Enable/Disable Splash Screen
 // Change to `true` to re-enable the splash screen "Welcome to the future of AI"
@@ -256,7 +253,7 @@ function App() {
       // Process session restoration silently (without loading bar)
       if (event === 'INITIAL_SESSION') {
         if (session?.user) {
-          await ensureUserInDatabase(session.user);
+          await userManagementService.ensureUserInDatabase(session.user);
 
           // Fetch user data
           if (session.user.email) {
@@ -264,8 +261,8 @@ function App() {
             setUserName(userData.name);
           }
 
-          const needsOnboardingCheck = await checkUserNeedsOnboarding(
-            session.user,
+          const needsOnboardingCheck = await userManagementService.checkUserNeedsOnboarding(
+            session.user.id,
           );
           setNeedsOnboarding(needsOnboardingCheck);
         }
@@ -282,7 +279,7 @@ function App() {
 
         // Register user in users table (especially for social login)
         if (session?.user) {
-          await ensureUserInDatabase(session.user);
+          await userManagementService.ensureUserInDatabase(session.user);
 
           // Fetch user data
           if (session.user.email) {
@@ -291,8 +288,8 @@ function App() {
           }
 
           // Check if needs onboarding
-          const needsOnboardingCheck = await checkUserNeedsOnboarding(
-            session.user,
+          const needsOnboardingCheck = await userManagementService.checkUserNeedsOnboarding(
+            session.user.id,
           );
           setNeedsOnboarding(needsOnboardingCheck);
 
