@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { authService } from '../services/AuthService';
-import { Button } from './Button';
+import { DSButton, DSInput } from './design-system';
 import { Modal } from './Modal';
 
 type LoginModalProps = {
@@ -83,12 +83,13 @@ export function LoginModal({
           <span className="mb-1 block text-sm font-medium text-slate-300">
             Seu e-mail
           </span>
-          <input
+          <DSInput
             type="email"
             name="email"
             placeholder="seuemail@dominio.com"
             required
-            className="w-full rounded-lg border border-slate-700 bg-slate-800/60 px-4 py-3 text-slate-100 placeholder-slate-500 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/40"
+            inputSize="md"
+            className="w-full"
           />
         </label>
 
@@ -96,17 +97,18 @@ export function LoginModal({
           <span className="mb-1 block text-sm font-medium text-slate-300">
             Senha secreta
           </span>
-          <input
+          <DSInput
             type="password"
             name="password"
             placeholder="Digite sua senha"
             required
-            className="w-full rounded-lg border border-slate-700 bg-slate-800/60 px-4 py-3 text-slate-100 placeholder-slate-500 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/40"
+            inputSize="md"
+            className="w-full"
           />
         </label>
 
         <div className="flex justify-center">
-          <Button variant="log">Entrar</Button>
+          <DSButton variant="primary" className="w-full mt-4">Entrar</DSButton>
         </div>
       </form>
 
