@@ -15,6 +15,7 @@
       "Bash(cat:*)",
       "Bash(npx @biomejs/biome format:*)",
       "Bash(find:*)",
+      "Bash(git checkout:*)",
       "Bash(mkdir:*)"
     ],
     "deny": [],
