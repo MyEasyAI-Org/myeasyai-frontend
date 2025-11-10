@@ -2,7 +2,7 @@ import type { User } from '@supabase/supabase-js';
 import * as flags from 'country-flag-icons/react/3x2';
 import { useEffect, useRef, useState } from 'react';
 import { COUNTRIES, getCountryConfig } from '../constants/countries';
-import { supabase } from '../lib/supabase';
+import { supabase } from '../lib/api-clients/supabase-client';
 import { Modal } from './Modal';
 
 type OnboardingModalProps = {

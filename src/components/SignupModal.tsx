@@ -1,10 +1,6 @@
 import { useState } from 'react';
 import type { SubscriptionPlan } from '../constants/plans';
-import {
-  signInWithFacebook,
-  signInWithGoogle,
-  signUpWithEmail,
-} from '../lib/supabase';
+import { authService } from '../services/AuthService';
 import { Button } from './Button';
 import { Modal } from './Modal';
 
@@ -44,7 +40,7 @@ export function SignupModal({
     }
 
     try {
-      const { error } = await signUpWithEmail(
+      const { error } = await authService.signUpWithEmail(
         email,
         password,
         fullName,
@@ -78,10 +74,10 @@ export function SignupModal({
       let result;
       switch (provider) {
         case 'google':
-          result = await signInWithGoogle();
+          result = await authService.signInWithGoogle();
           break;
         case 'facebook':
-          result = await signInWithFacebook();
+          result = await authService.signInWithFacebook();
           break;
         case 'apple':
           alert('Cadastro com Apple não está disponível no momento.');

@@ -5,7 +5,7 @@ import {
   colorPalettes,
   getCategoryIcon,
 } from '../constants/colorPalettes';
-import { generateCustomColorPalettes } from '../lib/gemini';
+import { contentRewritingService } from '../services/ContentRewritingService';
 
 interface ColorPaletteSelectorProps {
   onSelectPalette: (palette: ColorPalette) => void;
@@ -43,7 +43,7 @@ export function ColorPaletteSelector({
       console.log('🎨 Gerando paletas customizadas para:', customDescription);
 
       // Chamar a IA do Gemini para gerar paletas
-      const aiPalettes = await generateCustomColorPalettes(customDescription);
+      const aiPalettes = await contentRewritingService.generateCustomColorPalettes(customDescription);
 
       console.log('✅ Paletas geradas pela IA:', aiPalettes.length);
 
