@@ -7,12 +7,8 @@ import {
   XCircle,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import {
-  formatBytes,
-  getNetlifyUsage,
-  getUsageColor,
-  type NetlifyUsage,
-} from '../lib/netlify';
+import { formatBytes, getUsageColor } from '../lib/utils/formatters';
+import { type NetlifyUsage, deploymentService } from '../services/DeploymentService';
 
 interface NetlifyUsageMonitorProps {
   className?: string;
@@ -33,7 +29,7 @@ export function NetlifyUsageMonitor({
     try {
       setLoading(true);
       setError(null);
-      const usageData = await getNetlifyUsage();
+      const usageData = await deploymentService.getNetlifyUsage();
       setUsage(usageData);
     } catch (err) {
       console.error('Erro ao carregar uso do Netlify:', err);

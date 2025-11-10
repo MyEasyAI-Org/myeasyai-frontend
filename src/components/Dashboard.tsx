@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { PLANS, type SubscriptionPlan } from '../constants/plans';
-import { supabase } from '../lib/supabase';
+import { supabase } from '../lib/api-clients/supabase-client';
 import { Footer } from './Footer';
 
 type DashboardProps = {
