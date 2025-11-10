@@ -140,7 +140,7 @@ export function Hero({
           </button>
 
           <h1 className="mb-6 text-5xl font-bold leading-tight md:text-7xl">
-            <span className="bg-gradient-to-r from-blue-400 via-purple-400 to-cyan-400 bg-clip-text text-transparent">
+            <span className="text-gradient">
               Construa e treine
             </span>
             <br />
