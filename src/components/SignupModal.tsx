@@ -3,6 +3,8 @@ import type { SubscriptionPlan } from '../constants/plans';
 import { authService } from '../services/AuthService';
 import { DSButton, DSInput } from './design-system';
 import { Modal } from './Modal';
+// CAPTCHA temporariamente desabilitado para testes E2E
+// import { Turnstile } from '@marsidev/react-turnstile';
 
 type SignupModalProps = {
   isOpen: boolean;
@@ -19,6 +21,12 @@ export function SignupModal({
 }: SignupModalProps) {
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [isFacebookLoading, setIsFacebookLoading] = useState(false);
+
+  // CAPTCHA temporariamente desabilitado para testes E2E
+  // const [captchaToken, setCaptchaToken] = useState<string>('');
+  // const captchaRef = useRef<any>(null);
+  // const isTestEnvironment = import.meta.env.VITE_TEST_MODE === 'true';
+  
   const handleEmailSignup = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
@@ -39,6 +47,13 @@ export function SignupModal({
       return;
     }
 
+    // CAPTCHA temporariamente desabilitado para testes E2E
+    // Validar CAPTCHA (exceto em ambiente de teste)
+    // if (!isTestEnvironment && !captchaToken) {
+    //   alert('Por favor, complete o desafio de segurança (CAPTCHA)');
+    //   return;
+    // }
+
     try {
       const { error } = await authService.signUpWithEmail(
         email,
@@ -56,11 +71,20 @@ export function SignupModal({
         localStorage.setItem('selectedPlan', selectedPlan);
       }
 
-      alert('Conta criada com sucesso! Verifique seu email para confirmar.');
+      // Removido: alert de confirmação de email
+      // Com email confirmation desabilitado, o usuário é autenticado imediatamente
       // O modal será fechado automaticamente pelo listener de auth no App.tsx
     } catch (error) {
       alert(`Erro inesperado: ${error}`);
     }
+    // CAPTCHA temporariamente desabilitado
+    // finally {
+    //   // Resetar o CAPTCHA após tentativa de cadastro
+    //   if (captchaRef.current) {
+    //     captchaRef.current.reset();
+    //   }
+    //   setCaptchaToken('');
+    // }
   };
 
   const handleSocialSignup = async (
@@ -206,8 +230,28 @@ export function SignupModal({
           />
         </label>
 
-        <div className="flex justify-center">
-          <DSButton variant="primary" className="w-full mt-4">Criar conta</DSButton>
+        <div className="flex flex-col items-center gap-4">
+          {/* CAPTCHA temporariamente desabilitado para testes E2E */}
+          {/* {!isTestEnvironment && (
+            <Turnstile
+              ref={captchaRef}
+              siteKey={import.meta.env.VITE_TURNSTILE_SITE_KEY}
+              onSuccess={(token) => setCaptchaToken(token)}
+              onError={() => {
+                setCaptchaToken('');
+                alert('Erro ao validar CAPTCHA. Por favor, tente novamente.');
+              }}
+              onExpire={() => setCaptchaToken('')}
+              options={{
+                theme: 'dark',
+                size: 'normal',
+              }}
+            />
+          )} */}
+
+          <DSButton variant="primary" className="w-full mt-4">
+            Criar conta
+          </DSButton>
         </div>
       </form>
 

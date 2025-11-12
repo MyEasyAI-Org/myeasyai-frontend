@@ -1,6 +1,6 @@
 export function MidStats() {
   return (
-    <section className="bg-slate-800/50 px-4 py-20 sm:px-6 lg:px-8">
+    <section className="bg-gradient-to-b from-transparent via-slate-900/20 to-transparent px-4 py-20 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-7xl text-center">
         <div className="mb-8 inline-flex items-center rounded-full border border-blue-500/30 bg-gradient-to-r from-blue-500/20 to-purple-600/20 px-6 py-3">
           <svg

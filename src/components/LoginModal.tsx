@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { authService } from '../services/AuthService';
 import { DSButton, DSInput } from './design-system';
 import { Modal } from './Modal';
+// CAPTCHA temporariamente desabilitado para testes E2E
+// import { Turnstile } from '@marsidev/react-turnstile';
 
 type LoginModalProps = {
   isOpen: boolean;
@@ -16,11 +18,24 @@ export function LoginModal({
 }: LoginModalProps) {
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [isFacebookLoading, setIsFacebookLoading] = useState(false);
+
+  // CAPTCHA temporariamente desabilitado para testes E2E
+  // const [captchaToken, setCaptchaToken] = useState<string>('');
+  // const captchaRef = useRef<any>(null);
+  // const isTestEnvironment = import.meta.env.VITE_TEST_MODE === 'true';
+  
   const handleEmailLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     const email = formData.get('email') as string;
     const password = formData.get('password') as string;
+
+    // CAPTCHA temporariamente desabilitado para testes E2E
+    // Validar CAPTCHA (exceto em ambiente de teste)
+    // if (!isTestEnvironment && !captchaToken) {
+    //   alert('Por favor, complete o desafio de segurança (CAPTCHA)');
+    //   return;
+    // }
 
     try {
       const { error } = await authService.signInWithEmail(email, password);
@@ -32,6 +47,14 @@ export function LoginModal({
     } catch (error) {
       alert(`Erro inesperado: ${error}`);
     }
+    // CAPTCHA temporariamente desabilitado
+    // finally {
+    //   // Resetar o CAPTCHA após tentativa de login
+    //   if (captchaRef.current) {
+    //     captchaRef.current.reset();
+    //   }
+    //   setCaptchaToken('');
+    // }
   };
 
   const handleSocialLogin = async (
@@ -107,8 +130,28 @@ export function LoginModal({
           />
         </label>
 
-        <div className="flex justify-center">
-          <DSButton variant="primary" className="w-full mt-4">Entrar</DSButton>
+        <div className="flex flex-col items-center gap-4">
+          {/* CAPTCHA temporariamente desabilitado para testes E2E */}
+          {/* {!isTestEnvironment && (
+            <Turnstile
+              ref={captchaRef}
+              siteKey={import.meta.env.VITE_TURNSTILE_SITE_KEY}
+              onSuccess={(token) => setCaptchaToken(token)}
+              onError={() => {
+                setCaptchaToken('');
+                alert('Erro ao validar CAPTCHA. Por favor, tente novamente.');
+              }}
+              onExpire={() => setCaptchaToken('')}
+              options={{
+                theme: 'dark',
+                size: 'normal',
+              }}
+            />
+          )} */}
+
+          <DSButton variant="primary" className="w-full mt-4">
+            Entrar
+          </DSButton>
         </div>
       </form>
 

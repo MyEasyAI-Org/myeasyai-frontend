@@ -14,6 +14,7 @@ type ButtonProps = {
   variant?: ButtonVariant;
   onClick?: () => void;
   target?: '_blank' | '_self';
+  disabled?: boolean;
 };
 
 export function Button({
@@ -22,6 +23,7 @@ export function Button({
   variant = 'primary',
   onClick,
   target = '_self',
+  disabled = false,
 }: ButtonProps) {
   const base =
     'inline-flex items-center justify-center rounded-lg px-6 py-3 font-semibold transition-all duration-300';
@@ -54,7 +56,7 @@ export function Button({
   }
 
   return (
-    <button onClick={onClick} className={className}>
+    <button onClick={onClick} className={className} disabled={disabled}>
       {children}
     </button>
   );
