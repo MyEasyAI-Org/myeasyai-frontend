@@ -47,15 +47,15 @@ export default defineConfig({
     // URL base da aplicação (não precisa repetir em cada teste)
     baseURL: 'http://localhost:5173',
 
-    // Gravar trace (filmagem detalhada) apenas na primeira retry
-    // Isso ajuda a debugar falhas sem sobrecarregar o sistema
-    trace: 'on-first-retry',
+    // Gravar trace sempre para visualização na UI do Playwright
+    // Isso permite ver o teste passo a passo na timeline
+    trace: 'on',
 
-    // Tirar screenshot apenas quando o teste falhar
-    screenshot: 'only-on-failure',
+    // Tirar screenshot sempre para ter visibilidade do estado da página
+    screenshot: 'on',
 
-    // Gravar vídeo apenas quando o teste falhar
-    video: 'retain-on-failure',
+    // Gravar vídeo sempre para acompanhar visualmente os testes
+    video: 'on',
 
     // Timeout para navegação
     navigationTimeout: 15000,
