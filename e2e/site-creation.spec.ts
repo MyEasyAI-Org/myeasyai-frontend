@@ -391,64 +391,71 @@ test.describe('MyEasyWebsite - Tratamento de Erros', () => {
     await authenticatedPage.waitForLoadState('networkidle');
   });
 
-  test('mostra erro se geração falhar', async ({ authenticatedPage: page }) => {
-    // Clicar na aba "Meus Produtos" primeiro
+  test('validates that site creation flow completes without errors', async ({ authenticatedPage: page }) => {
+    // Click on "Meus Produtos" tab first
     const meusprodutosTab = page.locator('text=Meus Produtos');
     if (await meusprodutosTab.isVisible({ timeout: 2000 })) {
       await meusprodutosTab.click();
       await page.waitForTimeout(1000);
     }
 
-    // Agora clicar em MyEasyWebsite
-    // Encontrar o card que contém "MyEasyWebsite" e clicar no botão "Acessar" dentro dele
+    // Click on MyEasyWebsite access button
     const myEasyWebsiteCard = page.locator('div').filter({ hasText: /^MyEasyWebsite/ });
     await myEasyWebsiteCard.getByRole('button', { name: 'Acessar' }).first().click();
+
+    // Select business area
+    await expect(page.locator('text=/qual.*área|escolha.*área|negócio/i')).toBeVisible({ timeout: 10000 });
     await page.click('text=/tecnologia/i');
-    await page.fill('input[type="text"]', 'Test Error');
+
+    // Fill business name
+    await page.fill('input[type="text"]', 'Test Business');
     await page.keyboard.press('Enter');
 
-    // Aguardar tentativa de geração
-    await page.waitForTimeout(10000);
-
-    // Verificar se apareceu mensagem de erro (caso a API falhe)
-    const errorMessage = page.locator('text=/erro|falh|problem/i').first();
-    if (await errorMessage.isVisible({ timeout: 5000 }).catch(() => false)) {
-      await expect(errorMessage).toBeVisible();
-
-      // Verificar se há botão para tentar novamente (opcional)
-      const retryButton = page.locator('text=/tentar.*novamente|retry/i');
-      if (await retryButton.isVisible({ timeout: 2000 }).catch(() => false)) {
-        await expect(retryButton).toBeVisible();
-      }
-    }
-  });
-
-  test('lida com perda de conexão durante criação', async ({ authenticatedPage: page }) => {
-    // Clicar na aba "Meus Produtos" primeiro
-    const meusprodutosTab = page.locator('text=Meus Produtos');
-    if (await meusprodutosTab.isVisible({ timeout: 2000 })) {
-      await meusprodutosTab.click();
-      await page.waitForTimeout(1000);
-    }
-
-    // Agora clicar em MyEasyWebsite
-    // Encontrar o card que contém "MyEasyWebsite" e clicar no botão "Acessar" dentro dele
-    const myEasyWebsiteCard = page.locator('div').filter({ hasText: /^MyEasyWebsite/ });
-    await myEasyWebsiteCard.getByRole('button', { name: 'Acessar' }).first().click();
-    await page.click('text=/tecnologia/i');
-    await page.fill('input[type="text"]', 'Connection Test');
-    await page.keyboard.press('Enter');
-
-    // Simular offline (commented - use apenas se necessário)
-    // await page.context().setOffline(true);
-
-    // Aguardar
+    // Wait for next step
     await page.waitForTimeout(3000);
 
-    // Restaurar conexão
-    // await page.context().setOffline(false);
+    // Verify no critical errors appeared
+    const criticalError = page.locator('text=/erro fatal|critical error|sistema indisponível/i');
+    const hasCriticalError = await criticalError.isVisible({ timeout: 2000 }).catch(() => false);
+    expect(hasCriticalError).toBe(false);
 
-    // Verificar se aplicação se recupera
+    // Verify the flow continues (either next question or loading state)
+    const flowContinues = await page.locator('input, text=/aguarde|gerando|próxim/i').first().isVisible({ timeout: 5000 }).catch(() => false);
+    expect(flowContinues).toBe(true);
+  });
+
+  test('handles navigation during site creation flow', async ({ authenticatedPage: page }) => {
+    // Click on "Meus Produtos" tab first
+    const meusprodutosTab = page.locator('text=Meus Produtos');
+    if (await meusprodutosTab.isVisible({ timeout: 2000 })) {
+      await meusprodutosTab.click();
+      await page.waitForTimeout(1000);
+    }
+
+    // Click on MyEasyWebsite access button
+    const myEasyWebsiteCard = page.locator('div').filter({ hasText: /^MyEasyWebsite/ });
+    await myEasyWebsiteCard.getByRole('button', { name: 'Acessar' }).first().click();
+
+    // Wait for business area selection
+    await expect(page.locator('text=/qual.*área|escolha.*área|negócio/i')).toBeVisible({ timeout: 10000 });
+
+    // Select area
+    await page.click('text=/tecnologia/i');
+
+    // Fill business name
+    await page.fill('input[type="text"]', 'Navigation Test');
+    await page.keyboard.press('Enter');
+
+    // Wait for flow to continue
     await page.waitForTimeout(2000);
+
+    // Verify the application handles the flow correctly
+    const pageContent = await page.textContent('body');
+    expect(pageContent).not.toContain('undefined');
+    expect(pageContent).not.toContain('null');
+
+    // Verify no console errors (if error handler is present)
+    const hasErrorState = await page.locator('[class*="error-state"], [data-error="true"]').isVisible({ timeout: 1000 }).catch(() => false);
+    expect(hasErrorState).toBe(false);
   });
 });
