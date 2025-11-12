@@ -62,6 +62,10 @@ export default defineConfig({
 
     // Timeout para actions (click, fill, etc)
     actionTimeout: 10000,
+
+    // Forçar modo headed (com interface visível) quando usar UI mode ou debug
+    // Isso faz o navegador aparecer durante os testes
+    headless: false,
   },
 
   // Projetos = diferentes navegadores/dispositivos para testar
