@@ -62,6 +62,9 @@ export default defineConfig({
 
     // Timeout para actions (click, fill, etc)
     actionTimeout: 10000,
+
+    // Mostrar o navegador visível durante os testes (não headless)
+    headless: false,
   },
 
   // Projetos = diferentes navegadores/dispositivos para testar
@@ -72,6 +75,8 @@ export default defineConfig({
       use: {
         ...devices['Desktop Chrome'],
         viewport: { width: 1920, height: 1080 },
+        // Usar o Chrome instalado no sistema (visível)
+        channel: 'chrome',
       },
     },
 
