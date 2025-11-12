@@ -21,4 +21,12 @@ export default defineConfig({
     },
     chunkSizeWarningLimit: 600, // Ajustar o limite de aviso
   },
+  server: {
+    host: true,
+    allowedHosts: [
+      '9d1b6c4aef5b.ngrok-free.app',
+      '.ngrok-free.app',
+      '.ngrok.io',
+    ],
+  },
 });

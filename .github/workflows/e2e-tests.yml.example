@@ -1,0 +1,142 @@
+# Exemplo de Workflow GitHub Actions para Testes E2E
+# Para usar este arquivo:
+# 1. Renomeie para: e2e-tests.yml
+# 2. Ajuste as configurações conforme necessário
+# 3. Commit e push para o repositório
+
+name: E2E Tests
+
+on:
+  # Executar em push para branches principais
+  push:
+    branches: [main, develop]
+
+  # Executar em pull requests
+  pull_request:
+    branches: [main, develop]
+
+  # Permitir execução manual
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: Run E2E Tests
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        # Testar em diferentes navegadores
+        browser: [chromium, firefox, webkit]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps ${{ matrix.browser }}
+
+      - name: Run E2E tests
+        run: npm run test:e2e -- --project=${{ matrix.browser }}
+        env:
+          # Adicione suas variáveis de ambiente aqui
+          # VITE_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          # VITE_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          CI: true
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-${{ matrix.browser }}
+          path: playwright-report/
+          retention-days: 30
+
+      - name: Upload test videos
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-videos-${{ matrix.browser }}
+          path: test-results/**/*.webm
+          retention-days: 7
+
+  # Job opcional: Testar em mobile
+  test-mobile:
+    name: Run Mobile E2E Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium webkit
+
+      - name: Run mobile E2E tests
+        run: npm run test:e2e:mobile
+        env:
+          CI: true
+
+      - name: Upload mobile test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-mobile
+          path: playwright-report/
+          retention-days: 30
+
+  # Job opcional: Publicar relatório
+  publish-report:
+    name: Publish Test Report
+    runs-on: ubuntu-latest
+    needs: [test, test-mobile]
+    if: always()
+
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: all-reports
+
+      - name: Merge reports (se necessário)
+        run: |
+          # Adicione lógica para merge de relatórios se necessário
+          echo "Reports downloaded to all-reports/"
+
+      # Opcional: Publicar relatório em GitHub Pages
+      # - name: Deploy to GitHub Pages
+      #   uses: peaceiris/actions-gh-pages@v3
+      #   with:
+      #     github_token: ${{ secrets.GITHUB_TOKEN }}
+      #     publish_dir: ./playwright-report
+
+  # Job opcional: Notificar resultado
+  notify:
+    name: Notify Results
+    runs-on: ubuntu-latest
+    needs: [test]
+    if: failure()
+
+    steps:
+      - name: Send notification
+        run: |
+          echo "E2E tests failed! Check the artifacts for details."
+          # Adicione integração com Slack, Discord, email, etc.

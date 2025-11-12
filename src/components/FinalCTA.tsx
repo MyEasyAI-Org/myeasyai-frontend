@@ -1,6 +1,6 @@
 export function FinalCta() {
   return (
-    <section className="bg-gradient-to-br from-blue-900/50 to-purple-900/50 px-4 py-20 sm:px-6 lg:px-8">
+    <section className="bg-gradient-to-b from-transparent via-slate-900/20 to-transparent px-4 py-20 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-4xl text-center">
         <h2 className="mb-6 text-4xl font-bold md:text-5xl">
           Pronto para criar seu primeiro assistente virtual?

@@ -10,6 +10,7 @@ type ModalProps = {
   dialogClassName?: string;
   contentClassName?: string;
   closeButtonLabel?: string;
+  disableClose?: boolean;
 };
 
 export function Modal({
@@ -21,6 +22,7 @@ export function Modal({
   dialogClassName,
   contentClassName,
   closeButtonLabel = 'Fechar modal',
+  disableClose = false,
 }: ModalProps) {
   if (!isOpen) {
     return null;
@@ -43,7 +45,7 @@ export function Modal({
   return (
     <div
       className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-950/80 px-4 py-10 sm:items-center sm:py-12 modal-backdrop-enter"
-      onClick={onClose}
+      onClick={disableClose ? undefined : onClose}
     >
       <div
         role="dialog"
@@ -52,14 +54,16 @@ export function Modal({
         className={`${dialogClasses} modal-content-enter`}
         onClick={(event) => event.stopPropagation()}
       >
-        <button
-          type="button"
-          className="absolute right-4 top-4 text-slate-400 transition-colors hover:text-slate-100"
-          onClick={onClose}
-          aria-label={closeButtonLabel}
-        >
-          <FiX className="h-5 w-5" aria-hidden="true" />
-        </button>
+        {!disableClose && (
+          <button
+            type="button"
+            className="absolute right-4 top-4 text-slate-400 transition-colors hover:text-slate-100"
+            onClick={onClose}
+            aria-label={closeButtonLabel}
+          >
+            <FiX className="h-5 w-5" aria-hidden="true" />
+          </button>
+        )}
 
         {title ? (
           <h2 className="text-2xl font-semibold text-slate-100">{title}</h2>

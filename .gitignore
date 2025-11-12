@@ -29,3 +29,10 @@ dist-ssr
 
 # Environment variables
 .env
+
+# Playwright E2E Tests
+/test-results/
+/playwright-report/
+/playwright/.cache/
+*.mp4
+*.webm
