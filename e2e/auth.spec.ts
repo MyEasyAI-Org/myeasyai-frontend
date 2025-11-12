@@ -166,12 +166,9 @@ test.describe('Autenticação - Login', () => {
   });
 
   test('usuário pode fazer login com credenciais válidas', async ({ page }) => {
-    // Nota: Este teste assume que você já tem um usuário cadastrado
-    // Para um teste real, você deve criar o usuário primeiro ou usar
-    // um usuário de teste pré-existente
-
-    const email = 'usuario-teste@myeasyai.test';
-    const password = 'SenhaSegura123!';
+    // Usando credenciais reais para teste
+    const email = 'getgadgetsuporte@gmail.com';
+    const password = 'Papagaio1998!_';
 
     // 1. Clicar em "Login"
     await page.click('text=Login');
@@ -253,8 +250,8 @@ test.describe('Autenticação - Logout', () => {
     // Fazer login primeiro
     await page.click('text=Login');
     await page.waitForSelector('input[name="email"]', { state: 'visible' });
-    await page.fill('[name="email"]', 'usuario-teste@myeasyai.test');
-    await page.fill('[name="password"]', 'SenhaSegura123!');
+    await page.fill('[name="email"]', 'getgadgetsuporte@gmail.com');
+    await page.fill('[name="password"]', 'Papagaio1998!_');
     await page.click('text=Entrar');
     await page.waitForTimeout(2000);
 
