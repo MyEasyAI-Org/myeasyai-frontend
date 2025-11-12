@@ -1,6 +1,6 @@
 export function Preview() {
   return (
-    <section id="preview" className="px-4 py-20 sm:px-6 lg:px-8">
+    <section id="preview" className="bg-gradient-to-b from-transparent via-slate-900/20 to-transparent px-4 py-20 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-7xl">
         <div className="mb-16 text-center">
           <h2 className="mb-4 text-4xl font-bold">Veja como funciona</h2>

@@ -10,6 +10,7 @@ type OnboardingModalProps = {
   onClose: () => void;
   onComplete: () => void;
   user: User;
+  disableClose?: boolean;
 };
 
 type FormData = {
@@ -70,6 +71,7 @@ export function OnboardingModal({
   onClose,
   onComplete,
   user,
+  disableClose = false,
 }: OnboardingModalProps) {
   const [currentStep, setCurrentStep] = useState(0);
   const [formData, setFormData] = useState<FormData>({
@@ -939,6 +941,7 @@ export function OnboardingModal({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
+      disableClose={disableClose}
       title="Complete seu perfil"
       description="Para uma experiência personalizada, precisamos de algumas informações."
       contentClassName="space-y-6"

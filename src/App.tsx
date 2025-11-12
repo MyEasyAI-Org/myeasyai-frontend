@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import './App.css';
 import type { User } from '@supabase/supabase-js';
 import { Courses } from './components/Courses';
@@ -44,7 +44,7 @@ function App() {
   const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
   const [needsOnboarding, setNeedsOnboarding] = useState(false);
   const [isAuthLoading, setIsAuthLoading] = useState(false);
-  const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const isInitialLoadRef = useRef(true);
   const [isCheckingAuth, setIsCheckingAuth] = useState(() => {
     // If data is already in localStorage, no need to show loading
     return !localStorage.getItem('userName');
@@ -247,7 +247,7 @@ function App() {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('Auth event:', event, 'isInitialLoad:', isInitialLoad);
+      console.log('Auth event:', event, 'isInitialLoad:', isInitialLoadRef.current);
       setUser(session?.user ?? null);
 
       // Process session restoration silently (without loading bar)
@@ -267,11 +267,11 @@ function App() {
           setNeedsOnboarding(needsOnboardingCheck);
         }
         // Mark that initial load was completed
-        setIsInitialLoad(false);
+        isInitialLoadRef.current = false;
       }
 
       // Process intentional login (email, OAuth, etc)
-      if (event === 'SIGNED_IN' && !isInitialLoad) {
+      if (event === 'SIGNED_IN' && !isInitialLoadRef.current) {
         // Enable loading bar only on intentional login
         setIsAuthLoading(true);
         setIsLoginOpen(false);
@@ -293,11 +293,16 @@ function App() {
           );
           setNeedsOnboarding(needsOnboardingCheck);
 
-          // If needs onboarding, open modal automatically
+          // If needs onboarding, stay on home and show onboarding modal
+          // Only go to dashboard after onboarding is completed
           if (needsOnboardingCheck) {
+            setCurrentView('home');
             setTimeout(() => {
               setIsOnboardingOpen(true);
             }, 100);
+          } else {
+            // Navigate to dashboard after successful login if no onboarding needed
+            setCurrentView('dashboard');
           }
 
           // Disable loading bar after completion
@@ -318,7 +323,7 @@ function App() {
         setIsLoginOpen(false);
         setIsSignupOpen(false);
         setIsAuthLoading(false);
-        setIsInitialLoad(true); // Reset flag for next login
+        isInitialLoadRef.current = true; // Reset flag for next login
       }
     });
 
@@ -403,6 +408,7 @@ function App() {
           onClose={closeOnboarding}
           onComplete={handleOnboardingComplete}
           user={user}
+          disableClose={needsOnboarding}
         />
       )}
 

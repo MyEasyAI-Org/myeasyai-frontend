@@ -125,7 +125,7 @@ export function Hero({
   };
 
   return (
-    <section className="px-4 pt-24 pb-20 sm:px-6 lg:px-8">
+    <section className="bg-gradient-to-b from-transparent via-slate-900/20 to-transparent px-4 pt-24 pb-20 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-7xl">
         <div className="mb-16 text-center">
           <button
