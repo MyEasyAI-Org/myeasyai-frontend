@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import './App.css';
 import type { User } from '@supabase/supabase-js';
 import { Courses } from './components/Courses';
-import { DashboardPreview } from './components/DashboardPreview';
+import { Dashboard } from './components/Dashboard';
 import { Features } from './components/Features';
 import { FinalCta } from './components/FinalCTA';
 import { Footer } from './components/Footer';
@@ -344,7 +344,7 @@ function App() {
       <>
         {/* Authentication loading bar */}
         <LoadingBar isLoading={isAuthLoading} duration={2300} />
-        <DashboardPreview
+        <Dashboard
           key={dashboardKey}
           onGoHome={goToHome}
           onGoToMyEasyWebsite={goToMyEasyWebsite}
