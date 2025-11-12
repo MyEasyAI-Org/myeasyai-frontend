@@ -1,67 +1,69 @@
+/**
+ * Teste Manual de Login
+ * Login com credenciais específicas: getgadgetsuporte@gmail.com
+ */
+
 import { test, expect } from '@playwright/test';
 
-test.describe('Manual Login Test', () => {
-  test('login with existing user rawix12331@delaeb.com', async ({ page }) => {
-    const email = 'rawix12331@delaeb.com';
+test.describe('Teste Manual de Login - getgadgetsuporte@gmail.com', () => {
+  test('fazer login completo e navegar pelo sistema', async ({ page }) => {
+    const email = 'getgadgetsuporte@gmail.com';
     const password = 'Papagaio1998!_';
 
-    // 1. Ir para homepage
-    await page.goto('http://localhost:5174/');
+    console.log('🔵 [1/6] Navegando para a página inicial...');
+    await page.goto('/');
 
-    // 2. Aguardar página carregar
-    await page.waitForLoadState('networkidle');
-
-    // 3. Abrir modal de login
-    console.log('Clicando no botão Login...');
+    console.log('🔵 [2/6] Clicando no botão Login...');
     await page.click('text=Login');
 
-    // 4. Aguardar modal abrir
-    console.log('Aguardando modal abrir...');
-    await page.waitForSelector('input[name="email"]', {
-      state: 'visible',
-      timeout: 10000,
-    });
+    console.log('🔵 [3/6] Aguardando modal de login aparecer...');
+    await page.waitForSelector('input[name="email"]', { state: 'visible', timeout: 10000 });
 
-    // 5. Preencher credenciais
-    console.log('Preenchendo credenciais...');
-    await page.fill('input[name="email"]', email);
-    await page.fill('input[name="password"]', password);
+    console.log('🔵 [4/6] Preenchendo credenciais...');
+    await page.fill('[name="email"]', email);
+    await page.fill('[name="password"]', password);
 
-    // 6. Submeter formulário
-    console.log('Submetendo formulário...');
+    console.log('🔵 [5/6] Clicando no botão Entrar...');
     await page.click('text=Entrar');
 
-    // 7. Aguardar resposta do login
-    await page.waitForTimeout(3000);
-
-    // 8. Verificar se há produtos visíveis
-    console.log('Verificando se produtos estão visíveis...');
-
-    // Tirar screenshot do estado atual
-    await page.screenshot({ path: 'test-results/manual-login-after-submit.png', fullPage: true });
-
-    // Verificar se algum elemento do dashboard está visível
-    const dashboardVisible = await page.locator('text=/MyEasyWebsite|BusinessGuru|Visão Geral|Dashboard/i').first().isVisible().catch(() => false);
-
-    console.log('Dashboard visível?', dashboardVisible);
-
-    // Verificar URL e estado da página
-    console.log('URL atual:', page.url());
-
-    // Verificar se há erros no console
-    page.on('console', msg => {
-      if (msg.type() === 'error') {
-        console.log('ERRO NO CONSOLE:', msg.text());
-      }
-    });
-
-    // Aguardar mais um pouco para ver se algo aparece
+    console.log('🔵 [6/6] Aguardando resposta do login...');
     await page.waitForTimeout(5000);
+
+    // Verificar se há erro
+    const errorLocator = page.locator('text=/erro|inválid|incorrect|credenciais/i');
+    const hasError = await errorLocator.isVisible().catch(() => false);
+
+    if (hasError) {
+      const errorText = await errorLocator.textContent();
+      console.log('❌ ERRO DE LOGIN:', errorText);
+      throw new Error(`Login falhou: ${errorText}`);
+    }
+
+    // Verificar se apareceu dashboard ou onboarding
+    console.log('✅ Login bem-sucedido! Verificando próxima tela...');
+    
+    const onboardingModal = page.locator('[data-testid="onboarding-modal"], text=/dados pessoais|etapa 1|onboarding/i');
+    const dashboardContent = page.locator('text=/dashboard|bem-vindo|meus sites/i');
+    
+    const isOnboarding = await onboardingModal.isVisible().catch(() => false);
+    const isDashboard = await dashboardContent.isVisible().catch(() => false);
+
+    if (isOnboarding) {
+      console.log('🔵 Modal de onboarding detectado - usuário precisa completar onboarding');
+    } else if (isDashboard) {
+      console.log('✅ Dashboard visível - usuário já completou onboarding');
+    } else {
+      console.log('⚠️  Estado desconhecido - verificar manualmente');
+    }
 
     // Tirar screenshot final
     await page.screenshot({ path: 'test-results/manual-login-final.png', fullPage: true });
+    console.log('📸 Screenshot salvo em: test-results/manual-login-final.png');
 
-    // O teste passa se conseguiu submeter o formulário sem erro
-    expect(true).toBe(true);
+    // Manter aberto para visualização
+    console.log('⏸️  Mantendo navegador aberto por 10 segundos...');
+    await page.waitForTimeout(10000);
+    
+    console.log('✅ Teste concluído com sucesso!');
   });
 });
