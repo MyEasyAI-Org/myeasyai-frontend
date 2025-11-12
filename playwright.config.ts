@@ -1,4 +1,6 @@
 import { defineConfig, devices } from '@playwright/test';
+import * as dotenv from 'dotenv';
+import * as path from 'path';
 
 /**
  * Configuração de Testes E2E para MyEasyAI
@@ -6,6 +8,9 @@ import { defineConfig, devices } from '@playwright/test';
  * Este arquivo define como os testes End-to-End serão executados.
  * Baseado no guia completo em GUIA_TESTES_E2E.md
  */
+
+// Load .env.test file
+dotenv.config({ path: path.resolve(__dirname, '.env.test') });
 
 export default defineConfig({
   // Pasta onde ficam os testes E2E

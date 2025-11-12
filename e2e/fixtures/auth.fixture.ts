@@ -29,9 +29,24 @@ type AuthFixtures = {
 
 /**
  * Cria um usuário de teste e faz login automaticamente
+ * Se usar credenciais de produção, tenta fazer login direto ao invés de criar novo usuário
  */
 async function createAndLoginUser(page: Page): Promise<AuthenticatedUser> {
   const user = generateTestUser();
+  const useProductionUser = process.env.USE_PRODUCTION_USER === 'true';
+
+  // If using production user, try to login directly first
+  if (useProductionUser) {
+    console.log('🔵 [FIXTURE] Usando credenciais de produção - tentando login direto...');
+    try {
+      await loginUser(page, user.email, user.password);
+      console.log('✅ [FIXTURE] Login direto com credenciais de produção bem-sucedido');
+      return user;
+    } catch (error) {
+      console.log('⚠️  [FIXTURE] Login direto falhou, usuário pode não existir ainda');
+      // If login fails, continue to signup flow below
+    }
+  }
 
   // 1. Ir para homepage
   await page.goto('/');

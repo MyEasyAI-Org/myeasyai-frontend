@@ -19,8 +19,21 @@ export function generateTestEmail(): string {
 
 /**
  * Gera dados de usuário para cadastro
+ * Se USE_PRODUCTION_USER=true, usa credenciais de produção
+ * Caso contrário, gera usuário único para testes
  */
 export function generateTestUser() {
+  const useProductionUser = process.env.USE_PRODUCTION_USER === 'true';
+
+  if (useProductionUser) {
+    return {
+      fullName: 'GetGadget Suporte',
+      preferredName: 'GetGadget',
+      email: 'getgadgetsuporte@gmail.com',
+      password: 'Papagaio1998!_',
+    };
+  }
+
   return {
     fullName: 'João Silva Santos',
     preferredName: 'João',
