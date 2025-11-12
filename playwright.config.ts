@@ -72,6 +72,9 @@ export default defineConfig({
       use: {
         ...devices['Desktop Chrome'],
         viewport: { width: 1920, height: 1080 },
+        // Usa o Google Chrome instalado no sistema (não o headless shell)
+        // Isso permite ver a janela do navegador no modo UI e debug
+        channel: 'chrome',
       },
     },
 
@@ -98,6 +101,8 @@ export default defineConfig({
       name: 'Mobile Chrome',
       use: {
         ...devices['Pixel 5'],
+        // Usa o Google Chrome instalado no sistema
+        channel: 'chrome',
       },
     },
 
