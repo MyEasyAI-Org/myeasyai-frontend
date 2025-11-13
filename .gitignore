@@ -36,3 +36,7 @@ dist-ssr
 /playwright/.cache/
 *.mp4
 *.webm
+
+# Archive files
+*.rar
+*.zip
