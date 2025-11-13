@@ -109,55 +109,134 @@ export function DashboardPreview({
     useState<Notification | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const notificationRef = useRef<HTMLDivElement>(null);
+  const isLoadingRef = useRef(false); // Track if loading is in progress
 
   // Notifications hook
   const { getUnreadCount, getLatest, markAsRead, markAllAsRead } =
     useNotifications();
 
-  // Load logged in user data
+  // Load logged in user data - ALWAYS fetch fresh data
   useEffect(() => {
-    loadUserData();
+    let isActive = true; // Flag to prevent running after unmount
+
+    console.log('🔄 Dashboard montado - iniciando carregamento');
+
+    // Only load if this effect is still active
+    if (isActive) {
+      loadUserData();
+    }
+
+    // Subscribe to realtime updates for user data
+    let userSubscription: any = null;
+    let productsSubscription: any = null;
+
+    const setupRealtimeSubscriptions = async () => {
+      try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+
+        if (session?.user?.email) {
+          console.log('📡 Configurando subscriptions em tempo real para:', session.user.email);
+
+          // Subscribe to user table changes - using EMAIL filter
+          userSubscription = supabase
+            .channel(`user_${session.user.id}`)
+            .on(
+              'postgres_changes',
+              {
+                event: '*',
+                schema: 'public',
+                table: 'users',
+                filter: `email=eq.${session.user.email}`,
+              },
+              (payload) => {
+                console.log('🔔 Dados do usuário atualizados em tempo real!', payload);
+                // Reload user data when changes occur
+                loadUserData();
+              },
+            )
+            .subscribe();
+
+          // Subscribe to user_products table changes
+          productsSubscription = supabase
+            .channel(`products_${session.user.id}`)
+            .on(
+              'postgres_changes',
+              {
+                event: '*',
+                schema: 'public',
+                table: 'user_products',
+                filter: `user_uuid=eq.${session.user.id}`,
+              },
+              (payload) => {
+                console.log('🔔 Produtos atualizados em tempo real!', payload);
+                // Reload user data when product changes occur
+                loadUserData();
+              },
+            )
+            .subscribe();
+        }
+      } catch (error) {
+        console.error('❌ Erro ao configurar subscriptions:', error);
+      }
+    };
+
+    setupRealtimeSubscriptions();
+
+    // Cleanup on unmount
+    return () => {
+      isActive = false; // Marca como inativo para evitar atualizações após desmontagem
+      isLoadingRef.current = false; // CRITICAL: Reset loading ref on unmount
+      console.log('🧹 Dashboard cleanup (React Strict Mode ou navegação)');
+      if (userSubscription) {
+        supabase.removeChannel(userSubscription);
+      }
+      if (productsSubscription) {
+        supabase.removeChannel(productsSubscription);
+      }
+    };
   }, []);
 
   const loadUserData = async () => {
+    // Prevent multiple simultaneous loads using ref (not state)
+    if (isLoadingRef.current) {
+      console.log('⚠️ Carregamento já em andamento - ignorando nova chamada');
+      return;
+    }
+
+    isLoadingRef.current = true; // Mark as loading
     let timeoutId: NodeJS.Timeout | undefined;
 
     try {
       setIsLoading(true);
       setLoadingProgress(20);
-      setLoadingStep('Carregando seu perfil...');
+      setLoadingStep('Carregando dados atualizados...');
 
-      // Safety timeout - force completion after 10 seconds
+      // Safety timeout - force completion after 15 seconds
       timeoutId = setTimeout(() => {
         console.warn(
-          '⏰ Timeout no carregamento do dashboard - forçando finalização',
+          '⏰ Timeout no carregamento do dashboard após 15 segundos - forçando finalização',
         );
         setLoadingStep('Finalizando carregamento...');
         setLoadingProgress(100);
         setTimeout(() => {
           setIsLoading(false);
+          isLoadingRef.current = false; // Reset loading ref
           onLoadingComplete?.();
         }, 1000);
-      }, 10000);
+      }, 15000);
 
       // Smaller visual delay to not freeze too long if there's an error
       await new Promise((resolve) => setTimeout(resolve, 500));
 
-      console.log('🔄 Iniciando carregamento do dashboard...');
+      console.log('🔄 Iniciando carregamento FRESCO do dashboard...');
 
-      // Check session with timeout
-      const sessionPromise = supabase.auth.getSession();
-      const sessionTimeout = new Promise((_, reject) =>
-        setTimeout(
-          () => reject(new Error('Timeout na verificação de sessão')),
-          8000,
-        ),
-      );
-
+      // Check session - FORCE fresh session check (no cache)
       const {
         data: { session },
         error: sessionError,
-      } = (await Promise.race([sessionPromise, sessionTimeout])) as any;
+      } = await supabase.auth.getSession();
 
       if (sessionError) {
         console.error('❌ Erro de sessão:', sessionError);
@@ -175,117 +254,125 @@ export function DashboardPreview({
 
       console.log('✅ Sessão válida encontrada para:', session.user.email);
       const user = session.user;
+      console.log('🔍 User ID:', user.id);
+      console.log('🔍 User Email:', user.email);
+
       setUserUuid(user.id);
+      console.log('✅ UserUuid setado');
+
       setLoadingProgress(40);
+      console.log('✅ Loading progress setado para 40');
 
-      // Fetch user data with timeout
-      setLoadingStep('Buscando dados...');
+      // Fetch user data - FORCE FRESH DATA (no cache)
+      setLoadingStep('Buscando dados atualizados...');
+      console.log('✅ Loading step atualizado');
+
       await new Promise((resolve) => setTimeout(resolve, 300));
+      console.log('✅ Delay de 300ms concluído');
 
+      console.log('📥 Buscando dados FRESCOS do usuário por email:', user.email);
+
+      // Fetch by EMAIL as requested - this ensures we always get the correct user data
+      // Add timeout protection for this specific query
       const userDataPromise = supabase
         .from('users')
         .select('*')
-        .eq('uuid', user.id)
+        .eq('email', user.email)
+        .limit(1)
         .single();
 
       const userDataTimeout = new Promise((_, reject) =>
-        setTimeout(
-          () => reject(new Error('Timeout ao buscar dados do usuário')),
-          6000,
-        ),
+        setTimeout(() => reject(new Error('Timeout ao buscar dados do usuário')), 8000)
       );
 
-      const userDataResult = (await Promise.race([
+      const { data: userData, error: userError } = await Promise.race([
         userDataPromise,
         userDataTimeout,
-      ]).catch((error) => {
-        console.warn('⚠️ Erro ao buscar dados do usuário:', error);
-        return { data: null, error };
-      })) as any;
+      ]).catch((err) => {
+        console.error('❌ TIMEOUT ou ERRO na busca do usuário:', err);
+        return { data: null, error: err };
+      }) as { data: any; error: any };
+
+      if (userError) {
+        console.error('❌ Erro ao buscar dados do usuário:', userError);
+        console.error('❌ Email usado na busca:', user.email);
+        console.error('❌ User ID do auth:', user.id);
+        throw new Error(`Erro ao carregar dados do usuário: ${userError.message || userError}`);
+      }
+
+      if (!userData) {
+        console.error('❌ Nenhum dado do usuário encontrado para email:', user.email);
+        console.error('❌ Verifique se o usuário existe na tabela users com este email');
+        throw new Error('Usuário não encontrado no banco de dados');
+      }
+
+      console.log('✅ Dados do usuário carregados:', userData);
+      const userUuidFromDb = userData.uuid;
 
       setLoadingProgress(60);
-      setLoadingStep('Configurando dashboard...');
+      setLoadingStep('Carregando produtos...');
 
-      // Fetch products with timeout
-      const productsPromise = supabase
+      // Fetch products - FORCE FRESH DATA (no cache)
+      // Use the UUID from the users table to ensure consistency
+      console.log('📥 Buscando produtos FRESCOS do usuário UUID:', userUuidFromDb);
+
+      const { data: productsData, error: productsError } = await supabase
         .from('user_products')
         .select('*')
-        .eq('user_uuid', user.id);
+        .eq('user_uuid', userUuidFromDb)
+        .order('created_at', { ascending: false });
 
-      const productsTimeout = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Timeout ao buscar produtos')), 5000),
-      );
+      if (productsError) {
+        console.warn('⚠️ Erro ao buscar produtos:', productsError);
+      } else {
+        console.log('✅ Produtos carregados:', productsData?.length || 0);
+      }
 
-      const productsResult = (await Promise.race([
-        productsPromise,
-        productsTimeout,
-      ]).catch((error) => {
-        console.warn('⚠️ Erro ao buscar produtos:', error);
-        return { data: [], error };
-      })) as any;
-
-      if (productsResult.data) {
-        setUserProducts(productsResult.data || []);
+      if (productsData) {
+        setUserProducts(productsData || []);
       }
 
       await new Promise((resolve) => setTimeout(resolve, 500));
       setLoadingProgress(80);
 
-      // Configure profile data
-      if (userDataResult.error || !userDataResult.data) {
-        console.warn('⚠️ Usando dados básicos do usuário');
-        setProfile({
-          name:
-            user.user_metadata?.name ||
-            user.user_metadata?.full_name ||
-            'Usuário',
-          email: user.email || '',
-          bio: '',
-          phone: '',
-          company: '',
-        });
-      } else {
-        const userData = userDataResult.data;
-        console.log('✅ Dados do usuário carregados com sucesso');
+      // Configure profile data - userData is guaranteed to exist at this point
+      console.log('✅ Configurando perfil do usuário');
+      setProfile({
+        name: userData.name || user.user_metadata?.name || 'Usuário',
+        preferred_name:
+          userData.preferred_name ||
+          userData.name?.split(' ')[0] ||
+          'Usuário',
+        email: userData.email || user.email || '',
+        bio: userData.bio || '',
+        phone: userData.mobile_phone || '',
+        company: userData.company_name || '',
+        avatar_url: userData.avatar_url,
+      });
 
-        // Fill profile with data from users table
-        setProfile({
-          name: userData.name || user.user_metadata?.name || 'Usuário',
-          preferred_name:
-            userData.preferred_name ||
-            userData.name?.split(' ')[0] ||
-            'Usuário',
-          email: userData.email || user.email || '',
-          bio: userData.bio || '',
-          phone: userData.mobile_phone || '',
-          company: userData.company_name || '',
-          avatar_url: userData.avatar_url,
-        });
+      // Update subscription data with real data
+      setSubscription({
+        plan: (userData.subscription_plan || 'free') as SubscriptionPlan,
+        status: userData.subscription_status || 'active',
+        start_date: userData.subscription_start_date || userData.created_at,
+        end_date: userData.subscription_end_date,
+        tokens_used: userData.tokens_used || 0,
+        tokens_limit: userData.tokens_limit || 1000,
+        requests_this_month: userData.requests_this_month || 0,
+        next_billing_date: userData.next_billing_date,
+        billing_cycle: userData.billing_cycle,
+        payment_method: userData.payment_method,
+      });
 
-        // Update subscription data with real data
-        setSubscription({
-          plan: (userData.subscription_plan || 'free') as SubscriptionPlan,
-          status: userData.subscription_status || 'active',
-          start_date: userData.subscription_start_date || userData.created_at,
-          end_date: userData.subscription_end_date,
-          tokens_used: userData.tokens_used || 0,
-          tokens_limit: userData.tokens_limit || 1000,
-          requests_this_month: userData.requests_this_month || 0,
-          next_billing_date: userData.next_billing_date,
-          billing_cycle: userData.billing_cycle,
-          payment_method: userData.payment_method,
-        });
-
-        // Fill registration information
-        setCadastralInfo({
-          country: userData.country || '',
-          postal_code: userData.postal_code || '',
-          address: userData.address || '',
-          preferred_language: userData.preferred_language || 'pt',
-          created_at: userData.created_at || '',
-          last_online: userData.last_online || '',
-        });
-      }
+      // Fill registration information
+      setCadastralInfo({
+        country: userData.country || '',
+        postal_code: userData.postal_code || '',
+        address: userData.address || '',
+        preferred_language: userData.preferred_language || 'pt',
+        created_at: userData.created_at || '',
+        last_online: userData.last_online || '',
+      });
 
       setLoadingProgress(100);
       setLoadingStep('Pronto!');
@@ -317,6 +404,7 @@ export function DashboardPreview({
 
       // Ensure loading always finishes, even in case of error
       setIsLoading(false);
+      isLoadingRef.current = false; // Reset loading ref
       onLoadingComplete?.();
       console.log('🏁 Carregamento finalizado');
     }

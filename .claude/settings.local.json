@@ -5,20 +5,9 @@
   },
   "permissions": {
     "allow": [
-      "Bash(npm run build:*)",
-      "Read(//c/Users/Guilherme/Desktop/MyEasyAI/**)",
-      "Bash(tree:*)",
-      "Bash(.gitignore)",
-      "Bash(.env.example)",
-      "Bash(.env)",
-      "Bash(claude config set:*)",
-      "Bash(cat:*)",
-      "Bash(npx @biomejs/biome format:*)",
-      "Bash(find:*)",
-      "Bash(git checkout:*)",
-      "Bash(mkdir:*)",
-      "Bash(rm:*)",
-      "Bash(git cherry-pick:*)"
+      "Bash(git push)",
+      "Bash(git commit:*)",
+      "Bash(test:*)"
     ],
     "deny": [],
     "ask": []

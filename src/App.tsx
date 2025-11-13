@@ -45,17 +45,30 @@ function App() {
   const [needsOnboarding, setNeedsOnboarding] = useState(false);
   const [isAuthLoading, setIsAuthLoading] = useState(false);
   const isInitialLoadRef = useRef(true);
+  const isUserInitiatedLoginRef = useRef(false); // Track if user clicked login/signup
   const [isCheckingAuth, setIsCheckingAuth] = useState(() => {
     // If data is already in localStorage, no need to show loading
     return !localStorage.getItem('userName');
   });
-  const [dashboardKey, setDashboardKey] = useState(Date.now());
+  const [dashboardKey, setDashboardKey] = useState(0);
 
-  const openLogin = () => setIsLoginOpen(true);
-  const closeLogin = () => setIsLoginOpen(false);
+  const openLogin = () => {
+    isUserInitiatedLoginRef.current = true; // Mark as user-initiated
+    setIsLoginOpen(true);
+  };
+  const closeLogin = () => {
+    isUserInitiatedLoginRef.current = false; // Reset if user closes modal
+    setIsLoginOpen(false);
+  };
 
-  const openSignup = () => setIsSignupOpen(true);
-  const closeSignup = () => setIsSignupOpen(false);
+  const openSignup = () => {
+    isUserInitiatedLoginRef.current = true; // Mark as user-initiated
+    setIsSignupOpen(true);
+  };
+  const closeSignup = () => {
+    isUserInitiatedLoginRef.current = false; // Reset if user closes modal
+    setIsSignupOpen(false);
+  };
 
   // Function to fetch user data from database
   const fetchUserData = async (userEmail: string) => {
@@ -101,6 +114,9 @@ function App() {
   const handleLogout = () => {
     // Enable loading bar FIRST
     setIsAuthLoading(true);
+
+    // Reset login flag
+    isUserInitiatedLoginRef.current = false;
 
     // Use setTimeout to avoid blocking - clear UI immediately but after bar renders
     setTimeout(() => {
@@ -150,10 +166,10 @@ function App() {
     if (needsOnboarding) {
       setIsOnboardingOpen(true);
     } else {
-      // Go directly to dashboard - loading will be done by Dashboard itself
+      // ALWAYS force Dashboard remount to reload FRESH data from Supabase
+      console.log('🔄 Navegando para Dashboard - forçando recarregamento completo');
+      setDashboardKey(prev => prev + 1); // Increment to force remount
       setCurrentView('dashboard');
-      // Force Dashboard remount to reload data
-      setDashboardKey(Date.now());
     }
   };
 
@@ -173,7 +189,8 @@ function App() {
     setIsOnboardingOpen(false);
     setNeedsOnboarding(false);
 
-    // Go directly to dashboard - loading will be done by Dashboard itself
+    // Go directly to dashboard with fresh data
+    setDashboardKey(prev => prev + 1);
     setCurrentView('dashboard');
   };
 
@@ -271,7 +288,13 @@ function App() {
       }
 
       // Process intentional login (email, OAuth, etc)
-      if (event === 'SIGNED_IN' && !isInitialLoadRef.current) {
+      // ONLY process if this is a user-initiated login, not a background session refresh
+      if (event === 'SIGNED_IN' && !isInitialLoadRef.current && isUserInitiatedLoginRef.current) {
+        console.log('✅ Login iniciado pelo usuário - processando...');
+
+        // Reset the flag since we're processing the login now
+        isUserInitiatedLoginRef.current = false;
+
         // Enable loading bar only on intentional login
         setIsAuthLoading(true);
         setIsLoginOpen(false);
@@ -302,7 +325,16 @@ function App() {
             }, 100);
           } else {
             // Navigate to dashboard after successful login if no onboarding needed
-            setCurrentView('dashboard');
+            // Only navigate if not already on dashboard to avoid unnecessary remounts
+            setCurrentView((currentView) => {
+              if (currentView === 'dashboard') {
+                console.log('⚠️ Já no Dashboard - ignorando navegação');
+                return currentView; // Stay on dashboard without remounting
+              }
+              // Force fresh data load on login
+              setDashboardKey(prev => prev + 1);
+              return 'dashboard';
+            });
           }
 
           // Disable loading bar after completion

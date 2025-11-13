@@ -283,7 +283,7 @@ export function EditableSiteTemplate({
     <div className="bg-white min-h-full relative">
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Poppins:wght@300;400;500;600;700&display=swap');
-        
+
         .site-template {
           font-family: 'Poppins', sans-serif;
           position: relative;

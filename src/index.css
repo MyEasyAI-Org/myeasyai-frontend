@@ -5,6 +5,8 @@ html,
 body,
 #root {
   height: 100%;
+  overflow-x: hidden;
+  max-width: 100vw;
 }
 
 /* Smooth scroll behavior */
@@ -14,6 +16,8 @@ html {
 
 body {
   @apply text-slate-100;
+  position: relative;
+  width: 100%;
 }
 
 .modal-scrollbar {
