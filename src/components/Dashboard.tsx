@@ -620,7 +620,7 @@ export function Dashboard({
   return (
     <div className="flex min-h-screen flex-col bg-gradient-to-br from-black-main to-blue-main">
       {/* Header */}
-      <header className="border-b border-slate-800 bg-black-main/50 backdrop-blur-sm">
+      <header className="relative z-50 border-b border-slate-800 bg-black-main/50 backdrop-blur-sm">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="flex h-16 items-center justify-between">
             <div className="flex items-center space-x-4">
