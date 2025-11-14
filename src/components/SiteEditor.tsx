@@ -15,6 +15,7 @@ import {
   X,
 } from 'lucide-react';
 import { useRef, useState } from 'react';
+import { toast } from 'sonner';
 import { EditableSiteTemplate } from '../features/my-easy-website/EditableSiteTemplate';
 
 interface SiteEditorProps {
@@ -205,7 +206,9 @@ export function SiteEditor({ siteData, onUpdate, onClose }: SiteEditorProps) {
   // Salvar alterações
   const handleSave = () => {
     onUpdate(tempData);
-    alert('Alterações salvas com sucesso!');
+    toast.success('Alterações salvas!', {
+      description: 'As alterações foram salvas com sucesso.',
+    });
   };
 
   // Viewport dimensions - Usando larguras FIXAS para ativar media queries

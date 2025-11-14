@@ -1,6 +1,7 @@
 import type { User } from '@supabase/supabase-js';
 import { Check } from 'lucide-react';
 import { useState } from 'react';
+import { toast } from 'sonner';
 import { PLANS, type SubscriptionPlan } from '../constants/plans';
 import { LoginModal } from './LoginModal';
 import { SignupModal } from './SignupModal';
@@ -20,7 +21,9 @@ export function Packages({ user }: PackagesProps) {
     setSelectedPlan(plan);
     if (user) {
       // Se já está logado, pode processar o upgrade direto
-      alert(`Solicitação de mudança para plano ${plan} enviada!`);
+      toast.success('Solicitação enviada!', {
+        description: `Mudança para o plano ${plan.toUpperCase()} foi solicitada.`,
+      });
     } else {
       // Se não está logado, abrir modal de cadastro
       setIsSignupOpen(true);

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { toast } from 'sonner';
 import { authService } from '../services/AuthService';
 import { DSButton, DSInput } from './design-system';
 import { Modal } from './Modal';
@@ -40,12 +41,16 @@ export function LoginModal({
     try {
       const { error } = await authService.signInWithEmail(email, password);
       if (error) {
-        alert(`Erro ao fazer login: ${error.message}`);
+        toast.error('Erro ao fazer login', {
+          description: error.message,
+        });
         return;
       }
       // O modal será fechado automaticamente pelo listener de auth no App.tsx
     } catch (error) {
-      alert(`Erro inesperado: ${error}`);
+      toast.error('Erro inesperado', {
+        description: String(error),
+      });
     }
     // CAPTCHA temporariamente desabilitado
     // finally {
@@ -74,12 +79,16 @@ export function LoginModal({
           result = await authService.signInWithFacebook();
           break;
         case 'apple':
-          alert('Login com Apple não está disponível no momento.');
+          toast.warning('Login com Apple indisponível', {
+            description: 'Use Google ou Facebook para fazer login.',
+          });
           return;
       }
 
       if (result.error) {
-        alert(`Erro ao fazer login com ${provider}: ${result.error.message}`);
+        toast.error(`Erro ao fazer login com ${provider}`, {
+          description: result.error.message,
+        });
         // Desativar loading em caso de erro
         if (provider === 'google') setIsGoogleLoading(false);
         if (provider === 'facebook') setIsFacebookLoading(false);
@@ -87,7 +96,9 @@ export function LoginModal({
       }
       // O modal será fechado automaticamente pelo listener de auth no App.tsx
     } catch (error) {
-      alert(`Erro inesperado: ${error}`);
+      toast.error('Erro inesperado', {
+        description: String(error),
+      });
       // Desativar loading em caso de erro
       if (provider === 'google') setIsGoogleLoading(false);
       if (provider === 'facebook') setIsFacebookLoading(false);
@@ -139,7 +150,9 @@ export function LoginModal({
               onSuccess={(token) => setCaptchaToken(token)}
               onError={() => {
                 setCaptchaToken('');
-                alert('Erro ao validar CAPTCHA. Por favor, tente novamente.');
+                toast.error('Erro ao validar CAPTCHA', {
+                  description: 'Por favor, tente novamente.',
+                });
               }}
               onExpire={() => setCaptchaToken('')}
               options={{
