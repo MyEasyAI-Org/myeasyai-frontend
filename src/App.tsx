@@ -50,11 +50,20 @@ function App() {
     return !localStorage.getItem('userName');
   });
   const [dashboardKey, setDashboardKey] = useState(Date.now());
+  const isUserActionRef = useRef(false); // Track if action is user-initiated
+  const wasPageHiddenRef = useRef(false); // Track if page was hidden (tab switch/minimize)
+  const ignoreNextAuthEventRef = useRef(false); // Ignore auth events after visibility change
 
-  const openLogin = () => setIsLoginOpen(true);
+  const openLogin = () => {
+    isUserActionRef.current = true; // Mark as user action
+    setIsLoginOpen(true);
+  };
   const closeLogin = () => setIsLoginOpen(false);
 
-  const openSignup = () => setIsSignupOpen(true);
+  const openSignup = () => {
+    isUserActionRef.current = true; // Mark as user action
+    setIsSignupOpen(true);
+  };
   const closeSignup = () => setIsSignupOpen(false);
 
   // Function to fetch user data from database
@@ -99,6 +108,9 @@ function App() {
   };
 
   const handleLogout = () => {
+    // Mark as user-initiated action
+    isUserActionRef.current = true;
+    
     // Enable loading bar FIRST
     setIsAuthLoading(true);
 
@@ -190,6 +202,25 @@ function App() {
   });
 
   useEffect(() => {
+    // Monitor page visibility to ignore auth events when tab becomes visible again
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        // Page is now hidden (tab switched away or minimized)
+        wasPageHiddenRef.current = true;
+      } else if (wasPageHiddenRef.current) {
+        // Page is now visible again after being hidden
+        ignoreNextAuthEventRef.current = true;
+        wasPageHiddenRef.current = false;
+        
+        // Reset the ignore flag after a short delay to catch the revalidation event
+        setTimeout(() => {
+          ignoreNextAuthEventRef.current = false;
+        }, 2000); // 2 second window to ignore auth events after tab restore
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
     // Intercept clicks on navigation links
     const handleNavigationClick = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
@@ -272,8 +303,16 @@ function App() {
 
       // Process intentional login (email, OAuth, etc)
       if (event === 'SIGNED_IN' && !isInitialLoadRef.current) {
-        // Enable loading bar only on intentional login
-        setIsAuthLoading(true);
+        // IGNORE auth events that occur after tab visibility change (revalidation)
+        if (ignoreNextAuthEventRef.current) {
+          console.log('Ignoring SIGNED_IN event after tab visibility change');
+          return; // Exit early, don't process this event at all
+        }
+
+        // Enable loading bar ONLY if this is a user-initiated action
+        if (isUserActionRef.current) {
+          setIsAuthLoading(true);
+        }
         setIsLoginOpen(false);
         setIsSignupOpen(false);
 
@@ -305,10 +344,13 @@ function App() {
             setCurrentView('dashboard');
           }
 
-          // Disable loading bar after completion
-          setTimeout(() => {
-            setIsAuthLoading(false);
-          }, 1500);
+          // Disable loading bar after completion (only if it was enabled)
+          if (isUserActionRef.current) {
+            setTimeout(() => {
+              setIsAuthLoading(false);
+              isUserActionRef.current = false; // Reset flag
+            }, 1500);
+          }
         }
       }
 
@@ -324,6 +366,7 @@ function App() {
         setIsSignupOpen(false);
         setIsAuthLoading(false);
         isInitialLoadRef.current = true; // Reset flag for next login
+        isUserActionRef.current = false; // Reset user action flag
       }
     });
 
@@ -331,6 +374,7 @@ function App() {
       subscription.unsubscribe();
       clearTimeout(timeoutId);
       document.removeEventListener('click', handleNavigationClick);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, []);
 
