@@ -1,6 +1,7 @@
 import type { User } from '@supabase/supabase-js';
 import * as flags from 'country-flag-icons/react/3x2';
 import { useEffect, useRef, useState } from 'react';
+import { toast } from 'sonner';
 import { COUNTRIES, getCountryConfig } from '../constants/countries';
 import { supabase } from '../lib/api-clients/supabase-client';
 import { Modal } from './Modal';
@@ -385,14 +386,18 @@ export function OnboardingModal({
 
       if (error) {
         console.error('Erro ao salvar dados:', error);
-        alert('Erro ao salvar informações. Tente novamente.');
+        toast.error('Erro ao salvar informações', {
+          description: 'Tente novamente.',
+        });
         return;
       }
 
       onComplete();
     } catch (error) {
       console.error('Erro inesperado:', error);
-      alert('Erro inesperado. Tente novamente.');
+      toast.error('Erro inesperado', {
+        description: 'Tente novamente.',
+      });
     } finally {
       setLoading(false);
     }

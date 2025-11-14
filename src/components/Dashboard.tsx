@@ -12,6 +12,7 @@ import {
   User as UserIcon,
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import { toast } from 'sonner';
 import { PLANS, type SubscriptionPlan } from '../constants/plans';
 import { useNotifications } from '../hooks/useNotifications';
 import { supabase } from '../lib/api-clients/supabase-client';
@@ -166,9 +167,9 @@ export function Dashboard({
 
       if (!session || !session.user) {
         console.error('❌ Nenhuma sessão ativa');
-        alert(
-          'Sessão expirada. Você será redirecionado para fazer login novamente.',
-        );
+        toast.error('Sessão expirada', {
+          description: 'Você será redirecionado para fazer login novamente.',
+        });
         window.location.href = '/';
         return;
       }
@@ -354,14 +355,20 @@ export function Dashboard({
 
       if (error) {
         console.error('Erro ao atualizar perfil:', error);
-        alert('Erro ao salvar perfil. Tente novamente.');
+        toast.error('Erro ao salvar perfil', {
+          description: 'Tente novamente.',
+        });
       } else {
         setIsEditingProfile(false);
-        alert('Perfil atualizado com sucesso!');
+        toast.success('Perfil atualizado com sucesso!', {
+          description: 'Suas informações foram salvas.',
+        });
       }
     } catch (error) {
       console.error('Erro ao salvar perfil:', error);
-      alert('Erro ao salvar perfil. Tente novamente.');
+      toast.error('Erro ao salvar perfil', {
+        description: 'Tente novamente.',
+      });
     }
   };
 
@@ -392,7 +399,9 @@ export function Dashboard({
   }, [isDropdownOpen, isNotificationOpen]);
 
   const handleChangePlan = (newPlan: SubscriptionPlan) => {
-    alert(`Solicitação de mudança para plano ${newPlan} enviada!`);
+    toast.success('Solicitação enviada!', {
+      description: `Mudança para o plano ${newPlan.toUpperCase()} foi solicitada.`,
+    });
   };
 
   const getPlanColor = (plan: SubscriptionPlan) => {
@@ -1748,9 +1757,9 @@ export function Dashboard({
               </button>
               <button
                 onClick={() => {
-                  alert(
-                    'Cancelamento solicitado. Nossa equipe entrará em contato em breve.',
-                  );
+                  toast.warning('Cancelamento solicitado', {
+                    description: 'Nossa equipe entrará em contato em breve.',
+                  });
                   setShowCancelModal(false);
                   setIsDangerZoneOpen(false);
                 }}

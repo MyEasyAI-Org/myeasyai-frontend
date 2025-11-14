@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import './App.css';
 import type { User } from '@supabase/supabase-js';
+import { Toaster } from 'sonner';
 import { Courses } from './components/Courses';
 import { Dashboard } from './components/Dashboard';
 import { Features } from './components/Features';
@@ -368,6 +369,21 @@ function App() {
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-black-main to-blue-main">
+      {/* Toast Notifications */}
+      <Toaster
+        position="top-right"
+        richColors
+        closeButton
+        duration={4000}
+        toastOptions={{
+          style: {
+            background: '#1e293b',
+            color: '#f1f5f9',
+            border: '1px solid #334155',
+          },
+        }}
+      />
+
       {/* Authentication loading bar */}
       <LoadingBar isLoading={isAuthLoading} duration={2300} />
 
