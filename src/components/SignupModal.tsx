@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { toast } from 'sonner';
 import type { SubscriptionPlan } from '../constants/plans';
 import { authService } from '../services/AuthService';
 import { DSButton, DSInput } from './design-system';
@@ -37,13 +38,17 @@ export function SignupModal({
     const confirmPassword = formData.get('confirmPassword') as string;
 
     if (password !== confirmPassword) {
-      alert('As senhas não coincidem!');
+      toast.error('As senhas não coincidem!', {
+        description: 'Digite a mesma senha nos dois campos.',
+      });
       return;
     }
 
     // Validar nome completo
     if (fullName.trim().split(' ').length < 2) {
-      alert('Por favor, digite seu nome completo (nome e sobrenome)');
+      toast.error('Nome incompleto', {
+        description: 'Por favor, digite seu nome completo (nome e sobrenome).',
+      });
       return;
     }
 
@@ -62,7 +67,9 @@ export function SignupModal({
         preferredName
       );
       if (error) {
-        alert(`Erro ao criar conta: ${error.message}`);
+        toast.error('Erro ao criar conta', {
+          description: error.message,
+        });
         return;
       }
 
@@ -75,7 +82,9 @@ export function SignupModal({
       // Com email confirmation desabilitado, o usuário é autenticado imediatamente
       // O modal será fechado automaticamente pelo listener de auth no App.tsx
     } catch (error) {
-      alert(`Erro inesperado: ${error}`);
+      toast.error('Erro inesperado', {
+        description: String(error),
+      });
     }
     // CAPTCHA temporariamente desabilitado
     // finally {
@@ -104,12 +113,16 @@ export function SignupModal({
           result = await authService.signInWithFacebook();
           break;
         case 'apple':
-          alert('Cadastro com Apple não está disponível no momento.');
+          toast.warning('Cadastro com Apple indisponível', {
+            description: 'Use Google ou Facebook para se cadastrar.',
+          });
           return;
       }
 
       if (result.error) {
-        alert(`Erro ao cadastrar com ${provider}: ${result.error.message}`);
+        toast.error(`Erro ao cadastrar com ${provider}`, {
+          description: result.error.message,
+        });
         // Desativar loading em caso de erro
         if (provider === 'google') setIsGoogleLoading(false);
         if (provider === 'facebook') setIsFacebookLoading(false);
@@ -123,7 +136,9 @@ export function SignupModal({
 
       // O modal será fechado automaticamente pelo listener de auth no App.tsx
     } catch (error) {
-      alert(`Erro inesperado: ${error}`);
+      toast.error('Erro inesperado', {
+        description: String(error),
+      });
       // Desativar loading em caso de erro
       if (provider === 'google') setIsGoogleLoading(false);
       if (provider === 'facebook') setIsFacebookLoading(false);
@@ -239,7 +254,9 @@ export function SignupModal({
               onSuccess={(token) => setCaptchaToken(token)}
               onError={() => {
                 setCaptchaToken('');
-                alert('Erro ao validar CAPTCHA. Por favor, tente novamente.');
+                toast.error('Erro ao validar CAPTCHA', {
+                  description: 'Por favor, tente novamente.',
+                });
               }}
               onExpire={() => setCaptchaToken('')}
               options={{

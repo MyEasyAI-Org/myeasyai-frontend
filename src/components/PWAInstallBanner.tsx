@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { toast } from 'sonner';
 import { Button } from './Button';
 
 interface BeforeInstallPromptEvent extends Event {
@@ -104,9 +105,10 @@ export function PWAInstallBanner() {
   const handleInstallClick = async () => {
     if (!deferredPrompt) {
       // Fallback: instruir instalação manual
-      alert(
-        'Para instalar o app:\\n\\n• Chrome: Clique no ícone de instalação na barra de endereços\\n• Edge: Menu ⋯ → Apps → "Instalar este site como um app"\\n• Firefox: Adicione aos favoritos e acesse pelo menu',
-      );
+      toast.info('Como instalar o app', {
+        description: '• Chrome: Clique no ícone de instalação na barra de endereços\n• Edge: Menu → Apps → "Instalar este site como um app"\n• Firefox: Adicione aos favoritos e acesse pelo menu',
+        duration: 6000,
+      });
       return;
     }
 
