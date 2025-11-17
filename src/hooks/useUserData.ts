@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import { toast } from 'sonner';
 import { supabase } from '../lib/api-clients/supabase-client';
 import type { SubscriptionPlan } from '../constants/plans';
+import { useLoadingState } from './useLoadingState';
 
 // ============================================================================
 // TYPES AND INTERFACES
@@ -259,10 +260,17 @@ export function useUserData() {
     created_at: '',
     last_online: '',
   });
-  const [isLoading, setIsLoading] = useState(true);
-  const [loadingProgress, setLoadingProgress] = useState(0);
-  const [loadingStep, setLoadingStep] = useState('Iniciando...');
   const [error, setError] = useState<Error | null>(null);
+
+  // Loading state management with auto-timeout
+  const {
+    isLoading,
+    progress: loadingProgress,
+    step: loadingStep,
+    startLoading,
+    updateProgress,
+    completeLoading,
+  } = useLoadingState({ timeout: 30000 }); // 30s timeout for safety
 
   // Cache timestamps
   const cacheTimestamps = useRef<CacheTimestamps>({
@@ -297,8 +305,7 @@ export function useUserData() {
    * Fetch user session with retry and timeout
    */
   const fetchSession = async () => {
-    setLoadingStep('Verificando autenticação...');
-    setLoadingProgress(10);
+    updateProgress(10, 'Verificando autenticação...');
 
     const session = await retryWithBackoff(async () => {
       const { data, error } = await withTimeout(
@@ -315,7 +322,7 @@ export function useUserData() {
 
     const userId = session.user.id;
     setUserUuid(userId);
-    setLoadingProgress(25);
+    updateProgress(25);
 
     return { session, userId };
   };
@@ -324,8 +331,7 @@ export function useUserData() {
    * Fetch user data from database with retry and timeout
    */
   const fetchUserData = async (userId: string) => {
-    setLoadingStep('Carregando dados do usuário...');
-    setLoadingProgress(40);
+    updateProgress(40, 'Carregando dados do usuário...');
 
     const userData = await retryWithBackoff(async () => {
       const result = await withTimeout(
@@ -379,15 +385,14 @@ export function useUserData() {
 
     updateCache('profile');
     updateCache('subscription');
-    setLoadingProgress(65);
+    updateProgress(65);
   };
 
   /**
    * Fetch user products with retry and timeout
    */
   const fetchProducts = async (userId: string) => {
-    setLoadingStep('Carregando produtos...');
-    setLoadingProgress(75);
+    updateProgress(75, 'Carregando produtos...');
 
     const products = await retryWithBackoff(async () => {
       const result = await withTimeout(
@@ -404,7 +409,7 @@ export function useUserData() {
 
     setUserProducts(products);
     updateCache('products');
-    setLoadingProgress(100);
+    updateProgress(100);
   };
 
   // ============================================================================
@@ -434,23 +439,21 @@ export function useUserData() {
       }
     }
 
-    setIsLoading(true);
+    startLoading('Iniciando...');
     setError(null);
-    setLoadingProgress(0);
-    setLoadingStep('Iniciando...');
 
     try {
       const { userId } = await fetchSession();
       await fetchUserData(userId);
       await fetchProducts(userId);
-      setLoadingStep('Concluído!');
+      updateProgress(100, 'Concluído!');
     } catch (err) {
       const error = err as Error;
       setError(error);
       toast.error(`Erro ao carregar dados: ${error.message}`);
       console.error('Erro em refreshAll:', error);
     } finally {
-      setIsLoading(false);
+      completeLoading();
     }
   };
 
