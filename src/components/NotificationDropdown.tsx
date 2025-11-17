@@ -1,5 +1,5 @@
 import { CheckCheck, Sparkles, User } from 'lucide-react';
-import type { Notification } from '../types/Notification';
+import type { Notification } from '../types/notification';
 
 type NotificationDropdownProps = {
   notifications: Notification[];
