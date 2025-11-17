@@ -15,6 +15,7 @@ import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { PLANS, type SubscriptionPlan } from '../constants/plans';
 import { useDashboardNavigation } from '../hooks/useDashboardNavigation';
+import { useModalState } from '../hooks/useModalState';
 import { useNotifications } from '../hooks/useNotifications';
 import {
   useUserData,
@@ -67,14 +68,16 @@ export function Dashboard({
       onGoToBusinessGuru,
     });
 
+  // Modal state management
+  const confirmationModal = useModalState();
+  const cancelModal = useModalState();
+  const dropdownModal = useModalState({ disableScrollLock: true });
+  const notificationModal = useModalState({ disableScrollLock: true });
+
   // Local UI state
   const [isEditingProfile, setIsEditingProfile] = useState(false);
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isDangerZoneOpen, setIsDangerZoneOpen] = useState(false);
-  const [showConfirmationModal, setShowConfirmationModal] = useState(false);
-  const [showCancelModal, setShowCancelModal] = useState(false);
   const [confirmationText, setConfirmationText] = useState('');
-  const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const [selectedNotification, setSelectedNotification] =
     useState<Notification | null>(null);
 
@@ -132,24 +135,24 @@ export function Dashboard({
         dropdownRef.current &&
         !dropdownRef.current.contains(event.target as Node)
       ) {
-        setIsDropdownOpen(false);
+        dropdownModal.close();
       }
       if (
         notificationRef.current &&
         !notificationRef.current.contains(event.target as Node)
       ) {
-        setIsNotificationOpen(false);
+        notificationModal.close();
       }
     };
 
-    if (isDropdownOpen || isNotificationOpen) {
+    if (dropdownModal.isOpen || notificationModal.isOpen) {
       document.addEventListener('mousedown', handleClickOutside);
     }
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [isDropdownOpen, isNotificationOpen]);
+  }, [dropdownModal.isOpen, notificationModal.isOpen]);
 
   const handleChangePlan = (newPlan: SubscriptionPlan) => {
     toast.success('Solicitação enviada!', {
@@ -205,7 +208,7 @@ export function Dashboard({
   const handleNotificationClick = (notification: Notification) => {
     markAsRead(notification.id);
     setSelectedNotification(notification);
-    setIsNotificationOpen(false);
+    notificationModal.close();
   };
 
   const handleMarkAllAsRead = () => {
@@ -213,7 +216,7 @@ export function Dashboard({
   };
 
   const handleViewAllNotifications = () => {
-    setIsNotificationOpen(false);
+    notificationModal.close();
     // Here you can add navigation to a notifications page if it exists
     console.log('Ver todas as notificações');
   };
@@ -380,10 +383,10 @@ export function Dashboard({
               <div className="relative" ref={notificationRef}>
                 <NotificationBell
                   unreadCount={getUnreadCount()}
-                  onClick={() => setIsNotificationOpen(!isNotificationOpen)}
-                  isOpen={isNotificationOpen}
+                  onClick={notificationModal.toggle}
+                  isOpen={notificationModal.isOpen}
                 />
-                {isNotificationOpen && (
+                {notificationModal.isOpen && (
                   <NotificationDropdown
                     notifications={getLatest(10)}
                     onNotificationClick={handleNotificationClick}
@@ -396,7 +399,7 @@ export function Dashboard({
               {/* Dropdown do Usuário */}
               <div className="relative" ref={dropdownRef}>
                 <button
-                  onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                  onClick={dropdownModal.toggle}
                   className="flex items-center space-x-3 rounded-lg border border-slate-700 bg-slate-700/30 px-3 py-2 transition-all hover:border-slate-600 hover:bg-slate-600/40 hover:shadow-lg hover:shadow-purple-500/20"
                 >
                   <div className="h-9 w-9 flex-shrink-0 overflow-hidden rounded-full ring-2 ring-purple-500/30">
@@ -407,7 +410,7 @@ export function Dashboard({
                   </span>
                 </button>
 
-                {isDropdownOpen && (
+                {dropdownModal.isOpen && (
                   <div className="absolute right-0 mt-2 w-64 origin-top-right animate-in fade-in slide-in-from-top-2 duration-200 rounded-xl border border-slate-700 bg-slate-800/99 backdrop-blur-xl shadow-2xl shadow-black/50">
                     <div className="p-4 border-b border-slate-700">
                       <div className="flex items-center space-x-3">
@@ -428,7 +431,7 @@ export function Dashboard({
                     <div className="p-2">
                       <button
                         onClick={() => {
-                          setIsDropdownOpen(false);
+                          dropdownModal.close();
                           setActiveTab('profile');
                         }}
                         className="flex w-full items-center space-x-3 rounded-lg px-3 py-2.5 text-left text-slate-200 transition-colors hover:bg-slate-700"
@@ -438,7 +441,7 @@ export function Dashboard({
                       </button>
                       <button
                         onClick={() => {
-                          setIsDropdownOpen(false);
+                          dropdownModal.close();
                           setActiveTab('settings');
                         }}
                         className="flex w-full items-center space-x-3 rounded-lg px-3 py-2.5 text-left text-slate-200 transition-colors hover:bg-slate-700"
@@ -451,7 +454,7 @@ export function Dashboard({
                     <div className="border-t border-slate-700 p-2">
                       <button
                         onClick={() => {
-                          setIsDropdownOpen(false);
+                          dropdownModal.close();
                           handleLogout();
                         }}
                         className="flex w-full items-center space-x-3 rounded-lg px-3 py-2.5 text-left text-red-400 transition-colors hover:bg-red-500/10"
@@ -1350,7 +1353,7 @@ export function Dashboard({
                       desfeitas.
                     </p>
                     <button
-                      onClick={() => setShowConfirmationModal(true)}
+                      onClick={confirmationModal.open}
                       className="rounded-lg border border-rose-800/50 bg-rose-900/30 px-4 py-2 text-sm text-rose-300 hover:bg-rose-900/50 transition-colors"
                     >
                       Acessar Zona de Perigo
@@ -1364,7 +1367,7 @@ export function Dashboard({
       </div>
 
       {/* Modal de Confirmação - Digite YES */}
-      {showConfirmationModal && (
+      {confirmationModal.isOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
           <div className="mx-4 max-w-md rounded-lg border border-rose-900/50 bg-slate-900 p-6 shadow-2xl">
             <h2 className="text-2xl font-bold text-rose-300">
@@ -1400,7 +1403,7 @@ export function Dashboard({
             <div className="mt-6 flex space-x-3">
               <button
                 onClick={() => {
-                  setShowConfirmationModal(false);
+                  confirmationModal.close();
                   setConfirmationText('');
                 }}
                 className="flex-1 rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-white hover:bg-slate-700 transition-colors"
@@ -1410,8 +1413,8 @@ export function Dashboard({
               <button
                 onClick={() => {
                   if (confirmationText === 'YES') {
-                    setShowConfirmationModal(false);
-                    setShowCancelModal(true);
+                    confirmationModal.close();
+                    cancelModal.open();
                     setConfirmationText('');
                   }
                 }}
@@ -1430,7 +1433,7 @@ export function Dashboard({
       )}
 
       {/* Modal de Cancelamento - Aviso Final */}
-      {showCancelModal && (
+      {cancelModal.isOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
           <div className="mx-4 max-w-lg rounded-lg border border-rose-900/50 bg-slate-900 p-6 shadow-2xl">
             <h2 className="text-2xl font-bold text-rose-400">
@@ -1479,7 +1482,7 @@ export function Dashboard({
 
             <div className="mt-6 flex space-x-3">
               <button
-                onClick={() => setShowCancelModal(false)}
+                onClick={cancelModal.close}
                 className="flex-1 rounded-lg bg-blue-600 px-4 py-2.5 text-white hover:bg-blue-700 transition-colors font-semibold"
               >
                 Manter Assinatura
@@ -1489,7 +1492,7 @@ export function Dashboard({
                   toast.warning('Cancelamento solicitado', {
                     description: 'Nossa equipe entrará em contato em breve.',
                   });
-                  setShowCancelModal(false);
+                  cancelModal.close();
                   setIsDangerZoneOpen(false);
                 }}
                 className="flex-1 rounded-lg border border-rose-800/50 bg-rose-900/30 px-4 py-2.5 text-rose-300 hover:bg-rose-900/50 transition-colors"

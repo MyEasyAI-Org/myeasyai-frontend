@@ -19,6 +19,7 @@ import { PWAInstallBanner } from './components/PWAInstallBanner';
 import { BusinessGuru } from './features/business-guru/BusinessGuru';
 import { MyEasyWebsite } from './features/my-easy-website/MyEasyWebsite';
 import { useInactivityTimeout } from './hooks/useInactivityTimeout';
+import { useModalState } from './hooks/useModalState';
 import { supabase } from './lib/api-clients/supabase-client';
 import { userManagementService } from './services/UserManagementService';
 
@@ -27,8 +28,8 @@ import { userManagementService } from './services/UserManagementService';
 const ENABLE_SPLASH_SCREEN = false;
 
 function App() {
-  const [isLoginOpen, setIsLoginOpen] = useState(false);
-  const [isSignupOpen, setIsSignupOpen] = useState(false);
+  const loginModal = useModalState();
+  const signupModal = useModalState();
   const [user, setUser] = useState<User | null>(null);
   const [userName, setUserName] = useState<string>(() => {
     // Try to load from localStorage on initialization
@@ -42,7 +43,7 @@ function App() {
   const [currentView, setCurrentView] = useState<
     'home' | 'dashboard' | 'preview' | 'myeasywebsite' | 'businessguru'
   >('home');
-  const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
+  const onboardingModal = useModalState();
   const [needsOnboarding, setNeedsOnboarding] = useState(false);
   const [isAuthLoading, setIsAuthLoading] = useState(false);
   const isInitialLoadRef = useRef(true);
@@ -57,15 +58,15 @@ function App() {
 
   const openLogin = () => {
     isUserActionRef.current = true; // Mark as user action
-    setIsLoginOpen(true);
+    loginModal.open();
   };
-  const closeLogin = () => setIsLoginOpen(false);
+  const closeLogin = () => loginModal.close();
 
   const openSignup = () => {
     isUserActionRef.current = true; // Mark as user action
-    setIsSignupOpen(true);
+    signupModal.open();
   };
-  const closeSignup = () => setIsSignupOpen(false);
+  const closeSignup = () => signupModal.close();
 
   // Function to fetch user data from database
   const fetchUserData = async (userEmail: string) => {
@@ -122,9 +123,9 @@ function App() {
       setUserName('Usuário');
       setCurrentView('home');
       setNeedsOnboarding(false);
-      setIsOnboardingOpen(false);
-      setIsLoginOpen(false);
-      setIsSignupOpen(false);
+      onboardingModal.close();
+      loginModal.close();
+      signupModal.close();
       setIsCheckingAuth(false);
 
       // Clear localStorage
@@ -161,7 +162,7 @@ function App() {
 
   const goToDashboard = () => {
     if (needsOnboarding) {
-      setIsOnboardingOpen(true);
+      onboardingModal.open();
     } else {
       // Go directly to dashboard - loading will be done by Dashboard itself
       setCurrentView('dashboard');
@@ -183,7 +184,7 @@ function App() {
   };
 
   const handleOnboardingComplete = () => {
-    setIsOnboardingOpen(false);
+    onboardingModal.close();
     setNeedsOnboarding(false);
 
     // Go directly to dashboard - loading will be done by Dashboard itself
@@ -191,7 +192,7 @@ function App() {
   };
 
   const closeOnboarding = () => {
-    setIsOnboardingOpen(false);
+    onboardingModal.close();
     // Keep needsOnboarding as true if user closes without completing
   };
 
@@ -314,8 +315,8 @@ function App() {
         if (isUserActionRef.current) {
           setIsAuthLoading(true);
         }
-        setIsLoginOpen(false);
-        setIsSignupOpen(false);
+        loginModal.close();
+        signupModal.close();
 
         // Register user in users table (especially for social login)
         if (session?.user) {
@@ -338,7 +339,7 @@ function App() {
           if (needsOnboardingCheck) {
             setCurrentView('home');
             setTimeout(() => {
-              setIsOnboardingOpen(true);
+              onboardingModal.open();
             }, 100);
           } else {
             // Navigate to dashboard after successful login if no onboarding needed
@@ -362,9 +363,9 @@ function App() {
         setUserAvatarUrl(undefined);
         setCurrentView('home');
         setNeedsOnboarding(false);
-        setIsOnboardingOpen(false);
-        setIsLoginOpen(false);
-        setIsSignupOpen(false);
+        onboardingModal.close();
+        loginModal.close();
+        signupModal.close();
         setIsAuthLoading(false);
         isInitialLoadRef.current = true; // Reset flag for next login
         isUserActionRef.current = false; // Reset user action flag
@@ -444,10 +445,10 @@ function App() {
       />
 
       <Hero
-        isLoginOpen={isLoginOpen}
+        isLoginOpen={loginModal.isOpen}
         onOpenLogin={openLogin}
         onCloseLogin={closeLogin}
-        isSignupOpen={isSignupOpen}
+        isSignupOpen={signupModal.isOpen}
         onOpenSignup={openSignup}
         onCloseSignup={closeSignup}
         user={user}
@@ -464,7 +465,7 @@ function App() {
       {/* Onboarding Modal */}
       {user && (
         <OnboardingModal
-          isOpen={isOnboardingOpen}
+          isOpen={onboardingModal.isOpen}
           onClose={closeOnboarding}
           onComplete={handleOnboardingComplete}
           user={user}
