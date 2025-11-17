@@ -1,6 +1,7 @@
 import type { User } from '@supabase/supabase-js';
 import { Home, LogOut } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import { useModalState } from '../hooks/useModalState';
 import { useNotifications } from '../hooks/useNotifications';
 import type { Notification } from '../types/notification';
 import { Button } from './Button';
@@ -31,8 +32,8 @@ export default function NavBar({
   onLogoClick,
   isCheckingAuth = false,
 }: NavBarProps) {
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [isNotificationOpen, setIsNotificationOpen] = useState(false);
+  const dropdownModal = useModalState({ disableScrollLock: true });
+  const notificationModal = useModalState({ disableScrollLock: true });
   const [selectedNotification, setSelectedNotification] =
     useState<Notification | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -49,24 +50,24 @@ export default function NavBar({
         dropdownRef.current &&
         !dropdownRef.current.contains(event.target as Node)
       ) {
-        setIsDropdownOpen(false);
+        dropdownModal.close();
       }
       if (
         notificationRef.current &&
         !notificationRef.current.contains(event.target as Node)
       ) {
-        setIsNotificationOpen(false);
+        notificationModal.close();
       }
     };
 
-    if (isDropdownOpen || isNotificationOpen) {
+    if (dropdownModal.isOpen || notificationModal.isOpen) {
       document.addEventListener('mousedown', handleClickOutside);
     }
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [isDropdownOpen, isNotificationOpen]);
+  }, [dropdownModal.isOpen, notificationModal.isOpen, dropdownModal, notificationModal]);
 
   // Function to generate name initials
   const getInitials = (name: string) => {
@@ -114,7 +115,7 @@ export default function NavBar({
   const handleNotificationClick = (notification: Notification) => {
     markAsRead(notification.id);
     setSelectedNotification(notification);
-    setIsNotificationOpen(false);
+    notificationModal.close();
   };
 
   const handleMarkAllAsRead = () => {
@@ -122,7 +123,7 @@ export default function NavBar({
   };
 
   const handleViewAllNotifications = () => {
-    setIsNotificationOpen(false);
+    notificationModal.close();
     // Here you can add navigation to a notifications page if it exists
     console.log('Ver todas as notificações');
   };
@@ -192,10 +193,10 @@ export default function NavBar({
                 <div className="relative" ref={notificationRef}>
                   <NotificationBell
                     unreadCount={getUnreadCount()}
-                    onClick={() => setIsNotificationOpen(!isNotificationOpen)}
-                    isOpen={isNotificationOpen}
+                    onClick={() => notificationModal.toggle()}
+                    isOpen={notificationModal.isOpen}
                   />
-                  {isNotificationOpen && (
+                  {notificationModal.isOpen && (
                     <NotificationDropdown
                       notifications={getLatest(10)}
                       onNotificationClick={handleNotificationClick}
@@ -208,7 +209,7 @@ export default function NavBar({
                 {/* User Dropdown */}
                 <div className="relative" ref={dropdownRef}>
                   <button
-                    onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                    onClick={() => dropdownModal.toggle()}
                     className="flex items-center space-x-3 rounded-lg border border-slate-700 bg-slate-700/30 px-3 py-2 transition-all hover:border-slate-600 hover:bg-slate-600/40 hover:shadow-lg hover:shadow-purple-500/20"
                   >
                     <div className="h-9 w-9 flex-shrink-0 overflow-hidden rounded-full ring-2 ring-purple-500/30">
@@ -219,7 +220,7 @@ export default function NavBar({
                     </span>
                   </button>
 
-                  {isDropdownOpen && (
+                  {dropdownModal.isOpen && (
                     <div className="absolute right-0 mt-2 w-64 origin-top-right animate-in fade-in slide-in-from-top-2 duration-200 rounded-xl border border-slate-700 bg-slate-800/99 backdrop-blur-xl shadow-2xl shadow-black/50">
                       <div className="p-4 border-b border-slate-700">
                         <div className="flex items-center space-x-3">
@@ -240,7 +241,7 @@ export default function NavBar({
                       <div className="p-2">
                         <button
                           onClick={() => {
-                            setIsDropdownOpen(false);
+                            dropdownModal.close();
                             onDashboardClick?.();
                           }}
                           className="flex w-full items-center space-x-3 rounded-lg px-3 py-2.5 text-left text-slate-200 transition-colors hover:bg-slate-700"
@@ -253,7 +254,7 @@ export default function NavBar({
                       <div className="border-t border-slate-700 p-2">
                         <button
                           onClick={() => {
-                            setIsDropdownOpen(false);
+                            dropdownModal.close();
                             onLogout?.();
                           }}
                           className="flex w-full items-center space-x-3 rounded-lg px-3 py-2.5 text-left text-red-400 transition-colors hover:bg-red-500/10"
