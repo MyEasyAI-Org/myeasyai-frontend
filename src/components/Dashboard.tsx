@@ -14,6 +14,7 @@ import {
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { PLANS, type SubscriptionPlan } from '../constants/plans';
+import { useDashboardNavigation } from '../hooks/useDashboardNavigation';
 import { useNotifications } from '../hooks/useNotifications';
 import {
   useUserData,
@@ -58,10 +59,15 @@ export function Dashboard({
     refreshAll,
   } = useUserData();
 
+  // Dashboard navigation hook (manages tabs and feature navigation)
+  const { activeTab, setActiveTab, navigateToProduct } =
+    useDashboardNavigation({
+      onGoHome,
+      onGoToMyEasyWebsite,
+      onGoToBusinessGuru,
+    });
+
   // Local UI state
-  const [activeTab, setActiveTab] = useState<
-    'overview' | 'subscription' | 'products' | 'usage' | 'settings' | 'profile'
-  >('overview');
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isDangerZoneOpen, setIsDangerZoneOpen] = useState(false);
@@ -163,33 +169,6 @@ export function Dashboard({
 
   const calculateTokensPercentage = () => {
     return (subscription.tokens_used / subscription.tokens_limit) * 100;
-  };
-
-  const handleAccessProduct = (productName: string) => {
-    const name = productName.toLowerCase();
-
-    if (name.includes('website') || name.includes('site')) {
-      // Redirect to MyEasyWebsite
-      if (onGoToMyEasyWebsite) {
-        onGoToMyEasyWebsite();
-      } else {
-        window.location.href = '/#myeasywebsite';
-      }
-    } else if (name.includes('guru') || name.includes('business')) {
-      // Redirect to BusinessGuru
-      if (onGoToBusinessGuru) {
-        onGoToBusinessGuru();
-      } else {
-        window.location.href = '/#businessguru';
-      }
-    } else {
-      // Generic product - go back to home
-      if (onGoHome) {
-        onGoHome();
-      } else {
-        window.location.href = '/';
-      }
-    }
   };
 
   // Function to generate name initials
@@ -805,7 +784,7 @@ export function Dashboard({
                         <div className="mt-6 flex space-x-2">
                           <button
                             onClick={() =>
-                              handleAccessProduct(product.product_name)
+                              navigateToProduct(product.product_name)
                             }
                             className="flex-1 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 transition-colors flex items-center justify-center space-x-2"
                           >
