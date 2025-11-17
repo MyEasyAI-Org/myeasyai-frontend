@@ -15,45 +15,18 @@ import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { PLANS, type SubscriptionPlan } from '../constants/plans';
 import { useNotifications } from '../hooks/useNotifications';
-import { supabase } from '../lib/api-clients/supabase-client';
+import {
+  useUserData,
+  type UserProfile,
+  type SubscriptionData,
+  type UserProduct,
+} from '../hooks/useUserData';
 import { authService } from '../services/AuthService';
-import type { Notification } from '../types/Notification';
+import type { Notification } from '../types/notification';
 import { Footer } from './Footer';
 import NotificationBell from './NotificationBell';
 import NotificationDetailModal from './NotificationDetailModal';
 import NotificationDropdown from './NotificationDropdown';
-
-type UserProfile = {
-  name: string;
-  preferred_name?: string;
-  email: string;
-  avatar_url?: string;
-  bio?: string;
-  phone?: string;
-  company?: string;
-};
-
-type SubscriptionData = {
-  plan: SubscriptionPlan;
-  status: 'active' | 'inactive' | 'cancelled';
-  start_date: string;
-  end_date?: string;
-  tokens_used: number;
-  tokens_limit: number;
-  requests_this_month: number;
-  next_billing_date?: string;
-  billing_cycle?: string;
-  payment_method?: string;
-};
-
-type UserProduct = {
-  id: string;
-  product_name: string;
-  product_status: string;
-  subscribed_at: string;
-  sites_created: number;
-  consultations_made: number;
-};
 
 type DashboardProps = {
   onGoHome?: () => void;
@@ -68,39 +41,29 @@ export function Dashboard({
   onGoToBusinessGuru,
   onLoadingComplete,
 }: DashboardProps = {}) {
+  // User data hook (manages profile, subscription, products, cadastral info, etc.)
+  const {
+    profile,
+    subscription,
+    userProducts,
+    cadastralInfo,
+    userUuid,
+    isLoading,
+    loadingProgress,
+    loadingStep,
+    error,
+    updateProfile,
+    refreshSubscription,
+    refreshProducts,
+    refreshAll,
+  } = useUserData();
+
+  // Local UI state
   const [activeTab, setActiveTab] = useState<
     'overview' | 'subscription' | 'products' | 'usage' | 'settings' | 'profile'
   >('overview');
-  const [subscription, setSubscription] = useState<SubscriptionData>({
-    plan: 'free',
-    status: 'active',
-    start_date: new Date().toISOString(),
-    tokens_used: 0,
-    tokens_limit: 1000,
-    requests_this_month: 0,
-  });
-  const [profile, setProfile] = useState<UserProfile>({
-    name: 'Carregando...',
-    email: '',
-    bio: '',
-    phone: '',
-    company: '',
-  });
-  const [userProducts, setUserProducts] = useState<UserProduct[]>([]);
   const [isEditingProfile, setIsEditingProfile] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  const [loadingProgress, setLoadingProgress] = useState(0);
-  const [loadingStep, setLoadingStep] = useState('Inicializando...');
-  const [userUuid, setUserUuid] = useState<string | null>(null);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [cadastralInfo, setCadastralInfo] = useState({
-    country: '',
-    postal_code: '',
-    address: '',
-    preferred_language: '',
-    created_at: '',
-    last_online: '',
-  });
   const [isDangerZoneOpen, setIsDangerZoneOpen] = useState(false);
   const [showConfirmationModal, setShowConfirmationModal] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
@@ -108,6 +71,10 @@ export function Dashboard({
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const [selectedNotification, setSelectedNotification] =
     useState<Notification | null>(null);
+
+  // Profile editing local state (for form inputs)
+  const [editedProfile, setEditedProfile] = useState<UserProfile>(profile);
+
   const dropdownRef = useRef<HTMLDivElement>(null);
   const notificationRef = useRef<HTMLDivElement>(null);
 
@@ -115,213 +82,17 @@ export function Dashboard({
   const { getUnreadCount, getLatest, markAsRead, markAllAsRead } =
     useNotifications();
 
-  // Load logged in user data
+  // Sync editedProfile with profile when profile changes
   useEffect(() => {
-    loadUserData();
-  }, []);
+    setEditedProfile(profile);
+  }, [profile]);
 
-  const loadUserData = async () => {
-    let timeoutId: NodeJS.Timeout | undefined;
-
-    try {
-      setIsLoading(true);
-      setLoadingProgress(20);
-      setLoadingStep('Carregando seu perfil...');
-
-      // Safety timeout - force completion after 10 seconds
-      timeoutId = setTimeout(() => {
-        console.warn(
-          '⏰ Timeout no carregamento do dashboard - forçando finalização',
-        );
-        setLoadingStep('Finalizando carregamento...');
-        setLoadingProgress(100);
-        setTimeout(() => {
-          setIsLoading(false);
-          onLoadingComplete?.();
-        }, 1000);
-      }, 10000);
-
-      // Smaller visual delay to not freeze too long if there's an error
-      await new Promise((resolve) => setTimeout(resolve, 500));
-
-      console.log('🔄 Iniciando carregamento do dashboard...');
-
-      // Check session with timeout
-      const sessionPromise = supabase.auth.getSession();
-      const sessionTimeout = new Promise((_, reject) =>
-        setTimeout(
-          () => reject(new Error('Timeout na verificação de sessão')),
-          8000,
-        ),
-      );
-
-      const {
-        data: { session },
-        error: sessionError,
-      } = (await Promise.race([sessionPromise, sessionTimeout])) as any;
-
-      if (sessionError) {
-        console.error('❌ Erro de sessão:', sessionError);
-        throw new Error('Erro na sessão do usuário');
-      }
-
-      if (!session || !session.user) {
-        console.error('❌ Nenhuma sessão ativa');
-        toast.error('Sessão expirada', {
-          description: 'Você será redirecionado para fazer login novamente.',
-        });
-        window.location.href = '/';
-        return;
-      }
-
-      console.log('✅ Sessão válida encontrada para:', session.user.email);
-      const user = session.user;
-      setUserUuid(user.id);
-      setLoadingProgress(40);
-
-      // Fetch user data with timeout
-      setLoadingStep('Buscando dados...');
-      await new Promise((resolve) => setTimeout(resolve, 300));
-
-      const userDataPromise = supabase
-        .from('users')
-        .select('*')
-        .eq('uuid', user.id)
-        .single();
-
-      const userDataTimeout = new Promise((_, reject) =>
-        setTimeout(
-          () => reject(new Error('Timeout ao buscar dados do usuário')),
-          6000,
-        ),
-      );
-
-      const userDataResult = (await Promise.race([
-        userDataPromise,
-        userDataTimeout,
-      ]).catch((error) => {
-        console.warn('⚠️ Erro ao buscar dados do usuário:', error);
-        return { data: null, error };
-      })) as any;
-
-      setLoadingProgress(60);
-      setLoadingStep('Configurando dashboard...');
-
-      // Fetch products with timeout
-      const productsPromise = supabase
-        .from('user_products')
-        .select('*')
-        .eq('user_uuid', user.id);
-
-      const productsTimeout = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Timeout ao buscar produtos')), 5000),
-      );
-
-      const productsResult = (await Promise.race([
-        productsPromise,
-        productsTimeout,
-      ]).catch((error) => {
-        console.warn('⚠️ Erro ao buscar produtos:', error);
-        return { data: [], error };
-      })) as any;
-
-      if (productsResult.data) {
-        setUserProducts(productsResult.data || []);
-      }
-
-      await new Promise((resolve) => setTimeout(resolve, 500));
-      setLoadingProgress(80);
-
-      // Configure profile data
-      if (userDataResult.error || !userDataResult.data) {
-        console.warn('⚠️ Usando dados básicos do usuário');
-        setProfile({
-          name:
-            user.user_metadata?.name ||
-            user.user_metadata?.full_name ||
-            'Usuário',
-          email: user.email || '',
-          bio: '',
-          phone: '',
-          company: '',
-        });
-      } else {
-        const userData = userDataResult.data;
-        console.log('✅ Dados do usuário carregados com sucesso');
-
-        // Fill profile with data from users table
-        setProfile({
-          name: userData.name || user.user_metadata?.name || 'Usuário',
-          preferred_name:
-            userData.preferred_name ||
-            userData.name?.split(' ')[0] ||
-            'Usuário',
-          email: userData.email || user.email || '',
-          bio: userData.bio || '',
-          phone: userData.mobile_phone || '',
-          company: userData.company_name || '',
-          avatar_url: userData.avatar_url,
-        });
-
-        // Update subscription data with real data
-        setSubscription({
-          plan: (userData.subscription_plan || 'free') as SubscriptionPlan,
-          status: userData.subscription_status || 'active',
-          start_date: userData.subscription_start_date || userData.created_at,
-          end_date: userData.subscription_end_date,
-          tokens_used: userData.tokens_used || 0,
-          tokens_limit: userData.tokens_limit || 1000,
-          requests_this_month: userData.requests_this_month || 0,
-          next_billing_date: userData.next_billing_date,
-          billing_cycle: userData.billing_cycle,
-          payment_method: userData.payment_method,
-        });
-
-        // Fill registration information
-        setCadastralInfo({
-          country: userData.country || '',
-          postal_code: userData.postal_code || '',
-          address: userData.address || '',
-          preferred_language: userData.preferred_language || 'pt',
-          created_at: userData.created_at || '',
-          last_online: userData.last_online || '',
-        });
-      }
-
-      setLoadingProgress(100);
-      setLoadingStep('Pronto!');
-      await new Promise((resolve) => setTimeout(resolve, 500));
-
-      console.log('🎉 Dashboard carregado com sucesso!');
-    } catch (error) {
-      console.error('💥 Erro crítico no carregamento:', error);
-
-      // Configure basic profile in case of error
-      setProfile({
-        name: 'Usuário',
-        email: '',
-        bio: '',
-        phone: '',
-        company: '',
-      });
-
-      setLoadingStep('Erro no carregamento');
-      setLoadingProgress(100);
-
-      // Show error for a moment before finishing
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-    } finally {
-      // Clear safety timeout
-      if (timeoutId) {
-        clearTimeout(timeoutId);
-      }
-
-      // Ensure loading always finishes, even in case of error
-      setIsLoading(false);
+  // Call onLoadingComplete when loading finishes
+  useEffect(() => {
+    if (!isLoading) {
       onLoadingComplete?.();
-      console.log('🏁 Carregamento finalizado');
     }
-  };
+  }, [isLoading, onLoadingComplete]);
 
   const handleLogout = async () => {
     try {
@@ -340,35 +111,11 @@ export function Dashboard({
     if (!userUuid) return;
 
     try {
-      const { error } = await supabase
-        .from('users')
-        .update({
-          name: profile.name,
-          preferred_name:
-            profile.preferred_name || profile.name?.split(' ')[0] || 'Usuário',
-          mobile_phone: profile.phone,
-          company_name: profile.company,
-          bio: profile.bio,
-          last_online: new Date().toISOString(),
-        })
-        .eq('uuid', userUuid);
-
-      if (error) {
-        console.error('Erro ao atualizar perfil:', error);
-        toast.error('Erro ao salvar perfil', {
-          description: 'Tente novamente.',
-        });
-      } else {
-        setIsEditingProfile(false);
-        toast.success('Perfil atualizado com sucesso!', {
-          description: 'Suas informações foram salvas.',
-        });
-      }
+      await updateProfile(editedProfile);
+      setIsEditingProfile(false);
     } catch (error) {
+      // Error is already handled by the hook (toast + error state)
       console.error('Erro ao salvar perfil:', error);
-      toast.error('Erro ao salvar perfil', {
-        description: 'Tente novamente.',
-      });
     }
   };
 
@@ -1404,9 +1151,9 @@ export function Dashboard({
                   </label>
                   <input
                     type="text"
-                    value={profile.name}
+                    value={editedProfile.name}
                     onChange={(e) =>
-                      setProfile({ ...profile, name: e.target.value })
+                      setEditedProfile({ ...editedProfile, name: e.target.value })
                     }
                     disabled={!isEditingProfile}
                     className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-white disabled:opacity-50"
@@ -1419,7 +1166,7 @@ export function Dashboard({
                   </label>
                   <input
                     type="email"
-                    value={profile.email}
+                    value={editedProfile.email}
                     disabled
                     className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-white opacity-50"
                   />
@@ -1433,9 +1180,9 @@ export function Dashboard({
                     Biografia
                   </label>
                   <textarea
-                    value={profile.bio}
+                    value={editedProfile.bio || ''}
                     onChange={(e) =>
-                      setProfile({ ...profile, bio: e.target.value })
+                      setEditedProfile({ ...editedProfile, bio: e.target.value })
                     }
                     disabled={!isEditingProfile}
                     rows={3}
@@ -1450,9 +1197,9 @@ export function Dashboard({
                   </label>
                   <input
                     type="tel"
-                    value={profile.phone}
+                    value={editedProfile.phone || ''}
                     onChange={(e) =>
-                      setProfile({ ...profile, phone: e.target.value })
+                      setEditedProfile({ ...editedProfile, phone: e.target.value })
                     }
                     disabled={!isEditingProfile}
                     className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-white disabled:opacity-50"
@@ -1465,9 +1212,9 @@ export function Dashboard({
                   </label>
                   <input
                     type="text"
-                    value={profile.company}
+                    value={editedProfile.company || ''}
                     onChange={(e) =>
-                      setProfile({ ...profile, company: e.target.value })
+                      setEditedProfile({ ...editedProfile, company: e.target.value })
                     }
                     disabled={!isEditingProfile}
                     className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-white disabled:opacity-50"
@@ -1491,7 +1238,10 @@ export function Dashboard({
                         Salvar
                       </button>
                       <button
-                        onClick={() => setIsEditingProfile(false)}
+                        onClick={() => {
+                          setIsEditingProfile(false);
+                          setEditedProfile(profile); // Restore original profile
+                        }}
                         className="rounded-lg border border-slate-700 bg-slate-800 px-6 py-2 text-white hover:bg-slate-700"
                       >
                         Cancelar
