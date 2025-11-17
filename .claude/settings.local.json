@@ -18,7 +18,11 @@
       "Bash(git checkout:*)",
       "Bash(mkdir:*)",
       "Bash(rm:*)",
-      "Bash(git fetch:*)"
+      "Bash(git fetch:*)",
+      "Bash(python:*)",
+      "Bash(npx tsc:*)",
+      "Bash(for file in MyEasyWebsite.tsx components/ChatPanel.tsx components/PreviewPanel.tsx components/shared/FlagIcon.tsx components/modals/*.tsx handlers/*.ts utils/siteGenerator.ts utils/formatters.ts utils/geocoding.ts constants/*.ts)",
+      "Bash(done)"
     ],
     "deny": [],
     "ask": []
