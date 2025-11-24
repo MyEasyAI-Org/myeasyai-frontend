@@ -11,9 +11,9 @@ export type Plan = {
 
 export const PLANS: Plan[] = [
   {
-    name: 'Free',
-    value: 'free',
-    price: 'R$ 0',
+    name: 'Personal',
+    value: 'basic',
+    price: 'R$ 29',
     tokens: '1.000',
     features: [
       'Acesso básico à plataforma',
