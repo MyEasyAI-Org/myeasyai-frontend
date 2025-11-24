@@ -51,7 +51,7 @@ export function Footer() {
                 <XIcon className="h-5 w-5 text-white" />
               </a>
               <a
-                href="https://youtube.com"
+                href="https://www.youtube.com/@MyEasyAI"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="group flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg bg-[#FF0000] transition-all hover:bg-[#CC0000]"
@@ -59,7 +59,7 @@ export function Footer() {
                 <Youtube className="h-5 w-5 text-white" />
               </a>
               <a
-                href="https://instagram.com"
+                href="https://www.instagram.com/myeasyai"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="group flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg bg-gradient-to-br from-purple-600 via-pink-600 to-orange-500 transition-all hover:from-purple-700 hover:via-pink-700 hover:to-orange-600"
