@@ -1,4 +1,4 @@
-export type SubscriptionPlan = 'free' | 'basic' | 'pro' | 'enterprise';
+export type SubscriptionPlan = 'personal' | 'basic' | 'pro' | 'enterprise';
 
 export type Plan = {
   name: string;
@@ -11,9 +11,9 @@ export type Plan = {
 
 export const PLANS: Plan[] = [
   {
-    name: 'Free',
-    value: 'free',
-    price: 'R$ 0',
+    name: 'Personal',
+    value: 'personal',
+    price: 'R$ 29',
     tokens: '1.000',
     features: [
       'Acesso básico à plataforma',
