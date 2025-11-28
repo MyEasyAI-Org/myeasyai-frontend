@@ -1,3 +1,5 @@
+import { InstagramIcon, YoutubeIcon } from "lucide-react";
+
 // X (Twitter) icon component
 const XIcon = ({ className }: { className?: string }) => (
   <svg
@@ -54,7 +56,7 @@ export function Footer() {
                 rel="noopener noreferrer"
                 className="group flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg bg-[#FF0000] transition-all hover:bg-[#CC0000]"
               >
-                <Youtube className="h-5 w-5 text-white" />
+                <YoutubeIcon className="h-5 w-5 text-white" />
               </a>
               <a
                 href="https://www.instagram.com/myeasyai"
@@ -62,7 +64,7 @@ export function Footer() {
                 rel="noopener noreferrer"
                 className="group flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg bg-gradient-to-br from-purple-600 via-pink-600 to-orange-500 transition-all hover:from-purple-700 hover:via-pink-700 hover:to-orange-600"
               >
-                <Instagram className="h-5 w-5 text-white" />
+                <InstagramIcon className="h-5 w-5 text-white" />
               </a>
             </div>
           </div>
