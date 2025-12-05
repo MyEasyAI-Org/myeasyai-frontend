@@ -1,3 +1,5 @@
+import { Youtube, Instagram } from 'lucide-react';
+
 // X (Twitter) icon component
 const XIcon = ({ className }: { className?: string }) => (
   <svg
