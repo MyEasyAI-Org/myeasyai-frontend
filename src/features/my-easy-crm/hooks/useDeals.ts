@@ -96,6 +96,7 @@ interface UsePipelineReturn {
   refresh: () => Promise<void>;
   moveDealToStage: (dealId: string, stage: DealStage, lostReason?: string) => Promise<void>;
   createDeal: (data: DealFormData) => Promise<Deal>;
+  updateDeal: (id: string, data: Partial<DealFormData>) => Promise<Deal>;
 }
 
 export function usePipeline(): UsePipelineReturn {
@@ -136,6 +137,13 @@ export function usePipeline(): UsePipelineReturn {
     return deal;
   }, [fetchPipeline]);
 
+  const updateDeal = useCallback(async (id: string, data: Partial<DealFormData>): Promise<Deal> => {
+    const deal = await DealService.update(id, data);
+    // Refresh pipeline after update
+    await fetchPipeline();
+    return deal;
+  }, [fetchPipeline]);
+
   return {
     pipeline,
     isLoading,
@@ -143,6 +151,7 @@ export function usePipeline(): UsePipelineReturn {
     refresh: fetchPipeline,
     moveDealToStage,
     createDeal,
+    updateDeal,
   };
 }
 

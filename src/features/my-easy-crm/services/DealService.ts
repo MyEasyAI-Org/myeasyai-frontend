@@ -106,15 +106,25 @@ export const DealService = {
     const stage = data.stage || 'lead';
     const probability = data.probability ?? DEAL_STAGES[stage].probability;
 
+    // Build insert data, excluding undefined values
+    const insertData: Record<string, unknown> = {
+      user_id: user.user.id,
+      title: data.title,
+      value: data.value,
+      stage,
+      probability,
+    };
+
+    // Only add optional fields if they have values
+    if (data.contact_id) insertData.contact_id = data.contact_id;
+    if (data.company_id) insertData.company_id = data.company_id;
+    if (data.expected_close_date) insertData.expected_close_date = data.expected_close_date;
+    if (data.source) insertData.source = data.source;
+    if (data.notes) insertData.notes = data.notes;
+
     const { data: deal, error } = await supabase
       .from(TABLE_NAME)
-      .insert({
-        ...data,
-        user_id: user.user.id,
-        stage,
-        probability,
-        products: data.products || [],
-      })
+      .insert(insertData)
       .select(`
         *,
         contact:crm_contacts(id, name, email),
@@ -293,6 +303,7 @@ export const DealService = {
     const startOfMonth = new Date();
     startOfMonth.setDate(1);
     startOfMonth.setHours(0, 0, 0, 0);
+    const startOfMonthStr = startOfMonth.toISOString().split('T')[0];
 
     // Deals abertos
     const { data: openDeals } = await supabase
@@ -300,12 +311,13 @@ export const DealService = {
       .select('value, probability')
       .in('stage', OPEN_DEAL_STAGES);
 
-    // Deals fechados este mês
+    // Deals fechados este mês - usando updated_at como fallback
+    // (actual_close_date pode não existir em todas as instalações)
     const { data: closedDeals } = await supabase
       .from(TABLE_NAME)
-      .select('value, stage')
+      .select('value, stage, updated_at')
       .in('stage', ['closed_won', 'closed_lost'])
-      .gte('actual_close_date', startOfMonth.toISOString());
+      .gte('updated_at', startOfMonthStr);
 
     const totalValue = (openDeals || []).reduce((sum, d) => sum + (d.value || 0), 0);
     const weightedValue = (openDeals || []).reduce(

@@ -128,10 +128,11 @@ export function MyEasyCRM({
     error: pipelineError,
     moveDealToStage: moveDealToStagePipeline,
     createDeal: createDealPipeline,
+    updateDeal: updateDealPipeline,
     refresh: refreshPipeline,
   } = usePipeline();
 
-  const { deal: selectedDeal, isLoading: loadingDeal, updateDeal, moveDealToStage } = useDeal(selectedDealId);
+  const { deal: selectedDeal, isLoading: loadingDeal, moveDealToStage } = useDeal(selectedDealId);
 
   const {
     tasks,
@@ -295,16 +296,18 @@ export function MyEasyCRM({
     setIsSubmitting(true);
     try {
       if (editingDeal) {
-        await updateDeal(data);
+        await updateDealPipeline(editingDeal.id, data);
       } else {
         await createDealPipeline(data);
       }
       setDealFormOpen(false);
       setEditingDeal(null);
+    } catch (error) {
+      console.error('Error submitting deal:', error);
     } finally {
       setIsSubmitting(false);
     }
-  }, [editingDeal, createDealPipeline, updateDeal]);
+  }, [editingDeal, createDealPipeline, updateDealPipeline]);
 
   // Task handlers
   const handleEditTask = useCallback((task: Task) => {
