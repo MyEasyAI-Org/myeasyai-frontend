@@ -87,15 +87,18 @@ export interface HiddenCostAuxiliaryData {
   km_monthly?: number;
   vehicle_type?: 'car' | 'motorcycle';
   work_percentage?: number;
+  cost_per_km?: number;
   // Food
   daily_expense?: number;
-  days_per_month?: number;
+  days_per_month?: number; // Also used by electricity_home
   // Electricity home
   hours_per_day?: number;
   has_ac?: boolean;
+  cost_per_hour?: number;
   // Unpaid time
   hours_per_week?: number;
   hourly_rate?: number;
+  weeks_per_month?: number;
   // Equipment depreciation
   equipment_value?: number;
   useful_life_months?: number;
@@ -124,15 +127,15 @@ export interface TaxConfig {
   id: string;
   store_id: string;
   tax_regime: TaxRegime;
-  tax_rate: number;
-  marketplace_fee: number;
-  card_fee: number;
-  other_fees: number;
 }
+
+export type TaxCategory = 'tax_rate' | 'card_fee' | 'marketplace_fee' | 'commission' | 'other';
 
 export interface TaxItem {
   id: string;
+  store_id: string;
   name: string;
+  category: TaxCategory;
   percentage: number;
 }
 

@@ -10,8 +10,8 @@ import type { TabType } from '../../types/pricing.types';
 // =============================================================================
 
 interface FormTabsProps {
-  activeTab: TabType;
-  onTabChange: (tab: TabType) => void;
+  activeTab: TabType | null;
+  onTabChange: (tab: TabType | null) => void;
   disabled?: boolean;
 }
 
@@ -42,7 +42,7 @@ export function FormTabs({ activeTab, onTabChange, disabled = false }: FormTabsP
             <button
               key={tab.id}
               type="button"
-              onClick={() => !disabled && onTabChange(tab.id)}
+              onClick={() => !disabled && onTabChange(isActive ? null : tab.id)}
               disabled={disabled}
               className={`px-3 py-1.5 text-sm rounded-lg border transition-colors ${
                 isActive

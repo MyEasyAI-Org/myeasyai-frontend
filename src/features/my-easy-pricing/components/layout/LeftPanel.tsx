@@ -9,6 +9,9 @@ import type { StoreFormData, TabType } from '../../types/pricing.types';
 import { StoreSelector } from '../navigation/StoreSelector';
 import { StoreForm } from '../forms/StoreForm';
 import { FormTabs } from '../navigation/FormTabs';
+import { IndirectCostsForm } from '../forms/IndirectCostsForm';
+import { HiddenCostsForm } from '../forms/HiddenCostsForm';
+import { TaxConfigForm } from '../forms/TaxConfigForm';
 
 // =============================================================================
 // Component
@@ -32,8 +35,8 @@ export function LeftPanel() {
   const [isStoreModalOpen, setIsStoreModalOpen] = useState(false);
   const [editingStore, setEditingStore] = useState<typeof selectedStore>(null);
 
-  // Tab state
-  const [activeTab, setActiveTab] = useState<TabType>('indirect');
+  // Tab state (null = no tab selected initially)
+  const [activeTab, setActiveTab] = useState<TabType | null>(null);
 
   // Handlers
   const handleCreateNewStore = () => {
@@ -125,8 +128,10 @@ export function LeftPanel() {
             onTabChange={setActiveTab}
           />
 
-          {/* Tab Content */}
-          <TabContent activeTab={activeTab} />
+          {/* Tab Content - Only show when a tab is selected */}
+          {activeTab && (
+            <TabContent activeTab={activeTab} storeId={selectedStore.id} />
+          )}
 
           {/* Product Selector */}
           <div className="mt-6 pt-6 border-t border-slate-800">
@@ -165,49 +170,41 @@ export function LeftPanel() {
 }
 
 // =============================================================================
-// TabContent - Placeholder content for each tab (will be replaced in next phases)
+// TabContent - Content for each tab
 // =============================================================================
 
 interface TabContentProps {
   activeTab: TabType;
+  storeId: string;
 }
 
-function TabContent({ activeTab }: TabContentProps) {
+function TabContent({ activeTab, storeId }: TabContentProps) {
   const labels = PRICING_LABELS;
 
-  const tabConfig: Record<TabType, { title: string; subtitle: string; icon: string }> = {
-    indirect: {
-      title: labels.indirectCosts.title,
-      subtitle: labels.indirectCosts.subtitle,
-      icon: '🏢',
-    },
-    hidden: {
-      title: labels.hiddenCosts.title,
-      subtitle: labels.hiddenCosts.subtitle,
-      icon: '👁️',
-    },
-    taxes: {
-      title: labels.taxes.title,
-      subtitle: labels.taxes.subtitle,
-      icon: '📊',
-    },
-    product: {
-      title: labels.products.modal.titleCreate,
-      subtitle: 'Dados do produto selecionado',
-      icon: '📦',
-    },
-  };
+  // Render IndirectCostsForm for indirect tab
+  if (activeTab === 'indirect') {
+    return <IndirectCostsForm storeId={storeId} />;
+  }
 
-  const config = tabConfig[activeTab];
+  // Render HiddenCostsForm for hidden tab
+  if (activeTab === 'hidden') {
+    return <HiddenCostsForm storeId={storeId} />;
+  }
 
+  // Render TaxConfigForm for taxes tab
+  if (activeTab === 'taxes') {
+    return <TaxConfigForm storeId={storeId} />;
+  }
+
+  // Placeholder for product tab (to be implemented)
   return (
     <div className="rounded-xl border border-slate-800 bg-slate-900/50 p-6">
       <div className="text-center">
         <div className="w-12 h-12 rounded-full bg-slate-800 mx-auto mb-4 flex items-center justify-center">
-          <span className="text-2xl">{config.icon}</span>
+          <span className="text-2xl">📦</span>
         </div>
-        <h3 className="text-lg font-medium text-slate-300 mb-2">{config.title}</h3>
-        <p className="text-sm text-slate-500 mb-4">{config.subtitle}</p>
+        <h3 className="text-lg font-medium text-slate-300 mb-2">{labels.products.modal.titleCreate}</h3>
+        <p className="text-sm text-slate-500 mb-4">Dados do produto selecionado</p>
         <p className="text-xs text-slate-600">
           Formulário será implementado na próxima fase
         </p>

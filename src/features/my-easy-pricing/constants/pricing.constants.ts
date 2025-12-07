@@ -138,7 +138,7 @@ export const PRICING_LABELS = {
       tools: 'Ferramentas/Software',
       accountant: 'Contador',
     },
-    addCustom: '+ Outro custo',
+    addCustom: 'Outro custo',
   },
 
   // -------------------------------------------------------------------------
@@ -157,7 +157,7 @@ export const PRICING_LABELS = {
       unpaid_time: 'Tempo',
       equipment_depreciation: 'Equipamentos',
     },
-    addCustom: '+ Outro custo',
+    addCustom: 'Outro custo',
     auxiliary: {
       vehicle: {
         title: 'Depreciacao de Veiculo',
@@ -169,6 +169,7 @@ export const PRICING_LABELS = {
           motorcycle: 'Moto',
         },
         workPercentage: '% uso para trabalho',
+        costPerKm: 'Custo por km (R$)',
         calculatedValue: 'Valor calculado',
         useCustomValue: 'Usar valor personalizado',
       },
@@ -182,6 +183,8 @@ export const PRICING_LABELS = {
         title: 'Energia Eletrica (home office)',
         description: 'Trabalhar em casa gera custos extras na conta de energia.',
         hoursPerDay: 'Horas por dia trabalhando em casa',
+        daysPerMonth: 'Dias por mes trabalhando em casa',
+        costPerHour: 'Custo por hora (R$)',
         hasAc: 'Usa ar-condicionado?',
       },
       unpaidTime: {
@@ -189,6 +192,7 @@ export const PRICING_LABELS = {
         description: 'Seu tempo tem valor, mesmo quando nao esta produzindo diretamente.',
         hoursPerWeek: 'Horas semanais em atividades nao remuneradas',
         hourlyRate: 'Valor/hora desejado',
+        weeksPerMonth: 'Semanas por mes',
       },
       equipment: {
         title: 'Depreciacao de Equipamentos',
@@ -217,7 +221,7 @@ export const PRICING_LABELS = {
       marketplace_fee: 'Marketplace',
       commission: 'Comissao',
     },
-    addCustom: '+ Outra taxa',
+    addCustom: 'Outra taxa',
   },
 
   // -------------------------------------------------------------------------
@@ -382,22 +386,41 @@ export type PricingLabels = typeof PRICING_LABELS;
 // =============================================================================
 
 export const CALCULATION_CONSTANTS = {
-  // Valores por km para calculo de depreciacao de veiculo
+  // ---------------------------------------------------------------------------
+  // Constantes de Tempo (configuráveis)
+  // ---------------------------------------------------------------------------
+  time: {
+    workingDaysPerMonth: 22,    // Dias úteis médios por mês
+    weeksPerMonth: 4.33,        // Semanas médias por mês (52 ÷ 12)
+  },
+
+  // ---------------------------------------------------------------------------
+  // Depreciação de Veículo (R$/km)
+  // ---------------------------------------------------------------------------
   vehicleDepreciationPerKm: {
-    car: 0.7, // R$ 0,70 por km
-    motorcycle: 0.35, // R$ 0,35 por km
+    car: 0.7,                   // R$ 0,70 por km (carro)
+    motorcycle: 0.35,           // R$ 0,35 por km (moto)
   },
-  // Custo medio de energia por hora de trabalho em casa
+
+  // ---------------------------------------------------------------------------
+  // Custo de Energia por Hora (home office)
+  // ---------------------------------------------------------------------------
   electricityPerHour: {
-    withoutAc: 0.5, // R$ 0,50 por hora
-    withAc: 1.5, // R$ 1,50 por hora
+    withoutAc: 0.5,             // R$ 0,50 por hora (sem ar-condicionado)
+    withAc: 1.5,                // R$ 1,50 por hora (com ar-condicionado)
   },
-  // Valores padrao
+
+  // ---------------------------------------------------------------------------
+  // Valores Padrão para Formulários
+  // ---------------------------------------------------------------------------
   defaults: {
-    amortizationMonths: 12,
-    marginPercentage: 30,
-    weight: 1,
-    monthlyUnitsEstimate: 100,
+    amortizationMonths: 12,     // Meses para diluir custo único
+    marginPercentage: 30,       // Margem de lucro padrão (%)
+    weight: 1,                  // Peso padrão para rateio
+    monthlyUnitsEstimate: 100,  // Estimativa de vendas/mês
+    equipmentUsefulLife: 36,    // Vida útil de equipamentos (meses)
+    workPercentage: 100,        // % de uso para trabalho
+    foodDaysPerMonth: 22,       // Dias/mês de alimentação fora
   },
 };
 
