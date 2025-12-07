@@ -17,6 +17,7 @@ import { Packages } from './components/Packages';
 import { Preview } from './components/Preview';
 import { PWAInstallBanner } from './components/PWAInstallBanner';
 import { BusinessGuru } from './features/business-guru/BusinessGuru';
+import { MyEasyPricing } from './features/my-easy-pricing/MyEasyPricing';
 import { MyEasyWebsite } from './features/my-easy-website/MyEasyWebsite';
 import { useInactivityTimeout } from './hooks/useInactivityTimeout';
 import { useModalState } from './hooks/useModalState';
@@ -41,7 +42,7 @@ function App() {
   });
   const [loading, setLoading] = useState(true);
   const [currentView, setCurrentView] = useState<
-    'home' | 'dashboard' | 'preview' | 'myeasywebsite' | 'businessguru'
+    'home' | 'dashboard' | 'preview' | 'myeasywebsite' | 'businessguru' | 'myeasypricing'
   >('home');
   const onboardingModal = useModalState();
   const [needsOnboarding, setNeedsOnboarding] = useState(false);
@@ -181,6 +182,10 @@ function App() {
 
   const goToBusinessGuru = () => {
     setCurrentView('businessguru');
+  };
+
+  const goToMyEasyPricing = () => {
+    setCurrentView('myeasypricing');
   };
 
   const handleOnboardingComplete = () => {
@@ -395,6 +400,7 @@ function App() {
           onGoHome={goToHome}
           onGoToMyEasyWebsite={goToMyEasyWebsite}
           onGoToBusinessGuru={goToBusinessGuru}
+          onGoToMyEasyPricing={goToMyEasyPricing}
           onLoadingComplete={() => {
             // Callback when dashboard loading finishes
             console.log('Dashboard loaded successfully!');
@@ -410,6 +416,10 @@ function App() {
 
   if (user && currentView === 'businessguru') {
     return <BusinessGuru onBackToDashboard={goToDashboard} />;
+  }
+
+  if (user && currentView === 'myeasypricing') {
+    return <MyEasyPricing onBackToDashboard={goToDashboard} />;
   }
 
   return (

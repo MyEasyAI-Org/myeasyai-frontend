@@ -20,6 +20,7 @@ type DashboardProps = {
   onGoHome?: () => void;
   onGoToMyEasyWebsite?: () => void;
   onGoToBusinessGuru?: () => void;
+  onGoToMyEasyPricing?: () => void;
   onLoadingComplete?: () => void;
 };
 
@@ -27,6 +28,7 @@ export function Dashboard({
   onGoHome,
   onGoToMyEasyWebsite,
   onGoToBusinessGuru,
+  onGoToMyEasyPricing,
   onLoadingComplete,
 }: DashboardProps = {}) {
   // User data hook (manages profile, subscription, products, cadastral info, etc.)
@@ -52,6 +54,7 @@ export function Dashboard({
       onGoHome,
       onGoToMyEasyWebsite,
       onGoToBusinessGuru,
+      onGoToMyEasyPricing,
     });
 
   // Local UI state
