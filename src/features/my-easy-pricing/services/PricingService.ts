@@ -16,6 +16,10 @@ import type {
   TaxItem,
   TaxRegime,
   TaxCategory,
+  Product,
+  ProductFormData,
+  UnitType,
+  Positioning,
 } from '../types/pricing.types';
 
 // =============================================================================
@@ -657,6 +661,172 @@ export class PricingService {
       return { success: true, error: null };
     } catch (error) {
       console.error('[PricingService] Exception in deleteTaxItem:', error);
+      return { success: false, error: error as Error };
+    }
+  }
+
+  // ===========================================================================
+  // Product Operations
+  // ===========================================================================
+
+  // ---------------------------------------------------------------------------
+  // GET: Fetch all products for a store
+  // ---------------------------------------------------------------------------
+  async getProducts(storeId: string): Promise<{ data: Product[] | null; error: Error | null }> {
+    try {
+      const { data, error } = await supabase
+        .from('pricing_products')
+        .select('*')
+        .eq('store_id', storeId)
+        .eq('is_active', true)
+        .order('created_at', { ascending: true });
+
+      if (error) {
+        console.error('[PricingService] Error fetching products:', error);
+        return { data: null, error: new Error(error.message) };
+      }
+
+      return { data: data as Product[], error: null };
+    } catch (error) {
+      console.error('[PricingService] Exception in getProducts:', error);
+      return { data: null, error: error as Error };
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // GET: Fetch a single product by ID
+  // ---------------------------------------------------------------------------
+  async getProductById(productId: string): Promise<{ data: Product | null; error: Error | null }> {
+    try {
+      const { data, error } = await supabase
+        .from('pricing_products')
+        .select('*')
+        .eq('id', productId)
+        .eq('is_active', true)
+        .single();
+
+      if (error) {
+        console.error('[PricingService] Error fetching product:', error);
+        return { data: null, error: new Error(error.message) };
+      }
+
+      return { data: data as Product, error: null };
+    } catch (error) {
+      console.error('[PricingService] Exception in getProductById:', error);
+      return { data: null, error: error as Error };
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // CREATE: Create a new product
+  // ---------------------------------------------------------------------------
+  async createProduct(
+    storeId: string,
+    formData: ProductFormData
+  ): Promise<{ data: Product | null; error: Error | null }> {
+    try {
+      const newProduct = {
+        store_id: storeId,
+        name: formData.name.trim(),
+        description: formData.description?.trim() || null,
+        category: formData.category?.trim() || null,
+        direct_cost: formData.direct_cost,
+        unit_type: formData.unit_type,
+        desired_margin: formData.desired_margin,
+        positioning: formData.positioning,
+        market_price: formData.market_price,
+        weight: formData.weight,
+        monthly_units_estimate: formData.monthly_units_estimate,
+        is_active: true,
+        is_demo: false,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+
+      const { data, error } = await supabase
+        .from('pricing_products')
+        .insert(newProduct)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('[PricingService] Error creating product:', error);
+        return { data: null, error: new Error(error.message) };
+      }
+
+      console.log('[PricingService] Product created:', data.id);
+      return { data: data as Product, error: null };
+    } catch (error) {
+      console.error('[PricingService] Exception in createProduct:', error);
+      return { data: null, error: error as Error };
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // UPDATE: Update an existing product
+  // ---------------------------------------------------------------------------
+  async updateProduct(
+    productId: string,
+    formData: Partial<ProductFormData>
+  ): Promise<{ data: Product | null; error: Error | null }> {
+    try {
+      const updates: Record<string, unknown> = {
+        updated_at: new Date().toISOString(),
+      };
+
+      if (formData.name !== undefined) updates.name = formData.name.trim();
+      if (formData.description !== undefined) updates.description = formData.description?.trim() || null;
+      if (formData.category !== undefined) updates.category = formData.category?.trim() || null;
+      if (formData.direct_cost !== undefined) updates.direct_cost = formData.direct_cost;
+      if (formData.unit_type !== undefined) updates.unit_type = formData.unit_type;
+      if (formData.desired_margin !== undefined) updates.desired_margin = formData.desired_margin;
+      if (formData.positioning !== undefined) updates.positioning = formData.positioning;
+      if (formData.market_price !== undefined) updates.market_price = formData.market_price;
+      if (formData.weight !== undefined) updates.weight = formData.weight;
+      if (formData.monthly_units_estimate !== undefined) updates.monthly_units_estimate = formData.monthly_units_estimate;
+
+      const { data, error } = await supabase
+        .from('pricing_products')
+        .update(updates)
+        .eq('id', productId)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('[PricingService] Error updating product:', error);
+        return { data: null, error: new Error(error.message) };
+      }
+
+      console.log('[PricingService] Product updated:', productId);
+      return { data: data as Product, error: null };
+    } catch (error) {
+      console.error('[PricingService] Exception in updateProduct:', error);
+      return { data: null, error: error as Error };
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // DELETE: Soft delete a product
+  // ---------------------------------------------------------------------------
+  async deleteProduct(productId: string): Promise<{ success: boolean; error: Error | null }> {
+    try {
+      const { error } = await supabase
+        .from('pricing_products')
+        .update({
+          is_active: false,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', productId);
+
+      if (error) {
+        console.error('[PricingService] Error deleting product:', error);
+        return { success: false, error: new Error(error.message) };
+      }
+
+      console.log('[PricingService] Product soft deleted:', productId);
+      return { success: true, error: null };
+    } catch (error) {
+      console.error('[PricingService] Exception in deleteProduct:', error);
       return { success: false, error: error as Error };
     }
   }

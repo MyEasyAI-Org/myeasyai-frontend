@@ -2,13 +2,13 @@
 // IndirectCostsForm - Form for managing indirect costs of a store
 // =============================================================================
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { PRICING_LABELS, COST_SUGGESTIONS, CALCULATION_CONSTANTS } from '../../constants/pricing.constants';
-import { useIndirectCosts } from '../../hooks/useIndirectCosts';
 import { CostSuggestionChips } from '../shared/CostSuggestionChips';
 import { DynamicCostRow } from '../shared/DynamicCostRow';
-import type { IndirectCostCategory, CostFrequency } from '../../types/pricing.types';
+import type { IndirectCost, IndirectCostCategory, CostFrequency } from '../../types/pricing.types';
+import type { IndirectCostFormData } from '../../hooks/useIndirectCosts';
 
 // =============================================================================
 // Types
@@ -16,38 +16,31 @@ import type { IndirectCostCategory, CostFrequency } from '../../types/pricing.ty
 
 interface IndirectCostsFormProps {
   storeId: string | null;
+  costs: IndirectCost[];
+  isLoading: boolean;
+  totalMonthly: number;
+  addCost: (storeId: string, data: IndirectCostFormData) => Promise<IndirectCost | null>;
+  updateCost: (costId: string, data: Partial<IndirectCostFormData>) => Promise<boolean>;
+  deleteCost: (costId: string) => Promise<boolean>;
 }
 
 // =============================================================================
 // Component
 // =============================================================================
 
-export function IndirectCostsForm({ storeId }: IndirectCostsFormProps) {
+export function IndirectCostsForm({
+  storeId,
+  costs,
+  isLoading,
+  totalMonthly,
+  addCost,
+  updateCost,
+  deleteCost,
+}: IndirectCostsFormProps) {
   const labels = PRICING_LABELS;
-
-  // Hook for managing costs
-  const {
-    costs,
-    isLoading,
-    totalMonthly,
-    loadCosts,
-    addCost,
-    updateCost,
-    deleteCost,
-    clearCosts,
-  } = useIndirectCosts();
 
   // Track newly added costs (for auto-focus)
   const [newCostId, setNewCostId] = useState<string | null>(null);
-
-  // Load costs when store changes
-  useEffect(() => {
-    if (storeId) {
-      loadCosts(storeId);
-    } else {
-      clearCosts();
-    }
-  }, [storeId, loadCosts, clearCosts]);
 
   // Get used categories to filter suggestions
   const usedCategories = costs.map(c => c.category);

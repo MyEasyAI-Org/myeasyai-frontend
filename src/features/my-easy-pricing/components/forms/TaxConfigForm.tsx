@@ -2,12 +2,13 @@
 // TaxConfigForm - Form for managing taxes and fees configuration
 // =============================================================================
 
-import { useEffect, useState } from 'react';
-import { Loader2, Plus } from 'lucide-react';
+import { useState } from 'react';
+import { Loader2 } from 'lucide-react';
 import { PRICING_LABELS, COST_SUGGESTIONS } from '../../constants/pricing.constants';
-import { useTaxConfig } from '../../hooks/useTaxConfig';
+import { CostSuggestionChips } from '../shared/CostSuggestionChips';
 import { TaxItemRow } from '../shared/TaxItemRow';
-import type { TaxRegime, TaxCategory } from '../../types/pricing.types';
+import type { TaxConfig, TaxItem, TaxRegime, TaxCategory } from '../../types/pricing.types';
+import type { TaxItemFormData } from '../../hooks/useTaxConfig';
 
 // =============================================================================
 // Types
@@ -15,6 +16,14 @@ import type { TaxRegime, TaxCategory } from '../../types/pricing.types';
 
 interface TaxConfigFormProps {
   storeId: string | null;
+  taxConfig: TaxConfig | null;
+  taxItems: TaxItem[];
+  isLoading: boolean;
+  totalTaxPercentage: number;
+  updateTaxRegime: (storeId: string, regime: TaxRegime) => Promise<boolean>;
+  addTaxItem: (storeId: string, data: TaxItemFormData) => Promise<TaxItem | null>;
+  updateTaxItem: (itemId: string, data: Partial<TaxItemFormData>) => Promise<boolean>;
+  deleteTaxItem: (itemId: string) => Promise<boolean>;
 }
 
 // =============================================================================
@@ -29,58 +38,37 @@ const TAX_REGIME_OPTIONS: { value: TaxRegime; label: string }[] = [
 ];
 
 // =============================================================================
-// Tax Category Mapping
+// Tax Suggestions with Category (adapted for CostSuggestionChips)
 // =============================================================================
 
-const SUGGESTION_TO_CATEGORY: Record<string, TaxCategory> = {
-  card: 'card_fee',
-  marketplace: 'marketplace_fee',
-  commission: 'commission',
-};
+const TAX_SUGGESTIONS = COST_SUGGESTIONS.taxes.map(s => ({
+  id: s.id,
+  label: s.label,
+  category: s.id === 'card' ? 'card_fee' : s.id === 'marketplace' ? 'marketplace_fee' : s.id === 'commission' ? 'commission' : 'other',
+}));
 
 // =============================================================================
 // Component
 // =============================================================================
 
-export function TaxConfigForm({ storeId }: TaxConfigFormProps) {
+export function TaxConfigForm({
+  storeId,
+  taxConfig,
+  taxItems,
+  isLoading,
+  totalTaxPercentage,
+  updateTaxRegime,
+  addTaxItem,
+  updateTaxItem,
+  deleteTaxItem,
+}: TaxConfigFormProps) {
   const labels = PRICING_LABELS;
-
-  // Hook for managing tax config
-  const {
-    taxConfig,
-    taxItems,
-    isLoading,
-    totalTaxPercentage,
-    loadTaxData,
-    updateTaxRegime,
-    addTaxItem,
-    updateTaxItem,
-    deleteTaxItem,
-    clearTaxData,
-  } = useTaxConfig();
 
   // Track newly added items (for auto-focus)
   const [newItemId, setNewItemId] = useState<string | null>(null);
 
-  // Load data when store changes
-  useEffect(() => {
-    if (storeId) {
-      loadTaxData(storeId);
-    } else {
-      clearTaxData();
-    }
-  }, [storeId, loadTaxData, clearTaxData]);
-
-  // Get used suggestion IDs to filter chips
-  const usedSuggestionIds = taxItems
-    .map(item => {
-      // Map category back to suggestion id
-      if (item.category === 'card_fee') return 'card';
-      if (item.category === 'marketplace_fee') return 'marketplace';
-      if (item.category === 'commission') return 'commission';
-      return null;
-    })
-    .filter(Boolean) as string[];
+  // Get used categories to filter chips
+  const usedCategories = taxItems.map(item => item.category);
 
   // Handle regime change
   const handleRegimeChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -90,13 +78,12 @@ export function TaxConfigForm({ storeId }: TaxConfigFormProps) {
   };
 
   // Handle suggestion click
-  const handleSuggestionSelect = async (suggestion: { id: string; label: string }) => {
+  const handleSuggestionSelect = async (suggestion: { id: string; label: string; category: string }) => {
     if (!storeId) return;
 
-    const category = SUGGESTION_TO_CATEGORY[suggestion.id] || 'other';
     const newItem = await addTaxItem(storeId, {
       name: suggestion.label,
-      category,
+      category: suggestion.category as TaxCategory,
       percentage: 0,
     });
 
@@ -181,40 +168,14 @@ export function TaxConfigForm({ storeId }: TaxConfigFormProps) {
       <div className="border-t border-slate-700" />
 
       {/* Suggestion Chips */}
-      <div className="flex flex-wrap gap-2">
-        {COST_SUGGESTIONS.taxes.map(suggestion => {
-          const isUsed = usedSuggestionIds.includes(suggestion.id);
-          return (
-            <button
-              key={suggestion.id}
-              type="button"
-              onClick={() => handleSuggestionSelect(suggestion)}
-              disabled={isLoading || isUsed}
-              className={`
-                px-3 py-1.5 text-sm rounded-full border transition-all
-                ${isUsed
-                  ? 'bg-slate-700/50 border-slate-600 text-slate-500 cursor-not-allowed'
-                  : 'bg-slate-800/50 border-slate-600 text-slate-300 hover:border-yellow-400/50 hover:text-yellow-400 hover:bg-yellow-400/10'
-                }
-                disabled:cursor-not-allowed
-              `}
-            >
-              + {suggestion.label}
-            </button>
-          );
-        })}
-
-        {/* Add Custom Button */}
-        <button
-          type="button"
-          onClick={handleAddCustom}
-          disabled={isLoading}
-          className="px-3 py-1.5 text-sm rounded-full border border-dashed border-slate-600 text-slate-400 hover:border-yellow-400/50 hover:text-yellow-400 hover:bg-yellow-400/10 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
-        >
-          <Plus className="w-3 h-3" />
-          {labels.taxes.addCustom}
-        </button>
-      </div>
+      <CostSuggestionChips
+        suggestions={TAX_SUGGESTIONS}
+        usedCategories={usedCategories}
+        onSelect={handleSuggestionSelect}
+        onAddCustom={handleAddCustom}
+        addCustomLabel={labels.taxes.addCustom}
+        disabled={isLoading}
+      />
 
       {/* Loading State */}
       {isLoading && taxItems.length === 0 && (

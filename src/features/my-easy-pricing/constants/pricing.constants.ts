@@ -24,6 +24,7 @@ export const PRICING_LABELS = {
     placeholder: 'Selecione uma loja...',
     noStores: 'Nenhuma loja criada ainda.',
     createFirst: 'Crie sua primeira loja para comecar.',
+    createFirstButton: 'Criar Nova Loja',
     modal: {
       titleCreate: 'Nova Loja',
       titleEdit: 'Editar Loja',
@@ -49,7 +50,7 @@ export const PRICING_LABELS = {
   // -------------------------------------------------------------------------
   products: {
     title: 'Selecionar Produto',
-    newProduct: '+ Novo Produto',
+    newProduct: 'Novo Produto',
     editProduct: 'Editar Produto',
     deleteProduct: 'Excluir Produto',
     placeholder: 'Selecione um produto...',
@@ -86,6 +87,10 @@ export const PRICING_LABELS = {
       weightPlaceholder: '1',
       monthlyEstimateLabel: 'Estimativa de vendas/mes',
       monthlyEstimatePlaceholder: '100',
+      cancel: 'Cancelar',
+      create: 'Criar Produto',
+      save: 'Salvar',
+      saving: 'Salvando...',
     },
   },
 
@@ -271,6 +276,46 @@ export const PRICING_LABELS = {
       below: 'Abaixo',
       equal: 'Igual',
       above: 'Acima',
+    },
+    costsBreakdown: {
+      title: 'Detalhamento de Custos da Loja',
+      indirectCosts: 'Custos Indiretos',
+      hiddenCosts: 'Custos Ocultos',
+      taxes: 'Impostos e Taxas',
+      columns: {
+        name: 'Nome',
+        category: 'Categoria',
+        originalValue: 'Valor Original',
+        frequency: 'Frequencia',
+        monthlyValue: 'Valor Mensal',
+        percentage: 'Percentual',
+      },
+      subtotal: 'Subtotal',
+      total: 'Total Geral de Custos',
+      categories: {
+        // Indirect costs
+        rent: 'Aluguel',
+        utilities: 'Energia/Agua',
+        salaries: 'Salarios',
+        marketing: 'Marketing',
+        tools: 'Ferramentas',
+        accountant: 'Contador',
+        // Hidden costs
+        vehicle_depreciation: 'Veiculo',
+        food: 'Alimentacao',
+        work_clothes: 'Roupas',
+        packaging: 'Materiais',
+        electricity_home: 'Energia Home',
+        internet_personal: 'Internet/Tel',
+        unpaid_time: 'Tempo',
+        equipment_depreciation: 'Equipamentos',
+        // Taxes
+        tax_rate: 'Imposto',
+        card_fee: 'Taxa Cartao',
+        marketplace_fee: 'Marketplace',
+        commission: 'Comissao',
+        other: 'Outro',
+      },
     },
   },
 

@@ -2,14 +2,14 @@
 // HiddenCostsForm - Form for managing hidden costs of a store
 // =============================================================================
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { PRICING_LABELS, COST_SUGGESTIONS, CALCULATION_CONSTANTS } from '../../constants/pricing.constants';
-import { useHiddenCosts } from '../../hooks/useHiddenCosts';
 import { CostSuggestionChips } from '../shared/CostSuggestionChips';
 import { HiddenCostRow } from '../shared/HiddenCostRow';
 import { getDefaultAuxiliaryData, hasAuxiliaryCalculator } from '../../utils/hiddenCostCalculators';
-import type { HiddenCostCategory, HiddenCostAuxiliaryData, CostFrequency } from '../../types/pricing.types';
+import type { HiddenCost, HiddenCostCategory, HiddenCostAuxiliaryData, CostFrequency } from '../../types/pricing.types';
+import type { HiddenCostFormData } from '../../hooks/useHiddenCosts';
 
 // =============================================================================
 // Types
@@ -17,38 +17,31 @@ import type { HiddenCostCategory, HiddenCostAuxiliaryData, CostFrequency } from 
 
 interface HiddenCostsFormProps {
   storeId: string | null;
+  costs: HiddenCost[];
+  isLoading: boolean;
+  totalMonthly: number;
+  addCost: (storeId: string, data: HiddenCostFormData) => Promise<HiddenCost | null>;
+  updateCost: (costId: string, data: Partial<HiddenCostFormData>) => Promise<boolean>;
+  deleteCost: (costId: string) => Promise<boolean>;
 }
 
 // =============================================================================
 // Component
 // =============================================================================
 
-export function HiddenCostsForm({ storeId }: HiddenCostsFormProps) {
+export function HiddenCostsForm({
+  storeId,
+  costs,
+  isLoading,
+  totalMonthly,
+  addCost,
+  updateCost,
+  deleteCost,
+}: HiddenCostsFormProps) {
   const labels = PRICING_LABELS;
-
-  // Hook for managing costs
-  const {
-    costs,
-    isLoading,
-    totalMonthly,
-    loadCosts,
-    addCost,
-    updateCost,
-    deleteCost,
-    clearCosts,
-  } = useHiddenCosts();
 
   // Track newly added costs (for auto-focus)
   const [newCostId, setNewCostId] = useState<string | null>(null);
-
-  // Load costs when store changes
-  useEffect(() => {
-    if (storeId) {
-      loadCosts(storeId);
-    } else {
-      clearCosts();
-    }
-  }, [storeId, loadCosts, clearCosts]);
 
   // Get used categories to filter suggestions
   const usedCategories = costs.map(c => c.category);

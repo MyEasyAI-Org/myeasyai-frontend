@@ -1,6 +1,18 @@
+// =============================================================================
+// MyEasyPricing - Main component for the pricing tool
+// =============================================================================
+
+import { useEffect, useRef, useState } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import { PRICING_LABELS } from './constants/pricing.constants';
+import { useStoreData } from './hooks/useStoreData';
+import { useProducts } from './hooks/useProducts';
+import { useIndirectCosts } from './hooks/useIndirectCosts';
+import { useHiddenCosts } from './hooks/useHiddenCosts';
+import { useTaxConfig } from './hooks/useTaxConfig';
+import { useCalculations } from './hooks/useCalculations';
 import { LeftPanel } from './components/layout/LeftPanel';
+import { RightPanel } from './components/layout/RightPanel';
 
 // =============================================================================
 // Types
@@ -17,12 +29,140 @@ interface MyEasyPricingProps {
 export function MyEasyPricing({ onBackToDashboard }: MyEasyPricingProps) {
   const labels = PRICING_LABELS;
 
+  // Store data hook
+  const {
+    stores,
+    selectedStore,
+    isLoading: isStoreLoading,
+    selectStore,
+    createStore,
+    updateStore,
+    deleteStore,
+  } = useStoreData();
+
+  // Products hook
+  const {
+    products,
+    selectedProduct,
+    isLoading: isProductLoading,
+    loadProducts,
+    selectProduct,
+    createProduct,
+    updateProduct,
+    deleteProduct,
+    clearProducts,
+  } = useProducts();
+
+  // Indirect costs hook
+  const {
+    costs: indirectCosts,
+    isLoading: isIndirectCostsLoading,
+    totalMonthly: indirectCostsTotalMonthly,
+    loadCosts: loadIndirectCosts,
+    addCost: addIndirectCost,
+    updateCost: updateIndirectCost,
+    deleteCost: deleteIndirectCost,
+    clearCosts: clearIndirectCosts,
+  } = useIndirectCosts();
+
+  // Hidden costs hook
+  const {
+    costs: hiddenCosts,
+    isLoading: isHiddenCostsLoading,
+    totalMonthly: hiddenCostsTotalMonthly,
+    loadCosts: loadHiddenCosts,
+    addCost: addHiddenCost,
+    updateCost: updateHiddenCost,
+    deleteCost: deleteHiddenCost,
+    clearCosts: clearHiddenCosts,
+  } = useHiddenCosts();
+
+  // Tax config hook
+  const {
+    taxConfig,
+    taxItems,
+    isLoading: isTaxLoading,
+    totalTaxPercentage,
+    loadTaxData,
+    updateTaxRegime,
+    addTaxItem,
+    updateTaxItem,
+    deleteTaxItem,
+    clearTaxData,
+  } = useTaxConfig();
+
+  // Calculations hook - computes pricing for all products
+  const { calculations, summary } = useCalculations({
+    products,
+    indirectCosts,
+    hiddenCosts,
+    taxItems,
+    allocationMethod: selectedStore?.cost_allocation_method || 'equal',
+  });
+
+  // Track previous store ID to handle store changes
+  const prevStoreIdRef = useRef<string | null>(null);
+
+  // Trigger to open product modal from RightPanel
+  const [productModalTrigger, setProductModalTrigger] = useState(0);
+
+  // Trigger to open store modal from RightPanel
+  const [storeModalTrigger, setStoreModalTrigger] = useState(0);
+
+  // Load all data when store changes
+  useEffect(() => {
+    const currentStoreId = selectedStore?.id ?? null;
+    const prevStoreId = prevStoreIdRef.current;
+
+    if (currentStoreId !== prevStoreId) {
+      prevStoreIdRef.current = currentStoreId;
+
+      if (selectedStore) {
+        // Clear previous data
+        selectProduct(null);
+
+        // Load all data for the new store
+        loadProducts(selectedStore.id);
+        loadIndirectCosts(selectedStore.id);
+        loadHiddenCosts(selectedStore.id);
+        loadTaxData(selectedStore.id);
+      } else {
+        // Clear all data when no store is selected
+        clearProducts();
+        clearIndirectCosts();
+        clearHiddenCosts();
+        clearTaxData();
+      }
+    }
+  }, [
+    selectedStore,
+    loadProducts,
+    clearProducts,
+    selectProduct,
+    loadIndirectCosts,
+    clearIndirectCosts,
+    loadHiddenCosts,
+    clearHiddenCosts,
+    loadTaxData,
+    clearTaxData,
+  ]);
+
   const handleBack = () => {
     if (onBackToDashboard) {
       onBackToDashboard();
     } else {
       window.location.href = '/';
     }
+  };
+
+  // Handler for creating product from RightPanel empty state
+  const handleCreateProductFromTable = () => {
+    setProductModalTrigger(prev => prev + 1);
+  };
+
+  // Handler for creating store from RightPanel empty state
+  const handleCreateStoreFromPanel = () => {
+    setStoreModalTrigger(prev => prev + 1);
   };
 
   return (
@@ -65,93 +205,62 @@ export function MyEasyPricing({ onBackToDashboard }: MyEasyPricingProps) {
         <div className="flex h-full">
           {/* Left Panel - 30% */}
           <aside className="w-[30%] min-w-[320px] max-w-[450px] border-r border-slate-800 bg-slate-900/30 overflow-y-auto">
-            <LeftPanel />
+            <LeftPanel
+              stores={stores}
+              selectedStore={selectedStore}
+              isStoreLoading={isStoreLoading}
+              onSelectStore={selectStore}
+              onCreateStore={createStore}
+              onUpdateStore={updateStore}
+              onDeleteStore={deleteStore}
+              products={products}
+              selectedProduct={selectedProduct}
+              isProductLoading={isProductLoading}
+              onSelectProduct={selectProduct}
+              onCreateProduct={createProduct}
+              onUpdateProduct={updateProduct}
+              onDeleteProduct={deleteProduct}
+              indirectCosts={indirectCosts}
+              indirectCostsLoading={isIndirectCostsLoading}
+              indirectCostsTotalMonthly={indirectCostsTotalMonthly}
+              onAddIndirectCost={addIndirectCost}
+              onUpdateIndirectCost={updateIndirectCost}
+              onDeleteIndirectCost={deleteIndirectCost}
+              hiddenCosts={hiddenCosts}
+              hiddenCostsLoading={isHiddenCostsLoading}
+              hiddenCostsTotalMonthly={hiddenCostsTotalMonthly}
+              onAddHiddenCost={addHiddenCost}
+              onUpdateHiddenCost={updateHiddenCost}
+              onDeleteHiddenCost={deleteHiddenCost}
+              taxConfig={taxConfig}
+              taxItems={taxItems}
+              taxLoading={isTaxLoading}
+              taxTotalPercentage={totalTaxPercentage}
+              onUpdateTaxRegime={updateTaxRegime}
+              onAddTaxItem={addTaxItem}
+              onUpdateTaxItem={updateTaxItem}
+              onDeleteTaxItem={deleteTaxItem}
+              openProductModalTrigger={productModalTrigger}
+              openStoreModalTrigger={storeModalTrigger}
+            />
           </aside>
 
           {/* Right Panel - 70% */}
           <section className="flex-1 overflow-y-auto">
-            <RightPanelPlaceholder />
+            <RightPanel
+              selectedStore={selectedStore}
+              products={products}
+              calculations={calculations}
+              summary={summary}
+              indirectCosts={indirectCosts}
+              hiddenCosts={hiddenCosts}
+              taxItems={taxItems}
+              onCreateProduct={handleCreateProductFromTable}
+              onCreateStore={handleCreateStoreFromPanel}
+            />
           </section>
         </div>
       </main>
-    </div>
-  );
-}
-
-// =============================================================================
-// RightPanel Placeholder (será substituído na próxima fase)
-// =============================================================================
-
-function RightPanelPlaceholder() {
-  const labels = PRICING_LABELS;
-
-  return (
-    <div className="p-6">
-      {/* Tutorial Button */}
-      <div className="flex justify-end mb-4">
-        <button
-          className="px-4 py-2 text-sm bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition-colors border border-slate-700"
-          disabled
-        >
-          {labels.tutorial.button}
-        </button>
-      </div>
-
-      {/* Table Header Placeholder */}
-      <div className="rounded-xl border border-slate-800 bg-slate-900/50 overflow-hidden">
-        {/* Store Name Header */}
-        <div className="px-6 py-4 border-b border-slate-800 bg-slate-900/80">
-          <h2 className="text-lg font-semibold text-center text-slate-400">
-            {labels.table.title}
-          </h2>
-          {/* Export Buttons */}
-          <div className="flex justify-center gap-4 mt-3">
-            <button
-              className="px-4 py-1.5 text-sm bg-slate-800 hover:bg-slate-700 text-slate-400 rounded-lg transition-colors border border-slate-700"
-              disabled
-            >
-              {labels.export.exportExcel}
-            </button>
-            <button
-              className="px-4 py-1.5 text-sm bg-slate-800 hover:bg-slate-700 text-slate-400 rounded-lg transition-colors border border-slate-700"
-              disabled
-            >
-              {labels.export.exportPdf}
-            </button>
-          </div>
-        </div>
-
-        {/* Empty State - Sem botao de criar produto */}
-        <div className="p-12 text-center">
-          <div className="w-16 h-16 rounded-full bg-slate-800 mx-auto mb-4 flex items-center justify-center">
-            <span className="text-3xl">📊</span>
-          </div>
-          <h3 className="text-lg font-medium text-slate-300 mb-2">
-            Selecione uma loja para comecar
-          </h3>
-          <p className="text-slate-500 max-w-md mx-auto">
-            Crie ou selecione uma loja no painel esquerdo para configurar custos e ver a tabela de precificacao.
-          </p>
-        </div>
-      </div>
-
-      {/* Info Card */}
-      <div className="mt-6 p-4 rounded-xl border border-slate-800 bg-slate-900/30">
-        <h3 className="text-sm font-medium text-slate-300 mb-2">
-          Fase 1 - Layout Base
-        </h3>
-        <p className="text-sm text-slate-500">
-          Este e o layout inicial da ferramenta MyEasyPricing.
-          Os componentes estao desabilitados e serao implementados nas proximas fases.
-        </p>
-        <ul className="mt-3 text-xs text-slate-600 space-y-1">
-          <li>✓ Estrutura de pastas criada</li>
-          <li>✓ Types definidos</li>
-          <li>✓ Constants/Labels para i18n</li>
-          <li>✓ Layout split 30%/70%</li>
-          <li>○ Proxima fase: CRUD de Lojas</li>
-        </ul>
-      </div>
     </div>
   );
 }

@@ -12,6 +12,7 @@ import type { TabType } from '../../types/pricing.types';
 interface FormTabsProps {
   activeTab: TabType | null;
   onTabChange: (tab: TabType | null) => void;
+  showProductTab?: boolean;
   disabled?: boolean;
 }
 
@@ -19,23 +20,30 @@ interface FormTabsProps {
 // Tab Configuration
 // =============================================================================
 
-const TABS: { id: TabType; labelKey: keyof typeof PRICING_LABELS.tabs }[] = [
+type TabConfig = { id: TabType; labelKey: keyof typeof PRICING_LABELS.tabs };
+
+const BASE_TABS: TabConfig[] = [
   { id: 'indirect', labelKey: 'indirectCosts' },
   { id: 'hidden', labelKey: 'hiddenCosts' },
   { id: 'taxes', labelKey: 'taxes' },
 ];
 
+const PRODUCT_TAB: TabConfig = { id: 'product', labelKey: 'product' };
+
 // =============================================================================
 // Component
 // =============================================================================
 
-export function FormTabs({ activeTab, onTabChange, disabled = false }: FormTabsProps) {
+export function FormTabs({ activeTab, onTabChange, showProductTab = false, disabled = false }: FormTabsProps) {
   const labels = PRICING_LABELS;
+
+  // Include product tab when a product is selected
+  const tabs = showProductTab ? [...BASE_TABS, PRODUCT_TAB] : BASE_TABS;
 
   return (
     <div className="mb-6">
       <div className="flex flex-wrap gap-2">
-        {TABS.map((tab) => {
+        {tabs.map((tab) => {
           const isActive = activeTab === tab.id;
 
           return (
