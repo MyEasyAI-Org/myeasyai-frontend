@@ -128,16 +128,26 @@ export function Hero({
     <section className="bg-gradient-to-b from-transparent via-slate-900/20 to-transparent px-4 pt-24 pb-20 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-7xl">
         <div className="mb-16 text-center">
-          <button
-            onClick={onOpenSignup}
-            className="mb-8 inline-flex items-center rounded-full bg-slate-800 px-4 py-2 transition-all hover:scale-105 hover:bg-slate-700 cursor-pointer"
-          >
-            <FaStar
-              className="mr-2 h-4 w-4 text-purple-400"
-              aria-hidden="true"
-            />
-            <span className="text-sm text-slate-300">Sua IA, do seu jeito</span>
-          </button>
+{user ? (
+            <div className="mb-8 inline-flex items-center rounded-full bg-slate-800 px-4 py-2">
+              <FaStar
+                className="mr-2 h-4 w-4 text-purple-400"
+                aria-hidden="true"
+              />
+              <span className="text-sm text-slate-300">Sua IA, do seu jeito</span>
+            </div>
+          ) : (
+            <button
+              onClick={onOpenSignup}
+              className="mb-8 inline-flex items-center rounded-full bg-slate-800 px-4 py-2 transition-all hover:scale-105 hover:bg-slate-700 cursor-pointer"
+            >
+              <FaStar
+                className="mr-2 h-4 w-4 text-purple-400"
+                aria-hidden="true"
+              />
+              <span className="text-sm text-slate-300">Sua IA, do seu jeito</span>
+            </button>
+          )}
 
           <h1 className="mb-6 text-5xl font-bold leading-tight md:text-7xl">
             <span className="text-gradient">
