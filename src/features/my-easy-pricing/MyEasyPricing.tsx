@@ -92,13 +92,18 @@ export function MyEasyPricing({ onBackToDashboard }: MyEasyPricingProps) {
   } = useTaxConfig();
 
   // Calculations hook - computes pricing for all products
-  const { calculations, summary } = useCalculations({
+  const { calculations, summary, getCalculationByProductId } = useCalculations({
     products,
     indirectCosts,
     hiddenCosts,
     taxItems,
     allocationMethod: selectedStore?.cost_allocation_method || 'equal',
   });
+
+  // Get calculation for the selected product (for sliders)
+  const selectedProductCalculation = selectedProduct
+    ? getCalculationByProductId(selectedProduct.id)
+    : undefined;
 
   // Track previous store ID to handle store changes
   const prevStoreIdRef = useRef<string | null>(null);
@@ -163,6 +168,11 @@ export function MyEasyPricing({ onBackToDashboard }: MyEasyPricingProps) {
   // Handler for creating store from RightPanel empty state
   const handleCreateStoreFromPanel = () => {
     setStoreModalTrigger(prev => prev + 1);
+  };
+
+  // Handler for margin change from sliders
+  const handleProductMarginChange = async (productId: string, newMargin: number): Promise<boolean> => {
+    return updateProduct(productId, { desired_margin: newMargin });
   };
 
   return (
@@ -242,6 +252,8 @@ export function MyEasyPricing({ onBackToDashboard }: MyEasyPricingProps) {
               onDeleteTaxItem={deleteTaxItem}
               openProductModalTrigger={productModalTrigger}
               openStoreModalTrigger={storeModalTrigger}
+              selectedProductCalculation={selectedProductCalculation}
+              onProductMarginChange={handleProductMarginChange}
             />
           </aside>
 

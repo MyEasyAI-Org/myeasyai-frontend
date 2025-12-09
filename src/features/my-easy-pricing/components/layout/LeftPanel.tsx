@@ -16,6 +16,7 @@ import type {
   TaxItem,
   TaxRegime,
 } from '../../types/pricing.types';
+import type { ProductCalculation } from '../../utils/calculations';
 import type { IndirectCostFormData } from '../../hooks/useIndirectCosts';
 import type { HiddenCostFormData } from '../../hooks/useHiddenCosts';
 import type { TaxItemFormData } from '../../hooks/useTaxConfig';
@@ -27,6 +28,7 @@ import { FormTabs } from '../navigation/FormTabs';
 import { IndirectCostsForm } from '../forms/IndirectCostsForm';
 import { HiddenCostsForm } from '../forms/HiddenCostsForm';
 import { TaxConfigForm } from '../forms/TaxConfigForm';
+import { PriceAdjustSliders } from '../forms/PriceAdjustSliders';
 
 // =============================================================================
 // Types
@@ -76,6 +78,10 @@ interface LeftPanelProps {
   openProductModalTrigger?: number;
   // External trigger to open store modal
   openStoreModalTrigger?: number;
+  // Calculation for the selected product (for sliders)
+  selectedProductCalculation?: ProductCalculation;
+  // Handler for margin change from sliders
+  onProductMarginChange?: (productId: string, newMargin: number) => Promise<boolean>;
 }
 
 // =============================================================================
@@ -119,6 +125,8 @@ export function LeftPanel({
   onDeleteTaxItem,
   openProductModalTrigger,
   openStoreModalTrigger,
+  selectedProductCalculation,
+  onProductMarginChange,
 }: LeftPanelProps) {
   const labels = PRICING_LABELS;
 
@@ -326,6 +334,15 @@ export function LeftPanel({
             onSelectProduct={handleSelectProduct}
             onCreateNew={handleCreateNewProduct}
           />
+
+          {/* Price Adjustment Sliders - Only when product is selected */}
+          {hasSelectedProduct && selectedProductCalculation && onProductMarginChange && (
+            <PriceAdjustSliders
+              product={selectedProduct}
+              calculation={selectedProductCalculation}
+              onMarginChange={onProductMarginChange}
+            />
+          )}
         </>
       )}
 

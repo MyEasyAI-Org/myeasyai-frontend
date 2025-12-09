@@ -203,24 +203,36 @@ export function calculateSuggestedPrice(
 }
 
 /**
- * Calculates the price using the divisor formula (considering taxes)
+ * Calculates the price using simple markup formula
+ * Price = TotalCost × (1 + MarginPercentage/100)
+ *
+ * Note: The tax percentage is not used in the price calculation itself,
+ * but will be deducted from the final price to calculate net margin.
+ * This gives a consistent and predictable pricing behavior:
+ * - 0% margin = price equals cost
+ * - 100% margin = price is 2x cost
+ * - 200% margin = price is 3x cost
+ *
+ * ---
+ * FORMULA ALTERNATIVA (não usada):
+ * Fórmula do divisor para margem líquida garantida após impostos:
  * Price = TotalCost / (1 - TaxRate - ProfitRate)
- * This ensures the final margin after taxes equals the desired margin
+ *
+ * Problema: quando tax% + margin% >= 100%, o divisor fica <= 0,
+ * causando valores absurdos ou negativos. Ex: 8% taxa + 93% margem = 101%
+ *
+ * Código da fórmula alternativa:
+ * const divisor = 1 - (taxPercentage / 100) - (desiredMarginPercent / 100);
+ * if (divisor <= 0) return calculateSuggestedPrice(totalCost, desiredMarginPercent);
+ * return totalCost / divisor;
+ * ---
  */
 export function calculatePriceWithTaxes(
   totalCost: number,
   desiredMarginPercent: number,
-  taxPercentage: number
+  _taxPercentage: number // kept for API compatibility
 ): number {
-  const divisor = 1 - (taxPercentage / 100) - (desiredMarginPercent / 100);
-
-  // Prevent division by zero or negative divisor
-  if (divisor <= 0) {
-    // Fall back to simple markup when divisor is invalid
-    return calculateSuggestedPrice(totalCost, desiredMarginPercent);
-  }
-
-  return totalCost / divisor;
+  return calculateSuggestedPrice(totalCost, desiredMarginPercent);
 }
 
 /**
