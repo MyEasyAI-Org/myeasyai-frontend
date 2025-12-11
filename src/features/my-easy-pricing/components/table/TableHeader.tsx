@@ -1,8 +1,8 @@
 // =============================================================================
-// TableHeader - Header with store name and export buttons
+// TableHeader - Header with store name and export button
 // =============================================================================
 
-import { FileSpreadsheet, FileText } from 'lucide-react';
+import { Download } from 'lucide-react';
 import { PRICING_LABELS } from '../../constants/pricing.constants';
 
 // =============================================================================
@@ -11,41 +11,32 @@ import { PRICING_LABELS } from '../../constants/pricing.constants';
 
 interface TableHeaderProps {
   storeName: string;
-  onExportExcel?: () => void;
-  onExportPdf?: () => void;
+  onOpenExportModal?: () => void;
 }
 
 // =============================================================================
 // Component
 // =============================================================================
 
-export function TableHeader({ storeName, onExportExcel, onExportPdf }: TableHeaderProps) {
+export function TableHeader({ storeName, onOpenExportModal }: TableHeaderProps) {
   const labels = PRICING_LABELS;
 
   return (
     <div className="px-6 py-4 border-b border-slate-800 bg-slate-900/80">
-      {/* Store Name */}
-      <h2 className="text-lg font-semibold text-center text-white">
-        {storeName}
-      </h2>
+      <div className="flex items-center justify-between">
+        {/* Store Name */}
+        <h2 className="text-lg font-semibold text-white">
+          {storeName}
+        </h2>
 
-      {/* Export Buttons */}
-      <div className="flex justify-center gap-4 mt-3">
+        {/* Export Button */}
         <button
-          onClick={onExportExcel}
-          disabled={!onExportExcel}
-          className="px-4 py-1.5 text-sm bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition-colors border border-slate-700 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          onClick={onOpenExportModal}
+          disabled={!onOpenExportModal}
+          className="px-4 py-1.5 text-sm bg-yellow-600 hover:bg-yellow-500 text-white rounded-lg transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          <FileSpreadsheet className="w-4 h-4" />
-          {labels.export.exportExcel}
-        </button>
-        <button
-          onClick={onExportPdf}
-          disabled={!onExportPdf}
-          className="px-4 py-1.5 text-sm bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition-colors border border-slate-700 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          <FileText className="w-4 h-4" />
-          {labels.export.exportPdf}
+          <Download className="w-4 h-4" />
+          {labels.export.title}
         </button>
       </div>
     </div>

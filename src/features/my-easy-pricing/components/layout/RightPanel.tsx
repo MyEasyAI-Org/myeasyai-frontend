@@ -2,6 +2,7 @@
 // RightPanel - Right side panel with products table
 // =============================================================================
 
+import { useState } from 'react';
 import { PRICING_LABELS } from '../../constants/pricing.constants';
 import type { Store, Product, IndirectCost, HiddenCost, TaxItem } from '../../types/pricing.types';
 import type { ProductCalculation, StoreCostsSummary } from '../../hooks/useCalculations';
@@ -9,6 +10,7 @@ import { TableHeader } from '../table/TableHeader';
 import { ProductsTable } from '../table/ProductsTable';
 import { CostsBreakdownTable } from '../table/CostsBreakdownTable';
 import { EmptyState } from '../shared/EmptyState';
+import { ExportModal } from '../export/ExportModal';
 
 // =============================================================================
 // Types
@@ -52,6 +54,9 @@ export function RightPanel({
   onCreateStore,
 }: RightPanelProps) {
   const labels = PRICING_LABELS;
+
+  // Export modal state
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
 
   // No store selected
   if (!selectedStore) {
@@ -99,7 +104,10 @@ export function RightPanel({
       {/* Table Container */}
       <div className="rounded-xl border border-slate-800 bg-slate-900/50 overflow-hidden">
         {/* Table Header */}
-        <TableHeader storeName={selectedStore.name} />
+        <TableHeader
+          storeName={selectedStore.name}
+          onOpenExportModal={() => setIsExportModalOpen(true)}
+        />
 
         {/* Products Table or Empty State */}
         {hasProducts ? (
@@ -132,6 +140,19 @@ export function RightPanel({
           </>
         )}
       </div>
+
+      {/* Export Modal */}
+      <ExportModal
+        isOpen={isExportModalOpen}
+        onClose={() => setIsExportModalOpen(false)}
+        store={selectedStore}
+        products={products}
+        calculations={calculations}
+        summary={summary || DEFAULT_SUMMARY}
+        indirectCosts={indirectCosts}
+        hiddenCosts={hiddenCosts}
+        taxItems={taxItems}
+      />
     </div>
   );
 }
