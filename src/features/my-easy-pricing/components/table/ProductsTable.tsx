@@ -47,7 +47,7 @@ export function ProductsTable({
   return (
     <div className="space-y-4">
       {/* Products Section */}
-      <div className="mx-4 mt-4">
+      <div className="mx-2 sm:mx-4 mt-4">
         <h3 className="text-lg font-semibold text-slate-200 mb-4">
           {labels.table.title}
         </h3>
@@ -72,8 +72,8 @@ export function ProductsTable({
           {isProductsExpanded && (
             <>
               {/* Store Costs Summary */}
-              <div className="px-4 py-3 border-b border-yellow-600/20 bg-slate-800/50">
-                <div className="flex flex-wrap gap-6 text-sm">
+              <div className="px-2 sm:px-4 py-2 sm:py-3 border-b border-yellow-600/20 bg-slate-800/50">
+                <div className="flex flex-wrap gap-3 sm:gap-6 text-xs sm:text-sm">
                   <div>
                     <span className="text-slate-400">{labels.table.summary.indirectCostsMonthly}: </span>
                     <span className="text-slate-200 font-medium">

@@ -95,7 +95,16 @@ export const PRICING_LABELS = {
   },
 
   // -------------------------------------------------------------------------
-  // Abas
+  // Abas Principais
+  // -------------------------------------------------------------------------
+  mainTabs: {
+    store: 'Loja',
+    product: 'Produto',
+    costs: 'Custos',
+  },
+
+  // -------------------------------------------------------------------------
+  // Abas de Configuracao (sub-abas)
   // -------------------------------------------------------------------------
   tabs: {
     indirectCosts: 'Custos Indiretos',
@@ -239,7 +248,8 @@ export const PRICING_LABELS = {
     costLabel: 'Custo Total',
     profitLabel: 'Lucro por Unidade',
     netMarginLabel: 'Margem Liquida',
-    realTimeNote: 'Alteracoes refletem na tabela em tempo real',
+    applyButton: 'Aplicar',
+    discardButton: 'Descartar',
   },
 
   // -------------------------------------------------------------------------
@@ -353,6 +363,10 @@ export const PRICING_LABELS = {
         title: 'Selecione uma Loja',
         description: 'Crie ou selecione uma loja para comecar. Cada loja e uma tabela de precos independente.',
       },
+      costsTabIntro: {
+        title: 'Aba de Custos',
+        description: 'Nesta aba voce configura todos os custos do seu negocio: indiretos, ocultos e impostos. Esses valores sao rateados entre seus produtos.',
+      },
       indirectCosts: {
         title: 'Custos Indiretos',
         description: 'Configure os custos fixos do seu negocio: aluguel, energia, salarios, etc.',
@@ -365,13 +379,25 @@ export const PRICING_LABELS = {
         title: 'Impostos e Taxas',
         description: 'Defina impostos e taxas que incidem sobre cada venda.',
       },
+      productTabIntro: {
+        title: 'Aba de Produto',
+        description: 'Nesta aba voce cadastra e gerencia seus produtos. Aqui voce define custos diretos, margem desejada e ajusta precos.',
+      },
       product: {
         title: 'Adicione Produtos',
         description: 'Cadastre seus produtos com custos e margens desejadas.',
       },
       table: {
         title: 'Veja os Calculos',
-        description: 'A tabela mostra todos os calculos em tempo real. Exporte para Excel ou PDF.',
+        description: 'A tabela mostra todos os calculos em tempo real.',
+      },
+      export: {
+        title: 'Exporte seus Dados',
+        description: 'Exporte sua tabela de precos para Excel ou PDF.',
+      },
+      exportHide: {
+        title: 'Ocultar Colunas e Linhas',
+        description: 'Ao exportar, voce pode ocultar colunas sensiveis (como custos) e linhas de produtos especificos. Os valores ocultos aparecem como "***" no arquivo exportado.',
       },
     },
   },
@@ -393,6 +419,13 @@ export const PRICING_LABELS = {
     allocationWeighted: 'Distribui os custos proporcionalmente ao peso definido em cada produto.',
     allocationRevenue: 'Distribui os custos proporcionalmente a receita estimada de cada produto.',
     amortization: 'Para custos unicos: em quantos meses voce quer diluir esse gasto.',
+    // Novos tooltips para ProductModal
+    weight: 'Define a proporcao usada para rateio quando o metodo e "Por peso".',
+    monthlyEstimate: 'Quantidade estimada vendida por mes - usada para rateio por receita.',
+    marketPrice: 'Preco de referencia do mercado para comparar seu preco sugerido.',
+    positioning: 'Estrategia de preco: premium (acima do mercado), intermediario ou economico (abaixo do mercado).',
+    // Tooltip para TaxConfigForm
+    taxImpact: 'Impostos e taxas sao aplicados sobre o preco final de venda.',
   },
 
   // -------------------------------------------------------------------------

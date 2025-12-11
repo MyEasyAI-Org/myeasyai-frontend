@@ -7,6 +7,7 @@ import { Loader2 } from 'lucide-react';
 import { PRICING_LABELS, COST_SUGGESTIONS, CALCULATION_CONSTANTS } from '../../constants/pricing.constants';
 import { CostSuggestionChips } from '../shared/CostSuggestionChips';
 import { DynamicCostRow } from '../shared/DynamicCostRow';
+import { Tooltip } from '../shared/Tooltip';
 import type { IndirectCost, IndirectCostCategory, CostFrequency } from '../../types/pricing.types';
 import type { IndirectCostFormData } from '../../hooks/useIndirectCosts';
 
@@ -110,8 +111,9 @@ export function IndirectCostsForm({
     <div className="space-y-4">
       {/* Header */}
       <div>
-        <h3 className="text-lg font-medium text-white">
+        <h3 className="flex items-center gap-2 text-lg font-medium text-white">
           {labels.indirectCosts.title}
+          <Tooltip content={labels.tooltips.indirectCost} position="right" />
         </h3>
         <p className="text-sm text-slate-400 mt-1">
           {labels.indirectCosts.subtitle}

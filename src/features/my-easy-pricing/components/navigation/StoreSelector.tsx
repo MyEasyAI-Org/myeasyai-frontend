@@ -1,9 +1,8 @@
 // =============================================================================
-// StoreSelector - Dropdown for selecting and managing stores
+// StoreSelector - List-based selection for stores
 // =============================================================================
 
-import { ChevronDown, Plus, Store as StoreIcon } from 'lucide-react';
-import { useState, useRef, useEffect } from 'react';
+import { Plus, Store as StoreIcon, Pencil } from 'lucide-react';
 import { PRICING_LABELS } from '../../constants/pricing.constants';
 import type { Store } from '../../types/pricing.types';
 
@@ -17,11 +16,14 @@ interface StoreSelectorProps {
   isLoading: boolean;
   onSelectStore: (storeId: string | null) => void;
   onCreateNew: () => void;
+  onEditStore?: () => void;
 }
 
 // =============================================================================
 // Component
 // =============================================================================
+
+const MAX_STORES = 10;
 
 export function StoreSelector({
   stores,
@@ -29,101 +31,118 @@ export function StoreSelector({
   isLoading,
   onSelectStore,
   onCreateNew,
+  onEditStore,
 }: StoreSelectorProps) {
   const labels = PRICING_LABELS;
-  const [isOpen, setIsOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
 
   const handleSelect = (storeId: string) => {
-    onSelectStore(storeId);
-    setIsOpen(false);
+    // If clicking on already selected store, deselect it
+    if (selectedStore?.id === storeId) {
+      onSelectStore(null);
+    } else {
+      onSelectStore(storeId);
+    }
   };
+
+  const canCreateMore = stores.length < MAX_STORES;
 
   return (
     <div className="mb-6">
       <h2 className="text-sm font-medium text-slate-400 mb-3">
         {labels.stores.title}
+        <span className="ml-2 text-xs text-slate-500">
+          ({stores.length}/{MAX_STORES})
+        </span>
       </h2>
 
+      {/* Store List */}
       <div className="space-y-2">
-        {/* Dropdown */}
-        <div ref={dropdownRef} className="relative">
-          <button
-            type="button"
-            onClick={() => setIsOpen(!isOpen)}
-            disabled={isLoading}
-            className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-left flex items-center justify-between hover:border-slate-600 focus:outline-none focus:ring-2 focus:ring-yellow-500/50 focus:border-yellow-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <div className="flex items-center gap-3">
-              <StoreIcon className="w-4 h-4 text-slate-400" />
-              <span className={selectedStore ? 'text-white' : 'text-slate-500'}>
-                {selectedStore ? selectedStore.name : labels.stores.placeholder}
-              </span>
-            </div>
-            <ChevronDown
-              className={`w-4 h-4 text-slate-400 transition-transform ${isOpen ? 'rotate-180' : ''}`}
-            />
-          </button>
-
-          {/* Dropdown Menu */}
-          {isOpen && (
-            <div className="absolute z-50 w-full mt-1 bg-slate-800 border border-slate-700 rounded-lg shadow-xl overflow-hidden">
-              {stores.length === 0 ? (
-                <div className="px-4 py-3 text-sm text-slate-500">
-                  {labels.stores.noStores}
-                </div>
-              ) : (
-                <div className="max-h-60 overflow-y-auto">
-                  {stores.map((store) => (
-                    <button
-                      key={store.id}
-                      type="button"
-                      onClick={() => handleSelect(store.id)}
-                      className={`w-full px-4 py-3 text-left hover:bg-slate-700 transition-colors flex items-center gap-3 ${
-                        selectedStore?.id === store.id
-                          ? 'bg-slate-700 text-yellow-400'
-                          : 'text-white'
+        {stores.length === 0 ? (
+          <div className="text-center py-6 text-slate-500">
+            <StoreIcon className="w-8 h-8 mx-auto mb-2 opacity-50" />
+            <p className="text-sm">{labels.stores.noStores}</p>
+            <p className="text-xs mt-1">{labels.stores.createFirst}</p>
+          </div>
+        ) : (
+          stores.map((store) => {
+            const isSelected = selectedStore?.id === store.id;
+            return (
+              <div
+                key={store.id}
+                className={`relative rounded-lg border transition-all ${
+                  isSelected
+                    ? 'border-yellow-500 bg-yellow-900/20'
+                    : 'border-slate-700 bg-slate-800/50 hover:border-slate-600 hover:bg-slate-800'
+                }`}
+              >
+                <button
+                  type="button"
+                  onClick={() => handleSelect(store.id)}
+                  disabled={isLoading}
+                  className="w-full px-4 py-3 text-left flex items-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <StoreIcon
+                    className={`w-5 h-5 flex-shrink-0 ${
+                      isSelected ? 'text-yellow-400' : 'text-slate-400'
+                    }`}
+                  />
+                  <div className="flex-1 min-w-0">
+                    <p
+                      className={`font-medium truncate ${
+                        isSelected ? 'text-yellow-400' : 'text-white'
                       }`}
                     >
-                      <StoreIcon className="w-4 h-4 text-slate-400" />
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium truncate">{store.name}</p>
-                        {store.description && (
-                          <p className="text-xs text-slate-500 truncate">
-                            {store.description}
-                          </p>
-                        )}
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-        </div>
+                      {store.name}
+                      {store.is_demo && (
+                        <span className="ml-2 text-xs text-slate-500">(Demo)</span>
+                      )}
+                    </p>
+                    {store.description && (
+                      <p className="text-xs text-slate-500 truncate mt-0.5">
+                        {store.description}
+                      </p>
+                    )}
+                  </div>
+                </button>
 
-        {/* Create New Store Button */}
-        <button
-          type="button"
-          onClick={onCreateNew}
-          disabled={isLoading}
-          className="w-full px-4 py-2 bg-yellow-600 hover:bg-yellow-500 text-white rounded-lg transition-colors font-medium flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          <Plus className="w-4 h-4" />
-          {labels.stores.newStore}
-        </button>
+                {/* Edit button - Only for selected store */}
+                {isSelected && onEditStore && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onEditStore();
+                    }}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 p-2 text-slate-400 hover:text-yellow-400 hover:bg-slate-700 rounded-md transition-colors"
+                    title={labels.stores.editStore}
+                  >
+                    <Pencil className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+            );
+          })
+        )}
+
+        {/* Create New Store Button - Large */}
+        {canCreateMore && (
+          <button
+            type="button"
+            onClick={onCreateNew}
+            disabled={isLoading}
+            className="w-full mt-3 px-4 py-3 bg-yellow-600 hover:bg-yellow-500 text-white rounded-lg transition-colors font-medium flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Plus className="w-5 h-5" />
+            {labels.stores.newStore}
+          </button>
+        )}
+
+        {/* Limit reached message */}
+        {!canCreateMore && (
+          <p className="mt-3 text-center text-xs text-slate-500">
+            Limite de lojas atingido
+          </p>
+        )}
       </div>
     </div>
   );

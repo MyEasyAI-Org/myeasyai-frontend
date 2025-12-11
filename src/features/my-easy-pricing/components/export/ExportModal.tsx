@@ -260,7 +260,7 @@ export function ExportModal({
           </div>
 
           {/* Hidden Columns Section */}
-          <div>
+          <div data-tutorial="export-hide-section">
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-sm font-medium text-slate-300">{labels.hideColumns}</h3>
               <button

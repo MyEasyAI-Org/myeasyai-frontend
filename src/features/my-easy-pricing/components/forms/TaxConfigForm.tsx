@@ -7,6 +7,7 @@ import { Loader2 } from 'lucide-react';
 import { PRICING_LABELS, COST_SUGGESTIONS } from '../../constants/pricing.constants';
 import { CostSuggestionChips } from '../shared/CostSuggestionChips';
 import { TaxItemRow } from '../shared/TaxItemRow';
+import { Tooltip } from '../shared/Tooltip';
 import type { TaxConfig, TaxItem, TaxRegime, TaxCategory } from '../../types/pricing.types';
 import type { TaxItemFormData } from '../../hooks/useTaxConfig';
 
@@ -137,8 +138,9 @@ export function TaxConfigForm({
     <div className="space-y-4">
       {/* Header */}
       <div>
-        <h3 className="text-lg font-medium text-white">
+        <h3 className="flex items-center gap-2 text-lg font-medium text-white">
           {labels.taxes.title}
+          <Tooltip content={labels.tooltips.taxImpact} position="right" />
         </h3>
         <p className="text-sm text-slate-400 mt-1">
           {labels.taxes.subtitle}

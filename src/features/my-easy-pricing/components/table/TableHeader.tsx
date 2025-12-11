@@ -33,6 +33,7 @@ export function TableHeader({ storeName, onOpenExportModal }: TableHeaderProps) 
         <button
           onClick={onOpenExportModal}
           disabled={!onOpenExportModal}
+          data-tutorial="export-button"
           className="px-4 py-1.5 text-sm bg-yellow-600 hover:bg-yellow-500 text-white rounded-lg transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <Download className="w-4 h-4" />

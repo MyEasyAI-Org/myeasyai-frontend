@@ -53,6 +53,10 @@ export function DynamicCostRow({
   const [isDeleting, setIsDeleting] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
+  // Validation state
+  const [amountTouched, setAmountTouched] = useState(false);
+  const isAmountInvalid = amountTouched && (parseFloat(localAmount) || 0) <= 0;
+
   // Focus name input when new row is added
   useEffect(() => {
     if (isNew && nameInputRef.current) {
@@ -153,13 +157,25 @@ export function DynamicCostRow({
             type="number"
             value={localAmount}
             onChange={(e) => setLocalAmount(e.target.value)}
-            onBlur={handleBlur}
+            onBlur={() => {
+              setAmountTouched(true);
+              handleBlur();
+            }}
             disabled={disabled || isDeleting}
             placeholder="0,00"
             min="0"
             step="0.01"
-            className="w-full pl-10 pr-3 py-2 text-sm bg-slate-900 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-yellow-500/50 focus:border-yellow-500 disabled:opacity-50"
+            className={`w-full pl-10 pr-3 py-2 text-sm bg-slate-900 border rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-1 disabled:opacity-50 ${
+              isAmountInvalid
+                ? 'border-red-500 focus:ring-red-500/50 focus:border-red-500'
+                : 'border-slate-700 focus:ring-yellow-500/50 focus:border-yellow-500'
+            }`}
           />
+          {isAmountInvalid && (
+            <p className="absolute -bottom-4 left-0 text-[10px] text-red-400">
+              Valor deve ser maior que zero
+            </p>
+          )}
         </div>
 
         {/* Frequency Select */}

@@ -143,11 +143,11 @@ export function CostsBreakdownTable({
   return (
     <div className="space-y-4">
       {/* Section Title */}
-      <h3 className="text-lg font-semibold text-slate-200 px-4">
+      <h3 className="text-lg font-semibold text-slate-200 px-2 sm:px-4">
         {labels.title}
       </h3>
 
-      <div className="grid gap-4 px-4 pb-4">
+      <div className="grid gap-4 px-2 sm:px-4 pb-4">
         {/* Indirect Costs */}
         {indirectCosts.length > 0 && (
           <CostsSection

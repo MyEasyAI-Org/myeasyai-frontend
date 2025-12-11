@@ -21,7 +21,7 @@ interface UseStoreDataReturn {
 
   // Actions
   loadStores: () => Promise<void>;
-  selectStore: (storeId: string | null) => void;
+  selectStore: (storeIdOrStore: string | Store | null) => void;
   createStore: (data: StoreFormData) => Promise<Store | null>;
   updateStore: (storeId: string, data: Partial<StoreFormData>) => Promise<boolean>;
   deleteStore: (storeId: string) => Promise<boolean>;
@@ -98,15 +98,22 @@ export function useStoreData(): UseStoreDataReturn {
   }, [userUuid, loadStores]);
 
   // ---------------------------------------------------------------------------
-  // Select a store
+  // Select a store (accepts either store ID or Store object)
   // ---------------------------------------------------------------------------
-  const selectStore = useCallback((storeId: string | null) => {
-    if (!storeId) {
+  const selectStore = useCallback((storeIdOrStore: string | Store | null) => {
+    if (!storeIdOrStore) {
       setSelectedStore(null);
       return;
     }
 
-    const store = stores.find(s => s.id === storeId);
+    // If it's a Store object, use it directly
+    if (typeof storeIdOrStore === 'object') {
+      setSelectedStore(storeIdOrStore);
+      return;
+    }
+
+    // If it's a string (ID), find in stores
+    const store = stores.find(s => s.id === storeIdOrStore);
     setSelectedStore(store || null);
   }, [stores]);
 
@@ -140,8 +147,8 @@ export function useStoreData(): UseStoreDataReturn {
 
       console.log('[useStoreData] Store created successfully:', newStore.id);
 
-      // Update local state
-      setStores(prev => [newStore, ...prev]);
+      // Update local state (add at end since list is ordered by created_at ascending)
+      setStores(prev => [...prev, newStore]);
       // Also set as selected store immediately (avoids stale closure issue)
       setSelectedStore(newStore);
       toast.success('Loja criada com sucesso!');

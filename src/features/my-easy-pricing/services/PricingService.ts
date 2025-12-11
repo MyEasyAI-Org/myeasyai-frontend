@@ -37,7 +37,7 @@ export class PricingService {
         .select('*')
         .eq('user_uuid', userUuid)
         .eq('is_active', true)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: true });
 
       if (error) {
         console.error('[PricingService] Error fetching stores:', error);

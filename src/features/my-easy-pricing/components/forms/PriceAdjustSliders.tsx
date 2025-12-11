@@ -3,9 +3,9 @@
 // =============================================================================
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { Zap } from 'lucide-react';
 import { PRICING_LABELS } from '../../constants/pricing.constants';
 import { formatCurrency, formatPercentage, parseCurrencyInput } from '../../utils/formatters';
+import { Tooltip } from '../shared/Tooltip';
 import type { Product } from '../../types/pricing.types';
 import type { ProductCalculation } from '../../utils/calculations';
 
@@ -40,8 +40,10 @@ export function PriceAdjustSliders({
 
   // Local state for slider values (optimistic updates)
   const [localMargin, setLocalMargin] = useState(product.desired_margin);
-  const [isDragging, setIsDragging] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+
+  // Track if there are unsaved changes
+  const hasChanges = Math.abs(localMargin - product.desired_margin) >= 0.01;
 
   // Input states for editable fields
   const [marginInputValue, setMarginInputValue] = useState(localMargin.toFixed(1));
@@ -49,13 +51,13 @@ export function PriceAdjustSliders({
   const [isEditingMargin, setIsEditingMargin] = useState(false);
   const [isEditingPrice, setIsEditingPrice] = useState(false);
 
-  // Sync local margin when product changes
+  // Sync local margin when product changes (only if not editing)
   useEffect(() => {
-    if (!isDragging && !isEditingMargin) {
+    if (!isEditingMargin) {
       setLocalMargin(product.desired_margin);
       setMarginInputValue(product.desired_margin.toFixed(1));
     }
-  }, [product.desired_margin, isDragging, isEditingMargin]);
+  }, [product.desired_margin, isEditingMargin]);
 
   // Calculate price limits based on margin limits
   const priceRange = useMemo(() => {
@@ -129,8 +131,8 @@ export function PriceAdjustSliders({
     setMarginInputValue(e.target.value);
   }, []);
 
-  // Handle margin input blur - validate, apply and save
-  const handleMarginInputBlur = useCallback(async () => {
+  // Handle margin input blur - validate and apply locally (no save)
+  const handleMarginInputBlur = useCallback(() => {
     setIsEditingMargin(false);
     const parsed = parseFloat(marginInputValue.replace(',', '.'));
 
@@ -138,25 +140,11 @@ export function PriceAdjustSliders({
       const clamped = Math.max(MIN_MARGIN, Math.min(MAX_MARGIN, parsed));
       setLocalMargin(clamped);
       setMarginInputValue(clamped.toFixed(1));
-
-      // Save if changed
-      if (Math.abs(clamped - product.desired_margin) >= 0.01) {
-        setIsSaving(true);
-        try {
-          const success = await onMarginChange(product.id, clamped);
-          if (!success) {
-            setLocalMargin(product.desired_margin);
-            setMarginInputValue(product.desired_margin.toFixed(1));
-          }
-        } finally {
-          setIsSaving(false);
-        }
-      }
     } else {
       // Revert to current value
       setMarginInputValue(localMargin.toFixed(1));
     }
-  }, [marginInputValue, localMargin, product.desired_margin, product.id, onMarginChange]);
+  }, [marginInputValue, localMargin]);
 
   // Handle margin input key press
   const handleMarginInputKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -173,8 +161,8 @@ export function PriceAdjustSliders({
     setPriceInputValue(e.target.value);
   }, []);
 
-  // Handle price input blur - validate, apply and save
-  const handlePriceInputBlur = useCallback(async () => {
+  // Handle price input blur - validate and apply locally (no save)
+  const handlePriceInputBlur = useCallback(() => {
     setIsEditingPrice(false);
     const parsed = parseCurrencyInput(priceInputValue);
 
@@ -183,25 +171,11 @@ export function PriceAdjustSliders({
       const newMargin = calculateMarginFromPrice(clamped);
       setLocalMargin(newMargin);
       setMarginInputValue(newMargin.toFixed(1));
-
-      // Save if changed
-      if (Math.abs(newMargin - product.desired_margin) >= 0.01) {
-        setIsSaving(true);
-        try {
-          const success = await onMarginChange(product.id, newMargin);
-          if (!success) {
-            setLocalMargin(product.desired_margin);
-            setMarginInputValue(product.desired_margin.toFixed(1));
-          }
-        } finally {
-          setIsSaving(false);
-        }
-      }
     } else {
       // Revert to current value
       setPriceInputValue(localPrice.toFixed(2).replace('.', ','));
     }
-  }, [priceInputValue, priceRange.min, priceRange.max, calculateMarginFromPrice, localPrice, product.desired_margin, product.id, onMarginChange]);
+  }, [priceInputValue, priceRange.min, priceRange.max, calculateMarginFromPrice, localPrice]);
 
   // Handle price input key press
   const handlePriceInputKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -213,19 +187,9 @@ export function PriceAdjustSliders({
     }
   }, [localPrice]);
 
-  // Handle drag start
-  const handleDragStart = useCallback(() => {
-    setIsDragging(true);
-  }, []);
-
-  // Handle drag end - save to database
-  const handleDragEnd = useCallback(async () => {
-    setIsDragging(false);
-
-    // Only save if margin changed
-    if (Math.abs(localMargin - product.desired_margin) < 0.01) {
-      return;
-    }
+  // Handle apply button - save to database
+  const handleApply = useCallback(async () => {
+    if (!hasChanges) return;
 
     setIsSaving(true);
     try {
@@ -238,7 +202,13 @@ export function PriceAdjustSliders({
     } finally {
       setIsSaving(false);
     }
-  }, [localMargin, product.desired_margin, product.id, onMarginChange]);
+  }, [hasChanges, localMargin, product.desired_margin, product.id, onMarginChange]);
+
+  // Handle discard changes
+  const handleDiscard = useCallback(() => {
+    setLocalMargin(product.desired_margin);
+    setMarginInputValue(product.desired_margin.toFixed(1));
+  }, [product.desired_margin]);
 
   // Calculate slider position percentages
   const marginPercent = ((localMargin - MIN_MARGIN) / (MAX_MARGIN - MIN_MARGIN)) * 100;
@@ -263,8 +233,9 @@ export function PriceAdjustSliders({
       {/* Margin Slider */}
       <div className="mb-6">
         <div className="flex items-center justify-between mb-2">
-          <label className="text-xs text-slate-400">
+          <label className="flex items-center gap-1.5 text-xs text-slate-400">
             {labels.marginLabel}
+            <Tooltip content={PRICING_LABELS.tooltips.grossMargin} position="top" size="sm" />
           </label>
           <div className="flex items-center gap-1">
             <input
@@ -287,10 +258,6 @@ export function PriceAdjustSliders({
             step={MARGIN_STEP}
             value={localMargin}
             onChange={handleMarginSliderChange}
-            onMouseDown={handleDragStart}
-            onMouseUp={handleDragEnd}
-            onTouchStart={handleDragStart}
-            onTouchEnd={handleDragEnd}
             className="slider-input w-full h-2 rounded-lg appearance-none cursor-pointer"
             style={{
               background: `linear-gradient(to right, #eab308 0%, #eab308 ${marginPercent}%, #334155 ${marginPercent}%, #334155 100%)`,
@@ -330,10 +297,6 @@ export function PriceAdjustSliders({
             step={0.01}
             value={localPrice}
             onChange={handlePriceSliderChange}
-            onMouseDown={handleDragStart}
-            onMouseUp={handleDragEnd}
-            onTouchStart={handleDragStart}
-            onTouchEnd={handleDragEnd}
             className="slider-input w-full h-2 rounded-lg appearance-none cursor-pointer"
             style={{
               background: `linear-gradient(to right, #22c55e 0%, #22c55e ${pricePercent}%, #334155 ${pricePercent}%, #334155 100%)`,
@@ -366,7 +329,10 @@ export function PriceAdjustSliders({
             </p>
           </div>
           <div>
-            <p className="text-[10px] text-slate-500 mb-0.5">{labels.netMarginLabel}</p>
+            <p className="flex items-center gap-1 text-[10px] text-slate-500 mb-0.5">
+              {labels.netMarginLabel}
+              <Tooltip content={PRICING_LABELS.tooltips.netMargin} position="top" size="sm" />
+            </p>
             <p className={`text-xs font-medium ${localMetrics.netMargin >= 0 ? 'text-green-400' : 'text-red-400'}`}>
               {formatPercentage(localMetrics.netMargin, 1)}
             </p>
@@ -374,12 +340,24 @@ export function PriceAdjustSliders({
         </div>
       </div>
 
-      {/* Real-time note */}
-      <div className="flex items-center gap-1.5 mt-3">
-        <Zap className="w-3 h-3 text-yellow-500" />
-        <span className="text-[10px] text-slate-500">
-          {labels.realTimeNote}
-        </span>
+      {/* Apply Button */}
+      <div className="flex items-center gap-2 mt-4">
+        <button
+          type="button"
+          onClick={handleApply}
+          disabled={isSaving || !hasChanges}
+          className="flex-1 px-4 py-2 bg-yellow-600 hover:bg-yellow-500 text-white font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {isSaving ? 'Salvando...' : labels.applyButton}
+        </button>
+        <button
+          type="button"
+          onClick={handleDiscard}
+          disabled={isSaving || !hasChanges}
+          className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-slate-300 font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {labels.discardButton}
+        </button>
       </div>
 
       {/* Slider Styles */}

@@ -6,9 +6,8 @@ import { useState, useEffect, useRef } from 'react';
 import { PRICING_LABELS } from '../../constants/pricing.constants';
 import type {
   Store,
-  StoreFormData,
-  ProductFormData,
   TabType,
+  MainTabType,
   Product,
   IndirectCost,
   HiddenCost,
@@ -21,9 +20,7 @@ import type { IndirectCostFormData } from '../../hooks/useIndirectCosts';
 import type { HiddenCostFormData } from '../../hooks/useHiddenCosts';
 import type { TaxItemFormData } from '../../hooks/useTaxConfig';
 import { StoreSelector } from '../navigation/StoreSelector';
-import { StoreForm } from '../forms/StoreForm';
 import { ProductSelector } from '../navigation/ProductSelector';
-import { ProductModal } from '../forms/ProductModal';
 import { FormTabs } from '../navigation/FormTabs';
 import { IndirectCostsForm } from '../forms/IndirectCostsForm';
 import { HiddenCostsForm } from '../forms/HiddenCostsForm';
@@ -40,17 +37,11 @@ interface LeftPanelProps {
   selectedStore: Store | null;
   isStoreLoading: boolean;
   onSelectStore: (storeId: string | null) => void;
-  onCreateStore: (data: StoreFormData) => Promise<Store | null>;
-  onUpdateStore: (storeId: string, data: StoreFormData) => Promise<boolean>;
-  onDeleteStore: (storeId: string) => Promise<boolean>;
   // Product data
   products: Product[];
   selectedProduct: Product | null;
   isProductLoading: boolean;
   onSelectProduct: (productId: string | null) => void;
-  onCreateProduct: (storeId: string, data: ProductFormData) => Promise<Product | null>;
-  onUpdateProduct: (productId: string, data: Partial<ProductFormData>) => Promise<boolean>;
-  onDeleteProduct: (productId: string) => Promise<boolean>;
   // Indirect costs data
   indirectCosts: IndirectCost[];
   indirectCostsLoading: boolean;
@@ -74,14 +65,21 @@ interface LeftPanelProps {
   onAddTaxItem: (storeId: string, data: TaxItemFormData) => Promise<TaxItem | null>;
   onUpdateTaxItem: (itemId: string, data: Partial<TaxItemFormData>) => Promise<boolean>;
   onDeleteTaxItem: (itemId: string) => Promise<boolean>;
-  // External trigger to open product modal
-  openProductModalTrigger?: number;
-  // External trigger to open store modal
-  openStoreModalTrigger?: number;
   // Calculation for the selected product (for sliders)
   selectedProductCalculation?: ProductCalculation;
   // Handler for margin change from sliders
   onProductMarginChange?: (productId: string, newMargin: number) => Promise<boolean>;
+  // Tutorial: external tab control
+  tutorialActiveTab?: TabType | null;
+  // Tutorial: callback when tab changes
+  onTabChange?: (tab: TabType | null) => void;
+  // Tutorial: external main tab control
+  tutorialMainTab?: MainTabType;
+  // Tutorial: callback when main tab changes
+  onMainTabChange?: (tab: MainTabType) => void;
+  // Modal callbacks - modals are rendered at root level
+  onOpenStoreModal: (store?: Store) => void;
+  onOpenProductModal: (product?: Product) => void;
 }
 
 // =============================================================================
@@ -93,16 +91,10 @@ export function LeftPanel({
   selectedStore,
   isStoreLoading,
   onSelectStore,
-  onCreateStore,
-  onUpdateStore,
-  onDeleteStore,
   products,
   selectedProduct,
   isProductLoading,
   onSelectProduct,
-  onCreateProduct,
-  onUpdateProduct,
-  onDeleteProduct,
   indirectCosts,
   indirectCostsLoading,
   indirectCostsTotalMonthly,
@@ -123,261 +115,277 @@ export function LeftPanel({
   onAddTaxItem,
   onUpdateTaxItem,
   onDeleteTaxItem,
-  openProductModalTrigger,
-  openStoreModalTrigger,
   selectedProductCalculation,
   onProductMarginChange,
+  tutorialActiveTab,
+  onTabChange,
+  tutorialMainTab,
+  onMainTabChange,
+  onOpenStoreModal,
+  onOpenProductModal,
 }: LeftPanelProps) {
   const labels = PRICING_LABELS;
 
-  // Store Modal state
-  const [isStoreModalOpen, setIsStoreModalOpen] = useState(false);
-  const [editingStore, setEditingStore] = useState<Store | null>(null);
+  // Main tab state (store | product | costs)
+  // Use external tutorialMainTab if provided, otherwise use internal state
+  const [internalMainTab, setInternalMainTab] = useState<MainTabType>('store');
+  const mainTab = tutorialMainTab !== undefined ? tutorialMainTab : internalMainTab;
 
-  // Product Modal state
-  const [isProductModalOpen, setIsProductModalOpen] = useState(false);
-  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const handleMainTabChange = (tab: MainTabType) => {
+    if (onMainTabChange) {
+      onMainTabChange(tab);
+    } else {
+      setInternalMainTab(tab);
+    }
+  };
 
-  // Tab state (null = no tab selected initially)
-  const [activeTab, setActiveTab] = useState<TabType | null>(null);
+  // Sub-tab state (null = no tab selected initially)
+  // Use external tutorialActiveTab if provided, otherwise use internal state
+  const [internalActiveTab, setInternalActiveTab] = useState<TabType | null>(null);
+  const activeTab = tutorialActiveTab !== undefined ? tutorialActiveTab : internalActiveTab;
+
+  const handleTabChange = (tab: TabType | null) => {
+    if (onTabChange) {
+      onTabChange(tab);
+    } else {
+      setInternalActiveTab(tab);
+    }
+  };
 
   // Track previous store ID to reset tab when store changes
   const prevStoreIdRef = useRef<string | null>(null);
 
-  // Track previous trigger values to avoid re-opening modals on store change
-  const prevProductTriggerRef = useRef<number>(0);
-  const prevStoreTriggerRef = useRef<number>(0);
-
-  // Reset tab when store changes
+  // Reset tab when store changes (only for internal state)
   useEffect(() => {
     const currentStoreId = selectedStore?.id ?? null;
     const prevStoreId = prevStoreIdRef.current;
 
     if (currentStoreId !== prevStoreId) {
       prevStoreIdRef.current = currentStoreId;
-      setActiveTab(null);
+      setInternalActiveTab(null);
     }
   }, [selectedStore]);
 
-  // Open product modal when triggered externally (only when trigger value changes)
-  useEffect(() => {
-    const currentTrigger = openProductModalTrigger ?? 0;
-    if (currentTrigger > prevProductTriggerRef.current && selectedStore) {
-      setEditingProduct(null);
-      setIsProductModalOpen(true);
-    }
-    prevProductTriggerRef.current = currentTrigger;
-  }, [openProductModalTrigger, selectedStore]);
-
-  // Open store modal when triggered externally (only when trigger value changes)
-  useEffect(() => {
-    const currentTrigger = openStoreModalTrigger ?? 0;
-    if (currentTrigger > prevStoreTriggerRef.current) {
-      setEditingStore(null);
-      setIsStoreModalOpen(true);
-    }
-    prevStoreTriggerRef.current = currentTrigger;
-  }, [openStoreModalTrigger]);
-
   // Store Handlers
   const handleCreateNewStore = () => {
-    setEditingStore(null);
-    setIsStoreModalOpen(true);
+    onOpenStoreModal();
   };
 
   const handleEditStore = () => {
     if (selectedStore) {
-      setEditingStore(selectedStore);
-      setIsStoreModalOpen(true);
+      onOpenStoreModal(selectedStore);
     }
-  };
-
-  const handleStoreFormSubmit = async (data: StoreFormData) => {
-    if (editingStore) {
-      const success = await onUpdateStore(editingStore.id, data);
-      if (success) {
-        setIsStoreModalOpen(false);
-        setEditingStore(null);
-      }
-    } else {
-      const newStore = await onCreateStore(data);
-      if (newStore) {
-        setIsStoreModalOpen(false);
-      }
-    }
-  };
-
-  const handleCloseStoreModal = () => {
-    setIsStoreModalOpen(false);
-    setEditingStore(null);
   };
 
   // Product Handlers
   const handleCreateNewProduct = () => {
-    setEditingProduct(null);
-    setIsProductModalOpen(true);
+    onOpenProductModal();
   };
 
   const handleEditProduct = (product: Product) => {
-    setEditingProduct(product);
-    setIsProductModalOpen(true);
-  };
-
-  const handleProductFormSubmit = async (data: ProductFormData) => {
-    if (!selectedStore) return;
-
-    if (editingProduct) {
-      const success = await onUpdateProduct(editingProduct.id, data);
-      if (success) {
-        setIsProductModalOpen(false);
-        setEditingProduct(null);
-      }
-    } else {
-      const newProduct = await onCreateProduct(selectedStore.id, data);
-      if (newProduct) {
-        setIsProductModalOpen(false);
-      }
-    }
-  };
-
-  const handleCloseProductModal = () => {
-    setIsProductModalOpen(false);
-    setEditingProduct(null);
+    onOpenProductModal(product);
   };
 
   const handleSelectProduct = (productId: string | null) => {
     onSelectProduct(productId);
-    // When selecting a product, switch to product tab if it exists
-    if (productId) {
-      setActiveTab('product');
-    }
   };
 
   const hasSelectedStore = !!selectedStore;
   const hasSelectedProduct = !!selectedProduct;
 
   return (
-    <div className="p-6">
-      {/* Store Selector - Always visible */}
-      <StoreSelector
-        stores={stores}
-        selectedStore={selectedStore}
-        isLoading={isStoreLoading}
-        onSelectStore={onSelectStore}
-        onCreateNew={handleCreateNewStore}
-      />
+    <div className="h-full flex flex-col">
+      {/* Main Tabs - Loja | Custos | Produto (Fixed) */}
+      <div className="flex-shrink-0 px-4 md:px-6 pt-1 pb-0">
+        <div className="flex border-b border-slate-700">
+          <button
+            onClick={() => handleMainTabChange('store')}
+            className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
+              mainTab === 'store'
+                ? 'text-yellow-400 border-b-2 border-yellow-400 -mb-px'
+                : 'text-slate-400 hover:text-slate-300'
+            }`}
+          >
+            {labels.mainTabs.store}
+          </button>
+          <button
+            onClick={() => handleMainTabChange('costs')}
+            disabled={!hasSelectedStore}
+            data-tutorial="costs-tab"
+            className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
+              mainTab === 'costs'
+                ? 'text-yellow-400 border-b-2 border-yellow-400 -mb-px'
+                : 'text-slate-400 hover:text-slate-300'
+            } ${!hasSelectedStore ? 'opacity-50 cursor-not-allowed' : ''}`}
+          >
+            {labels.mainTabs.costs}
+          </button>
+          <button
+            onClick={() => handleMainTabChange('product')}
+            disabled={!hasSelectedStore}
+            data-tutorial="product-tab"
+            className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
+              mainTab === 'product'
+                ? 'text-yellow-400 border-b-2 border-yellow-400 -mb-px'
+                : 'text-slate-400 hover:text-slate-300'
+            } ${!hasSelectedStore ? 'opacity-50 cursor-not-allowed' : ''}`}
+          >
+            {labels.mainTabs.product}
+          </button>
+        </div>
+      </div>
 
-
-      {/* Components that only appear when a store is selected */}
-      {hasSelectedStore && (
-        <>
-          {/* Store Info Header */}
-          <div className="mb-6 p-4 rounded-lg border border-yellow-600/30 bg-yellow-900/10">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="font-medium text-white">{selectedStore.name}</h3>
-                {selectedStore.description && (
-                  <p className="text-xs text-slate-400 mt-1">{selectedStore.description}</p>
-                )}
-              </div>
-              <button
-                onClick={handleEditStore}
-                className="text-xs text-yellow-400 hover:text-yellow-300 transition-colors"
-              >
-                {labels.stores.editStore}
-              </button>
-            </div>
+      {/* Tab Content (Scrollable) - scrollbar-gutter reserves space for scrollbar */}
+      <div className="flex-1 overflow-y-auto px-4 md:px-6 py-4 md:py-6" style={{ scrollbarGutter: 'stable' }}>
+        {/* Store Tab Content */}
+        {mainTab === 'store' && (
+          <div data-tutorial="store-selector">
+            <StoreSelector
+              stores={stores}
+              selectedStore={selectedStore}
+              isLoading={isStoreLoading}
+              onSelectStore={onSelectStore}
+              onCreateNew={handleCreateNewStore}
+              onEditStore={handleEditStore}
+            />
           </div>
+        )}
 
-          {/* Tabs */}
-          <FormTabs
-            activeTab={activeTab}
-            onTabChange={setActiveTab}
-            showProductTab={hasSelectedProduct}
-          />
-
-          {/* Tab Content - Only show when a tab is selected */}
-          {activeTab && (
-            <TabContent
-              activeTab={activeTab}
-              storeId={selectedStore.id}
+        {/* Product Tab Content */}
+        {mainTab === 'product' && hasSelectedStore && (
+          <>
+            {/* Product Selector */}
+            <ProductSelector
+              products={products}
               selectedProduct={selectedProduct}
-              onEditProduct={handleEditProduct}
-              indirectCosts={indirectCosts}
-              indirectCostsLoading={indirectCostsLoading}
-              indirectCostsTotalMonthly={indirectCostsTotalMonthly}
-              onAddIndirectCost={onAddIndirectCost}
-              onUpdateIndirectCost={onUpdateIndirectCost}
-              onDeleteIndirectCost={onDeleteIndirectCost}
-              hiddenCosts={hiddenCosts}
-              hiddenCostsLoading={hiddenCostsLoading}
-              hiddenCostsTotalMonthly={hiddenCostsTotalMonthly}
-              onAddHiddenCost={onAddHiddenCost}
-              onUpdateHiddenCost={onUpdateHiddenCost}
-              onDeleteHiddenCost={onDeleteHiddenCost}
-              taxConfig={taxConfig}
-              taxItems={taxItems}
-              taxLoading={taxLoading}
-              taxTotalPercentage={taxTotalPercentage}
-              onUpdateTaxRegime={onUpdateTaxRegime}
-              onAddTaxItem={onAddTaxItem}
-              onUpdateTaxItem={onUpdateTaxItem}
-              onDeleteTaxItem={onDeleteTaxItem}
+              isLoading={isProductLoading}
+              onSelectProduct={handleSelectProduct}
+              onCreateNew={handleCreateNewProduct}
             />
-          )}
 
-          {/* Product Selector */}
-          <ProductSelector
-            products={products}
-            selectedProduct={selectedProduct}
-            isLoading={isProductLoading}
-            onSelectProduct={handleSelectProduct}
-            onCreateNew={handleCreateNewProduct}
-          />
+            {/* Product Info + Sliders - Only when product is selected */}
+            {hasSelectedProduct && (
+              <>
+                {/* Product Info Card */}
+                <div className="mt-6 space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-medium text-white">
+                  {selectedProduct.name}
+                </h3>
+                <button
+                  onClick={() => handleEditProduct(selectedProduct)}
+                  className="text-xs text-yellow-400 hover:text-yellow-300 transition-colors"
+                >
+                  {labels.products.editProduct}
+                </button>
+              </div>
 
-          {/* Price Adjustment Sliders - Only when product is selected */}
-          {hasSelectedProduct && selectedProductCalculation && onProductMarginChange && (
-            <PriceAdjustSliders
-              product={selectedProduct}
-              calculation={selectedProductCalculation}
-              onMarginChange={onProductMarginChange}
+              <div className="grid grid-cols-2 gap-3">
+                <InfoCard
+                  label="Custo Direto"
+                  value={`R$ ${selectedProduct.direct_cost.toFixed(2)}`}
+                />
+                <InfoCard
+                  label="Margem Desejada"
+                  value={`${selectedProduct.desired_margin}%`}
+                />
+                <InfoCard
+                  label="Tipo de Unidade"
+                  value={labels.products.modal.unitTypes[selectedProduct.unit_type]}
+                />
+                <InfoCard
+                  label="Posicionamento"
+                  value={labels.products.modal.positionings[selectedProduct.positioning]}
+                />
+                <InfoCard
+                  label="Vendas/Mes"
+                  value={`${selectedProduct.monthly_units_estimate} un`}
+                />
+                <InfoCard
+                  label="Peso (rateio)"
+                  value={selectedProduct.weight.toString()}
+                />
+              </div>
+
+              {selectedProduct.market_price && (
+                <InfoCard
+                  label="Preco de Mercado (referencia)"
+                  value={`R$ ${selectedProduct.market_price.toFixed(2)}`}
+                />
+              )}
+            </div>
+
+            {/* Price Adjustment Sliders */}
+            {selectedProductCalculation && onProductMarginChange && (
+              <PriceAdjustSliders
+                product={selectedProduct}
+                calculation={selectedProductCalculation}
+                onMarginChange={onProductMarginChange}
+              />
+            )}
+              </>
+            )}
+          </>
+        )}
+
+        {/* Costs Tab Content */}
+        {mainTab === 'costs' && hasSelectedStore && (
+          <>
+            {/* Sub-Tabs (Indirect, Hidden, Taxes) */}
+            <FormTabs
+              activeTab={activeTab}
+              onTabChange={handleTabChange}
+              showProductTab={false}
             />
-          )}
-        </>
-      )}
 
-      {/* Store Form Modal */}
-      <StoreForm
-        isOpen={isStoreModalOpen}
-        onClose={handleCloseStoreModal}
-        onSubmit={handleStoreFormSubmit}
-        onDelete={onDeleteStore}
-        editStore={editingStore}
-        isLoading={isStoreLoading}
-      />
+            {/* Tab Content - Only show when a sub-tab is selected */}
+            {activeTab && (
+              <TabContent
+                activeTab={activeTab}
+                storeId={selectedStore.id}
+                indirectCosts={indirectCosts}
+                indirectCostsLoading={indirectCostsLoading}
+                indirectCostsTotalMonthly={indirectCostsTotalMonthly}
+                onAddIndirectCost={onAddIndirectCost}
+                onUpdateIndirectCost={onUpdateIndirectCost}
+                onDeleteIndirectCost={onDeleteIndirectCost}
+                hiddenCosts={hiddenCosts}
+                hiddenCostsLoading={hiddenCostsLoading}
+                hiddenCostsTotalMonthly={hiddenCostsTotalMonthly}
+                onAddHiddenCost={onAddHiddenCost}
+                onUpdateHiddenCost={onUpdateHiddenCost}
+                onDeleteHiddenCost={onDeleteHiddenCost}
+                taxConfig={taxConfig}
+                taxItems={taxItems}
+                taxLoading={taxLoading}
+                taxTotalPercentage={taxTotalPercentage}
+                onUpdateTaxRegime={onUpdateTaxRegime}
+                onAddTaxItem={onAddTaxItem}
+                onUpdateTaxItem={onUpdateTaxItem}
+                onDeleteTaxItem={onDeleteTaxItem}
+              />
+            )}
 
-      {/* Product Form Modal */}
-      <ProductModal
-        isOpen={isProductModalOpen}
-        onClose={handleCloseProductModal}
-        onSubmit={handleProductFormSubmit}
-        onDelete={onDeleteProduct}
-        editProduct={editingProduct}
-        isLoading={isProductLoading}
-      />
+            {/* Empty state when no sub-tab is selected */}
+            {!activeTab && (
+              <div className="text-center py-8 text-slate-400">
+                <p className="text-sm">Selecione uma categoria acima para configurar</p>
+              </div>
+            )}
+          </>
+        )}
+      </div>
     </div>
   );
 }
 
 // =============================================================================
-// TabContent - Content for each tab
+// TabContent - Content for each costs sub-tab
 // =============================================================================
 
 interface TabContentProps {
   activeTab: TabType;
   storeId: string;
-  selectedProduct: Product | null;
-  onEditProduct: (product: Product) => void;
   // Indirect costs
   indirectCosts: IndirectCost[];
   indirectCostsLoading: boolean;
@@ -406,8 +414,6 @@ interface TabContentProps {
 function TabContent({
   activeTab,
   storeId,
-  selectedProduct,
-  onEditProduct,
   indirectCosts,
   indirectCostsLoading,
   indirectCostsTotalMonthly,
@@ -429,8 +435,6 @@ function TabContent({
   onUpdateTaxItem,
   onDeleteTaxItem,
 }: TabContentProps) {
-  const labels = PRICING_LABELS;
-
   // Render IndirectCostsForm for indirect tab
   if (activeTab === 'indirect') {
     return (
@@ -478,60 +482,6 @@ function TabContent({
     );
   }
 
-  // Render Product info for product tab
-  if (activeTab === 'product' && selectedProduct) {
-    return (
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h3 className="text-lg font-medium text-white">
-            {selectedProduct.name}
-          </h3>
-          <button
-            onClick={() => onEditProduct(selectedProduct)}
-            className="text-xs text-yellow-400 hover:text-yellow-300 transition-colors"
-          >
-            {labels.products.editProduct}
-          </button>
-        </div>
-
-        <div className="grid grid-cols-2 gap-3">
-          <InfoCard
-            label="Custo Direto"
-            value={`R$ ${selectedProduct.direct_cost.toFixed(2)}`}
-          />
-          <InfoCard
-            label="Margem Desejada"
-            value={`${selectedProduct.desired_margin}%`}
-          />
-          <InfoCard
-            label="Tipo de Unidade"
-            value={labels.products.modal.unitTypes[selectedProduct.unit_type]}
-          />
-          <InfoCard
-            label="Posicionamento"
-            value={labels.products.modal.positionings[selectedProduct.positioning]}
-          />
-          <InfoCard
-            label="Vendas/Mes"
-            value={`${selectedProduct.monthly_units_estimate} un`}
-          />
-          <InfoCard
-            label="Peso (rateio)"
-            value={selectedProduct.weight.toString()}
-          />
-        </div>
-
-        {selectedProduct.market_price && (
-          <InfoCard
-            label="Preco de Mercado (referencia)"
-            value={`R$ ${selectedProduct.market_price.toFixed(2)}`}
-          />
-        )}
-      </div>
-    );
-  }
-
-  // No product selected for product tab - show nothing
   return null;
 }
 

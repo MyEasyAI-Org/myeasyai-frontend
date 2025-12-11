@@ -42,9 +42,18 @@ export function FormTabs({ activeTab, onTabChange, showProductTab = false, disab
 
   return (
     <div className="mb-6">
-      <div className="flex flex-wrap gap-2">
+      <div className="flex gap-2 flex-nowrap">
         {tabs.map((tab) => {
           const isActive = activeTab === tab.id;
+
+          // Generate data-tutorial attribute for specific tabs
+          const getTutorialAttr = () => {
+            if (tab.id === 'indirect') return 'indirect-costs-tab';
+            if (tab.id === 'hidden') return 'hidden-costs-tab';
+            if (tab.id === 'taxes') return 'taxes-tab';
+            if (tab.id === 'product') return 'product-section';
+            return undefined;
+          };
 
           return (
             <button
@@ -52,7 +61,8 @@ export function FormTabs({ activeTab, onTabChange, showProductTab = false, disab
               type="button"
               onClick={() => !disabled && onTabChange(isActive ? null : tab.id)}
               disabled={disabled}
-              className={`px-3 py-1.5 text-sm rounded-lg border transition-colors ${
+              data-tutorial={getTutorialAttr()}
+              className={`flex-shrink-0 px-3 py-1.5 text-sm rounded-lg border transition-colors ${
                 isActive
                   ? 'bg-yellow-600 border-yellow-500 text-white'
                   : 'bg-slate-800 border-slate-700 text-slate-400 hover:border-slate-600 hover:text-slate-300'

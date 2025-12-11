@@ -7,6 +7,7 @@ import { Loader2 } from 'lucide-react';
 import { PRICING_LABELS, COST_SUGGESTIONS, CALCULATION_CONSTANTS } from '../../constants/pricing.constants';
 import { CostSuggestionChips } from '../shared/CostSuggestionChips';
 import { HiddenCostRow } from '../shared/HiddenCostRow';
+import { Tooltip } from '../shared/Tooltip';
 import { getDefaultAuxiliaryData, hasAuxiliaryCalculator } from '../../utils/hiddenCostCalculators';
 import type { HiddenCost, HiddenCostCategory, HiddenCostAuxiliaryData, CostFrequency } from '../../types/pricing.types';
 import type { HiddenCostFormData } from '../../hooks/useHiddenCosts';
@@ -124,8 +125,9 @@ export function HiddenCostsForm({
     <div className="space-y-4">
       {/* Header */}
       <div>
-        <h3 className="text-lg font-medium text-white">
+        <h3 className="flex items-center gap-2 text-lg font-medium text-white">
           {labels.hiddenCosts.title}
+          <Tooltip content={labels.tooltips.hiddenCost} position="right" />
         </h3>
         <p className="text-sm text-slate-400 mt-1">
           {labels.hiddenCosts.subtitle}

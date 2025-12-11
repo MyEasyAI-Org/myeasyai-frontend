@@ -40,6 +40,11 @@ export function TaxItemRow({
   const [localPercentage, setLocalPercentage] = useState(percentage ? percentage.toString() : '');
   const [isDeleting, setIsDeleting] = useState(false);
 
+  // Validation state
+  const [percentageTouched, setPercentageTouched] = useState(false);
+  const parsedPercentage = parseFloat(localPercentage) || 0;
+  const isPercentageInvalid = percentageTouched && (parsedPercentage < 0 || parsedPercentage > 100);
+
   // Ref for auto-focus
   const nameInputRef = useRef<HTMLInputElement>(null);
 
@@ -97,20 +102,32 @@ export function TaxItemRow({
       />
 
       {/* Percentage Input */}
-      <div className="flex items-center gap-1">
+      <div className="relative flex items-center gap-1">
         <input
           type="number"
           value={localPercentage}
           onChange={(e) => setLocalPercentage(e.target.value)}
-          onBlur={handlePercentageBlur}
+          onBlur={() => {
+            setPercentageTouched(true);
+            handlePercentageBlur();
+          }}
           placeholder="0"
           step="0.1"
           min="0"
           max="100"
           disabled={disabled || isDeleting}
-          className="w-16 px-2 py-1 text-right bg-slate-900/50 border border-slate-600 rounded text-white text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400/50 focus:border-yellow-400/50"
+          className={`w-16 px-2 py-1 text-right bg-slate-900/50 border rounded text-white text-sm focus:outline-none focus:ring-1 ${
+            isPercentageInvalid
+              ? 'border-red-500 focus:ring-red-500/50 focus:border-red-500'
+              : 'border-slate-600 focus:ring-yellow-400/50 focus:border-yellow-400/50'
+          }`}
         />
         <span className="text-slate-400 text-sm">%</span>
+        {isPercentageInvalid && (
+          <p className="absolute -bottom-4 left-0 text-[10px] text-red-400 whitespace-nowrap">
+            0-100%
+          </p>
+        )}
       </div>
 
       {/* Delete Button */}

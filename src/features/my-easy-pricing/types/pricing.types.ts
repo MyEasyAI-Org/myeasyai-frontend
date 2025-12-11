@@ -4,6 +4,7 @@
 
 export type NavigationLevel = 'stores' | 'store' | 'product';
 export type TabType = 'indirect' | 'hidden' | 'taxes' | 'product';
+export type MainTabType = 'store' | 'product' | 'costs';
 
 export interface NavigationState {
   level: NavigationLevel;
