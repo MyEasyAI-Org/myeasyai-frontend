@@ -68,7 +68,7 @@ function ViewModeToggle({ viewMode, onViewModeChange }: ViewModeToggleProps) {
           rounded-full border-2 border-transparent
           transition-colors duration-200 ease-in-out
           focus:outline-none focus-visible:ring-2 focus-visible:ring-yellow-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900
-          ${isAdvanced ? 'bg-yellow-500' : 'bg-slate-600'}
+          ${isAdvanced ? 'bg-yellow-500' : 'bg-yellow-500'}
         `}
       >
         {/* Sliding knob */}
