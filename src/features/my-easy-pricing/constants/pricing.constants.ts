@@ -359,9 +359,17 @@ export const PRICING_LABELS = {
     demoStoreName: 'Loja Demonstracao',
     demoProductName: 'Produto Exemplo',
     steps: {
+      storeTab: {
+        title: 'Menu de Lojas',
+        description: 'Esta e a aba de Lojas. Aqui voce gerencia todas as suas lojas e tabelas de precos.',
+      },
       store: {
         title: 'Selecione uma Loja',
         description: 'Crie ou selecione uma loja para comecar. Cada loja e uma tabela de precos independente.',
+      },
+      viewModeToggle: {
+        title: 'Modo de Visualizacao',
+        description: 'Alterne entre o modo Simplificado (visao resumida) e Avancado (todos os detalhes). Escolha o que melhor se adapta ao seu uso.',
       },
       costsTabIntro: {
         title: 'Aba de Custos',

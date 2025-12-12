@@ -35,11 +35,25 @@ export interface UseTutorialReturn {
 
 const TUTORIAL_STEPS: TutorialStep[] = [
   {
+    id: 'storeTab',
+    targetElement: '[data-tutorial="store-tab"]',
+    title: PRICING_LABELS.tutorial.steps.storeTab.title,
+    description: PRICING_LABELS.tutorial.steps.storeTab.description,
+    position: 'right',
+  },
+  {
     id: 'store',
     targetElement: '[data-tutorial="store-selector"]',
     title: PRICING_LABELS.tutorial.steps.store.title,
     description: PRICING_LABELS.tutorial.steps.store.description,
     position: 'right',
+  },
+  {
+    id: 'viewModeToggle',
+    targetElement: '[data-tutorial="view-mode-toggle"]',
+    title: PRICING_LABELS.tutorial.steps.viewModeToggle.title,
+    description: PRICING_LABELS.tutorial.steps.viewModeToggle.description,
+    position: 'bottom',
   },
   {
     id: 'costsTabIntro',

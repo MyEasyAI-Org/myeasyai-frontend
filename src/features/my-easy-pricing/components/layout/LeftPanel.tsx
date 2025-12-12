@@ -200,6 +200,7 @@ export function LeftPanel({
         <div className="flex border-b border-slate-700">
           <button
             onClick={() => handleMainTabChange('store')}
+            data-tutorial="store-tab"
             className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
               mainTab === 'store'
                 ? 'text-yellow-400 border-b-2 border-yellow-400 -mb-px'

@@ -35,7 +35,7 @@ interface RightPanelProps {
 }
 
 // =============================================================================
-// ViewModeToggle - Toggle switch between Simple and Advanced views
+// ViewModeToggle - Apple-style toggle switch between Simple and Advanced views
 // =============================================================================
 
 interface ViewModeToggleProps {
@@ -44,30 +44,52 @@ interface ViewModeToggleProps {
 }
 
 function ViewModeToggle({ viewMode, onViewModeChange }: ViewModeToggleProps) {
+  const isAdvanced = viewMode === 'advanced';
+
   return (
-    <div className="flex items-center bg-slate-800 rounded-lg p-1 border border-slate-700">
-      <button
-        type="button"
-        onClick={() => onViewModeChange('simple')}
-        className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all ${
-          viewMode === 'simple'
-            ? 'bg-yellow-600 text-white'
-            : 'text-slate-400 hover:text-slate-300'
+    <div className="flex items-center gap-3">
+      <span
+        className={`text-sm font-medium transition-colors duration-200 ${
+          !isAdvanced ? 'text-white' : 'text-slate-500'
         }`}
       >
         Simplificado
-      </button>
+      </span>
+
+      {/* Apple-style toggle switch */}
       <button
         type="button"
-        onClick={() => onViewModeChange('advanced')}
-        className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all ${
-          viewMode === 'advanced'
-            ? 'bg-yellow-600 text-white'
-            : 'text-slate-400 hover:text-slate-300'
+        role="switch"
+        aria-checked={isAdvanced}
+        data-tutorial="view-mode-toggle"
+        onClick={() => onViewModeChange(isAdvanced ? 'simple' : 'advanced')}
+        className={`
+          relative inline-flex h-[31px] w-[51px] shrink-0 cursor-pointer
+          rounded-full border-2 border-transparent
+          transition-colors duration-200 ease-in-out
+          focus:outline-none focus-visible:ring-2 focus-visible:ring-yellow-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900
+          ${isAdvanced ? 'bg-yellow-500' : 'bg-slate-600'}
+        `}
+      >
+        {/* Sliding knob */}
+        <span
+          aria-hidden="true"
+          className={`
+            pointer-events-none inline-block h-[27px] w-[27px]
+            transform rounded-full bg-white shadow-lg ring-0
+            transition-transform duration-200 ease-in-out
+            ${isAdvanced ? 'translate-x-5' : 'translate-x-0'}
+          `}
+        />
+      </button>
+
+      <span
+        className={`text-sm font-medium transition-colors duration-200 ${
+          isAdvanced ? 'text-white' : 'text-slate-500'
         }`}
       >
         Avançado
-      </button>
+      </span>
     </div>
   );
 }

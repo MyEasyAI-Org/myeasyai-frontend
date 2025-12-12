@@ -28,6 +28,7 @@ interface TooltipPosition {
   top: number;
   left: number;
   arrowPosition: 'top' | 'bottom' | 'left' | 'right';
+  arrowOffset: number; // Offset from center (in pixels)
 }
 
 // =============================================================================
@@ -75,6 +76,7 @@ export function TutorialTooltip({
         top: window.innerHeight / 2 - TOOLTIP_HEIGHT / 2,
         left: window.innerWidth / 2 - TOOLTIP_WIDTH / 2,
         arrowPosition: 'top',
+        arrowOffset: 0,
       });
       return;
     }
@@ -86,6 +88,10 @@ export function TutorialTooltip({
     let top = 0;
     let left = 0;
     let arrowPosition: 'top' | 'bottom' | 'left' | 'right' = currentStep.position;
+
+    // Target element center coordinates
+    const targetCenterX = rect.left + rect.width / 2;
+    const targetCenterY = rect.top + rect.height / 2;
 
     switch (currentStep.position) {
       case 'right':
@@ -123,7 +129,25 @@ export function TutorialTooltip({
       top = viewportHeight - TOOLTIP_HEIGHT - MARGIN;
     }
 
-    setPosition({ top, left, arrowPosition });
+    // Calculate arrow offset based on how much the tooltip was shifted
+    let arrowOffset = 0;
+    if (arrowPosition === 'top' || arrowPosition === 'bottom') {
+      // Horizontal arrow - calculate offset from tooltip center to target center
+      const tooltipCenterX = left + TOOLTIP_WIDTH / 2;
+      arrowOffset = targetCenterX - tooltipCenterX;
+      // Clamp arrow offset to stay within tooltip bounds (with padding)
+      const maxOffset = TOOLTIP_WIDTH / 2 - ARROW_SIZE - 16;
+      arrowOffset = Math.max(-maxOffset, Math.min(maxOffset, arrowOffset));
+    } else {
+      // Vertical arrow - calculate offset from tooltip center to target center
+      const tooltipCenterY = top + TOOLTIP_HEIGHT / 2;
+      arrowOffset = targetCenterY - tooltipCenterY;
+      // Clamp arrow offset to stay within tooltip bounds (with padding)
+      const maxOffset = TOOLTIP_HEIGHT / 2 - ARROW_SIZE - 16;
+      arrowOffset = Math.max(-maxOffset, Math.min(maxOffset, arrowOffset));
+    }
+
+    setPosition({ top, left, arrowPosition, arrowOffset });
   }, [currentStep]);
 
   // ---------------------------------------------------------------------------
@@ -154,52 +178,48 @@ export function TutorialTooltip({
   if (!isActive || !currentStep || !position) return null;
 
   // ---------------------------------------------------------------------------
-  // Arrow styles based on position
+  // Arrow styles based on position (using rotated square approach)
   // ---------------------------------------------------------------------------
   const getArrowStyles = (): React.CSSProperties => {
+    const size = ARROW_SIZE;
+    const offset = Math.round(position.arrowOffset);
+
     const baseStyles: React.CSSProperties = {
       position: 'absolute',
-      width: 0,
-      height: 0,
-      border: `${ARROW_SIZE}px solid transparent`,
+      width: size,
+      height: size,
+      backgroundColor: '#1e293b',
+      transform: 'rotate(45deg)',
     };
 
     switch (position.arrowPosition) {
       case 'left':
         return {
           ...baseStyles,
-          left: -ARROW_SIZE * 2,
-          top: '50%',
-          transform: 'translateY(-50%)',
-          borderRightColor: '#1e293b',
-          borderLeftWidth: 0,
+          left: -size / 2,
+          top: `calc(50% + ${offset}px)`,
+          marginTop: -size / 2,
         };
       case 'right':
         return {
           ...baseStyles,
-          right: -ARROW_SIZE * 2,
-          top: '50%',
-          transform: 'translateY(-50%)',
-          borderLeftColor: '#1e293b',
-          borderRightWidth: 0,
+          right: -size / 2,
+          top: `calc(50% + ${offset}px)`,
+          marginTop: -size / 2,
         };
       case 'top':
         return {
           ...baseStyles,
-          top: -ARROW_SIZE * 2,
-          left: '50%',
-          transform: 'translateX(-50%)',
-          borderBottomColor: '#1e293b',
-          borderTopWidth: 0,
+          top: -size / 2,
+          left: `calc(50% + ${offset}px)`,
+          marginLeft: -size / 2,
         };
       case 'bottom':
         return {
           ...baseStyles,
-          bottom: -ARROW_SIZE * 2,
-          left: '50%',
-          transform: 'translateX(-50%)',
-          borderTopColor: '#1e293b',
-          borderBottomWidth: 0,
+          bottom: -size / 2,
+          left: `calc(50% + ${offset}px)`,
+          marginLeft: -size / 2,
         };
     }
   };
