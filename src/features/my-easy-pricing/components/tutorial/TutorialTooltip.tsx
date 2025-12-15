@@ -35,10 +35,12 @@ interface TooltipPosition {
 // Constants
 // =============================================================================
 
-const TOOLTIP_WIDTH = 320;
+const TOOLTIP_WIDTH_DESKTOP = 320;
+const TOOLTIP_WIDTH_MOBILE = 280;
 const TOOLTIP_HEIGHT = 180;
 const ARROW_SIZE = 12;
 const MARGIN = 16;
+const MOBILE_BREAKPOINT = 768;
 
 // =============================================================================
 // Component
@@ -57,7 +59,11 @@ export function TutorialTooltip({
   onFinish,
 }: TutorialTooltipProps) {
   const [position, setPosition] = useState<TooltipPosition | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
   const labels = PRICING_LABELS.tutorial;
+
+  // Get current tooltip width based on screen size
+  const tooltipWidth = isMobile ? TOOLTIP_WIDTH_MOBILE : TOOLTIP_WIDTH_DESKTOP;
 
   // ---------------------------------------------------------------------------
   // Calculate tooltip position based on target element
@@ -68,13 +74,32 @@ export function TutorialTooltip({
       return;
     }
 
-    const targetElement = document.querySelector(currentStep.targetElement);
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    const mobile = viewportWidth < MOBILE_BREAKPOINT;
+    setIsMobile(mobile);
+
+    const currentTooltipWidth = mobile ? TOOLTIP_WIDTH_MOBILE : TOOLTIP_WIDTH_DESKTOP;
+
+    // Find all matching elements and get the one that's visible
+    const targetElements = document.querySelectorAll(currentStep.targetElement);
+    let targetElement: Element | null = null;
+
+    for (const el of targetElements) {
+      const elRect = el.getBoundingClientRect();
+      // Check if element is visible (has dimensions)
+      if (elRect.width > 0 && elRect.height > 0) {
+        targetElement = el;
+        break;
+      }
+    }
+
     if (!targetElement) {
-      console.warn('[TutorialTooltip] Target element not found:', currentStep.targetElement);
+      console.warn('[TutorialTooltip] Target element not found or not visible:', currentStep.targetElement);
       // Fallback to center of screen
       setPosition({
-        top: window.innerHeight / 2 - TOOLTIP_HEIGHT / 2,
-        left: window.innerWidth / 2 - TOOLTIP_WIDTH / 2,
+        top: viewportHeight / 2 - TOOLTIP_HEIGHT / 2,
+        left: viewportWidth / 2 - currentTooltipWidth / 2,
         arrowPosition: 'top',
         arrowOffset: 0,
       });
@@ -82,8 +107,6 @@ export function TutorialTooltip({
     }
 
     const rect = targetElement.getBoundingClientRect();
-    const viewportWidth = window.innerWidth;
-    const viewportHeight = window.innerHeight;
 
     let top = 0;
     let left = 0;
@@ -93,7 +116,16 @@ export function TutorialTooltip({
     const targetCenterX = rect.left + rect.width / 2;
     const targetCenterY = rect.top + rect.height / 2;
 
-    switch (currentStep.position) {
+    // On mobile, prefer bottom/top positioning over left/right
+    let preferredPosition = currentStep.position;
+    if (mobile && (preferredPosition === 'left' || preferredPosition === 'right')) {
+      // Check if there's more space above or below
+      const spaceAbove = rect.top;
+      const spaceBelow = viewportHeight - rect.bottom;
+      preferredPosition = spaceBelow >= spaceAbove ? 'bottom' : 'top';
+    }
+
+    switch (preferredPosition) {
       case 'right':
         top = rect.top + rect.height / 2 - TOOLTIP_HEIGHT / 2;
         left = rect.right + MARGIN + ARROW_SIZE;
@@ -102,27 +134,27 @@ export function TutorialTooltip({
 
       case 'left':
         top = rect.top + rect.height / 2 - TOOLTIP_HEIGHT / 2;
-        left = rect.left - TOOLTIP_WIDTH - MARGIN - ARROW_SIZE;
+        left = rect.left - currentTooltipWidth - MARGIN - ARROW_SIZE;
         arrowPosition = 'right';
         break;
 
       case 'bottom':
         top = rect.bottom + MARGIN + ARROW_SIZE;
-        left = rect.left + rect.width / 2 - TOOLTIP_WIDTH / 2;
+        left = rect.left + rect.width / 2 - currentTooltipWidth / 2;
         arrowPosition = 'top';
         break;
 
       case 'top':
         top = rect.top - TOOLTIP_HEIGHT - MARGIN - ARROW_SIZE;
-        left = rect.left + rect.width / 2 - TOOLTIP_WIDTH / 2;
+        left = rect.left + rect.width / 2 - currentTooltipWidth / 2;
         arrowPosition = 'bottom';
         break;
     }
 
     // Boundary checks - keep tooltip within viewport
     if (left < MARGIN) left = MARGIN;
-    if (left + TOOLTIP_WIDTH > viewportWidth - MARGIN) {
-      left = viewportWidth - TOOLTIP_WIDTH - MARGIN;
+    if (left + currentTooltipWidth > viewportWidth - MARGIN) {
+      left = viewportWidth - currentTooltipWidth - MARGIN;
     }
     if (top < MARGIN) top = MARGIN;
     if (top + TOOLTIP_HEIGHT > viewportHeight - MARGIN) {
@@ -133,10 +165,10 @@ export function TutorialTooltip({
     let arrowOffset = 0;
     if (arrowPosition === 'top' || arrowPosition === 'bottom') {
       // Horizontal arrow - calculate offset from tooltip center to target center
-      const tooltipCenterX = left + TOOLTIP_WIDTH / 2;
+      const tooltipCenterX = left + currentTooltipWidth / 2;
       arrowOffset = targetCenterX - tooltipCenterX;
       // Clamp arrow offset to stay within tooltip bounds (with padding)
-      const maxOffset = TOOLTIP_WIDTH / 2 - ARROW_SIZE - 16;
+      const maxOffset = currentTooltipWidth / 2 - ARROW_SIZE - 16;
       arrowOffset = Math.max(-maxOffset, Math.min(maxOffset, arrowOffset));
     } else {
       // Vertical arrow - calculate offset from tooltip center to target center
@@ -154,21 +186,63 @@ export function TutorialTooltip({
   // Update position on step change and window resize
   // ---------------------------------------------------------------------------
   useEffect(() => {
-    if (!isActive) {
+    if (!isActive || !currentStep) {
       setPosition(null);
       return;
     }
 
-    // Delay initial calculation to allow DOM to settle
-    const timeout = setTimeout(updatePosition, 150);
+    // Function to wait for visible element to appear in DOM
+    const waitForVisibleElement = (selector: string, maxAttempts = 15) => {
+      let attempts = 0;
+
+      const check = () => {
+        const elements = document.querySelectorAll(selector);
+        let found = false;
+
+        for (const el of elements) {
+          const rect = el.getBoundingClientRect();
+          if (rect.width > 0 && rect.height > 0) {
+            found = true;
+            break;
+          }
+        }
+
+        if (found) {
+          updatePosition();
+        } else if (attempts < maxAttempts) {
+          attempts++;
+          setTimeout(check, 100);
+        } else {
+          // Fallback: show tooltip in center if element not found
+          updatePosition();
+        }
+      };
+
+      // Initial delay to allow tab change animation
+      setTimeout(check, 350);
+    };
+
+    waitForVisibleElement(currentStep.targetElement);
 
     window.addEventListener('resize', updatePosition);
     window.addEventListener('scroll', updatePosition, true);
 
+    // Observe DOM changes for sidebar open/close
+    const observer = new MutationObserver(() => {
+      setTimeout(updatePosition, 100);
+    });
+
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ['class', 'style'],
+    });
+
     return () => {
-      clearTimeout(timeout);
       window.removeEventListener('resize', updatePosition);
       window.removeEventListener('scroll', updatePosition, true);
+      observer.disconnect();
     };
   }, [isActive, currentStep, updatePosition]);
 
@@ -229,11 +303,11 @@ export function TutorialTooltip({
   // ---------------------------------------------------------------------------
   return (
     <div
-      className="fixed z-50 bg-slate-800 rounded-xl shadow-2xl border border-slate-700 p-4"
+      className="fixed z-50 bg-slate-800 rounded-xl shadow-2xl border border-slate-700 p-3 md:p-4"
       style={{
         top: position.top,
         left: position.left,
-        width: TOOLTIP_WIDTH,
+        width: tooltipWidth,
         minHeight: TOOLTIP_HEIGHT,
       }}
     >
@@ -241,12 +315,12 @@ export function TutorialTooltip({
       <div style={getArrowStyles()} />
 
       {/* Header */}
-      <div className="flex items-center justify-between mb-3">
+      <div className="flex items-center justify-between mb-2 md:mb-3">
         <div className="flex items-center gap-2">
-          <span className="px-2 py-0.5 bg-yellow-600 text-white text-xs font-medium rounded-full">
+          <span className="px-2 py-0.5 bg-yellow-600 text-white text-[10px] md:text-xs font-medium rounded-full">
             {stepNumber}/{totalSteps}
           </span>
-          <h3 className="text-lg font-semibold text-white">{currentStep.title}</h3>
+          <h3 className="text-sm md:text-lg font-semibold text-white">{currentStep.title}</h3>
         </div>
         <button
           onClick={onSkip}
@@ -258,12 +332,12 @@ export function TutorialTooltip({
       </div>
 
       {/* Description */}
-      <p className="text-slate-300 text-sm mb-4 leading-relaxed">
+      <p className="text-slate-300 text-xs md:text-sm mb-3 md:mb-4 leading-relaxed">
         {currentStep.description}
       </p>
 
       {/* Progress Bar */}
-      <div className="w-full h-1 bg-slate-700 rounded-full mb-4">
+      <div className="w-full h-1 bg-slate-700 rounded-full mb-3 md:mb-4">
         <div
           className="h-full bg-yellow-500 rounded-full transition-all duration-300"
           style={{ width: `${(stepNumber / totalSteps) * 100}%` }}
@@ -274,36 +348,37 @@ export function TutorialTooltip({
       <div className="flex items-center justify-between">
         <button
           onClick={onSkip}
-          className="text-sm text-slate-400 hover:text-white transition-colors"
+          className="text-xs md:text-sm text-slate-400 hover:text-white transition-colors"
         >
           {labels.skip}
         </button>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 md:gap-2">
           {!isFirstStep && (
             <button
               onClick={onPrevious}
-              className="flex items-center gap-1 px-3 py-1.5 text-sm bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-colors"
+              className="flex items-center gap-1 px-2 md:px-3 py-1 md:py-1.5 text-xs md:text-sm bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-colors"
             >
-              <ChevronLeft className="w-4 h-4" />
-              {labels.previous}
+              <ChevronLeft className="w-3 h-3 md:w-4 md:h-4" />
+              <span className="hidden sm:inline">{labels.previous}</span>
             </button>
           )}
 
           {isLastStep ? (
             <button
               onClick={onFinish}
-              className="px-4 py-1.5 text-sm bg-yellow-600 hover:bg-yellow-500 text-white rounded-lg font-medium transition-colors"
+              className="px-3 md:px-4 py-1 md:py-1.5 text-xs md:text-sm bg-yellow-600 hover:bg-yellow-500 text-white rounded-lg font-medium transition-colors"
             >
               {labels.finish}
             </button>
           ) : (
             <button
               onClick={onNext}
-              className="flex items-center gap-1 px-3 py-1.5 text-sm bg-yellow-600 hover:bg-yellow-500 text-white rounded-lg font-medium transition-colors"
+              className="flex items-center gap-1 px-2 md:px-3 py-1 md:py-1.5 text-xs md:text-sm bg-yellow-600 hover:bg-yellow-500 text-white rounded-lg font-medium transition-colors"
             >
-              {labels.next}
-              <ChevronRight className="w-4 h-4" />
+              <span className="hidden sm:inline">{labels.next}</span>
+              <span className="sm:hidden">OK</span>
+              <ChevronRight className="w-3 h-3 md:w-4 md:h-4" />
             </button>
           )}
         </div>

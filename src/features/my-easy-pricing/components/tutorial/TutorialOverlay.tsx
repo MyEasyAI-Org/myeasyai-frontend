@@ -42,9 +42,21 @@ export function TutorialOverlay({
       return;
     }
 
-    const targetElement = document.querySelector(currentStep.targetElement);
+    // Find all matching elements and get the one that's visible
+    const targetElements = document.querySelectorAll(currentStep.targetElement);
+    let targetElement: Element | null = null;
+
+    for (const el of targetElements) {
+      const rect = el.getBoundingClientRect();
+      // Check if element is visible (has dimensions and is in viewport)
+      if (rect.width > 0 && rect.height > 0) {
+        targetElement = el;
+        break;
+      }
+    }
+
     if (!targetElement) {
-      console.warn('[TutorialOverlay] Target element not found:', currentStep.targetElement);
+      console.warn('[TutorialOverlay] Target element not found or not visible:', currentStep.targetElement);
       setSpotlightPosition(null);
       return;
     }
@@ -64,19 +76,50 @@ export function TutorialOverlay({
   // Update position on step change and window resize
   // ---------------------------------------------------------------------------
   useEffect(() => {
-    if (!isActive) {
+    if (!isActive || !currentStep) {
       setSpotlightPosition(null);
       return;
     }
 
-    // Initial calculation
-    updateSpotlightPosition();
+    // Function to wait for visible element to appear in DOM
+    const waitForVisibleElement = (selector: string, maxAttempts = 15) => {
+      let attempts = 0;
+
+      const check = () => {
+        const elements = document.querySelectorAll(selector);
+        let found = false;
+
+        for (const el of elements) {
+          const rect = el.getBoundingClientRect();
+          if (rect.width > 0 && rect.height > 0) {
+            found = true;
+            break;
+          }
+        }
+
+        if (found) {
+          updateSpotlightPosition();
+        } else if (attempts < maxAttempts) {
+          attempts++;
+          setTimeout(check, 100);
+        } else {
+          // Element not found after max attempts
+          setSpotlightPosition(null);
+        }
+      };
+
+      // Initial delay to allow tab change animation
+      setTimeout(check, 350);
+    };
+
+    waitForVisibleElement(currentStep.targetElement);
 
     // Update on resize/scroll
     window.addEventListener('resize', updateSpotlightPosition);
     window.addEventListener('scroll', updateSpotlightPosition, true);
 
     // Also observe DOM changes (element might appear after render)
+    // This handles sidebar open/close and other dynamic changes
     const observer = new MutationObserver(() => {
       setTimeout(updateSpotlightPosition, 100);
     });
@@ -85,6 +128,7 @@ export function TutorialOverlay({
       childList: true,
       subtree: true,
       attributes: true,
+      attributeFilter: ['class', 'style'],
     });
 
     return () => {
@@ -104,7 +148,7 @@ export function TutorialOverlay({
   // ---------------------------------------------------------------------------
   return (
     <div
-      className="fixed inset-0 z-40 pointer-events-auto"
+      className="fixed inset-0 z-[45] pointer-events-auto"
       onClick={onOverlayClick}
       style={{
         background: spotlightPosition

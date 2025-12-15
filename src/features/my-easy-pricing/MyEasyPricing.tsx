@@ -176,40 +176,64 @@ export function MyEasyPricing({ onBackToDashboard }: MyEasyPricingProps) {
       return;
     }
 
+    // Determine if current step needs the left panel (for mobile sidebar)
+    const needsLeftPanel = [
+      'storeTab', 'store', 'costsTabIntro', 'indirectCosts',
+      'hiddenCosts', 'taxes', 'productTabIntro', 'product'
+    ].includes(currentStep.id);
+
+    // On mobile, open sidebar when step needs left panel elements
+    const isMobile = window.innerWidth < 768;
+    if (isMobile) {
+      setIsMobileSidebarOpen(needsLeftPanel);
+    }
+
     // Map tutorial step ID to the appropriate main tab, sub-tab, and actions
     switch (currentStep.id) {
+      case 'storeTab':
+        // Show the store tab button
+        setTutorialMainTab('store');
+        setTutorialActiveTab(null);
+        break;
+
       case 'store':
-        // First step: show the store selector in Store tab
+        // Show the store selector in Store tab
+        setTutorialMainTab('store');
+        setTutorialActiveTab(null);
+        break;
+
+      case 'viewModeToggle':
+        // Show the view mode toggle in right panel - close sidebar on mobile
         setTutorialMainTab('store');
         setTutorialActiveTab(null);
         break;
 
       case 'costsTabIntro':
-        // Introduction to Costs tab - show the tab button
+        // Introduction to Costs tab - select the costs tab to highlight it
         setTutorialMainTab('costs');
         setTutorialActiveTab(null);
         break;
 
       case 'indirectCosts':
-        // Open Costs tab and indirect costs sub-tab
+        // Open Costs tab and select indirect costs sub-tab
         setTutorialMainTab('costs');
         setTutorialActiveTab('indirect');
         break;
 
       case 'hiddenCosts':
-        // Open Costs tab and hidden costs sub-tab
+        // Open Costs tab and select hidden costs sub-tab
         setTutorialMainTab('costs');
         setTutorialActiveTab('hidden');
         break;
 
       case 'taxes':
-        // Open Costs tab and taxes sub-tab
+        // Open Costs tab and select taxes sub-tab
         setTutorialMainTab('costs');
         setTutorialActiveTab('taxes');
         break;
 
       case 'productTabIntro':
-        // Introduction to Product tab - show the tab button
+        // Introduction to Product tab - select the product tab to highlight it
         setTutorialMainTab('product');
         setTutorialActiveTab(null);
         break;
