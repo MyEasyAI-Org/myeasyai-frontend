@@ -81,6 +81,9 @@ export function TutorialOverlay({
       return;
     }
 
+    // Hide spotlight immediately when step changes to prevent showing old position
+    setSpotlightPosition(null);
+
     // Function to wait for visible element to appear in DOM
     const waitForVisibleElement = (selector: string, maxAttempts = 15) => {
       let attempts = 0;

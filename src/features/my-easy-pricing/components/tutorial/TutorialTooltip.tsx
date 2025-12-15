@@ -60,6 +60,7 @@ export function TutorialTooltip({
 }: TutorialTooltipProps) {
   const [position, setPosition] = useState<TooltipPosition | null>(null);
   const [isMobile, setIsMobile] = useState(false);
+  const [displayedStep, setDisplayedStep] = useState<TutorialStep | null>(null);
   const labels = PRICING_LABELS.tutorial;
 
   // Get current tooltip width based on screen size
@@ -188,6 +189,7 @@ export function TutorialTooltip({
   useEffect(() => {
     if (!isActive || !currentStep) {
       setPosition(null);
+      setDisplayedStep(null);
       return;
     }
 
@@ -208,6 +210,9 @@ export function TutorialTooltip({
         }
 
         if (found) {
+          // Update both position and displayed step simultaneously
+          // so text changes at the exact same moment as position
+          setDisplayedStep(currentStep);
           updatePosition();
         } else if (attempts < maxAttempts) {
           attempts++;
@@ -215,6 +220,7 @@ export function TutorialTooltip({
         } else {
           // Fallback: show tooltip in center if element not found
           updatePosition();
+          setDisplayedStep(currentStep);
         }
       };
 
@@ -247,9 +253,9 @@ export function TutorialTooltip({
   }, [isActive, currentStep, updatePosition]);
 
   // ---------------------------------------------------------------------------
-  // Don't render if not active or no position
+  // Don't render if not active or no position or no displayed step
   // ---------------------------------------------------------------------------
-  if (!isActive || !currentStep || !position) return null;
+  if (!isActive || !currentStep || !position || !displayedStep) return null;
 
   // ---------------------------------------------------------------------------
   // Arrow styles based on position (using rotated square approach)
@@ -320,7 +326,7 @@ export function TutorialTooltip({
           <span className="px-2 py-0.5 bg-yellow-600 text-white text-[10px] md:text-xs font-medium rounded-full">
             {stepNumber}/{totalSteps}
           </span>
-          <h3 className="text-sm md:text-lg font-semibold text-white">{currentStep.title}</h3>
+          <h3 className="text-sm md:text-lg font-semibold text-white">{displayedStep.title}</h3>
         </div>
         <button
           onClick={onSkip}
@@ -333,7 +339,7 @@ export function TutorialTooltip({
 
       {/* Description */}
       <p className="text-slate-300 text-xs md:text-sm mb-3 md:mb-4 leading-relaxed">
-        {currentStep.description}
+        {displayedStep.description}
       </p>
 
       {/* Progress Bar */}
