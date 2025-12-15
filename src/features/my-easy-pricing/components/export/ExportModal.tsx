@@ -2,7 +2,7 @@
 // ExportModal - Modal for exporting pricing tables to Excel/PDF
 // =============================================================================
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { X, FileSpreadsheet, FileText, Loader2, Eye, EyeOff, ChevronDown, ChevronRight } from 'lucide-react';
 import { PRICING_LABELS } from '../../constants/pricing.constants';
 import type { Product, IndirectCost, HiddenCost, TaxItem, Store } from '../../types/pricing.types';
@@ -84,6 +84,21 @@ export function ExportModal({
 
   // Collapsible sections state
   const [showCostsSection, setShowCostsSection] = useState(false);
+
+  // Keyboard shortcuts: ESC to close
+  const handleKeyDown = useCallback((e: KeyboardEvent) => {
+    if (!isOpen || isExporting) return;
+
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      onClose();
+    }
+  }, [isOpen, isExporting, onClose]);
+
+  useEffect(() => {
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [handleKeyDown]);
 
   if (!isOpen) return null;
 

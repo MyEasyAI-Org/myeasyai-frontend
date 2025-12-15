@@ -113,9 +113,9 @@ export function TutorialOverlay({
               at ${spotlightPosition.left + spotlightPosition.width / 2}px ${spotlightPosition.top + spotlightPosition.height / 2}px,
               transparent 0%,
               transparent 70%,
-              rgba(0, 0, 0, 0.75) 100%
+              rgba(0, 0, 0, 0.5) 100%
             )`
-          : 'rgba(0, 0, 0, 0.75)',
+          : 'rgba(0, 0, 0, 0.5)',
       }}
     >
       {/* Clickable area that doesn't block the target element */}
@@ -128,7 +128,7 @@ export function TutorialOverlay({
             width: spotlightPosition.width,
             height: spotlightPosition.height,
             borderRadius: '8px',
-            boxShadow: '0 0 0 9999px rgba(0, 0, 0, 0.75)',
+            boxShadow: '0 0 0 9999px rgba(0, 0, 0, 0.5)',
           }}
           onClick={(e) => e.stopPropagation()}
         />

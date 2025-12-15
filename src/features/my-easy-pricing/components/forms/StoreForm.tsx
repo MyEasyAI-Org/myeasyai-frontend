@@ -2,7 +2,7 @@
 // StoreForm - Modal form for creating/editing stores
 // =============================================================================
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { X, Loader2, Trash2, AlertTriangle } from 'lucide-react';
 import { PRICING_LABELS } from '../../constants/pricing.constants';
 import { Tooltip } from '../shared/Tooltip';
@@ -62,6 +62,21 @@ export function StoreForm({
       setIsDeleting(false);
     }
   }, [isOpen, editStore]);
+
+  // Keyboard shortcuts: ESC to close, ENTER to submit (when not in textarea)
+  const handleKeyDown = useCallback((e: KeyboardEvent) => {
+    if (!isOpen || isLoading || isDeleting) return;
+
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      onClose();
+    }
+  }, [isOpen, isLoading, isDeleting, onClose]);
+
+  useEffect(() => {
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [handleKeyDown]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

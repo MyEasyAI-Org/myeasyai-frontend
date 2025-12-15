@@ -2,7 +2,7 @@
 // ProductModal - Modal form for creating/editing products
 // =============================================================================
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { X, Loader2, Trash2, AlertTriangle } from 'lucide-react';
 import { PRICING_LABELS, CALCULATION_CONSTANTS } from '../../constants/pricing.constants';
 import { Tooltip } from '../shared/Tooltip';
@@ -115,6 +115,21 @@ export function ProductModal({
       setTouched({});
     }
   }, [isOpen, editProduct]);
+
+  // Keyboard shortcuts: ESC to close
+  const handleKeyDown = useCallback((e: KeyboardEvent) => {
+    if (!isOpen || isLoading || isDeleting) return;
+
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      onClose();
+    }
+  }, [isOpen, isLoading, isDeleting, onClose]);
+
+  useEffect(() => {
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [handleKeyDown]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
