@@ -4,6 +4,9 @@ import { contentRewritingService } from '../../../services/ContentRewritingServi
 import type { CountryAddressConfig } from '../../../constants/countries';
 import type { Message } from '../hooks/useConversationFlow';
 import type { BusinessArea, SectionKey } from '../hooks/useSiteData';
+import { siteManagementService, type SiteData } from '../../../services/SiteManagementService';
+import { authService } from '../../../services/AuthServiceV2';
+import { generateSiteHTML } from '../utils/siteGenerator';
 
 /**
  * Custom hook que centraliza todos os handlers do MyEasyWebsite
@@ -21,6 +24,7 @@ export function useMyEasyWebsiteHandlers({
   setSitePreviewUrl,
   setShowSummary,
   setSummaryMessageIndex,
+  onSiteCreated,
 }: {
   conversation: any;
   site: any;
@@ -34,6 +38,7 @@ export function useMyEasyWebsiteHandlers({
   setSitePreviewUrl: Dispatch<SetStateAction<string>>;
   setShowSummary: Dispatch<SetStateAction<boolean>>;
   setSummaryMessageIndex: Dispatch<SetStateAction<number | null>>;
+  onSiteCreated?: (site: SiteData) => void;
 }) {
   // Função auxiliar para salvar snapshot
   const saveSnapshot = () => {
@@ -733,16 +738,87 @@ export function useMyEasyWebsiteHandlers({
 
       await new Promise((resolve) => setTimeout(resolve, 1500));
 
+      // Gerar HTML do site
+      const generatedHtml = generateSiteHTML(site.siteData, site);
+
+      // Salvar site no banco imediatamente (status: building)
+      const user = authService.getUser();
+      if (user?.uuid) {
+        const slug = correctedName.toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-');
+
+        try {
+          // Salvar TODOS os dados do site para poder restaurar depois
+          const fullSiteData = {
+            // Dados básicos
+            businessName: correctedName,
+            tagline: site.siteData.slogan,
+            description: site.siteData.description,
+            phone: site.siteData.phone,
+            email: site.siteData.email,
+            address: site.siteData.address,
+
+            // Configurações visuais
+            colors: site.siteData.colors, // JSON string com todas as cores
+            selectedPaletteId: site.siteData.selectedPaletteId,
+            vibe: site.siteData.vibe,
+            area: site.siteData.area,
+
+            // Seções e conteúdo
+            sections: site.siteData.sections,
+            services: site.siteData.services,
+            serviceDescriptions: site.siteData.serviceDescriptions,
+            gallery: site.siteData.gallery,
+            faq: site.siteData.faq,
+            pricing: site.siteData.pricing,
+            team: site.siteData.team,
+            testimonials: site.siteData.testimonials,
+            heroStats: site.siteData.heroStats,
+            features: site.siteData.features,
+            aboutContent: site.siteData.aboutContent,
+
+            // Apps
+            appPlayStore: site.siteData.appPlayStore,
+            appAppStore: site.siteData.appAppStore,
+            showPlayStore: site.siteData.showPlayStore,
+            showAppStore: site.siteData.showAppStore,
+
+            // HTML gerado
+            generatedHtml,
+
+            // Estado da conversa (para restaurar depois)
+            conversationMessages: conversation.messages,
+            conversationStep: conversation.currentStep,
+          };
+
+          const createResult = await siteManagementService.createSite({
+            user_uuid: user.uuid,
+            slug,
+            name: correctedName,
+            business_type: site.siteData.area || 'business',
+            status: 'building',
+            settings: JSON.stringify(fullSiteData),
+          });
+
+          if (createResult.success && createResult.data) {
+            console.log('✅ [handleGenerateSite] Site salvo no banco:', createResult.data.slug);
+            onSiteCreated?.(createResult.data);
+          }
+        } catch (err) {
+          console.error('❌ [handleGenerateSite] Erro ao salvar site no banco:', err);
+        }
+      }
+
       setGeneratedSite(`site-${Date.now()}`);
+      const domain = import.meta.env.VITE_SITE_DOMAIN || 'myeasyai.com';
       setSitePreviewUrl(
-        `https://${site.siteData.name.toLowerCase().replace(/\s+/g, '-')}.netlify.app`,
+        `https://${correctedName.toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-')}.${domain}`,
       );
       setIsGenerating(false);
 
       const successMessage: Message = {
         role: 'assistant',
         content:
-          '🎊 Seu site foi gerado com sucesso!\n\n✨ Todos os textos foram otimizados por IA para máxima conversão!\n\nVocê pode visualizá-lo no preview ao lado.\n\nAgora você pode:\n✏️ Editar cores e textos\n👁️ Abrir em uma nova aba\n🚀 Publicar no Netlify!',
+          '🎊 Seu site foi gerado com sucesso!\n\n✨ Todos os textos foram otimizados por IA para máxima conversão!\n\nVocê pode visualizá-lo no preview ao lado.\n\nAgora você pode:\n✏️ Editar cores e textos\n👁️ Abrir em uma nova aba\n🚀 Publicar!',
       };
 
       conversation.addMessage(successMessage);
@@ -758,8 +834,9 @@ export function useMyEasyWebsiteHandlers({
 
       setTimeout(() => {
         setGeneratedSite(`site-${Date.now()}`);
+        const domain = import.meta.env.VITE_SITE_DOMAIN || 'myeasyai.com';
         setSitePreviewUrl(
-          `https://${site.siteData.name.toLowerCase().replace(/\s+/g, '-')}.netlify.app`,
+          `https://${site.siteData.name.toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-')}.${domain}`,
         );
       }, 1000);
     }

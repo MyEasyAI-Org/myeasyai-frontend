@@ -20,14 +20,39 @@ import { BusinessGuru } from './features/business-guru/BusinessGuru';
 import { MyEasyWebsite } from './features/my-easy-website/MyEasyWebsite';
 import { useInactivityTimeout } from './hooks/useInactivityTimeout';
 import { useModalState } from './hooks/useModalState';
+import { useRealtimeSync } from './hooks/useRealtimeSync';
 import { supabase } from './lib/api-clients/supabase-client';
-import { userManagementService } from './services/UserManagementService';
+import { userManagementServiceV2 } from './services/UserManagementServiceV2';
+import { authService, type AuthUser } from './services/AuthServiceV2';
 
 // 🎬 CONFIGURATION: Enable/Disable Splash Screen
 // Change to `true` to re-enable the splash screen "Welcome to the future of AI"
 const ENABLE_SPLASH_SCREEN = false;
 
+/**
+ * Converte AuthUser do AuthServiceV2 para formato compatível com Supabase User
+ * Permite usar o mesmo fluxo de UI para ambos os provedores
+ */
+function authUserToUser(authUser: AuthUser | null): User | null {
+  if (!authUser) return null;
+  return {
+    id: authUser.uuid,
+    email: authUser.email,
+    user_metadata: {
+      full_name: authUser.name,
+      preferred_name: authUser.preferred_name,
+      avatar_url: authUser.avatar_url,
+    },
+    app_metadata: {},
+    aud: 'authenticated',
+    created_at: '',
+  } as User;
+}
+
 function App() {
+  // Inicializa sincronização bidirecional Supabase ↔ D1
+  useRealtimeSync();
+
   const loginModal = useModalState();
   const signupModal = useModalState();
   const [user, setUser] = useState<User | null>(null);
@@ -52,6 +77,7 @@ function App() {
     return !localStorage.getItem('userName');
   });
   const [dashboardKey, setDashboardKey] = useState(Date.now());
+  const [dashboardInitialTab, setDashboardInitialTab] = useState<'overview' | 'subscription' | 'products' | 'usage' | 'settings' | 'profile'>('overview');
   const isUserActionRef = useRef(false); // Track if action is user-initiated
   const wasPageHiddenRef = useRef(false); // Track if page was hidden (tab switch/minimize)
   const ignoreNextAuthEventRef = useRef(false); // Ignore auth events after visibility change
@@ -68,20 +94,18 @@ function App() {
   };
   const closeSignup = () => signupModal.close();
 
-  // Function to fetch user data from database
+  // Function to fetch user data from database (D1 Primary + Supabase Fallback)
   const fetchUserData = async (userEmail: string) => {
     try {
-      const { data, error } = await supabase
-        .from('users')
-        .select('name, preferred_name, avatar_url')
-        .eq('email', userEmail)
-        .single();
+      // Use UserManagementServiceV2 (D1 Primary + Supabase Fallback)
+      const result = await userManagementServiceV2.getUserProfile(userEmail);
 
-      if (error) {
-        console.error('Erro ao buscar dados do usuário:', error);
+      if (!result.success || !result.data) {
+        console.error('Erro ao buscar dados do usuário:', result.error);
         return { name: 'Usuário', avatarUrl: undefined };
       }
 
+      const data = result.data;
       let displayName = 'Usuário';
 
       // Prioritize preferred_name, otherwise use first name
@@ -109,15 +133,15 @@ function App() {
     }
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     // Mark as user-initiated action
     isUserActionRef.current = true;
-    
+
     // Enable loading bar FIRST
     setIsAuthLoading(true);
 
     // Use setTimeout to avoid blocking - clear UI immediately but after bar renders
-    setTimeout(() => {
+    setTimeout(async () => {
       // Clear React states for UI to update (dropdown menu disappears)
       setUser(null);
       setUserName('Usuário');
@@ -128,7 +152,7 @@ function App() {
       signupModal.close();
       setIsCheckingAuth(false);
 
-      // Clear localStorage
+      // Clear localStorage (Supabase keys)
       const localKeys = Object.keys(localStorage);
       localKeys.forEach((key) => {
         if (key.startsWith('sb-')) {
@@ -148,10 +172,13 @@ function App() {
         }
       });
 
-      // Sign out from Supabase
-      supabase.auth.signOut().catch((error) => {
+      // Sign out from AuthServiceV2 (handles both Cloudflare and Supabase)
+      try {
+        await authService.signOut();
+        console.log('✅ [APP] Logout successful via AuthServiceV2');
+      } catch (error) {
         console.error('Erro ao fazer logout:', error);
-      });
+      }
 
       // Disable loading bar after completion
       setTimeout(() => {
@@ -181,6 +208,12 @@ function App() {
 
   const goToBusinessGuru = () => {
     setCurrentView('businessguru');
+  };
+
+  const goToSubscription = () => {
+    setDashboardInitialTab('subscription');
+    setCurrentView('dashboard');
+    setDashboardKey(Date.now()); // Force remount to apply new initial tab
   };
 
   const handleOnboardingComplete = () => {
@@ -213,7 +246,7 @@ function App() {
         // Page is now visible again after being hidden
         ignoreNextAuthEventRef.current = true;
         wasPageHiddenRef.current = false;
-        
+
         // Reset the ignore flag after a short delay to catch the revalidation event
         setTimeout(() => {
           ignoreNextAuthEventRef.current = false;
@@ -246,8 +279,106 @@ function App() {
     // Add click listener
     document.addEventListener('click', handleNavigationClick);
 
-    // Check current session
-    const checkUser = async () => {
+    // ==================== CLOUDFLARE AUTH CALLBACK ====================
+    // Handle OAuth callback from Cloudflare (when redirected with ?token=...)
+    const handleCloudflareCallback = async () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const cloudflareToken = urlParams.get('token');
+
+      if (cloudflareToken) {
+        console.log('🔄 [APP] Processing Cloudflare OAuth callback...');
+        setIsAuthLoading(true);
+        isUserActionRef.current = true;
+
+        try {
+          const result = await authService.handleAuthCallback();
+
+          if (result.success && result.user) {
+            console.log('✅ [APP] Cloudflare OAuth successful:', result.user.email);
+
+            // Convert AuthUser to User format for compatibility
+            const convertedUser = authUserToUser(result.user);
+            setUser(convertedUser);
+
+            // Fetch user data and update display name
+            if (result.user.email) {
+              const userData = await fetchUserData(result.user.email);
+              setUserName(userData.name);
+            }
+
+            // Check if needs onboarding
+            if (convertedUser) {
+              const needsOnboardingCheck = await userManagementServiceV2.checkUserNeedsOnboarding(
+                convertedUser,
+              );
+              setNeedsOnboarding(needsOnboardingCheck);
+
+              // Navigate based on onboarding status
+              if (needsOnboardingCheck) {
+                setCurrentView('home');
+                setTimeout(() => {
+                  onboardingModal.open();
+                }, 100);
+              } else {
+                setCurrentView('dashboard');
+              }
+            }
+
+            // Clean URL (remove token from address bar)
+            window.history.replaceState({}, document.title, window.location.pathname);
+          } else {
+            console.error('❌ [APP] Cloudflare OAuth failed:', result.error);
+          }
+        } catch (error) {
+          console.error('❌ [APP] Error processing Cloudflare callback:', error);
+        } finally {
+          setTimeout(() => {
+            setIsAuthLoading(false);
+            isUserActionRef.current = false;
+          }, 1500);
+        }
+
+        setLoading(false);
+        setIsCheckingAuth(false);
+        return true; // Indicates callback was handled
+      }
+      return false;
+    };
+
+    // ==================== INIT AUTH ====================
+    const initAuth = async () => {
+      // First, check if this is a Cloudflare OAuth callback
+      const wasCallback = await handleCloudflareCallback();
+      if (wasCallback) return;
+
+      // Then check AuthServiceV2 for existing session (Cloudflare or Supabase)
+      await authService.waitForInit();
+      const authUser = authService.getUser();
+
+      if (authUser) {
+        console.log('✅ [APP] Session restored from AuthServiceV2:', authUser.email);
+        const convertedUser = authUserToUser(authUser);
+        setUser(convertedUser);
+
+        if (authUser.email) {
+          const userData = await fetchUserData(authUser.email);
+          setUserName(userData.name);
+        }
+
+        if (convertedUser) {
+          const needsOnboardingCheck = await userManagementServiceV2.checkUserNeedsOnboarding(
+            convertedUser,
+          );
+          setNeedsOnboarding(needsOnboardingCheck);
+        }
+
+        setLoading(false);
+        setIsCheckingAuth(false);
+        isInitialLoadRef.current = false;
+        return;
+      }
+
+      // Fallback: Check Supabase session directly
       try {
         const {
           data: { session },
@@ -268,7 +399,7 @@ function App() {
       }
     };
 
-    checkUser();
+    initAuth();
 
     // Safety fallback - ensure loading is false after 5 seconds
     const timeoutId = setTimeout(() => {
@@ -276,17 +407,50 @@ function App() {
       setIsCheckingAuth(false);
     }, 5000);
 
-    // Listen for authentication changes
+    // ==================== AUTHSERVICE V2 LISTENER ====================
+    // Listen for auth state changes from AuthServiceV2 (Cloudflare PRIMARY)
+    const unsubscribeAuthV2 = authService.onAuthStateChange(async (authUser) => {
+      console.log('🔄 [APP] AuthServiceV2 state change:', authUser?.email || 'null');
+
+      if (authUser && !isInitialLoadRef.current) {
+        const convertedUser = authUserToUser(authUser);
+        setUser(convertedUser);
+
+        if (authUser.email) {
+          const userData = await fetchUserData(authUser.email);
+          setUserName(userData.name);
+        }
+      } else if (!authUser) {
+        // Only clear if this is intentional logout (not initial load)
+        if (!isInitialLoadRef.current && user) {
+          setUser(null);
+          setUserName('Usuário');
+          setUserAvatarUrl(undefined);
+          setCurrentView('home');
+          setNeedsOnboarding(false);
+        }
+      }
+    });
+
+    // ==================== SUPABASE LISTENER (FALLBACK) ====================
+    // Listen for authentication changes from Supabase (FALLBACK)
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
+      // Only process Supabase events if we're using Supabase as auth source
+      const authSource = authService.getAuthSource();
+      if (authSource === 'cloudflare') {
+        console.log('📢 [APP] Ignoring Supabase event (using Cloudflare):', event);
+        return;
+      }
+
       console.log('Auth event:', event, 'isInitialLoad:', isInitialLoadRef.current);
       setUser(session?.user ?? null);
 
       // Process session restoration silently (without loading bar)
       if (event === 'INITIAL_SESSION') {
         if (session?.user) {
-          await userManagementService.ensureUserInDatabase(session.user);
+          await userManagementServiceV2.ensureUserInDatabase(session.user);
 
           // Fetch user data
           if (session.user.email) {
@@ -294,7 +458,7 @@ function App() {
             setUserName(userData.name);
           }
 
-          const needsOnboardingCheck = await userManagementService.checkUserNeedsOnboarding(
+          const needsOnboardingCheck = await userManagementServiceV2.checkUserNeedsOnboarding(
             session.user,
           );
           setNeedsOnboarding(needsOnboardingCheck);
@@ -320,7 +484,7 @@ function App() {
 
         // Register user in users table (especially for social login)
         if (session?.user) {
-          await userManagementService.ensureUserInDatabase(session.user);
+          await userManagementServiceV2.ensureUserInDatabase(session.user);
 
           // Fetch user data
           if (session.user.email) {
@@ -329,7 +493,7 @@ function App() {
           }
 
           // Check if needs onboarding
-          const needsOnboardingCheck = await userManagementService.checkUserNeedsOnboarding(
+          const needsOnboardingCheck = await userManagementServiceV2.checkUserNeedsOnboarding(
             session.user,
           );
           setNeedsOnboarding(needsOnboardingCheck);
@@ -374,6 +538,7 @@ function App() {
 
     return () => {
       subscription.unsubscribe();
+      unsubscribeAuthV2();
       clearTimeout(timeoutId);
       document.removeEventListener('click', handleNavigationClick);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
@@ -395,9 +560,12 @@ function App() {
           onGoHome={goToHome}
           onGoToMyEasyWebsite={goToMyEasyWebsite}
           onGoToBusinessGuru={goToBusinessGuru}
+          initialTab={dashboardInitialTab}
           onLoadingComplete={() => {
             // Callback when dashboard loading finishes
             console.log('Dashboard loaded successfully!');
+            // Reset initial tab to overview for next time
+            setDashboardInitialTab('overview');
           }}
         />
       </>
@@ -405,7 +573,7 @@ function App() {
   }
 
   if (user && currentView === 'myeasywebsite') {
-    return <MyEasyWebsite onBackToDashboard={goToDashboard} />;
+    return <MyEasyWebsite onBackToDashboard={goToDashboard} onGoToSubscription={goToSubscription} />;
   }
 
   if (user && currentView === 'businessguru') {

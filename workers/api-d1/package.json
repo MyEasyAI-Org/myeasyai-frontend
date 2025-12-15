@@ -1,0 +1,29 @@
+{
+  "name": "myeasyai-api-d1",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "deploy:staging": "wrangler deploy --env staging",
+    "deploy:prod": "wrangler deploy --env production",
+    "db:create": "wrangler d1 create myeasyai-db",
+    "db:migrate": "wrangler d1 execute myeasyai-db --file=./migrations/0001_initial.sql",
+    "db:migrate:local": "wrangler d1 execute myeasyai-db --local --file=./migrations/0001_initial.sql",
+    "db:studio": "npx drizzle-kit studio",
+    "db:generate": "npx drizzle-kit generate",
+    "db:push": "npx drizzle-kit push",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "drizzle-orm": "^0.38.0",
+    "hono": "^4.6.0"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20241205.0",
+    "dotenv": "^17.2.3",
+    "drizzle-kit": "^0.30.0",
+    "typescript": "^5.7.0",
+    "wrangler": "^3.99.0"
+  }
+}

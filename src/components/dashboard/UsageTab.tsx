@@ -1,11 +1,12 @@
-import type { SubscriptionData } from '../../hooks/useUserData';
+import type { CadastralInfo, SubscriptionData } from '../../hooks/useUserData';
 import { calculateTokensPercentage } from '../../utils/dashboard/calculationUtils';
 
 type UsageTabProps = {
   subscription: SubscriptionData;
+  cadastralInfo: CadastralInfo;
 };
 
-export function UsageTab({ subscription }: UsageTabProps) {
+export function UsageTab({ subscription, cadastralInfo }: UsageTabProps) {
   return (
     <div className="space-y-6">
       <div>
@@ -67,17 +68,19 @@ export function UsageTab({ subscription }: UsageTabProps) {
           </h3>
           <div className="mt-4 space-y-4">
             <div className="flex items-center justify-between">
-              <span className="text-slate-400">Início do ciclo</span>
+              <span className="text-slate-400">Membro desde</span>
               <span className="font-semibold text-white">
-                {new Date(subscription.start_date).toLocaleDateString('pt-BR')}
+                {cadastralInfo.created_at
+                  ? new Date(cadastralInfo.created_at).toLocaleDateString('pt-BR')
+                  : 'Não informado'}
               </span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-slate-400">Próxima renovação</span>
               <span className="font-semibold text-white">
-                {new Date(
-                  new Date().setMonth(new Date().getMonth() + 1),
-                ).toLocaleDateString('pt-BR')}
+                {subscription.next_billing_date
+                  ? new Date(subscription.next_billing_date).toLocaleDateString('pt-BR')
+                  : 'Não definida'}
               </span>
             </div>
           </div>

@@ -1,11 +1,12 @@
 import * as flags from 'country-flag-icons/react/3x2';
 import {
   ArrowLeft,
+  Cloud,
   Eye,
-  Rocket,
+  Loader2,
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-import { NetlifyDeploy } from '../../components/NetlifyDeploy';
+import { CloudflareDeploy } from '../../components/CloudflareDeploy';
 import { SiteEditor } from '../../components/SiteEditor';
 import type { CountryAddressConfig } from '../../constants/countries';
 import { useAddressManagement } from './hooks/useAddressManagement';
@@ -18,16 +19,21 @@ import { InputModal } from './components/modals/InputModal';
 import { SectionsEditModal } from './components/modals/SectionsEditModal';
 import { ColorsEditModal } from './components/modals/ColorsEditModal';
 import { useMyEasyWebsiteHandlers } from './handlers/useMyEasyWebsiteHandlers';
+import { useUserSite } from './hooks/useUserSite';
+import { ExistingSitePanel } from './components/ExistingSitePanel';
 import { generateSiteHTML } from './utils/siteGenerator';
+import { siteManagementService, type SiteSettings } from '../../services/SiteManagementService';
 
 type MyEasyWebsiteProps = {
   onBackToDashboard?: () => void;
+  onGoToSubscription?: () => void;
 };
 
-export function MyEasyWebsite({ onBackToDashboard }: MyEasyWebsiteProps = {}) {
+export function MyEasyWebsite({ onBackToDashboard, onGoToSubscription }: MyEasyWebsiteProps = {}) {
   // Custom hooks - Centralized state management
   const colorPalettes = useColorPalettes();
   const addressManagement = useAddressManagement();
+  const userSite = useUserSite();
 
   // Conversation flow management
   const conversation = useConversationFlow({
@@ -124,11 +130,12 @@ export function MyEasyWebsite({ onBackToDashboard }: MyEasyWebsiteProps = {}) {
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedSite, setGeneratedSite] = useState<string | null>(null);
   const [showEditor, setShowEditor] = useState(false);
+  const [showExistingSitePanel, setShowExistingSitePanel] = useState(true); // Mostrar painel de projeto existente
   const [sitePreviewUrl, setSitePreviewUrl] = useState(
-    'https://seu-site.netlify.app',
+    'https://seu-site.myeasyai.com',
   );
   const [uploadedImages, setUploadedImages] = useState<string[]>([]);
-  const [showNetlifyModal, setShowNetlifyModal] = useState(false);
+  const [showDeployModal, setShowDeployModal] = useState(false);
   const [showCountryDropdown, setShowCountryDropdown] = useState(false);
   const [showSummary, setShowSummary] = useState(false);
   const [editingField, setEditingField] = useState<string | null>(null);
@@ -145,6 +152,11 @@ export function MyEasyWebsite({ onBackToDashboard }: MyEasyWebsiteProps = {}) {
     multiline?: boolean;
   } | null>(null);
   const [modalInputValue, setModalInputValue] = useState('');
+
+  // Estado do site atual sendo editado (para saber se é novo ou existente)
+  const [currentEditingSiteId, setCurrentEditingSiteId] = useState<number | null>(null);
+  const [currentEditingSiteSlug, setCurrentEditingSiteSlug] = useState<string | null>(null);
+  const [currentEditingSiteStatus, setCurrentEditingSiteStatus] = useState<'building' | 'active' | 'inactive' | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -246,6 +258,14 @@ export function MyEasyWebsite({ onBackToDashboard }: MyEasyWebsiteProps = {}) {
     setSitePreviewUrl,
     setShowSummary,
     setSummaryMessageIndex,
+    onSiteCreated: (createdSite) => {
+      // Atualizar estado local com o site criado
+      setCurrentEditingSiteId(createdSite.id ?? null);
+      setCurrentEditingSiteSlug(createdSite.slug);
+      setCurrentEditingSiteStatus(createdSite.status || 'building');
+      // Recarregar lista de sites
+      userSite.loadAllSites();
+    },
   });
 
   // Extrair funções auxiliares que são usadas no ChatPanel
@@ -297,17 +317,28 @@ export function MyEasyWebsite({ onBackToDashboard }: MyEasyWebsiteProps = {}) {
     conversation.goToStep(9.5);
   };
 
-  const handlePublishToNetlify = () => {
-    setShowNetlifyModal(true);
+  const handlePublishSite = () => {
+    setShowDeployModal(true);
   };
 
-  const handleDeploySuccess = (deployedSite: any) => {
-    setSitePreviewUrl(deployedSite.url);
-    setShowNetlifyModal(false);
+  const handleDeploySuccess = (result: { url: string; slug?: string }) => {
+    setSitePreviewUrl(result.url);
+    setShowDeployModal(false);
+
+    // Após publicação bem-sucedida, marcar como 'active' para travar o slug nas próximas vezes
+    setCurrentEditingSiteStatus('active');
+
+    // Se o slug mudou (primeira publicação), atualizar o slug atual
+    if (result.slug) {
+      setCurrentEditingSiteSlug(result.slug);
+    }
+
+    // Recarregar lista de sites para refletir as mudanças
+    userSite.loadAllSites();
 
     conversation.addMessage({
       role: 'assistant',
-      content: `🎉 Site publicado com sucesso!\n\nSeu site está disponível em:\n${deployedSite.url}\n\nVocê pode acessá-lo agora mesmo e compartilhar com seus clientes!`,
+      content: `Site publicado com sucesso!\n\nSeu site está disponível em:\n${result.url}\n\nVocê pode acessá-lo agora mesmo e compartilhar com seus clientes!`,
     });
   };
 
@@ -343,11 +374,11 @@ export function MyEasyWebsite({ onBackToDashboard }: MyEasyWebsiteProps = {}) {
                     <span>Abrir Site</span>
                   </button>
                   <button
-                    onClick={handlePublishToNetlify}
-                    className="flex items-center space-x-2 rounded-lg bg-gradient-to-r from-purple-600 to-blue-600 px-4 py-2 text-white hover:from-purple-700 hover:to-blue-700 transition-colors shadow-lg shadow-purple-500/50"
+                    onClick={handlePublishSite}
+                    className="flex items-center space-x-2 rounded-lg bg-gradient-to-r from-orange-500 to-amber-600 px-4 py-2 text-white hover:from-orange-600 hover:to-amber-700 transition-colors shadow-lg shadow-orange-500/50"
                   >
-                    <Rocket className="h-4 w-4" />
-                    <span>Publicar no Netlify</span>
+                    <Cloud className="h-4 w-4" />
+                    <span>Publicar Site</span>
                   </button>
                 </>
               )}
@@ -369,59 +400,238 @@ export function MyEasyWebsite({ onBackToDashboard }: MyEasyWebsiteProps = {}) {
 
       {/* Main Content */}
       <div className="flex h-[calc(100vh-4rem)]">
-        <ChatPanel
-          conversation={conversation}
-          site={site}
-          colorPalettes={colorPalettes}
-          addressManagement={addressManagement}
-          inputMessage={inputMessage}
-          setInputMessage={setInputMessage}
-          showCountryDropdown={showCountryDropdown}
-          setShowCountryDropdown={setShowCountryDropdown}
-          showSummary={showSummary}
-          summaryMessageIndex={summaryMessageIndex}
-          uploadedImages={uploadedImages}
-          setUploadedImages={setUploadedImages}
-          isGenerating={isGenerating}
-          showEditModal={showEditModal}
-          setShowEditModal={setShowEditModal}
-          editingField={editingField}
-          setEditingField={setEditingField}
-          handleAreaSelect={handlers.handleAreaSelect}
-          handleVibeSelect={handlers.handleVibeSelect}
-          handleSendMessage={handlers.handleSendMessage}
-          handleColorCategorySelect={handlers.handleColorCategorySelect}
-          handlePaletteSelect={handlers.handlePaletteSelect}
-          handleSectionSelect={handlers.handleSectionSelect}
-          handleConfirmSections={handlers.handleConfirmSections}
-          handleImageUpload={handlers.handleImageUpload}
-          handleCustomColors={handlers.handleCustomColors}
-          confirmAddress={handlers.confirmAddress}
-          correctAddress={handlers.correctAddress}
-          openInputModal={openInputModal}
-          goBack={goBack}
-          handleGenerateSite={handlers.handleGenerateSite}
-          askSectionQuestions={askSectionQuestions}
-          fileInputRef={fileInputRef}
-          messagesEndRef={messagesEndRef}
-        />
+        {/* Loading inicial - enquanto carrega os dados do usuário */}
+        {userSite.isLoading && showExistingSitePanel && (
+          <div className="w-full flex items-center justify-center">
+            <div className="flex flex-col items-center gap-4">
+              <Loader2 className="h-12 w-12 text-orange-400 animate-spin" />
+              <p className="text-slate-400 text-lg">Carregando seus sites...</p>
+            </div>
+          </div>
+        )}
 
-        <PreviewPanel
-          site={site}
-          generatedSite={generatedSite}
-          sitePreviewUrl={sitePreviewUrl}
-          isGenerating={isGenerating}
-          showEditor={showEditor}
-          setShowEditor={setShowEditor}
-        />
+        {/* Painel de projeto existente - mostra lista de sites ou cria novo */}
+        {!userSite.isLoading && showExistingSitePanel && (userSite.hasExistingSite || userSite.allUserSites.length > 0) && (
+          <div className="w-full flex items-start justify-center overflow-auto py-6">
+            <ExistingSitePanel
+              sites={userSite.allUserSites}
+              currentSite={userSite.userSite}
+              siteSettings={userSite.siteSettings}
+              isLoading={userSite.isLoading}
+              canCreateMore={userSite.canCreateSite}
+              sitesCount={userSite.sitesCount}
+              sitesLimit={userSite.sitesLimit}
+              onContinueEditing={(selectedSite) => {
+                // Selecionar o site e carregar no preview
+                userSite.selectSite(selectedSite);
+                // Marcar como site existente
+                setCurrentEditingSiteId(selectedSite.id ?? null);
+                setCurrentEditingSiteSlug(selectedSite.slug);
+                setCurrentEditingSiteStatus(selectedSite.status || 'building');
+
+                const settings = selectedSite.settings
+                  ? (typeof selectedSite.settings === 'string' ? JSON.parse(selectedSite.settings) : selectedSite.settings)
+                  : null;
+
+                if (settings) {
+                  // Restaurar TODOS os dados do site para o estado local
+                  site.setAllSiteData({
+                    area: settings.area || '',
+                    name: settings.businessName || selectedSite.name || '',
+                    slogan: settings.tagline || '',
+                    description: settings.description || '',
+                    vibe: settings.vibe || 'vibrant',
+                    colors: settings.colors || JSON.stringify({
+                      primary: '#6366F1',
+                      secondary: '#8B5CF6',
+                      accent: '#EC4899',
+                      dark: '#1E293B',
+                      light: '#F1F5F9',
+                    }),
+                    selectedPaletteId: settings.selectedPaletteId,
+                    sections: settings.sections || [],
+                    services: settings.services || [],
+                    gallery: settings.gallery || [],
+                    appPlayStore: settings.appPlayStore || '',
+                    appAppStore: settings.appAppStore || '',
+                    showPlayStore: settings.showPlayStore || false,
+                    showAppStore: settings.showAppStore || false,
+                    testimonials: settings.testimonials || [],
+                    address: settings.address || '',
+                    phone: settings.phone || '',
+                    email: settings.email || '',
+                    faq: settings.faq || [],
+                    pricing: settings.pricing || [],
+                    team: settings.team || [],
+                    heroStats: settings.heroStats,
+                    features: settings.features,
+                    aboutContent: settings.aboutContent,
+                    serviceDescriptions: settings.serviceDescriptions,
+                  });
+
+                  // Restaurar estado da conversa (se houver)
+                  if (settings.conversationMessages && Array.isArray(settings.conversationMessages)) {
+                    conversation.setAllMessages(settings.conversationMessages);
+                  }
+                  if (typeof settings.conversationStep === 'number') {
+                    conversation.goToStep(settings.conversationStep);
+                  }
+
+                  // Carregar o HTML gerado para o preview
+                  if (settings.generatedHtml) {
+                    setGeneratedSite(settings.generatedHtml);
+                  }
+                }
+
+                const domain = import.meta.env.VITE_SITE_DOMAIN || 'myeasyai.com';
+                setSitePreviewUrl(`https://${selectedSite.slug}.${domain}`);
+                setShowExistingSitePanel(false);
+              }}
+              onStartNew={() => {
+                // Limpar estado - é um site novo, sem slug travado
+                setCurrentEditingSiteId(null);
+                setCurrentEditingSiteSlug(null);
+                setCurrentEditingSiteStatus(null);
+                setGeneratedSite(null);
+                setShowExistingSitePanel(false);
+              }}
+              onDeleteSite={async (siteId) => {
+                await userSite.deleteSite(siteId);
+              }}
+              onUpgrade={() => {
+                // Navegar para página de planos (aba Assinatura)
+                onGoToSubscription?.();
+              }}
+            />
+          </div>
+        )}
+
+        {/* Chat e Preview - só mostra se não tem sites ou usuario escolheu criar/editar */}
+        {!userSite.isLoading && (!showExistingSitePanel || (userSite.allUserSites.length === 0 && !userSite.hasExistingSite)) && (
+          <>
+            <ChatPanel
+              conversation={conversation}
+              site={site}
+              colorPalettes={colorPalettes}
+              addressManagement={addressManagement}
+              inputMessage={inputMessage}
+              setInputMessage={setInputMessage}
+              showCountryDropdown={showCountryDropdown}
+              setShowCountryDropdown={setShowCountryDropdown}
+              showSummary={showSummary}
+              summaryMessageIndex={summaryMessageIndex}
+              uploadedImages={uploadedImages}
+              setUploadedImages={setUploadedImages}
+              isGenerating={isGenerating}
+              showEditModal={showEditModal}
+              setShowEditModal={setShowEditModal}
+              editingField={editingField}
+              setEditingField={setEditingField}
+              handleAreaSelect={handlers.handleAreaSelect}
+              handleVibeSelect={handlers.handleVibeSelect}
+              handleSendMessage={handlers.handleSendMessage}
+              handleColorCategorySelect={handlers.handleColorCategorySelect}
+              handlePaletteSelect={handlers.handlePaletteSelect}
+              handleSectionSelect={handlers.handleSectionSelect}
+              handleConfirmSections={handlers.handleConfirmSections}
+              handleImageUpload={handlers.handleImageUpload}
+              handleCustomColors={handlers.handleCustomColors}
+              confirmAddress={handlers.confirmAddress}
+              correctAddress={handlers.correctAddress}
+              openInputModal={openInputModal}
+              goBack={goBack}
+              handleGenerateSite={handlers.handleGenerateSite}
+              askSectionQuestions={askSectionQuestions}
+              fileInputRef={fileInputRef}
+              messagesEndRef={messagesEndRef}
+            />
+
+            <PreviewPanel
+              site={site}
+              generatedSite={generatedSite}
+              sitePreviewUrl={sitePreviewUrl}
+              isGenerating={isGenerating}
+              showEditor={showEditor}
+              setShowEditor={setShowEditor}
+            />
+          </>
+        )}
       </div>
 
       {/* Site Editor */}
       {showEditor && (
         <SiteEditor
           siteData={site.siteData}
-          onUpdate={(updatedData) => {
+          onUpdate={async (updatedData) => {
+            // Atualizar estado local
             site.setAllSiteData(updatedData);
+
+            // Persistir no banco de dados se tivermos um site existente
+            if (currentEditingSiteId && currentEditingSiteSlug) {
+              try {
+                // Regenerar o HTML com os novos dados
+                const generatedHtml = generateSiteHTML(updatedData, { siteData: updatedData });
+
+                // Montar o objeto completo de settings
+                const fullSiteData = {
+                  // Dados básicos
+                  businessName: updatedData.name,
+                  tagline: updatedData.slogan,
+                  description: updatedData.description,
+                  phone: updatedData.phone,
+                  email: updatedData.email,
+                  address: updatedData.address,
+
+                  // Configurações visuais
+                  colors: updatedData.colors,
+                  selectedPaletteId: updatedData.selectedPaletteId,
+                  vibe: updatedData.vibe,
+                  area: updatedData.area,
+
+                  // Seções e conteúdo
+                  sections: updatedData.sections,
+                  services: updatedData.services,
+                  serviceDescriptions: updatedData.serviceDescriptions,
+                  gallery: updatedData.gallery,
+                  faq: updatedData.faq,
+                  pricing: updatedData.pricing,
+                  team: updatedData.team,
+                  testimonials: updatedData.testimonials,
+                  heroStats: updatedData.heroStats,
+                  features: updatedData.features,
+                  aboutContent: updatedData.aboutContent,
+
+                  // Apps
+                  appPlayStore: updatedData.appPlayStore,
+                  appAppStore: updatedData.appAppStore,
+                  showPlayStore: updatedData.showPlayStore,
+                  showAppStore: updatedData.showAppStore,
+
+                  // HTML gerado
+                  generatedHtml,
+
+                  // Estado da conversa (manter o estado atual)
+                  conversationMessages: conversation.messages,
+                  conversationStep: conversation.currentStep,
+                };
+
+                const result = await siteManagementService.updateSite(
+                  currentEditingSiteId,
+                  currentEditingSiteSlug,
+                  { settings: JSON.stringify(fullSiteData) }
+                );
+
+                if (result.success) {
+                  console.log('✅ [SiteEditor] Site salvo no banco:', currentEditingSiteSlug);
+                  // Recarregar lista de sites para refletir as mudanças
+                  userSite.loadAllSites();
+                } else {
+                  console.error('❌ [SiteEditor] Erro ao salvar site:', result.error);
+                }
+              } catch (err) {
+                console.error('❌ [SiteEditor] Erro ao persistir alterações:', err);
+              }
+            }
           }}
           onClose={() => setShowEditor(false)}
         />
@@ -467,30 +677,33 @@ export function MyEasyWebsite({ onBackToDashboard }: MyEasyWebsiteProps = {}) {
         />
       )}
 
-      {/* Netlify Deploy Modal */}
-      {showNetlifyModal && (
+      {/* Cloudflare Deploy Modal */}
+      {showDeployModal && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-slate-900 border border-slate-700 rounded-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="bg-slate-900 border border-slate-700 rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-bold text-white flex items-center space-x-2">
-                  <Rocket className="h-6 w-6 text-purple-400" />
-                  <span>Publicar no Netlify</span>
-                </h2>
-                <button
-                  onClick={() => setShowNetlifyModal(false)}
-                  className="px-3 py-1 rounded-lg bg-purple-600/20 border border-purple-500 text-purple-300 text-xs font-semibold hover:bg-purple-600/30 transition-colors"
-                >
-                  Fechar
-                </button>
-              </div>
-
-              <NetlifyDeploy
+              <CloudflareDeploy
                 htmlContent={generateSiteHTML(site.siteData, site)}
                 siteName={site.siteData.name
                   .toLowerCase()
                   .replace(/[^a-z0-9-]/g, '-')}
+                siteSettings={{
+                  businessName: site.siteData.name,
+                  tagline: site.siteData.slogan,
+                  description: site.siteData.description,
+                  phone: site.siteData.phone,
+                  email: site.siteData.email,
+                  address: site.siteData.address,
+                  theme: {
+                    primaryColor: site.siteData.colors?.split(',')[0]?.trim(),
+                    secondaryColor: site.siteData.colors?.split(',')[1]?.trim(),
+                  },
+                } as SiteSettings}
                 onDeploySuccess={handleDeploySuccess}
+                onClose={() => setShowDeployModal(false)}
+                editingSiteId={currentEditingSiteId}
+                editingSiteSlug={currentEditingSiteSlug}
+                siteStatus={currentEditingSiteStatus}
               />
             </div>
           </div>
