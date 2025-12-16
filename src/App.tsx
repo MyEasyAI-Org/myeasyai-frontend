@@ -25,7 +25,6 @@ import { Packages } from './components/Packages';
 import { Preview } from './components/Preview';
 import { PWAInstallBanner } from './components/PWAInstallBanner';
 import { BusinessGuru } from './features/business-guru/BusinessGuru';
-import { MyEasyPricing } from './features/my-easy-pricing/MyEasyPricing';
 import { MyEasyCRM } from './features/my-easy-crm';
 import { MyEasyWebsite } from './features/my-easy-website/MyEasyWebsite';
 import { useInactivityTimeout } from './hooks/useInactivityTimeout';
@@ -502,25 +501,6 @@ function AppContent() {
         }
       />
 
-  if (user && currentView === 'myeasypricing') {
-    return <MyEasyPricing onBackToDashboard={goToDashboard} />;
-  }
-
-  return (
-    <main className="min-h-screen bg-gradient-to-br from-black-main to-blue-main">
-      {/* Toast Notifications */}
-      <Toaster
-        position="top-right"
-        richColors
-        closeButton
-        duration={4000}
-        toastOptions={{
-          style: {
-            background: '#1e293b',
-            color: '#f1f5f9',
-            border: '1px solid #334155',
-          },
-        }}
       <Route
         path={ROUTES.MY_EASY_WEBSITE}
         element={
