@@ -21,6 +21,7 @@ type DashboardProps = {
   onGoToMyEasyWebsite?: () => void;
   onGoToBusinessGuru?: () => void;
   onGoToMyEasyPricing?: () => void;
+  onGoToMyEasyCRM?: () => void;
   onLoadingComplete?: () => void;
 };
 
@@ -29,6 +30,7 @@ export function Dashboard({
   onGoToMyEasyWebsite,
   onGoToBusinessGuru,
   onGoToMyEasyPricing,
+  onGoToMyEasyCRM,
   onLoadingComplete,
 }: DashboardProps = {}) {
   // User data hook (manages profile, subscription, products, cadastral info, etc.)
@@ -49,12 +51,13 @@ export function Dashboard({
   } = useUserData();
 
   // Dashboard navigation hook (manages tabs and feature navigation)
-  const { activeTab, setActiveTab, navigateToProduct } =
+  const { activeTab, setActiveTab, navigateToProduct, goToCRM } =
     useDashboardNavigation({
       onGoHome,
       onGoToMyEasyWebsite,
       onGoToBusinessGuru,
       onGoToMyEasyPricing,
+      onGoToMyEasyCRM,
     });
 
   // Local UI state
@@ -143,6 +146,7 @@ export function Dashboard({
             userProducts={userProducts}
             isLoading={isLoading}
             onAccessProduct={navigateToProduct}
+            onGoToCRM={goToCRM}
           />
         )}
 

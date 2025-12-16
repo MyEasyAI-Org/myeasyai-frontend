@@ -36,3 +36,6 @@ dist-ssr
 /playwright/.cache/
 *.mp4
 *.webm
+
+# Documentation (local only)
+docs/

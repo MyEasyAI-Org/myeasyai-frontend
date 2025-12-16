@@ -1,4 +1,5 @@
 import { DollarSign, ExternalLink, Package } from 'lucide-react';
+import { ExternalLink, Package, Target } from 'lucide-react';
 import type { UserProduct } from '../../hooks/useUserData';
 import { ProductCard } from './ProductCard';
 
@@ -6,12 +7,14 @@ type ProductsTabProps = {
   userProducts: UserProduct[];
   isLoading: boolean;
   onAccessProduct: (productName: string) => void;
+  onGoToCRM?: () => void;
 };
 
 export function ProductsTab({
   userProducts,
   isLoading,
   onAccessProduct,
+  onGoToCRM,
 }: ProductsTabProps) {
   return (
     <div className="space-y-6">
@@ -84,6 +87,44 @@ export function ProductsTab({
                 onAccessProduct={onAccessProduct}
               />
             ))}
+
+            {/* MyEasyCRM Card - Always visible */}
+            <div className="rounded-lg border border-slate-800 bg-slate-900/50 p-6 hover:border-emerald-500 transition-colors">
+              <div className="flex items-start justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="rounded-lg bg-emerald-500/20 p-3">
+                    <Target className="h-6 w-6 text-emerald-400" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-white">
+                      MyEasyCRM
+                    </h3>
+                    <span className="inline-block mt-1 rounded-full bg-emerald-500/20 text-emerald-400 px-2 py-1 text-xs font-semibold">
+                      Ativo
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-4 space-y-2 text-sm">
+                <p className="text-slate-400">
+                  Gerencie contatos, empresas, pipeline de vendas, tarefas e atividades.
+                </p>
+              </div>
+
+              <div className="mt-6 flex space-x-2">
+                <button
+                  onClick={onGoToCRM}
+                  className="flex-1 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 transition-colors flex items-center justify-center space-x-2"
+                >
+                  <ExternalLink className="h-4 w-4" />
+                  <span>Acessar</span>
+                </button>
+                <button className="rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-sm text-white hover:bg-slate-700 transition-colors">
+                  Gerenciar
+                </button>
+              </div>
+            </div>
           </div>
 
           {/* Summary Card - only show if user has products */}
@@ -136,6 +177,59 @@ export function ProductsTab({
               </div>
             </div>
           )}
+        </>
+      ) : (
+        <>
+          {/* MyEasyCRM Card - Always visible even without other products */}
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            <div className="rounded-lg border border-slate-800 bg-slate-900/50 p-6 hover:border-emerald-500 transition-colors">
+              <div className="flex items-start justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="rounded-lg bg-emerald-500/20 p-3">
+                    <Target className="h-6 w-6 text-emerald-400" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-white">
+                      MyEasyCRM
+                    </h3>
+                    <span className="inline-block mt-1 rounded-full bg-emerald-500/20 text-emerald-400 px-2 py-1 text-xs font-semibold">
+                      Ativo
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-4 space-y-2 text-sm">
+                <p className="text-slate-400">
+                  Gerencie contatos, empresas, pipeline de vendas, tarefas e atividades.
+                </p>
+              </div>
+
+              <div className="mt-6 flex space-x-2">
+                <button
+                  onClick={onGoToCRM}
+                  className="flex-1 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 transition-colors flex items-center justify-center space-x-2"
+                >
+                  <ExternalLink className="h-4 w-4" />
+                  <span>Acessar</span>
+                </button>
+                <button className="rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-sm text-white hover:bg-slate-700 transition-colors">
+                  Gerenciar
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div className="rounded-lg border border-slate-800 bg-slate-900/50 p-12 text-center">
+            <Package className="mx-auto h-16 w-16 text-slate-600" />
+            <h3 className="mt-4 text-xl font-semibold text-white">
+              Nenhum outro produto ativo
+            </h3>
+            <p className="mt-2 text-slate-400">
+              Você ainda não possui outros produtos ativos. Explore os produtos
+              disponíveis abaixo!
+            </p>
+          </div>
         </>
       )}
 

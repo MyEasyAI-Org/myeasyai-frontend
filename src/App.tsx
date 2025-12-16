@@ -1,7 +1,15 @@
-import { useEffect, useRef, useState } from 'react';
-import './App.css';
 import type { User } from '@supabase/supabase-js';
+import { useEffect, useRef, useState } from 'react';
+import {
+  BrowserRouter,
+  Navigate,
+  Route,
+  Routes,
+  useLocation,
+  useNavigate,
+} from 'react-router-dom';
 import { Toaster } from 'sonner';
+import './App.css';
 import { Courses } from './components/Courses';
 import { Dashboard } from './components/Dashboard';
 import { Features } from './components/Features';
@@ -18,26 +26,71 @@ import { Preview } from './components/Preview';
 import { PWAInstallBanner } from './components/PWAInstallBanner';
 import { BusinessGuru } from './features/business-guru/BusinessGuru';
 import { MyEasyPricing } from './features/my-easy-pricing/MyEasyPricing';
+import { MyEasyCRM } from './features/my-easy-crm';
 import { MyEasyWebsite } from './features/my-easy-website/MyEasyWebsite';
 import { useInactivityTimeout } from './hooks/useInactivityTimeout';
 import { useModalState } from './hooks/useModalState';
 import { supabase } from './lib/api-clients/supabase-client';
+import { ROUTES } from './router';
 import { userManagementService } from './services/UserManagementService';
 
-// 🎬 CONFIGURATION: Enable/Disable Splash Screen
+// Configuration: Enable/Disable Splash Screen
 // Change to `true` to re-enable the splash screen "Welcome to the future of AI"
 const ENABLE_SPLASH_SCREEN = false;
 
-function App() {
+/**
+ * ProtectedRoute - Component that protects routes requiring authentication
+ */
+function ProtectedRoute({
+  children,
+  user,
+  needsOnboarding,
+  onOpenOnboarding,
+  isLoading,
+}: {
+  children: React.ReactNode;
+  user: User | null;
+  needsOnboarding: boolean;
+  onOpenOnboarding: () => void;
+  isLoading: boolean;
+}) {
+  const location = useLocation();
+
+  // Wait for auth check to complete before redirecting
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-black-main to-blue-main flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <Navigate to={ROUTES.HOME} state={{ from: location }} replace />;
+  }
+
+  if (needsOnboarding) {
+    onOpenOnboarding();
+    return <Navigate to={ROUTES.HOME} replace />;
+  }
+
+  return <>{children}</>;
+}
+
+/**
+ * AppContent - Main application content with routing logic
+ * Separated to allow useNavigate hook usage inside BrowserRouter
+ */
+function AppContent() {
+  const navigate = useNavigate();
+
   const loginModal = useModalState();
   const signupModal = useModalState();
   const [user, setUser] = useState<User | null>(null);
   const [userName, setUserName] = useState<string>(() => {
-    // Try to load from localStorage on initialization
     return localStorage.getItem('userName') || 'Usuário';
   });
   const [userAvatarUrl, setUserAvatarUrl] = useState<string | undefined>(() => {
-    // Try to load from localStorage on initialization
     return localStorage.getItem('userAvatarUrl') || undefined;
   });
   const [loading, setLoading] = useState(true);
@@ -49,22 +102,21 @@ function App() {
   const [isAuthLoading, setIsAuthLoading] = useState(false);
   const isInitialLoadRef = useRef(true);
   const [isCheckingAuth, setIsCheckingAuth] = useState(() => {
-    // If data is already in localStorage, no need to show loading
     return !localStorage.getItem('userName');
   });
   const [dashboardKey, setDashboardKey] = useState(Date.now());
-  const isUserActionRef = useRef(false); // Track if action is user-initiated
-  const wasPageHiddenRef = useRef(false); // Track if page was hidden (tab switch/minimize)
-  const ignoreNextAuthEventRef = useRef(false); // Ignore auth events after visibility change
+  const isUserActionRef = useRef(false);
+  const wasPageHiddenRef = useRef(false);
+  const ignoreNextAuthEventRef = useRef(false);
 
   const openLogin = () => {
-    isUserActionRef.current = true; // Mark as user action
+    isUserActionRef.current = true;
     loginModal.open();
   };
   const closeLogin = () => loginModal.close();
 
   const openSignup = () => {
-    isUserActionRef.current = true; // Mark as user action
+    isUserActionRef.current = true;
     signupModal.open();
   };
   const closeSignup = () => signupModal.close();
@@ -85,15 +137,12 @@ function App() {
 
       let displayName = 'Usuário';
 
-      // Prioritize preferred_name, otherwise use first name
       if (data?.preferred_name) {
         displayName = data.preferred_name;
       } else if (data?.name) {
-        // Get only the first name
         displayName = data.name.split(' ')[0];
       }
 
-      // Save to localStorage to persist between reloads
       localStorage.setItem('userName', displayName);
       if (data?.avatar_url) {
         localStorage.setItem('userAvatarUrl', data.avatar_url);
@@ -111,77 +160,71 @@ function App() {
   };
 
   const handleLogout = () => {
-    // Mark as user-initiated action
     isUserActionRef.current = true;
-    
-    // Enable loading bar FIRST
     setIsAuthLoading(true);
 
-    // Use setTimeout to avoid blocking - clear UI immediately but after bar renders
     setTimeout(() => {
-      // Clear React states for UI to update (dropdown menu disappears)
       setUser(null);
       setUserName('Usuário');
-      setCurrentView('home');
       setNeedsOnboarding(false);
       onboardingModal.close();
       loginModal.close();
       signupModal.close();
       setIsCheckingAuth(false);
 
-      // Clear localStorage
       const localKeys = Object.keys(localStorage);
-      localKeys.forEach((key) => {
+      for (const key of localKeys) {
         if (key.startsWith('sb-')) {
           localStorage.removeItem(key);
         }
-      });
-      // Clear user profile data
+      }
       localStorage.removeItem('userName');
       localStorage.removeItem('userAvatarUrl');
       localStorage.removeItem('userProfile');
 
-      // Clear sessionStorage
       const sessionKeys = Object.keys(sessionStorage);
-      sessionKeys.forEach((key) => {
+      for (const key of sessionKeys) {
         if (key.startsWith('sb-')) {
           sessionStorage.removeItem(key);
         }
-      });
+      }
 
-      // Sign out from Supabase
       supabase.auth.signOut().catch((error) => {
         console.error('Erro ao fazer logout:', error);
       });
 
-      // Disable loading bar after completion
+      // Navigate to home after logout
+      navigate(ROUTES.HOME);
+
       setTimeout(() => {
         setIsAuthLoading(false);
       }, 2500);
-    }, 50); // Minimum delay for bar to render
+    }, 50);
   };
 
   const goToDashboard = () => {
     if (needsOnboarding) {
       onboardingModal.open();
     } else {
-      // Go directly to dashboard - loading will be done by Dashboard itself
-      setCurrentView('dashboard');
-      // Force Dashboard remount to reload data
       setDashboardKey(Date.now());
+      navigate(ROUTES.DASHBOARD);
     }
   };
 
   const goToHome = () => {
-    setCurrentView('home');
+    navigate(ROUTES.HOME);
   };
 
   const goToMyEasyWebsite = () => {
-    setCurrentView('myeasywebsite');
+    navigate(ROUTES.MY_EASY_WEBSITE);
   };
 
   const goToBusinessGuru = () => {
-    setCurrentView('businessguru');
+    navigate(ROUTES.BUSINESS_GURU);
+  };
+
+  const goToMyEasyCRM = () => {
+    navigate(ROUTES.MY_EASY_CRM);
   };
 
   const goToMyEasyPricing = () => {
@@ -191,67 +234,36 @@ function App() {
   const handleOnboardingComplete = () => {
     onboardingModal.close();
     setNeedsOnboarding(false);
-
-    // Go directly to dashboard - loading will be done by Dashboard itself
-    setCurrentView('dashboard');
+    navigate(ROUTES.DASHBOARD);
   };
 
   const closeOnboarding = () => {
     onboardingModal.close();
-    // Keep needsOnboarding as true if user closes without completing
   };
 
   // Inactivity timer - 10 minutes (600000ms)
   useInactivityTimeout({
-    timeout: 10 * 60 * 1000, // 10 minutes
+    timeout: 10 * 60 * 1000,
     onTimeout: handleLogout,
-    enabled: !!user, // Only enable if there's a logged in user
+    enabled: !!user,
   });
 
   useEffect(() => {
-    // Monitor page visibility to ignore auth events when tab becomes visible again
     const handleVisibilityChange = () => {
       if (document.hidden) {
-        // Page is now hidden (tab switched away or minimized)
         wasPageHiddenRef.current = true;
       } else if (wasPageHiddenRef.current) {
-        // Page is now visible again after being hidden
         ignoreNextAuthEventRef.current = true;
         wasPageHiddenRef.current = false;
-        
-        // Reset the ignore flag after a short delay to catch the revalidation event
+
         setTimeout(() => {
           ignoreNextAuthEventRef.current = false;
-        }, 2000); // 2 second window to ignore auth events after tab restore
+        }, 2000);
       }
     };
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
-    // Intercept clicks on navigation links
-    const handleNavigationClick = (e: MouseEvent) => {
-      const target = e.target as HTMLElement;
-      const link = target.closest('a');
-
-      if (link && link.href) {
-        const url = new URL(link.href);
-        if (url.pathname === '/myeasywebsite') {
-          e.preventDefault();
-          setCurrentView('myeasywebsite');
-        } else if (url.pathname === '/business-guru') {
-          e.preventDefault();
-          setCurrentView('businessguru');
-        } else if (url.pathname === '/') {
-          e.preventDefault();
-          setCurrentView('home');
-        }
-      }
-    };
-
-    // Add click listener
-    document.addEventListener('click', handleNavigationClick);
-
-    // Check current session
     const checkUser = async () => {
       try {
         const {
@@ -259,7 +271,6 @@ function App() {
         } = await supabase.auth.getSession();
         setUser(session?.user ?? null);
 
-        // Fetch user data if there's a session
         if (session?.user?.email) {
           const userData = await fetchUserData(session.user.email);
           setUserName(userData.name);
@@ -275,25 +286,21 @@ function App() {
 
     checkUser();
 
-    // Safety fallback - ensure loading is false after 5 seconds
     const timeoutId = setTimeout(() => {
       setLoading(false);
       setIsCheckingAuth(false);
     }, 5000);
 
-    // Listen for authentication changes
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log('Auth event:', event, 'isInitialLoad:', isInitialLoadRef.current);
       setUser(session?.user ?? null);
 
-      // Process session restoration silently (without loading bar)
       if (event === 'INITIAL_SESSION') {
         if (session?.user) {
           await userManagementService.ensureUserInDatabase(session.user);
 
-          // Fetch user data
           if (session.user.email) {
             const userData = await fetchUserData(session.user.email);
             setUserName(userData.name);
@@ -304,86 +311,73 @@ function App() {
           );
           setNeedsOnboarding(needsOnboardingCheck);
         }
-        // Mark that initial load was completed
         isInitialLoadRef.current = false;
       }
 
-      // Process intentional login (email, OAuth, etc)
       if (event === 'SIGNED_IN' && !isInitialLoadRef.current) {
-        // IGNORE auth events that occur after tab visibility change (revalidation)
         if (ignoreNextAuthEventRef.current) {
           console.log('Ignoring SIGNED_IN event after tab visibility change');
-          return; // Exit early, don't process this event at all
+          return;
         }
 
-        // Enable loading bar ONLY if this is a user-initiated action
         if (isUserActionRef.current) {
           setIsAuthLoading(true);
         }
         loginModal.close();
         signupModal.close();
 
-        // Register user in users table (especially for social login)
         if (session?.user) {
           await userManagementService.ensureUserInDatabase(session.user);
 
-          // Fetch user data
           if (session.user.email) {
             const userData = await fetchUserData(session.user.email);
             setUserName(userData.name);
           }
 
-          // Check if needs onboarding
           const needsOnboardingCheck = await userManagementService.checkUserNeedsOnboarding(
             session.user,
           );
           setNeedsOnboarding(needsOnboardingCheck);
 
-          // If needs onboarding, stay on home and show onboarding modal
-          // Only go to dashboard after onboarding is completed
           if (needsOnboardingCheck) {
-            setCurrentView('home');
+            navigate(ROUTES.HOME);
             setTimeout(() => {
               onboardingModal.open();
             }, 100);
           } else {
-            // Navigate to dashboard after successful login if no onboarding needed
-            setCurrentView('dashboard');
+            navigate(ROUTES.DASHBOARD);
           }
 
-          // Disable loading bar after completion (only if it was enabled)
           if (isUserActionRef.current) {
             setTimeout(() => {
               setIsAuthLoading(false);
-              isUserActionRef.current = false; // Reset flag
+              isUserActionRef.current = false;
             }, 1500);
           }
         }
       }
 
-      // Clear states after logout
       if (event === 'SIGNED_OUT') {
         setUser(null);
         setUserName('Usuário');
         setUserAvatarUrl(undefined);
-        setCurrentView('home');
         setNeedsOnboarding(false);
         onboardingModal.close();
         loginModal.close();
         signupModal.close();
         setIsAuthLoading(false);
-        isInitialLoadRef.current = true; // Reset flag for next login
-        isUserActionRef.current = false; // Reset user action flag
+        isInitialLoadRef.current = true;
+        isUserActionRef.current = false;
+        navigate(ROUTES.HOME);
       }
     });
 
     return () => {
       subscription.unsubscribe();
       clearTimeout(timeoutId);
-      document.removeEventListener('click', handleNavigationClick);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, []);
+  }, [navigate]);
 
   if (loading && ENABLE_SPLASH_SCREEN) {
     return <LoadingIntro />;
@@ -413,10 +407,100 @@ function App() {
   if (user && currentView === 'myeasywebsite') {
     return <MyEasyWebsite onBackToDashboard={goToDashboard} />;
   }
+  return (
+    <Routes>
+      {/* Public route - Home */}
+      <Route
+        path={ROUTES.HOME}
+        element={
+          <main className="min-h-screen bg-gradient-to-br from-black-main to-blue-main">
+            <Toaster
+              position="top-right"
+              richColors
+              closeButton
+              duration={4000}
+              toastOptions={{
+                style: {
+                  background: '#1e293b',
+                  color: '#f1f5f9',
+                  border: '1px solid #334155',
+                },
+              }}
+            />
 
-  if (user && currentView === 'businessguru') {
-    return <BusinessGuru onBackToDashboard={goToDashboard} />;
-  }
+            <LoadingBar isLoading={isAuthLoading} duration={2300} />
+
+            <NavBar
+              onLoginClick={openLogin}
+              onSignupClick={openSignup}
+              user={user}
+              userName={userName}
+              userAvatarUrl={userAvatarUrl}
+              onDashboardClick={goToDashboard}
+              onLogout={handleLogout}
+              onLogoClick={goToHome}
+              isCheckingAuth={isCheckingAuth}
+            />
+
+            <Hero
+              isLoginOpen={loginModal.isOpen}
+              onOpenLogin={openLogin}
+              onCloseLogin={closeLogin}
+              isSignupOpen={signupModal.isOpen}
+              onOpenSignup={openSignup}
+              onCloseSignup={closeSignup}
+              user={user}
+              onDashboardClick={goToDashboard}
+            />
+            <Features />
+            <Preview />
+            <Packages user={user} />
+            <MidStats />
+            <Courses />
+            <FinalCta />
+            <Footer />
+
+            {user && (
+              <OnboardingModal
+                isOpen={onboardingModal.isOpen}
+                onClose={closeOnboarding}
+                onComplete={handleOnboardingComplete}
+                user={user}
+                disableClose={needsOnboarding}
+              />
+            )}
+
+            <PWAInstallBanner />
+          </main>
+        }
+      />
+
+      {/* Protected routes */}
+      <Route
+        path={ROUTES.DASHBOARD}
+        element={
+          <ProtectedRoute
+            user={user}
+            needsOnboarding={needsOnboarding}
+            onOpenOnboarding={() => onboardingModal.open()}
+            isLoading={loading}
+          >
+            <div>
+              <LoadingBar isLoading={isAuthLoading} duration={2300} />
+              <Dashboard
+                key={dashboardKey}
+                onGoHome={goToHome}
+                onGoToMyEasyWebsite={goToMyEasyWebsite}
+                onGoToBusinessGuru={goToBusinessGuru}
+                onGoToMyEasyCRM={goToMyEasyCRM}
+                onLoadingComplete={() => {
+                  console.log('Dashboard loaded successfully!');
+                }}
+              />
+            </div>
+          </ProtectedRoute>
+        }
+      />
 
   if (user && currentView === 'myeasypricing') {
     return <MyEasyPricing onBackToDashboard={goToDashboard} />;
@@ -437,55 +521,67 @@ function App() {
             border: '1px solid #334155',
           },
         }}
+      <Route
+        path={ROUTES.MY_EASY_WEBSITE}
+        element={
+          <ProtectedRoute
+            user={user}
+            needsOnboarding={needsOnboarding}
+            onOpenOnboarding={() => onboardingModal.open()}
+            isLoading={loading}
+          >
+            <MyEasyWebsite onBackToDashboard={goToDashboard} />
+          </ProtectedRoute>
+        }
       />
 
-      {/* Authentication loading bar */}
-      <LoadingBar isLoading={isAuthLoading} duration={2300} />
-
-      <NavBar
-        onLoginClick={openLogin}
-        onSignupClick={openSignup}
-        user={user}
-        userName={userName}
-        userAvatarUrl={userAvatarUrl}
-        onDashboardClick={goToDashboard}
-        onLogout={handleLogout}
-        onLogoClick={goToHome}
-        isCheckingAuth={isCheckingAuth}
+      <Route
+        path={ROUTES.BUSINESS_GURU}
+        element={
+          <ProtectedRoute
+            user={user}
+            needsOnboarding={needsOnboarding}
+            onOpenOnboarding={() => onboardingModal.open()}
+            isLoading={loading}
+          >
+            <BusinessGuru onBackToDashboard={goToDashboard} />
+          </ProtectedRoute>
+        }
       />
 
-      <Hero
-        isLoginOpen={loginModal.isOpen}
-        onOpenLogin={openLogin}
-        onCloseLogin={closeLogin}
-        isSignupOpen={signupModal.isOpen}
-        onOpenSignup={openSignup}
-        onCloseSignup={closeSignup}
-        user={user}
-        onDashboardClick={goToDashboard}
+      <Route
+        path={ROUTES.MY_EASY_CRM}
+        element={
+          <ProtectedRoute
+            user={user}
+            needsOnboarding={needsOnboarding}
+            onOpenOnboarding={() => onboardingModal.open()}
+            isLoading={loading}
+          >
+            <MyEasyCRM
+              userName={userName}
+              userEmail={user?.email}
+              onLogout={handleLogout}
+              onBackToMain={goToDashboard}
+            />
+          </ProtectedRoute>
+        }
       />
-      <Features />
-      <Preview />
-      <Packages user={user} />
-      <MidStats />
-      <Courses />
-      <FinalCta />
-      <Footer />
 
-      {/* Onboarding Modal */}
-      {user && (
-        <OnboardingModal
-          isOpen={onboardingModal.isOpen}
-          onClose={closeOnboarding}
-          onComplete={handleOnboardingComplete}
-          user={user}
-          disableClose={needsOnboarding}
-        />
-      )}
+      {/* Fallback - redirect unknown routes to home */}
+      <Route path="*" element={<Navigate to={ROUTES.HOME} replace />} />
+    </Routes>
+  );
+}
 
-      {/* PWA Installation Banner */}
-      <PWAInstallBanner />
-    </main>
+/**
+ * App - Main application component wrapped with BrowserRouter
+ */
+function App() {
+  return (
+    <BrowserRouter>
+      <AppContent />
+    </BrowserRouter>
   );
 }
 
