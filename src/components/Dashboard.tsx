@@ -20,6 +20,7 @@ type DashboardProps = {
   onGoHome?: () => void;
   onGoToMyEasyWebsite?: () => void;
   onGoToBusinessGuru?: () => void;
+  onGoToMyEasyPricing?: () => void;
   onGoToMyEasyCRM?: () => void;
   onLoadingComplete?: () => void;
 };
@@ -28,6 +29,7 @@ export function Dashboard({
   onGoHome,
   onGoToMyEasyWebsite,
   onGoToBusinessGuru,
+  onGoToMyEasyPricing,
   onGoToMyEasyCRM,
   onLoadingComplete,
 }: DashboardProps = {}) {
@@ -54,6 +56,7 @@ export function Dashboard({
       onGoHome,
       onGoToMyEasyWebsite,
       onGoToBusinessGuru,
+      onGoToMyEasyPricing,
       onGoToMyEasyCRM,
     });
 

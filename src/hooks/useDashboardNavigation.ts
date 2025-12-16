@@ -29,6 +29,8 @@ export type UseDashboardNavigationOptions = {
   onGoToMyEasyWebsite?: () => void;
   /** Callback function to navigate to BusinessGuru feature */
   onGoToBusinessGuru?: () => void;
+  /** Callback function to navigate to MyEasyPricing feature */
+  onGoToMyEasyPricing?: () => void;
   /** Callback function to navigate to MyEasyCRM feature */
   onGoToMyEasyCRM?: () => void;
   /** Initial active tab (default: 'overview') */
@@ -81,6 +83,7 @@ export function useDashboardNavigation(
     onGoHome,
     onGoToMyEasyWebsite,
     onGoToBusinessGuru,
+    onGoToMyEasyPricing,
     onGoToMyEasyCRM,
     initialTab = DEFAULT_INITIAL_TAB,
   } = options;
@@ -162,11 +165,28 @@ export function useDashboardNavigation(
   }, [onGoToMyEasyCRM, navigate]);
 
   /**
+   * Navigate to MyEasyPricing feature
+   * @description
+   * Attempts to use the provided callback. If not available, falls back to
+   * hash-based routing.
+   *
+   * @returns {void}
+   */
+  const goToPricing = useCallback(() => {
+    if (onGoToMyEasyPricing) {
+      onGoToMyEasyPricing();
+    } else {
+      window.location.href = '/#myeasypricing';
+    }
+  }, [onGoToMyEasyPricing]);
+
+  /**
    * Navigate to a feature based on product name
    * @description
    * Smart routing that analyzes the product name and navigates to the appropriate feature:
    * - Names containing "website" or "site" → MyEasyWebsite
    * - Names containing "guru" or "business" → BusinessGuru
+   * - Names containing "pricing" or "preco" → MyEasyPricing
    * - Names containing "crm" → MyEasyCRM
    * - Other names → Home
    *
@@ -181,12 +201,15 @@ export function useDashboardNavigation(
         goToWebsite();
       } else if (name.includes('guru') || name.includes('business')) {
         goToGuru();
+      } else if (name.includes('pricing') || name.includes('preco')) {
+        goToPricing();
       } else if (name.includes('crm')) {
         goToCRM();
       } else {
         goToHome();
       }
     },
+    [goToWebsite, goToGuru, goToPricing, goToHome],
     [goToWebsite, goToGuru, goToCRM, goToHome],
   );
 
@@ -201,6 +224,7 @@ export function useDashboardNavigation(
     goToHome,
     goToWebsite,
     goToGuru,
+    goToPricing,
     goToCRM,
   };
 }
