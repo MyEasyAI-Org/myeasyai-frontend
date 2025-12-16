@@ -34,15 +34,15 @@ export function CRMDashboard({ onNavigate }: CRMDashboardProps) {
     <div className="p-6">
       {/* Header */}
       <div className="mb-8">
-        <h2 className="text-2xl font-bold text-gray-900">Dashboard</h2>
+        <h2 className="text-2xl font-bold text-gray-900">Visão Geral</h2>
         <p className="text-gray-500 mt-1">
-          Visão geral do seu CRM
+          Resumo das suas vendas e contatos
         </p>
       </div>
 
       {/* Main Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        {/* Total Pipeline */}
+        {/* Total em Vendas */}
         <div className="bg-white rounded-xl border border-gray-200 p-6">
           <div className="flex items-center justify-between mb-4">
             <div className="w-12 h-12 rounded-xl bg-green-100 flex items-center justify-center">
@@ -50,7 +50,7 @@ export function CRMDashboard({ onNavigate }: CRMDashboardProps) {
             </div>
             <span className="flex items-center gap-1 text-sm font-medium text-green-600">
               <ArrowUpRight className="w-4 h-4" />
-              Pipeline
+              Vendas
             </span>
           </div>
           {loadingMetrics ? (
@@ -67,7 +67,7 @@ export function CRMDashboard({ onNavigate }: CRMDashboardProps) {
           )}
         </div>
 
-        {/* Deals Abertos */}
+        {/* Negócios em Andamento */}
         <button
           onClick={() => onNavigate('deals')}
           className="bg-white rounded-xl border border-gray-200 p-6 text-left hover:border-blue-300 hover:shadow-md transition-all"
@@ -86,7 +86,7 @@ export function CRMDashboard({ onNavigate }: CRMDashboardProps) {
                 {metrics?.open_deals || 0}
               </p>
               <p className="text-sm text-gray-500 mt-1">
-                Deals em andamento
+                Negócios em andamento
               </p>
             </>
           )}
@@ -152,7 +152,7 @@ export function CRMDashboard({ onNavigate }: CRMDashboardProps) {
                     <TrendingUp className="w-5 h-5 text-green-600" />
                   </div>
                   <div>
-                    <p className="text-sm text-gray-600">Deals Ganhos</p>
+                    <p className="text-sm text-gray-600">Vendas Fechadas</p>
                     <p className="font-semibold text-gray-900">{metrics?.won_this_month || 0}</p>
                   </div>
                 </div>
@@ -167,7 +167,7 @@ export function CRMDashboard({ onNavigate }: CRMDashboardProps) {
                     <ArrowDownRight className="w-5 h-5 text-red-600" />
                   </div>
                   <div>
-                    <p className="text-sm text-gray-600">Deals Perdidos</p>
+                    <p className="text-sm text-gray-600">Não Fecharam</p>
                     <p className="font-semibold text-gray-900">{metrics?.lost_this_month || 0}</p>
                   </div>
                 </div>
@@ -179,8 +179,8 @@ export function CRMDashboard({ onNavigate }: CRMDashboardProps) {
                     <DollarSign className="w-5 h-5 text-blue-600" />
                   </div>
                   <div>
-                    <p className="text-sm text-gray-600">Valor Ponderado</p>
-                    <p className="font-semibold text-gray-900">Pipeline ativo</p>
+                    <p className="text-sm text-gray-600">Previsão de Vendas</p>
+                    <p className="font-semibold text-gray-900">Negócios em aberto</p>
                   </div>
                 </div>
                 <p className="text-lg font-bold text-blue-600">
@@ -249,7 +249,7 @@ export function CRMDashboard({ onNavigate }: CRMDashboardProps) {
       {/* Recent Activities */}
       <div className="bg-white rounded-xl border border-gray-200 p-6">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="font-semibold text-gray-900">Atividades Recentes</h3>
+          <h3 className="font-semibold text-gray-900">Histórico Recente</h3>
           <button
             onClick={() => onNavigate('activities')}
             className="text-sm text-blue-600 hover:text-blue-700 font-medium"

@@ -97,6 +97,7 @@ interface UsePipelineReturn {
   moveDealToStage: (dealId: string, stage: DealStage, lostReason?: string) => Promise<void>;
   createDeal: (data: DealFormData) => Promise<Deal>;
   updateDeal: (id: string, data: Partial<DealFormData>) => Promise<Deal>;
+  deleteDeal: (id: string) => Promise<void>;
 }
 
 export function usePipeline(): UsePipelineReturn {
@@ -144,6 +145,12 @@ export function usePipeline(): UsePipelineReturn {
     return deal;
   }, [fetchPipeline]);
 
+  const deleteDeal = useCallback(async (id: string): Promise<void> => {
+    await DealService.delete(id);
+    // Refresh pipeline after delete
+    await fetchPipeline();
+  }, [fetchPipeline]);
+
   return {
     pipeline,
     isLoading,
@@ -152,6 +159,7 @@ export function usePipeline(): UsePipelineReturn {
     moveDealToStage,
     createDeal,
     updateDeal,
+    deleteDeal,
   };
 }
 

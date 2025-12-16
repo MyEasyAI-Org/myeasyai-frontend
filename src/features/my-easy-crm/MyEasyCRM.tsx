@@ -129,7 +129,7 @@ export function MyEasyCRM({
     moveDealToStage: moveDealToStagePipeline,
     createDeal: createDealPipeline,
     updateDeal: updateDealPipeline,
-    refresh: refreshPipeline,
+    deleteDeal: deleteDealPipeline,
   } = usePipeline();
 
   const { deal: selectedDeal, isLoading: loadingDeal, moveDealToStage } = useDeal(selectedDealId);
@@ -382,8 +382,7 @@ export function MyEasyCRM({
           }
           break;
         case 'deal':
-          // Deal deletion would need to be implemented
-          refreshPipeline();
+          await deleteDealPipeline(deleteTarget.id);
           if (currentView === 'deal-detail') {
             setCurrentView('deals');
             setSelectedDealId(null);
@@ -401,7 +400,7 @@ export function MyEasyCRM({
     } finally {
       setIsSubmitting(false);
     }
-  }, [deleteType, deleteTarget, deleteContact, deleteCompany, deleteTask, deleteActivity, currentView, refreshPipeline]);
+  }, [deleteType, deleteTarget, deleteContact, deleteCompany, deleteDealPipeline, deleteTask, deleteActivity, currentView]);
 
   // Render current view
   const renderView = () => {

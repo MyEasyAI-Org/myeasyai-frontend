@@ -55,12 +55,12 @@ export function DealDetail({
     return (
       <div className="flex flex-col items-center justify-center h-96">
         <AlertCircle className="w-12 h-12 text-red-500 mb-4" />
-        <p className="text-gray-600">{error || 'Deal não encontrado'}</p>
+        <p className="text-gray-600">{error || 'Negócio não encontrado'}</p>
         <button
           onClick={onBack}
           className="mt-4 text-blue-600 hover:underline"
         >
-          Voltar para o pipeline
+          Voltar para vendas
         </button>
       </div>
     );
@@ -116,7 +116,7 @@ export function DealDetail({
 
       {/* Stage Progress */}
       <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
-        <h4 className="font-semibold text-gray-900 mb-4">Progresso do Deal</h4>
+        <h4 className="font-semibold text-gray-900 mb-4">Progresso do Negócio</h4>
         <div className="flex items-center gap-2">
           {DEAL_STAGES_LIST.map((stage, index) => {
             const isActive = stage.value === deal.stage;
@@ -171,7 +171,7 @@ export function DealDetail({
                   <TrendingUp className="w-5 h-5 text-blue-600" />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500">Probabilidade</p>
+                  <p className="text-sm text-gray-500">Chance de Fechar</p>
                   <p className="font-semibold text-gray-900">{deal.probability || 0}%</p>
                 </div>
               </div>
@@ -182,7 +182,7 @@ export function DealDetail({
                     <Clock className="w-5 h-5 text-purple-600" />
                   </div>
                   <div>
-                    <p className="text-sm text-gray-500">Fechamento Esperado</p>
+                    <p className="text-sm text-gray-500">Previsão de Fechamento</p>
                     <p className="font-semibold text-gray-900">
                       {formatDate(deal.expected_close_date)}
                     </p>

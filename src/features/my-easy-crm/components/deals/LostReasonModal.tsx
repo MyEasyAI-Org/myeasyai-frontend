@@ -62,7 +62,7 @@ export function LostReasonModal({
         <div className="relative w-full max-w-md bg-white rounded-2xl shadow-xl">
           {/* Header */}
           <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-            <h2 className="text-xl font-semibold text-gray-900">Motivo da Perda</h2>
+            <h2 className="text-xl font-semibold text-gray-900">Por que não fechou?</h2>
             <button
               onClick={handleClose}
               className="p-2 rounded-lg hover:bg-gray-100 text-gray-500"
@@ -74,7 +74,7 @@ export function LostReasonModal({
           {/* Content */}
           <div className="px-6 py-4">
             <p className="text-gray-600 mb-4">
-              Por que o deal <span className="font-medium">"{dealTitle}"</span> foi perdido?
+              Por que o negócio <span className="font-medium">"{dealTitle}"</span> não fechou?
             </p>
 
             <div className="space-y-2">
@@ -136,7 +136,7 @@ export function LostReasonModal({
               className="inline-flex items-center gap-2 px-4 py-2 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50"
             >
               {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
-              Marcar como Perdido
+              Confirmar
             </button>
           </div>
         </div>

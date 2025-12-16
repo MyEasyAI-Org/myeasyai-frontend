@@ -86,9 +86,9 @@ export function PipelineKanban({
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Pipeline de Vendas</h2>
+          <h2 className="text-2xl font-bold text-gray-900">Funil de Vendas</h2>
           <p className="text-gray-500 mt-1">
-            {pipeline?.total_deals || 0} deals · {formatCurrency(pipeline?.total_value || 0)} em valor total
+            {pipeline?.total_deals || 0} negócios · {formatCurrency(pipeline?.total_value || 0)} em valor total
           </p>
         </div>
         <button
@@ -96,7 +96,7 @@ export function PipelineKanban({
           className="inline-flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors"
         >
           <Plus className="w-5 h-5" />
-          Novo Deal
+          Novo Negócio
         </button>
       </div>
 
@@ -147,12 +147,12 @@ export function PipelineKanban({
                 {stageDeals.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-8 text-center">
                     <Target className="w-10 h-10 text-gray-300 mb-2" />
-                    <p className="text-sm text-gray-400">Nenhum deal nesta fase</p>
+                    <p className="text-sm text-gray-400">Nenhum negócio nesta etapa</p>
                     <button
                       onClick={() => onCreateDeal(stageKey)}
                       className="mt-3 text-sm text-blue-600 hover:text-blue-700 font-medium"
                     >
-                      + Adicionar deal
+                      + Adicionar negócio
                     </button>
                   </div>
                 ) : (

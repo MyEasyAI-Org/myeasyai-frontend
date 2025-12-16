@@ -14,36 +14,36 @@ import type {
 } from '../types';
 
 // =============================================
-// ESTÁGIOS DO PIPELINE
+// ESTÁGIOS DE VENDAS
 // =============================================
 export const DEAL_STAGES: Record<DealStage, { label: string; color: string; probability: number }> = {
   lead: {
-    label: 'Lead',
+    label: 'Novo Interesse',
     color: 'bg-slate-500',
     probability: 10,
   },
   qualification: {
-    label: 'Qualificação',
+    label: 'Conhecendo Melhor',
     color: 'bg-blue-500',
     probability: 25,
   },
   proposal: {
-    label: 'Proposta',
+    label: 'Proposta Enviada',
     color: 'bg-yellow-500',
     probability: 50,
   },
   negotiation: {
-    label: 'Negociação',
+    label: 'Em Negociação',
     color: 'bg-orange-500',
     probability: 75,
   },
   closed_won: {
-    label: 'Fechado (Ganho)',
+    label: 'Venda Fechada',
     color: 'bg-green-500',
     probability: 100,
   },
   closed_lost: {
-    label: 'Fechado (Perdido)',
+    label: 'Não Fechou',
     color: 'bg-red-500',
     probability: 0,
   },
@@ -94,7 +94,7 @@ export const TASK_TYPES: Record<TaskType, { label: string; icon: string; color: 
     color: 'text-orange-400',
   },
   follow_up: {
-    label: 'Follow-up',
+    label: 'Acompanhamento',
     icon: 'RefreshCw',
     color: 'text-cyan-400',
   },
@@ -192,25 +192,25 @@ export const ACTIVITY_TYPES: Record<ActivityType, { label: string; icon: string;
     bgColor: 'bg-yellow-100',
   },
   deal_created: {
-    label: 'Deal criado',
+    label: 'Negócio criado',
     icon: 'Plus',
     color: 'text-cyan-400',
     bgColor: 'bg-cyan-100',
   },
   deal_moved: {
-    label: 'Deal movido',
+    label: 'Negócio avançou',
     icon: 'ArrowRight',
     color: 'text-orange-400',
     bgColor: 'bg-orange-100',
   },
   deal_won: {
-    label: 'Deal ganho',
+    label: 'Venda fechada',
     icon: 'Trophy',
     color: 'text-green-500',
     bgColor: 'bg-green-100',
   },
   deal_lost: {
-    label: 'Deal perdido',
+    label: 'Não fechou',
     icon: 'XCircle',
     color: 'text-red-400',
     bgColor: 'bg-red-100',
@@ -270,7 +270,7 @@ export const LEAD_SOURCES: Record<LeadSource, { label: string; icon: string }> &
     icon: 'Calendar',
   },
   cold_call: {
-    label: 'Cold Call',
+    label: 'Ligação Direta',
     icon: 'Phone',
   },
   email_campaign: {
@@ -333,7 +333,7 @@ export const COMPANY_SIZES: Record<CompanySize, { label: string; description: st
     description: '250-999 funcionários',
   },
   enterprise: {
-    label: 'Enterprise',
+    label: 'Corporação',
     description: '1000+ funcionários',
   },
 };
@@ -344,7 +344,7 @@ export const COMPANY_SIZES: Record<CompanySize, { label: string; description: st
 export const CRM_NAVIGATION: { id: CRMView; label: string; icon: string }[] = [
   {
     id: 'dashboard',
-    label: 'Dashboard',
+    label: 'Visão Geral',
     icon: 'LayoutDashboard',
   },
   {
@@ -359,7 +359,7 @@ export const CRM_NAVIGATION: { id: CRMView; label: string; icon: string }[] = [
   },
   {
     id: 'deals',
-    label: 'Pipeline',
+    label: 'Vendas',
     icon: 'TrendingUp',
   },
   {
@@ -369,7 +369,7 @@ export const CRM_NAVIGATION: { id: CRMView; label: string; icon: string }[] = [
   },
   {
     id: 'activities',
-    label: 'Atividades',
+    label: 'Histórico',
     icon: 'Activity',
   },
 ];

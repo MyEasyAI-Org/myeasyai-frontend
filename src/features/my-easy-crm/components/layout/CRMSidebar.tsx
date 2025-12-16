@@ -33,12 +33,12 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
-  { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { id: 'dashboard', label: 'Visão Geral', icon: LayoutDashboard },
   { id: 'contacts', label: 'Contatos', icon: Users },
   { id: 'companies', label: 'Empresas', icon: Building2 },
-  { id: 'deals', label: 'Pipeline', icon: Target },
+  { id: 'deals', label: 'Vendas', icon: Target },
   { id: 'tasks', label: 'Tarefas', icon: CheckSquare },
-  { id: 'activities', label: 'Atividades', icon: Activity },
+  { id: 'activities', label: 'Histórico', icon: Activity },
 ];
 
 export function CRMSidebar({
@@ -98,7 +98,7 @@ export function CRMSidebar({
               className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
             >
               <Plus className="w-4 h-4" />
-              Deal
+              Negócio
             </button>
             <button
               onClick={() => onQuickAction('company')}

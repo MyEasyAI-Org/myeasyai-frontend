@@ -98,7 +98,7 @@ export function DealForm({
           {/* Header */}
           <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
             <h2 className="text-xl font-semibold text-gray-900">
-              {deal ? 'Editar Deal' : 'Novo Deal'}
+              {deal ? 'Editar Negócio' : 'Novo Negócio'}
             </h2>
             <button
               onClick={onClose}
@@ -114,7 +114,7 @@ export function DealForm({
               {/* Título */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Título do Deal *
+                  Título do Negócio *
                 </label>
                 <input
                   type="text"
@@ -122,7 +122,7 @@ export function DealForm({
                   value={formData.title}
                   onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-gray-900"
-                  placeholder="Ex: Implementação de CRM para Empresa X"
+                  placeholder="Ex: Venda para Empresa X"
                 />
               </div>
 
@@ -148,10 +148,10 @@ export function DealForm({
                 </div>
               </div>
 
-              {/* Fase */}
+              {/* Etapa */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Fase *
+                  Etapa *
                 </label>
                 <select
                   value={formData.stage}
@@ -169,7 +169,7 @@ export function DealForm({
               {/* Probabilidade */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Probabilidade de Fechamento
+                  Chance de Fechar (%)
                 </label>
                 <div className="flex items-center gap-4">
                   <input
@@ -186,10 +186,10 @@ export function DealForm({
                 </div>
               </div>
 
-              {/* Data de Fechamento Esperada */}
+              {/* Data Prevista */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Data de Fechamento Esperada
+                  Previsão de Fechamento
                 </label>
                 <input
                   type="date"
@@ -247,7 +247,7 @@ export function DealForm({
                   onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                   rows={3}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 resize-none text-gray-900"
-                  placeholder="Observações sobre o deal..."
+                  placeholder="Observações sobre o negócio..."
                 />
               </div>
             </div>
@@ -268,7 +268,7 @@ export function DealForm({
                 className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
               >
                 {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
-                {deal ? 'Salvar' : 'Criar Deal'}
+                {deal ? 'Salvar' : 'Criar Negócio'}
               </button>
             </div>
           </form>
