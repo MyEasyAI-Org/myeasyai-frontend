@@ -2,11 +2,24 @@ import { getInitials } from '../../utils/dashboard/avatarUtils';
 
 type AvatarProps = {
   name: string;
+  displayName?: string | null; // preferred_name or nickname to use for initials
   avatarUrl?: string | null;
   size?: 'sm' | 'md' | 'lg';
 };
 
-export function Avatar({ name, avatarUrl, size = 'md' }: AvatarProps) {
+// Check if avatar URL is a real photo or just a Google default placeholder
+const isRealAvatar = (url: string | null | undefined): boolean => {
+  if (!url) return false;
+  // Google default avatars contain these patterns
+  if (url.includes('default-user') || url.includes('=s96-c')) return false;
+  // UI Avatars or similar placeholder services
+  if (url.includes('ui-avatars.com')) return false;
+  // DiceBear or similar placeholder services
+  if (url.includes('dicebear') || url.includes('avatars.dicebear')) return false;
+  return true;
+};
+
+export function Avatar({ name, displayName, avatarUrl, size = 'md' }: AvatarProps) {
   const sizeClasses = {
     sm: 'h-9 w-9',
     md: 'h-12 w-12',
@@ -19,23 +32,24 @@ export function Avatar({ name, avatarUrl, size = 'md' }: AvatarProps) {
     lg: 'text-3xl',
   };
 
-  // If has avatar_url, display image
-  if (avatarUrl) {
+  // If has real avatar_url (not a placeholder), display image
+  if (isRealAvatar(avatarUrl)) {
     return (
       <img
-        src={avatarUrl}
+        src={avatarUrl!}
         alt={name}
         className={`${sizeClasses[size]} rounded-full object-cover`}
       />
     );
   }
 
-  // Otherwise, display initials
+  // Otherwise, display initials (use displayName if available, otherwise name)
+  const initialsName = displayName ?? name;
   return (
     <div
-      className={`${sizeClasses[size]} ${textSizeClasses[size]} flex items-center justify-center rounded-full bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 text-white font-bold`}
+      className={`${sizeClasses[size]} ${textSizeClasses[size]} flex items-center justify-center rounded-full bg-gradient-to-br from-fuchsia-500 to-purple-600 text-white font-bold`}
     >
-      {getInitials(name)}
+      {getInitials(initialsName)}
     </div>
   );
 }

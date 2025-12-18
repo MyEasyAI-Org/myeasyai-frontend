@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { authService } from '../services/AuthService';
+import { authService } from '../services/AuthServiceV2';
 import { DSButton, DSInput } from './design-system';
 import { Modal } from './Modal';
 // CAPTCHA temporariamente desabilitado para testes E2E
@@ -39,13 +39,15 @@ export function LoginModal({
     // }
 
     try {
-      const { error } = await authService.signInWithEmail(email, password);
-      if (error) {
+      const result = await authService.signInWithPassword(email, password);
+      if (!result.success) {
         toast.error('Erro ao fazer login', {
-          description: error.message,
+          description: result.error || 'Falha na autenticação',
         });
         return;
       }
+      console.log(`✅ Login via ${result.source}`);
+      onClose();
       // O modal será fechado automaticamente pelo listener de auth no App.tsx
     } catch (error) {
       toast.error('Erro inesperado', {
@@ -70,31 +72,35 @@ export function LoginModal({
       if (provider === 'google') setIsGoogleLoading(true);
       if (provider === 'facebook') setIsFacebookLoading(true);
 
-      let result;
-      switch (provider) {
-        case 'google':
-          result = await authService.signInWithGoogle();
-          break;
-        case 'facebook':
-          result = await authService.signInWithFacebook();
-          break;
-        case 'apple':
-          toast.warning('Login com Apple indisponível', {
-            description: 'Use Google ou Facebook para fazer login.',
+      if (provider === 'google') {
+        // AuthServiceV2 - tenta Cloudflare primeiro, fallback para Supabase
+        const result = await authService.signInWithGoogle();
+        if (!result.success && result.error) {
+          toast.error('Erro ao fazer login com Google', {
+            description: result.error,
           });
-          return;
-      }
-
-      if (result.error) {
-        toast.error(`Erro ao fazer login com ${provider}`, {
-          description: result.error.message,
-        });
-        // Desativar loading em caso de erro
-        if (provider === 'google') setIsGoogleLoading(false);
-        if (provider === 'facebook') setIsFacebookLoading(false);
+          setIsGoogleLoading(false);
+        }
+        // Redirect acontece automaticamente
         return;
       }
-      // O modal será fechado automaticamente pelo listener de auth no App.tsx
+
+      if (provider === 'facebook') {
+        // Facebook ainda usa Supabase diretamente (fallback)
+        toast.warning('Login com Facebook', {
+          description: 'Usando autenticação via Supabase',
+        });
+        // Por enquanto, Facebook não está implementado no Cloudflare
+        setIsFacebookLoading(false);
+        return;
+      }
+
+      if (provider === 'apple') {
+        toast.warning('Login com Apple indisponível', {
+          description: 'Use Google para fazer login.',
+        });
+        return;
+      }
     } catch (error) {
       toast.error('Erro inesperado', {
         description: String(error),

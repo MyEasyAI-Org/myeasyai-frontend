@@ -1,8 +1,30 @@
 import { useEffect, useState, useRef } from 'react';
 import { toast } from 'sonner';
 import { supabase } from '../lib/api-clients/supabase-client';
+import { authService } from '../services/AuthServiceV2';
+import { userManagementServiceV2 } from '../services/UserManagementServiceV2';
 import type { SubscriptionPlan } from '../constants/plans';
 import { useLoadingState } from './useLoadingState';
+
+/**
+ * Mapeia planos legados para os novos nomes
+ * Planos: individual, plus, premium
+ */
+function normalizeSubscriptionPlan(plan: string | null | undefined): SubscriptionPlan {
+  if (!plan) return 'individual';
+
+  const planMap: Record<string, SubscriptionPlan> = {
+    'free': 'individual',
+    'personal': 'individual',
+    'individual': 'individual',
+    'basic': 'plus',
+    'plus': 'plus',
+    'pro': 'premium',
+    'premium': 'premium',
+  };
+
+  return planMap[plan.toLowerCase()] || 'individual';
+}
 
 // ============================================================================
 // TYPES AND INTERFACES
@@ -244,7 +266,7 @@ export function useUserData() {
     email: 'Carregando...',
   });
   const [subscription, setSubscription] = useState<SubscriptionData>({
-    plan: 'free',
+    plan: 'individual',
     status: 'active',
     start_date: new Date().toISOString(),
     tokens_used: 0,
@@ -303,10 +325,26 @@ export function useUserData() {
 
   /**
    * Fetch user session with retry and timeout
+   * Checks Cloudflare AuthServiceV2 first, then falls back to Supabase
    */
   const fetchSession = async () => {
     updateProgress(10, 'Verificando autenticação...');
 
+    // First, check if user is authenticated via Cloudflare (AuthServiceV2)
+    const cloudflareUser = authService.getUser();
+    if (cloudflareUser) {
+      console.log('✅ [useUserData] User authenticated via Cloudflare:', cloudflareUser.email);
+      setUserUuid(cloudflareUser.uuid);
+      updateProgress(25);
+      return {
+        userId: cloudflareUser.uuid,
+        email: cloudflareUser.email,
+        authSource: 'cloudflare' as const
+      };
+    }
+
+    // Fallback to Supabase session
+    console.log('📢 [useUserData] Checking Supabase session...');
     const session = await retryWithBackoff(async () => {
       const { data, error } = await withTimeout(
         supabase.auth.getSession(),
@@ -324,28 +362,38 @@ export function useUserData() {
     setUserUuid(userId);
     updateProgress(25);
 
-    return { session, userId };
+    return {
+      userId,
+      email: session.user.email || '',
+      authSource: 'supabase' as const
+    };
   };
 
   /**
    * Fetch user data from database with retry and timeout
+   * Uses D1 (Cloudflare) as primary, Supabase as fallback
    */
-  const fetchUserData = async (userId: string) => {
+  const fetchUserData = async (userId: string, email?: string) => {
     updateProgress(40, 'Carregando dados do usuário...');
 
     const userData = await retryWithBackoff(async () => {
+      // Use userManagementServiceV2 which handles D1 Primary + Supabase Fallback
+      const userEmail = email || profile.email;
+      if (!userEmail || userEmail === 'Carregando...') {
+        throw new Error('Email do usuário não disponível');
+      }
+
       const result = await withTimeout(
-        supabase.from('users').select('*').eq('uuid', userId).single() as unknown as Promise<any>,
+        userManagementServiceV2.getUserProfile(userEmail),
         TIMEOUTS.USER_DATA,
         'Carregamento de dados do usuário',
       );
 
-      const { data, error } = result;
+      if (!result.success || !result.data) {
+        throw new Error(result.error || 'Dados do usuário não encontrados');
+      }
 
-      if (error) throw error;
-      if (!data) throw new Error('Dados do usuário não encontrados');
-
-      return data;
+      return result.data;
     });
 
     // Update profile
@@ -359,9 +407,9 @@ export function useUserData() {
       company: userData.company_name,
     });
 
-    // Update subscription
+    // Update subscription (from Supabase since D1 doesn't have subscription fields yet)
     setSubscription({
-      plan: userData.subscription_plan || 'free',
+      plan: normalizeSubscriptionPlan(userData.subscription_plan),
       status: userData.subscription_status || 'active',
       start_date: userData.subscription_start_date || new Date().toISOString(),
       end_date: userData.subscription_end_date,
@@ -390,24 +438,130 @@ export function useUserData() {
 
   /**
    * Fetch user products with retry and timeout
+   * Uses D1 (Cloudflare) as primary, Supabase as fallback
    */
   const fetchProducts = async (userId: string) => {
     updateProgress(75, 'Carregando produtos...');
 
     const products = await retryWithBackoff(async () => {
+      // Try D1 first (Primary)
+      try {
+        const d1Module = await import('../lib/api-clients/d1-client');
+        const d1Client = d1Module.d1Client;
+
+        const d1Result = await withTimeout(
+          d1Client.getUserProducts(userId),
+          TIMEOUTS.PRODUCTS,
+          'Carregamento de produtos (D1)',
+        );
+
+        if (!d1Result.error && d1Result.data) {
+          console.log('✅ [D1 PRIMARY] Produtos carregados:', d1Result.data.length);
+
+          // Fetch site stats for MyEasyWebsite product
+          let siteCount = 0;
+          try {
+            console.log('🔄 [D1] Fetching site stats for user:', userId);
+            const siteStats = await d1Client.getSiteStats(userId);
+            console.log('📊 [D1] Site stats response:', siteStats);
+            if (!siteStats.error && siteStats.data) {
+              siteCount = siteStats.data.total || 0;
+              console.log('✅ [D1] Sites count:', siteCount);
+            } else if (siteStats.error) {
+              console.warn('⚠️ [D1] Site stats error:', siteStats.error);
+              // Fallback: try to get user sites directly
+              const userSites = await d1Client.getUserSites(userId);
+              if (!userSites.error && userSites.data) {
+                siteCount = userSites.data.length;
+                console.log('✅ [D1] Sites count (from getUserSites):', siteCount);
+              }
+            }
+          } catch (statsError) {
+            console.warn('⚠️ [D1] Could not fetch site stats:', statsError);
+          }
+
+          return d1Result.data.map((p: any) => ({
+            id: String(p.id),
+            product_name: p.product_name || p.product_id || 'Produto',
+            product_status: p.product_status || p.status || 'active',
+            subscribed_at: p.subscribed_at || p.created_at,
+            sites_created: (p.product_name === 'MyEasyWebsite' || p.product_id === 'myeasywebsite') ? siteCount : (p.sites_created || 0),
+            consultations_made: p.consultations_made || 0,
+          }));
+        }
+        console.warn('⚠️ [D1] Produtos não encontrados, tentando Supabase...');
+      } catch (d1Error) {
+        console.error('❌ [D1] Erro ao carregar produtos:', d1Error);
+      }
+
+      // Fallback to Supabase
+      console.log('⚠️ [FALLBACK] Usando Supabase para produtos');
       const result = await withTimeout(
         supabase.from('user_products').select('*').eq('user_uuid', userId) as unknown as Promise<any>,
         TIMEOUTS.PRODUCTS,
-        'Carregamento de produtos',
+        'Carregamento de produtos (Supabase)',
       );
 
       const { data, error } = result;
-
       if (error) throw error;
       return data || [];
     });
 
-    setUserProducts(products);
+    // Buscar contagem de sites para o usuário (para o card MyEasyWebsite)
+    let userSiteCount = 0;
+    try {
+      const d1Client = await import('../lib/api-clients/d1-client').then(m => m.d1Client);
+      const siteStats = await d1Client.getSiteStats(userId);
+      if (!siteStats.error && siteStats.data) {
+        userSiteCount = siteStats.data.total || 0;
+        console.log('✅ [useUserData] Site count for default products:', userSiteCount);
+      }
+    } catch (e) {
+      console.warn('⚠️ [useUserData] Could not fetch site count for default products');
+    }
+
+    // Garantir que MyEasyWebsite e BusinessGuru sempre estejam disponíveis
+    const defaultProducts: UserProduct[] = [
+      {
+        id: 'myeasywebsite',
+        product_name: 'MyEasyWebsite',
+        product_status: 'active',
+        subscribed_at: new Date().toISOString(),
+        sites_created: userSiteCount,
+        consultations_made: 0,
+      },
+      {
+        id: 'businessguru',
+        product_name: 'BusinessGuru',
+        product_status: 'active',
+        subscribed_at: new Date().toISOString(),
+        sites_created: 0,
+        consultations_made: 0,
+      },
+    ];
+
+    // Mesclar produtos do banco com os padrão (evitar duplicatas)
+    const existingIds = products.map((p: UserProduct) => p.id.toLowerCase());
+    const existingNames = products.map((p: UserProduct) => p.product_name.toLowerCase());
+
+    const finalProducts = [
+      ...products,
+      ...defaultProducts.filter(
+        (dp) =>
+          !existingIds.includes(dp.id.toLowerCase()) &&
+          !existingNames.includes(dp.product_name.toLowerCase())
+      ),
+    ];
+
+    // Se o produto MyEasyWebsite veio do banco mas tem sites_created=0, atualizar com o count real
+    const finalProductsWithSiteCount = finalProducts.map(p => {
+      if ((p.product_name.toLowerCase().includes('website') || p.id === 'myeasywebsite') && p.sites_created === 0 && userSiteCount > 0) {
+        return { ...p, sites_created: userSiteCount };
+      }
+      return p;
+    });
+
+    setUserProducts(finalProductsWithSiteCount);
     updateCache('products');
     updateProgress(100);
   };
@@ -443,8 +597,8 @@ export function useUserData() {
     setError(null);
 
     try {
-      const { userId } = await fetchSession();
-      await fetchUserData(userId);
+      const { userId, email } = await fetchSession();
+      await fetchUserData(userId, email);
       await fetchProducts(userId);
       updateProgress(100, 'Concluído!');
     } catch (err) {
@@ -461,6 +615,7 @@ export function useUserData() {
    * Update user profile
    * @description
    * Updates the user's profile information in the database and local state.
+   * Uses D1 (Cloudflare) as primary, Supabase as fallback.
    * Automatically invalidates the profile cache and shows toast notifications.
    * Uses retry logic with exponential backoff for reliability.
    *
@@ -468,8 +623,13 @@ export function useUserData() {
    * @returns {Promise<void>} Resolves when the profile has been updated
    * @throws {Error} If user is not authenticated or update fails after retries
    */
-  const updateProfile = async (data: Partial<UserProfile>): Promise<void> => {
-    if (!userUuid) {
+  const updateProfile = async (data: Partial<UserProfile & {
+    country?: string;
+    postal_code?: string;
+    address?: string;
+    preferred_language?: string;
+  }>): Promise<void> => {
+    if (!userUuid || !profile.email || profile.email === 'Carregando...') {
       throw new Error('Usuário não autenticado');
     }
 
@@ -480,25 +640,41 @@ export function useUserData() {
         mobile_phone: data.phone,
         company_name: data.company,
         bio: data.bio,
-        last_online: new Date().toISOString(),
+        country: data.country,
+        postal_code: data.postal_code,
+        address: data.address,
+        preferred_language: data.preferred_language,
       };
 
       await retryWithBackoff(async () => {
         const result = await withTimeout(
-          supabase.from('users').update(updateData).eq('uuid', userUuid) as unknown as Promise<any>,
+          userManagementServiceV2.updateUserProfile(profile.email, updateData),
           TIMEOUTS.UPDATE,
           'Atualização de perfil',
         );
 
-        const { error } = result;
-
-        if (error) throw error;
+        if (!result.success) {
+          throw new Error(result.error || 'Erro ao atualizar perfil');
+        }
       });
 
-      // Update local state
+      // Update local state for profile
       setProfile((prev) => ({
         ...prev,
-        ...data,
+        name: data.name ?? prev.name,
+        preferred_name: data.preferred_name ?? prev.preferred_name,
+        phone: data.phone ?? prev.phone,
+        company: data.company ?? prev.company,
+        bio: data.bio ?? prev.bio,
+      }));
+
+      // Update local state for cadastral info
+      setCadastralInfo((prev) => ({
+        ...prev,
+        country: data.country ?? prev.country,
+        postal_code: data.postal_code ?? prev.postal_code,
+        address: data.address ?? prev.address,
+        preferred_language: data.preferred_language ?? prev.preferred_language,
       }));
 
       // Invalidate cache to force fresh data on next fetch
@@ -549,7 +725,7 @@ export function useUserData() {
       });
 
       setSubscription({
-        plan: userData.subscription_plan || 'free',
+        plan: normalizeSubscriptionPlan(userData.subscription_plan),
         status: userData.subscription_status || 'active',
         start_date: userData.subscription_start_date || new Date().toISOString(),
         end_date: userData.subscription_end_date,
@@ -568,6 +744,78 @@ export function useUserData() {
       toast.error(`Erro ao atualizar assinatura: ${error.message}`);
       throw error;
     }
+  };
+
+  /**
+   * Update user's subscription plan
+   * @description
+   * Updates the subscription plan in the database and refreshes local state.
+   * D1 (Cloudflare) primeiro, Supabase como fallback.
+   *
+   * @param {SubscriptionPlan} newPlan - The new plan to set
+   * @returns {Promise<boolean>} True if successful, false otherwise
+   */
+  const updateSubscriptionPlan = async (newPlan: SubscriptionPlan): Promise<boolean> => {
+    if (!userUuid) {
+      toast.error('Usuário não autenticado');
+      return false;
+    }
+
+    let d1Success = false;
+
+    // ========== 1️⃣ D1 PRIMEIRO (PRIMARY) ==========
+    try {
+      const d1Client = await import('../lib/api-clients/d1-client').then(m => m.d1Client);
+      const result = await d1Client.updateUser(userUuid, {
+        subscription_plan: newPlan,
+      });
+
+      if (!result.error) {
+        d1Success = true;
+        console.log('✅ [D1 PRIMARY] Plano atualizado para:', newPlan);
+      } else {
+        console.error('❌ [D1 PRIMARY] Erro ao atualizar plano:', result.error);
+      }
+    } catch (d1Error) {
+      console.error('❌ [D1 PRIMARY] Erro ao atualizar plano:', d1Error);
+    }
+
+    // ========== 2️⃣ SUPABASE (BACKUP/FALLBACK) ==========
+    try {
+      const { error } = await supabase
+        .from('users')
+        .update({
+          subscription_plan: newPlan,
+        })
+        .eq('uuid', userUuid);
+
+      if (error) {
+        console.error('❌ [SUPABASE BACKUP] Erro ao atualizar plano:', error);
+        // Se D1 também falhou, retorna erro
+        if (!d1Success) {
+          toast.error('Erro ao atualizar plano', { description: error.message });
+          return false;
+        }
+      } else {
+        console.log('✅ [SUPABASE BACKUP] Plano sincronizado:', newPlan);
+      }
+    } catch (supaError) {
+      console.error('❌ [SUPABASE BACKUP] Erro ao sincronizar plano:', supaError);
+      // Se D1 também falhou, retorna erro
+      if (!d1Success) {
+        toast.error('Erro ao atualizar plano');
+        return false;
+      }
+    }
+
+    // Update local state immediately
+    setSubscription(prev => ({
+      ...prev,
+      plan: newPlan,
+    }));
+
+    console.log('✅ [updateSubscriptionPlan] Plano atualizado para:', newPlan);
+    return true;
   };
 
   /**
@@ -637,6 +885,7 @@ export function useUserData() {
     loadingStep,
     error,
     updateProfile,
+    updateSubscriptionPlan,
     refreshSubscription,
     refreshProducts,
     refreshAll,

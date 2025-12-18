@@ -1,5 +1,5 @@
 import { BarChart3, Clock, CreditCard, TrendingUp } from 'lucide-react';
-import type { SubscriptionData, UserProfile } from '../../hooks/useUserData';
+import type { CadastralInfo, SubscriptionData, UserProfile } from '../../hooks/useUserData';
 import { calculateTokensPercentage } from '../../utils/dashboard/calculationUtils';
 import { getPlanColor } from '../../utils/dashboard/planUtils';
 import { StatCard } from './StatCard';
@@ -7,9 +7,10 @@ import { StatCard } from './StatCard';
 type OverviewTabProps = {
   profile: UserProfile;
   subscription: SubscriptionData;
+  cadastralInfo: CadastralInfo;
 };
 
-export function OverviewTab({ profile, subscription }: OverviewTabProps) {
+export function OverviewTab({ profile, subscription, cadastralInfo }: OverviewTabProps) {
   return (
     <div className="space-y-6">
       <div>
@@ -65,7 +66,9 @@ export function OverviewTab({ profile, subscription }: OverviewTabProps) {
 
         <StatCard
           title="Membro desde"
-          value={new Date(subscription.start_date).toLocaleDateString('pt-BR')}
+          value={cadastralInfo.created_at
+            ? new Date(cadastralInfo.created_at).toLocaleDateString('pt-BR')
+            : 'Não informado'}
           icon={Clock}
           iconColor="text-amber-400"
         />

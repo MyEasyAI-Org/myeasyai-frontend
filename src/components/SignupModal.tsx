@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { toast } from 'sonner';
 import type { SubscriptionPlan } from '../constants/plans';
-import { authService } from '../services/AuthService';
+import { authService } from '../services/AuthServiceV2';
 import { DSButton, DSInput } from './design-system';
 import { Modal } from './Modal';
 // CAPTCHA temporariamente desabilitado para testes E2E
@@ -60,26 +60,22 @@ export function SignupModal({
     // }
 
     try {
-      const { error } = await authService.signUpWithEmail(
-        email,
-        password,
-        fullName,
-        preferredName
-      );
-      if (error) {
+      const result = await authService.signUp(email, password, fullName);
+      if (!result.success) {
         toast.error('Erro ao criar conta', {
-          description: error.message,
+          description: result.error || 'Falha ao criar conta',
         });
         return;
       }
+
+      console.log(`✅ Signup via ${result.source}`);
 
       // Se há um plano selecionado, salvar para vincular depois do login
       if (selectedPlan) {
         localStorage.setItem('selectedPlan', selectedPlan);
       }
 
-      // Removido: alert de confirmação de email
-      // Com email confirmation desabilitado, o usuário é autenticado imediatamente
+      onClose();
       // O modal será fechado automaticamente pelo listener de auth no App.tsx
     } catch (error) {
       toast.error('Erro inesperado', {
@@ -104,37 +100,38 @@ export function SignupModal({
       if (provider === 'google') setIsGoogleLoading(true);
       if (provider === 'facebook') setIsFacebookLoading(true);
 
-      let result;
-      switch (provider) {
-        case 'google':
-          result = await authService.signInWithGoogle();
-          break;
-        case 'facebook':
-          result = await authService.signInWithFacebook();
-          break;
-        case 'apple':
-          toast.warning('Cadastro com Apple indisponível', {
-            description: 'Use Google ou Facebook para se cadastrar.',
-          });
-          return;
-      }
-
-      if (result.error) {
-        toast.error(`Erro ao cadastrar com ${provider}`, {
-          description: result.error.message,
-        });
-        // Desativar loading em caso de erro
-        if (provider === 'google') setIsGoogleLoading(false);
-        if (provider === 'facebook') setIsFacebookLoading(false);
-        return;
-      }
-
       // Se há um plano selecionado, salvar para vincular depois do login
       if (selectedPlan) {
         localStorage.setItem('selectedPlan', selectedPlan);
       }
 
-      // O modal será fechado automaticamente pelo listener de auth no App.tsx
+      if (provider === 'google') {
+        // AuthServiceV2 - tenta Cloudflare primeiro, fallback para Supabase
+        const result = await authService.signInWithGoogle();
+        if (!result.success && result.error) {
+          toast.error('Erro ao cadastrar com Google', {
+            description: result.error,
+          });
+          setIsGoogleLoading(false);
+        }
+        // Redirect acontece automaticamente
+        return;
+      }
+
+      if (provider === 'facebook') {
+        toast.warning('Cadastro com Facebook', {
+          description: 'Usando autenticação via Supabase',
+        });
+        setIsFacebookLoading(false);
+        return;
+      }
+
+      if (provider === 'apple') {
+        toast.warning('Cadastro com Apple indisponível', {
+          description: 'Use Google para se cadastrar.',
+        });
+        return;
+      }
     } catch (error) {
       toast.error('Erro inesperado', {
         description: String(error),
@@ -146,13 +143,13 @@ export function SignupModal({
   };
   const getModalTitle = () => {
     if (selectedPlan) {
-      const planNames = {
-        free: 'Plano Free',
+      const planNames: Record<string, string> = {
+        personal: 'Plano Personal',
         basic: 'Plano Basic',
         pro: 'Plano Pro',
         enterprise: 'Plano Enterprise',
       };
-      return `Cadastre-se no ${planNames[selectedPlan]}`;
+      return `Cadastre-se no ${planNames[selectedPlan] || 'Plano'}`;
     }
     return 'Chega mais!';
   };

@@ -3,7 +3,7 @@ import * as flags from 'country-flag-icons/react/3x2';
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { COUNTRIES, getCountryConfig } from '../constants/countries';
-import { supabase } from '../lib/api-clients/supabase-client';
+import { userManagementServiceV2 } from '../services/UserManagementServiceV2';
 import { Modal } from './Modal';
 
 type OnboardingModalProps = {
@@ -366,32 +366,28 @@ export function OnboardingModal({
         ? `${country.dial} ${formData.mobile_phone}`
         : formData.mobile_phone;
 
-      const { error } = await supabase
-        .from('users')
-        .update({
-          name: formData.name || 'Usuário',
-          preferred_name: formData.preferred_name || null,
-          mobile_phone: fullPhoneNumber
-            ? parseInt(fullPhoneNumber.replace(/\D/g, ''))
-            : null,
-          country: formData.country,
-          postal_code: formData.postal_code
-            ? parseInt(formData.postal_code)
-            : null,
-          address: fullAddress,
-          preferred_language: formData.preferred_language || 'pt',
-          last_online: new Date().toISOString(),
-        })
-        .eq('email', user.email);
+      // Use UserManagementServiceV2 (D1 Primary + Supabase Fallback)
+      const result = await userManagementServiceV2.updateUserProfile(user.email!, {
+        name: formData.name || 'Usuário',
+        preferred_name: formData.preferred_name || undefined,
+        mobile_phone: fullPhoneNumber
+          ? String(parseInt(fullPhoneNumber.replace(/\D/g, '')))
+          : undefined,
+        country: formData.country,
+        postal_code: formData.postal_code || undefined,
+        address: fullAddress || undefined,
+        preferred_language: formData.preferred_language || 'pt',
+      });
 
-      if (error) {
-        console.error('Erro ao salvar dados:', error);
+      if (!result.success) {
+        console.error('Erro ao salvar dados:', result.error);
         toast.error('Erro ao salvar informações', {
           description: 'Tente novamente.',
         });
         return;
       }
 
+      console.log('✅ [ONBOARDING] Perfil atualizado via UserManagementServiceV2');
       onComplete();
     } catch (error) {
       console.error('Erro inesperado:', error);
@@ -864,16 +860,11 @@ export function OnboardingModal({
       if (!isOpen || !user.email) return;
 
       try {
-        const { data, error } = await supabase
-          .from('users')
-          .select(
-            'name, preferred_name, mobile_phone, country, postal_code, address, street, number, complement, neighborhood, city, state, preferred_language, country_code',
-          )
-          .eq('email', user.email)
-          .single();
+        // Use UserManagementServiceV2 (D1 Primary + Supabase Fallback)
+        const result = await userManagementServiceV2.getUserProfile(user.email);
 
-        if (error) {
-          console.error('Erro ao carregar dados do usuário:', error);
+        if (!result.success || !result.data) {
+          console.error('Erro ao carregar dados do usuário:', result.error);
           // Use user_metadata data as fallback
           setFormData((prev) => ({
             ...prev,
@@ -881,7 +872,8 @@ export function OnboardingModal({
               user.user_metadata?.full_name || user.user_metadata?.name || '',
             preferred_name: user.user_metadata?.preferred_name || '',
           }));
-        } else if (data) {
+        } else {
+          const data = result.data;
           // Fill form with database data
           setFormData((prev) => ({
             ...prev,
@@ -904,6 +896,7 @@ export function OnboardingModal({
             state: data.state || '',
             preferred_language: data.preferred_language || 'pt',
           }));
+          console.log('✅ [ONBOARDING] Dados carregados via UserManagementServiceV2');
         }
       } catch (error) {
         console.error('Erro ao carregar dados:', error);
