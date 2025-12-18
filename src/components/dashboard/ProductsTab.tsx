@@ -1,4 +1,4 @@
-import { DollarSign, ExternalLink, Package, Target } from 'lucide-react';
+import { DollarSign, ExternalLink, Package, PenTool, Target } from 'lucide-react';
 import type { UserProduct } from '../../hooks/useUserData';
 import { ProductCard } from './ProductCard';
 
@@ -7,6 +7,7 @@ type ProductsTabProps = {
   isLoading: boolean;
   onAccessProduct: (productName: string) => void;
   onGoToCRM?: () => void;
+  onGoToContent?: () => void;
 };
 
 export function ProductsTab({
@@ -14,6 +15,7 @@ export function ProductsTab({
   isLoading,
   onAccessProduct,
   onGoToCRM,
+  onGoToContent,
 }: ProductsTabProps) {
   return (
     <div className="space-y-6">
@@ -115,6 +117,44 @@ export function ProductsTab({
                 <button
                   onClick={onGoToCRM}
                   className="flex-1 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 transition-colors flex items-center justify-center space-x-2"
+                >
+                  <ExternalLink className="h-4 w-4" />
+                  <span>Acessar</span>
+                </button>
+                <button className="rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-sm text-white hover:bg-slate-700 transition-colors">
+                  Gerenciar
+                </button>
+              </div>
+            </div>
+
+            {/* MyEasyContent Card - Always visible */}
+            <div className="rounded-lg border border-slate-800 bg-slate-900/50 p-6 hover:border-orange-500 transition-colors">
+              <div className="flex items-start justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="rounded-lg bg-orange-500/20 p-3">
+                    <PenTool className="h-6 w-6 text-orange-400" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-white">
+                      MyEasyContent
+                    </h3>
+                    <span className="inline-block mt-1 rounded-full bg-orange-500/20 text-orange-400 px-2 py-1 text-xs font-semibold">
+                      Ativo
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-4 space-y-2 text-sm">
+                <p className="text-slate-400">
+                  Crie posts, legendas, roteiros e calendário editorial para redes sociais.
+                </p>
+              </div>
+
+              <div className="mt-6 flex space-x-2">
+                <button
+                  onClick={onGoToContent}
+                  className="flex-1 rounded-lg bg-orange-600 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-700 transition-colors flex items-center justify-center space-x-2"
                 >
                   <ExternalLink className="h-4 w-4" />
                   <span>Acessar</span>

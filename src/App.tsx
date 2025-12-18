@@ -25,6 +25,7 @@ import { Packages } from './components/Packages';
 import { Preview } from './components/Preview';
 import { PWAInstallBanner } from './components/PWAInstallBanner';
 import { BusinessGuru } from './features/business-guru/BusinessGuru';
+import { MyEasyContent } from './features/my-easy-content';
 import { MyEasyCRM } from './features/my-easy-crm';
 import { MyEasyWebsite } from './features/my-easy-website/MyEasyWebsite';
 import { useInactivityTimeout } from './hooks/useInactivityTimeout';
@@ -544,6 +545,20 @@ function AppContent() {
               onLogout={handleLogout}
               onBackToMain={goToDashboard}
             />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path={ROUTES.MY_EASY_CONTENT}
+        element={
+          <ProtectedRoute
+            user={user}
+            needsOnboarding={needsOnboarding}
+            onOpenOnboarding={() => onboardingModal.open()}
+            isLoading={loading}
+          >
+            <MyEasyContent onBackToDashboard={goToDashboard} />
           </ProtectedRoute>
         }
       />

@@ -51,7 +51,7 @@ export function Dashboard({
   } = useUserData();
 
   // Dashboard navigation hook (manages tabs and feature navigation)
-  const { activeTab, setActiveTab, navigateToProduct, goToCRM } =
+  const { activeTab, setActiveTab, navigateToProduct, goToCRM, goToContent } =
     useDashboardNavigation({
       onGoHome,
       onGoToMyEasyWebsite,
@@ -147,6 +147,7 @@ export function Dashboard({
             isLoading={isLoading}
             onAccessProduct={navigateToProduct}
             onGoToCRM={goToCRM}
+            onGoToContent={goToContent}
           />
         )}
 

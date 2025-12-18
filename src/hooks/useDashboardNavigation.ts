@@ -33,6 +33,8 @@ export type UseDashboardNavigationOptions = {
   onGoToMyEasyPricing?: () => void;
   /** Callback function to navigate to MyEasyCRM feature */
   onGoToMyEasyCRM?: () => void;
+  /** Callback function to navigate to MyEasyContent feature */
+  onGoToMyEasyContent?: () => void;
   /** Initial active tab (default: 'overview') */
   initialTab?: DashboardTab;
 };
@@ -85,6 +87,7 @@ export function useDashboardNavigation(
     onGoToBusinessGuru,
     onGoToMyEasyPricing,
     onGoToMyEasyCRM,
+    onGoToMyEasyContent,
     initialTab = DEFAULT_INITIAL_TAB,
   } = options;
 
@@ -181,6 +184,22 @@ export function useDashboardNavigation(
   }, [onGoToMyEasyPricing]);
 
   /**
+   * Navigate to MyEasyContent feature
+   * @description
+   * Attempts to use the provided callback. If not available, uses React Router
+   * to navigate to the MyEasyContent route.
+   *
+   * @returns {void}
+   */
+  const goToContent = useCallback(() => {
+    if (onGoToMyEasyContent) {
+      onGoToMyEasyContent();
+    } else {
+      navigate(ROUTES.MY_EASY_CONTENT);
+    }
+  }, [onGoToMyEasyContent, navigate]);
+
+  /**
    * Navigate to a feature based on product name
    * @description
    * Smart routing that analyzes the product name and navigates to the appropriate feature:
@@ -188,6 +207,7 @@ export function useDashboardNavigation(
    * - Names containing "guru" or "business" → BusinessGuru
    * - Names containing "pricing" or "preco" → MyEasyPricing
    * - Names containing "crm" → MyEasyCRM
+   * - Names containing "content" or "conteudo" → MyEasyContent
    * - Other names → Home
    *
    * @param {string} productName - Name of the product to access
@@ -205,12 +225,13 @@ export function useDashboardNavigation(
         goToPricing();
       } else if (name.includes('crm')) {
         goToCRM();
+      } else if (name.includes('content') || name.includes('conteudo')) {
+        goToContent();
       } else {
         goToHome();
       }
     },
-    [goToWebsite, goToGuru, goToPricing, goToHome],
-    [goToWebsite, goToGuru, goToCRM, goToHome],
+    [goToWebsite, goToGuru, goToPricing, goToCRM, goToContent, goToHome],
   );
 
   // ============================================================================
@@ -226,5 +247,6 @@ export function useDashboardNavigation(
     goToGuru,
     goToPricing,
     goToCRM,
+    goToContent,
   };
 }
