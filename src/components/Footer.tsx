@@ -1,4 +1,4 @@
-import { Instagram, Youtube } from 'lucide-react';
+import { Youtube, Instagram } from 'lucide-react';
 
 // X (Twitter) icon component
 const XIcon = ({ className }: { className?: string }) => (
