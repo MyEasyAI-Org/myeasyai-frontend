@@ -1,4 +1,6 @@
-import { useState, useCallback } from 'react';
+import { useCallback, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { ROUTES } from '../router';
 
 // ============================================================================
 // TYPES AND INTERFACES
@@ -27,6 +29,10 @@ export type UseDashboardNavigationOptions = {
   onGoToMyEasyWebsite?: () => void;
   /** Callback function to navigate to BusinessGuru feature */
   onGoToBusinessGuru?: () => void;
+  /** Callback function to navigate to MyEasyPricing feature */
+  onGoToMyEasyPricing?: () => void;
+  /** Callback function to navigate to MyEasyCRM feature */
+  onGoToMyEasyCRM?: () => void;
   /** Initial active tab (default: 'overview') */
   initialTab?: DashboardTab;
 };
@@ -51,14 +57,15 @@ const DEFAULT_INITIAL_TAB: DashboardTab = 'overview';
  * @description
  * Provides centralized navigation logic for the dashboard, including:
  * - **Tab management**: Switch between dashboard tabs
- * - **Feature navigation**: Navigate to external features (MyEasyWebsite, BusinessGuru)
+ * - **Feature navigation**: Navigate to external features (MyEasyWebsite, BusinessGuru, MyEasyCRM)
  * - **Product routing**: Smart routing based on product names
- * - **Fallback handling**: Gracefully handles missing callbacks with URL fallbacks
+ * - **React Router integration**: Uses react-router-dom for URL-based navigation
  *
  * @param {UseDashboardNavigationOptions} [options] - Configuration options
  * @param {() => void} [options.onGoHome] - Callback to navigate to home
  * @param {() => void} [options.onGoToMyEasyWebsite] - Callback to navigate to MyEasyWebsite
  * @param {() => void} [options.onGoToBusinessGuru] - Callback to navigate to BusinessGuru
+ * @param {() => void} [options.onGoToMyEasyCRM] - Callback to navigate to MyEasyCRM
  * @param {DashboardTab} [options.initialTab='overview'] - Initial active tab
  * @returns {Object} Navigation state and control functions
  * @returns {DashboardTab} returns.activeTab - Currently active tab
@@ -67,6 +74,7 @@ const DEFAULT_INITIAL_TAB: DashboardTab = 'overview';
  * @returns {Function} returns.goToHome - Navigate to home view
  * @returns {Function} returns.goToWebsite - Navigate to MyEasyWebsite
  * @returns {Function} returns.goToGuru - Navigate to BusinessGuru
+ * @returns {Function} returns.goToCRM - Navigate to MyEasyCRM
  */
 export function useDashboardNavigation(
   options: UseDashboardNavigationOptions = {},
@@ -75,8 +83,12 @@ export function useDashboardNavigation(
     onGoHome,
     onGoToMyEasyWebsite,
     onGoToBusinessGuru,
+    onGoToMyEasyPricing,
+    onGoToMyEasyCRM,
     initialTab = DEFAULT_INITIAL_TAB,
   } = options;
+
+  const navigate = useNavigate();
 
   // ============================================================================
   // STATE
@@ -91,8 +103,8 @@ export function useDashboardNavigation(
   /**
    * Navigate to home view
    * @description
-   * Attempts to use the provided callback. If not available, falls back to
-   * changing window location to root path.
+   * Attempts to use the provided callback. If not available, uses React Router
+   * to navigate to the home route.
    *
    * @returns {void}
    */
@@ -100,15 +112,15 @@ export function useDashboardNavigation(
     if (onGoHome) {
       onGoHome();
     } else {
-      window.location.href = '/';
+      navigate(ROUTES.HOME);
     }
-  }, [onGoHome]);
+  }, [onGoHome, navigate]);
 
   /**
    * Navigate to MyEasyWebsite feature
    * @description
-   * Attempts to use the provided callback. If not available, falls back to
-   * hash-based routing.
+   * Attempts to use the provided callback. If not available, uses React Router
+   * to navigate to the MyEasyWebsite route.
    *
    * @returns {void}
    */
@@ -116,15 +128,15 @@ export function useDashboardNavigation(
     if (onGoToMyEasyWebsite) {
       onGoToMyEasyWebsite();
     } else {
-      window.location.href = '/#myeasywebsite';
+      navigate(ROUTES.MY_EASY_WEBSITE);
     }
-  }, [onGoToMyEasyWebsite]);
+  }, [onGoToMyEasyWebsite, navigate]);
 
   /**
    * Navigate to BusinessGuru feature
    * @description
-   * Attempts to use the provided callback. If not available, falls back to
-   * hash-based routing.
+   * Attempts to use the provided callback. If not available, uses React Router
+   * to navigate to the BusinessGuru route.
    *
    * @returns {void}
    */
@@ -132,9 +144,41 @@ export function useDashboardNavigation(
     if (onGoToBusinessGuru) {
       onGoToBusinessGuru();
     } else {
-      window.location.href = '/#businessguru';
+      navigate(ROUTES.BUSINESS_GURU);
     }
-  }, [onGoToBusinessGuru]);
+  }, [onGoToBusinessGuru, navigate]);
+
+  /**
+   * Navigate to MyEasyCRM feature
+   * @description
+   * Attempts to use the provided callback. If not available, uses React Router
+   * to navigate to the MyEasyCRM route.
+   *
+   * @returns {void}
+   */
+  const goToCRM = useCallback(() => {
+    if (onGoToMyEasyCRM) {
+      onGoToMyEasyCRM();
+    } else {
+      navigate(ROUTES.MY_EASY_CRM);
+    }
+  }, [onGoToMyEasyCRM, navigate]);
+
+  /**
+   * Navigate to MyEasyPricing feature
+   * @description
+   * Attempts to use the provided callback. If not available, falls back to
+   * hash-based routing.
+   *
+   * @returns {void}
+   */
+  const goToPricing = useCallback(() => {
+    if (onGoToMyEasyPricing) {
+      onGoToMyEasyPricing();
+    } else {
+      window.location.href = '/#myeasypricing';
+    }
+  }, [onGoToMyEasyPricing]);
 
   /**
    * Navigate to a feature based on product name
@@ -142,6 +186,8 @@ export function useDashboardNavigation(
    * Smart routing that analyzes the product name and navigates to the appropriate feature:
    * - Names containing "website" or "site" → MyEasyWebsite
    * - Names containing "guru" or "business" → BusinessGuru
+   * - Names containing "pricing" or "preco" → MyEasyPricing
+   * - Names containing "crm" → MyEasyCRM
    * - Other names → Home
    *
    * @param {string} productName - Name of the product to access
@@ -155,11 +201,16 @@ export function useDashboardNavigation(
         goToWebsite();
       } else if (name.includes('guru') || name.includes('business')) {
         goToGuru();
+      } else if (name.includes('pricing') || name.includes('preco')) {
+        goToPricing();
+      } else if (name.includes('crm')) {
+        goToCRM();
       } else {
         goToHome();
       }
     },
-    [goToWebsite, goToGuru, goToHome],
+    [goToWebsite, goToGuru, goToPricing, goToHome],
+    [goToWebsite, goToGuru, goToCRM, goToHome],
   );
 
   // ============================================================================
@@ -173,5 +224,7 @@ export function useDashboardNavigation(
     goToHome,
     goToWebsite,
     goToGuru,
+    goToPricing,
+    goToCRM,
   };
 }
