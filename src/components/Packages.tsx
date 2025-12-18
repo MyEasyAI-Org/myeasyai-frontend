@@ -46,14 +46,14 @@ export function Packages({ user }: PackagesProps) {
       <div className="mx-auto max-w-7xl">
         <div className="mb-16 text-center">
           <h2 className="mb-4 text-4xl font-bold text-white md:text-5xl">
-            Escolha seu{' '}
+            Quanto custa ter um{' '}
             <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-              Pacote Ideal
+              assistente de IA próprio?
             </span>
           </h2>
           <p className="mx-auto max-w-2xl text-lg text-slate-400">
-            Planos flexíveis para todas as necessidades. Comece gratuitamente e
-            escale conforme seu negócio cresce.
+            Planos para cada fase do seu negócio — do pequeno empreendedor à
+            empresa com milhares de atendimentos diários
           </p>
         </div>
 

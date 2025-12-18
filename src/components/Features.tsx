@@ -7,11 +7,14 @@ export function Features() {
       <div className="mx-auto max-w-7xl">
         <div className="mb-16 text-center">
           <h2 className="mb-4 text-4xl font-bold">
-            Por que escolher MyEasyAI?
+            Seu assistente de IA{' '}
+            <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+              atendendo clientes 24/7
+            </span>
           </h2>
           <p className="mx-auto max-w-2xl text-xl text-slate-400">
-            Automatize o atendimento ao cliente, responda dúvidas frequentes e
-            libere seu tempo para o que realmente importa
+            Enquanto você foca no que importa, seu assistente responde dúvidas,
+            agenda reuniões e vende seus produtos — dia e noite
           </p>
         </div>
 
