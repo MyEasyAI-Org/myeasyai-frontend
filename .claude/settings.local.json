@@ -58,6 +58,8 @@
       "Bash(npx wrangler r2 object put:*)",
       "Bash(npx tsc --noEmit)",
       "Bash(npm run build:frontend:*)"
+      "Bash(npm install:*)",
+      "Bash(npx vite:*)"
     ],
     "deny": [],
     "ask": []
