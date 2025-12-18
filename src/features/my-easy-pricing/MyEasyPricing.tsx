@@ -567,8 +567,8 @@ export function MyEasyPricing({ onBackToDashboard }: MyEasyPricingProps) {
               onProductMarginChange={handleProductMarginChange}
               tutorialActiveTab={tutorialState.isActive ? tutorialActiveTab : undefined}
               onTabChange={tutorialState.isActive ? setTutorialActiveTab : undefined}
-              tutorialMainTab={tutorialState.isActive ? tutorialMainTab : undefined}
-              onMainTabChange={tutorialState.isActive ? setTutorialMainTab : undefined}
+              tutorialMainTab={tutorialMainTab}
+              onMainTabChange={setTutorialMainTab}
               onOpenStoreModal={handleOpenStoreModal}
               onOpenProductModal={handleOpenProductModal}
             />
@@ -589,6 +589,7 @@ export function MyEasyPricing({ onBackToDashboard }: MyEasyPricingProps) {
               onStartTutorial={handleStartTutorial}
               isTutorialLoading={isTutorialLoading}
               tutorialOpenExportModal={tutorialState.isActive && currentStep?.id === 'exportHide'}
+              mainTab={tutorialMainTab}
             />
           </section>
         </div>

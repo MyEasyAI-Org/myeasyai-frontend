@@ -4,7 +4,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { PRICING_LABELS } from '../../constants/pricing.constants';
-import type { Store, Product, IndirectCost, HiddenCost, TaxItem } from '../../types/pricing.types';
+import type { Store, Product, IndirectCost, HiddenCost, TaxItem, MainTabType } from '../../types/pricing.types';
 import type { ProductCalculation, StoreCostsSummary } from '../../hooks/useCalculations';
 import { TableHeader } from '../table/TableHeader';
 import { ProductsTable } from '../table/ProductsTable';
@@ -32,6 +32,8 @@ interface RightPanelProps {
   isTutorialLoading?: boolean;
   // Tutorial: external control to open export modal
   tutorialOpenExportModal?: boolean;
+  // Current main tab - controls what to display
+  mainTab?: MainTabType;
 }
 
 // =============================================================================
@@ -121,6 +123,7 @@ export function RightPanel({
   onStartTutorial,
   isTutorialLoading = false,
   tutorialOpenExportModal = false,
+  mainTab = 'store',
 }: RightPanelProps) {
   const labels = PRICING_LABELS;
 
@@ -177,6 +180,131 @@ export function RightPanel({
 
   // Store selected but no products
   const hasProducts = products.length > 0;
+
+  // Insights Dashboard View
+  if (mainTab === 'insights' && selectedStore) {
+    return (
+      <div className="p-4 sm:p-6">
+        {/* Insights Dashboard Header */}
+        <div className="mb-6">
+          <h2 className="text-xl font-semibold text-white">
+            {labels.insights.title}
+          </h2>
+          <p className="text-sm text-slate-400">
+            {labels.insights.subtitle}
+          </p>
+        </div>
+
+        {/* Health Score Placeholder */}
+        <div className="mb-6 p-6 rounded-xl border border-slate-700 bg-slate-800/50">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-medium text-white">
+              {labels.insights.healthScore.title}
+            </h3>
+            <span className="px-3 py-1 text-sm font-medium bg-slate-700 text-slate-300 rounded-full">
+              Em desenvolvimento
+            </span>
+          </div>
+
+          {/* Placeholder Health Score Circle */}
+          <div className="flex items-center gap-8">
+            <div className="relative w-32 h-32">
+              <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                <circle
+                  cx="50"
+                  cy="50"
+                  r="45"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="8"
+                  className="text-slate-700"
+                />
+                <circle
+                  cx="50"
+                  cy="50"
+                  r="45"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="8"
+                  strokeDasharray={`${0.7 * 283} 283`}
+                  strokeLinecap="round"
+                  className="text-yellow-400"
+                />
+              </svg>
+              <div className="absolute inset-0 flex items-center justify-center">
+                <span className="text-2xl font-bold text-white">--</span>
+              </div>
+            </div>
+
+            {/* Placeholder Factors */}
+            <div className="flex-1 space-y-2">
+              {Object.entries(labels.insights.healthScore.factors).map(([key, label]) => (
+                <div key={key} className="flex items-center justify-between text-sm">
+                  <span className="text-slate-400">{label}</span>
+                  <div className="w-24 h-2 bg-slate-700 rounded-full overflow-hidden">
+                    <div className="h-full bg-slate-600 rounded-full" style={{ width: '0%' }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Insights Cards Placeholder */}
+        <div className="space-y-4">
+          <h3 className="text-lg font-medium text-white">Insights</h3>
+
+          {/* Placeholder Cards */}
+          <div className="grid gap-4">
+            {/* Critical placeholder */}
+            <div className="p-4 rounded-lg border border-red-900/30 bg-red-950/20">
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 rounded-full bg-red-500/20 flex items-center justify-center flex-shrink-0">
+                  <svg className="w-4 h-4 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <h4 className="text-sm font-medium text-red-300">Exemplo de Insight Critico</h4>
+                  <p className="text-xs text-slate-400 mt-1">Os insights serao gerados com base nos dados da sua loja.</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Warning placeholder */}
+            <div className="p-4 rounded-lg border border-amber-900/30 bg-amber-950/20">
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 rounded-full bg-amber-500/20 flex items-center justify-center flex-shrink-0">
+                  <svg className="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <h4 className="text-sm font-medium text-amber-300">Exemplo de Insight de Atencao</h4>
+                  <p className="text-xs text-slate-400 mt-1">Analises automaticas identificarao oportunidades de melhoria.</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Positive placeholder */}
+            <div className="p-4 rounded-lg border border-emerald-900/30 bg-emerald-950/20">
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center flex-shrink-0">
+                  <svg className="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <h4 className="text-sm font-medium text-emerald-300">Exemplo de Insight Positivo</h4>
+                  <p className="text-xs text-slate-400 mt-1">Pontos fortes da sua precificacao tambem serao destacados.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 sm:p-6">

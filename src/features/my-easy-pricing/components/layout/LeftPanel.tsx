@@ -233,6 +233,18 @@ export function LeftPanel({
           >
             {labels.mainTabs.product}
           </button>
+          <button
+            onClick={() => handleMainTabChange('insights')}
+            disabled={!hasSelectedStore}
+            data-tutorial="insights-tab"
+            className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
+              mainTab === 'insights'
+                ? 'text-yellow-400 border-b-2 border-yellow-400 -mb-px'
+                : 'text-slate-400 hover:text-slate-300'
+            } ${!hasSelectedStore ? 'opacity-50 cursor-not-allowed' : ''}`}
+          >
+            {labels.mainTabs.insights}
+          </button>
         </div>
       </div>
 
@@ -374,6 +386,37 @@ export function LeftPanel({
               </div>
             )}
           </>
+        )}
+
+        {/* Insights Tab Content - Chat Interface (Placeholder) */}
+        {mainTab === 'insights' && hasSelectedStore && (
+          <div className="flex flex-col h-full">
+            <div className="mb-4">
+              <h3 className="text-lg font-medium text-white">
+                {labels.insights.chat.title}
+              </h3>
+              <p className="text-sm text-slate-400">
+                {labels.insights.chat.subtitle}
+              </p>
+            </div>
+
+            {/* Chat Placeholder - To be implemented */}
+            <div className="flex-1 flex items-center justify-center rounded-lg bg-slate-800/30 border border-slate-700/50 min-h-[300px]">
+              <div className="text-center p-6">
+                <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-yellow-400/10 flex items-center justify-center">
+                  <svg className="w-6 h-6 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                  </svg>
+                </div>
+                <p className="text-slate-400 text-sm">
+                  {labels.insights.chat.welcome}
+                </p>
+                <p className="text-slate-500 text-xs mt-2">
+                  (Chat em desenvolvimento)
+                </p>
+              </div>
+            </div>
+          </div>
         )}
       </div>
     </div>
