@@ -10,8 +10,8 @@ export function Features() {
             Por que escolher MyEasyAI?
           </h2>
           <p className="mx-auto max-w-2xl text-xl text-slate-400">
-            Transforme suas ideias em assistentes virtuais inteligentes com
-            nossa plataforma inovadora
+            Automatize o atendimento ao cliente, responda dúvidas frequentes e
+            libere seu tempo para o que realmente importa
           </p>
         </div>
 
@@ -38,8 +38,8 @@ export function Features() {
               Fácil de usar
             </h3>
             <p className="leading-relaxed text-slate-400">
-              Interface intuitiva que permite criar assistentes virtuais sem
-              conhecimento técnico avançado
+              Crie seu assistente em minutos, apenas conversando. Não precisa
+              saber programar — é como ensinar um funcionário novo
             </p>
           </div>
 
@@ -64,11 +64,11 @@ export function Features() {
               </svg>
             </div>
             <h3 className="mb-3 text-xl font-semibold text-purple-400">
-              IA adaptada ao seu contexto
+              Conhece o seu negócio
             </h3>
             <p className="leading-relaxed text-slate-400">
-              Assistentes que aprendem e se adaptam às suas necessidades
-              específicas e contexto de trabalho
+              Ensine sobre seus produtos, serviços e políticas. Seu assistente
+              responde como se fosse parte da sua equipe
             </p>
           </div>
 
@@ -92,11 +92,11 @@ export function Features() {
               </svg>
             </div>
             <h3 className="mb-3 text-xl font-semibold text-cyan-400">
-              Integração com cursos
+              Aprenda enquanto cria
             </h3>
             <p className="leading-relaxed text-slate-400">
-              Aprendizado contínuo através de cursos integrados e atualização
-              constante de conhecimento
+              Cursos práticos ensinam como tirar o máximo da IA para seu
+              negócio, do básico ao avançado
             </p>
           </div>
 
@@ -119,11 +119,11 @@ export function Features() {
               </svg>
             </div>
             <h3 className="mb-3 text-xl font-semibold text-green-400">
-              Segurança e escalabilidade
+              Cresce com você
             </h3>
             <p className="leading-relaxed text-slate-400">
-              Infraestrutura robusta e segura que cresce junto com suas
-              necessidades
+              De 10 a 10.000 conversas por dia, seu assistente está sempre
+              disponível — 24 horas, 7 dias por semana
             </p>
           </div>
         </div>

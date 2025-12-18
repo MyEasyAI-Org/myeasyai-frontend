@@ -158,9 +158,9 @@ export function Hero({
           </h1>
 
           <p className="mx-auto mb-10 max-w-2xl text-xl leading-relaxed text-slate-400">
-            Construa e treine assistentes virtuais para o que voce precisa. IA
-            adaptada ao seu contexto, integracao com cursos e aprendizado
-            continuo.
+            Crie assistentes de IA que atendem seus clientes automaticamente.
+            Perfeito para chat de suporte, FAQ automático, agendamentos e muito
+            mais — sem precisar programar.
           </p>
 
           <div className="flex flex-col justify-center gap-4 sm:flex-row">
