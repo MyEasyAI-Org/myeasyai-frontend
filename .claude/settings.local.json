@@ -56,7 +56,8 @@
       "Bash(npx wrangler secret list:*)",
       "Bash(jq:*)",
       "Bash(npx wrangler r2 object put:*)",
-      "Bash(npx tsc --noEmit)"
+      "Bash(npx tsc --noEmit)",
+      "Bash(npm run build:frontend:*)"
     ],
     "deny": [],
     "ask": []

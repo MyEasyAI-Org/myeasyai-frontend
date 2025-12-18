@@ -273,9 +273,9 @@ export function getTemplateDescription(templateId: number): string {
   const template = getTemplateById(templateId);
   if (!template) return 'Template padrão';
 
-  return `**${template.name}** - ${template.description}\n\n` +
-    `✨ Ideal para: ${template.bestFor.join(', ')}\n` +
-    `🎨 Fontes: ${template.fonts.heading} + ${template.fonts.body}`;
+  return `${template.name} - ${template.description}\n\n` +
+    `Ideal para: ${template.bestFor.join(', ')}\n` +
+    `Fontes: ${template.fonts.heading} + ${template.fonts.body}`;
 }
 
 /**

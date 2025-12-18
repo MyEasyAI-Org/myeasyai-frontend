@@ -3,7 +3,7 @@
 
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 const GEMINI_API_URL =
-  'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-001:generateContent';
+  'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent';
 
 export interface GeminiRequest {
   contents: Array<{
@@ -42,7 +42,7 @@ export class GeminiClient {
    */
   async call(prompt: string, temperature: number = 0.9): Promise<string> {
     try {
-      console.log('🤖 [GEMINI CLIENT] Enviando prompt para o Gemini 2.0 Flash...');
+      console.log('🤖 [GEMINI CLIENT] Enviando prompt para o Gemini 2.5 Flash...');
       console.log('📝 Prompt:', prompt.substring(0, 150) + '...');
 
       const requestBody: GeminiRequest = {

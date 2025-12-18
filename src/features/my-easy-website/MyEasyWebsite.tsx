@@ -268,54 +268,8 @@ export function MyEasyWebsite({ onBackToDashboard, onGoToSubscription }: MyEasyW
     },
   });
 
-  // Extrair funções auxiliares que são usadas no ChatPanel
-  const askSectionQuestions = () => {
-    const sections = site.siteData.sections;
-
-    // Perguntas para Serviços
-    if (sections.includes('services') && site.siteData.services.length === 0) {
-      conversation.addMessage({
-        role: 'assistant',
-        content:
-          '📋 Vamos configurar a seção de SERVIÇOS\n\nListe seus serviços separados por vírgula.\n\n(Exemplo: Corte Premium, Barboterapia, Hidratação Capilar)',
-      });
-      conversation.goToStep(7);
-      return;
-    }
-
-    // Perguntas para Galeria
-    if (sections.includes('gallery') && site.siteData.gallery.length === 0) {
-      conversation.addMessage({
-        role: 'assistant',
-        content:
-          '📸 Vamos configurar a seção de GALERIA\n\nEnvie as imagens que você quer na galeria do seu site.\n\nClique no botão de upload abaixo ⬇️',
-        requiresImages: true,
-      });
-      conversation.goToStep(7);
-      return;
-    }
-
-    // Perguntas para Contato
-    if (sections.includes('contact') && !site.siteData.address) {
-      conversation.addMessage({
-        role: 'assistant',
-        content:
-          '📧 Vamos configurar a seção de CONTATO\n\nQual é o endereço completo da sua empresa com CEP?',
-      });
-      conversation.goToStep(7);
-      return;
-    }
-
-    // SEMPRE mostrar resumo antes de gerar o site
-    setShowSummary(true);
-    conversation.addMessage({
-      role: 'assistant',
-      content:
-        '📋 Perfeito! Agora vou mostrar um resumo de todas as suas informações para você confirmar:',
-    });
-    setSummaryMessageIndex(conversation.messagesCount);
-    conversation.goToStep(9.5);
-  };
+  // A função askSectionQuestions agora vem do hook handlers
+  // para evitar duplicação e usar a versão com parâmetros skipServices/skipGallery
 
   const handlePublishSite = () => {
     setShowDeployModal(true);
@@ -532,6 +486,7 @@ export function MyEasyWebsite({ onBackToDashboard, onGoToSubscription }: MyEasyW
               handleSendMessage={handlers.handleSendMessage}
               handleColorCategorySelect={handlers.handleColorCategorySelect}
               handlePaletteSelect={handlers.handlePaletteSelect}
+              handleTemplateSelect={handlers.handleTemplateSelect}
               handleSectionSelect={handlers.handleSectionSelect}
               handleConfirmSections={handlers.handleConfirmSections}
               handleImageUpload={handlers.handleImageUpload}
@@ -541,7 +496,12 @@ export function MyEasyWebsite({ onBackToDashboard, onGoToSubscription }: MyEasyW
               openInputModal={openInputModal}
               goBack={goBack}
               handleGenerateSite={handlers.handleGenerateSite}
-              askSectionQuestions={askSectionQuestions}
+              askSectionQuestions={handlers.askSectionQuestions}
+              handleBusinessHoursSelect={handlers.handleBusinessHoursSelect}
+              handleBusinessHoursCustom={handlers.handleBusinessHoursCustom}
+              handleLogoOption={handlers.handleLogoOption}
+              handleLogoUpload={handlers.handleLogoUpload}
+              handlePricingOption={handlers.handlePricingOption}
               fileInputRef={fileInputRef}
               messagesEndRef={messagesEndRef}
             />
