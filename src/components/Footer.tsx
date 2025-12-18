@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 import { Instagram, Youtube } from 'lucide-react';
+=======
+import { Youtube, Instagram } from 'lucide-react';
+>>>>>>> 6185d080d1ffb24ed70034e73922e323e8afe1a3
 
 // X (Twitter) icon component
 const XIcon = ({ className }: { className?: string }) => (
