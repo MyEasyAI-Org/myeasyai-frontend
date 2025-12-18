@@ -7,10 +7,342 @@ import {
   Sparkles,
   Upload,
   X,
+  Wand2,
+  Rocket,
+  Heart,
+  Laptop,
+  Store,
+  Handshake,
+  Utensils,
+  GraduationCap,
+  Moon,
+  Sun,
+  Briefcase,
+  PartyPopper,
+  Home,
+  BookOpen,
+  Zap,
+  Camera,
+  Smartphone,
+  MessageCircle,
+  MapPin,
+  HelpCircle,
+  DollarSign,
+  Users,
+  Clock,
+  UploadCloud,
+  Calendar,
+  SkipForward,
+  Type,
+  Plus,
+  ArrowRight,
+  ChevronUp,
+  ChevronDown,
+  type LucideIcon,
 } from 'lucide-react';
 import type React from 'react';
+import { useState, useEffect } from 'react';
 import { FlagIcon } from './shared/FlagIcon';
+import { TemplatePicker } from './shared/TemplatePicker';
 import type { SectionKey, BusinessArea } from '../hooks/useSiteData';
+
+// Componente de seletor de horário visual
+type BusinessHoursPickerProps = {
+  onConfirm: (hours: Record<string, { open: string; close: string } | { closed: boolean }>) => void;
+  onSkip: () => void;
+};
+
+const DAYS = [
+  { key: 'monday', label: 'Segunda', short: 'Seg' },
+  { key: 'tuesday', label: 'Terça', short: 'Ter' },
+  { key: 'wednesday', label: 'Quarta', short: 'Qua' },
+  { key: 'thursday', label: 'Quinta', short: 'Qui' },
+  { key: 'friday', label: 'Sexta', short: 'Sex' },
+  { key: 'saturday', label: 'Sábado', short: 'Sáb' },
+  { key: 'sunday', label: 'Domingo', short: 'Dom' },
+];
+
+const HOURS = [
+  '06:00', '07:00', '08:00', '09:00', '10:00', '11:00', '12:00',
+  '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00',
+  '20:00', '21:00', '22:00', '23:00', '00:00'
+];
+
+type DayHours = { open: string; close: string; closed?: boolean };
+
+function BusinessHoursPicker({ onConfirm, onSkip }: BusinessHoursPickerProps) {
+  // Estado para cada dia individualmente
+  const [dayHours, setDayHours] = useState<Record<string, DayHours>>({
+    monday: { open: '09:00', close: '18:00' },
+    tuesday: { open: '09:00', close: '18:00' },
+    wednesday: { open: '09:00', close: '18:00' },
+    thursday: { open: '09:00', close: '18:00' },
+    friday: { open: '09:00', close: '18:00' },
+    saturday: { open: '09:00', close: '14:00', closed: true },
+    sunday: { open: '09:00', close: '18:00', closed: true },
+  });
+
+  // Dia selecionado para edição individual
+  const [editingDay, setEditingDay] = useState<string | null>(null);
+
+  const toggleDay = (dayKey: string) => {
+    setDayHours(prev => ({
+      ...prev,
+      [dayKey]: { ...prev[dayKey], closed: !prev[dayKey].closed }
+    }));
+  };
+
+  const updateDayTime = (dayKey: string, field: 'open' | 'close', direction: 'up' | 'down') => {
+    setDayHours(prev => {
+      const currentTime = prev[dayKey][field];
+      const idx = HOURS.indexOf(currentTime);
+      let newIdx = idx;
+      if (direction === 'up' && idx > 0) newIdx = idx - 1;
+      if (direction === 'down' && idx < HOURS.length - 1) newIdx = idx + 1;
+      return {
+        ...prev,
+        [dayKey]: { ...prev[dayKey], [field]: HOURS[newIdx] }
+      };
+    });
+  };
+
+  const handleConfirm = () => {
+    const hours: Record<string, { open: string; close: string } | { closed: boolean }> = {};
+    DAYS.forEach(day => {
+      if (dayHours[day.key].closed) {
+        hours[day.key] = { closed: true };
+      } else {
+        hours[day.key] = { open: dayHours[day.key].open, close: dayHours[day.key].close };
+      }
+    });
+    onConfirm(hours);
+  };
+
+  // Formatar horário para exibição amigável
+  const formatTimeDisplay = (time: string) => {
+    const [hour] = time.split(':');
+    return `${hour}h`;
+  };
+
+  // Agrupar dias com mesmo horário para preview
+  const getPreviewText = () => {
+    const openDays = DAYS.filter(d => !dayHours[d.key].closed);
+    if (openDays.length === 0) return 'Nenhum dia selecionado';
+
+    // Agrupar por horário
+    const groups: Record<string, string[]> = {};
+    openDays.forEach(day => {
+      const key = `${dayHours[day.key].open}-${dayHours[day.key].close}`;
+      if (!groups[key]) groups[key] = [];
+      groups[key].push(day.short);
+    });
+
+    return Object.entries(groups).map(([time, days]) => {
+      const [open, close] = time.split('-');
+      const daysText = days.length === 5 && !days.includes('Sáb') && !days.includes('Dom')
+        ? 'Seg-Sex'
+        : days.length === 6 && !days.includes('Dom')
+        ? 'Seg-Sáb'
+        : days.length === 7
+        ? 'Todos os dias'
+        : days.join(', ');
+      return `${daysText}: ${formatTimeDisplay(open)} às ${formatTimeDisplay(close)}`;
+    }).join(' | ');
+  };
+
+  const openDaysCount = DAYS.filter(d => !dayHours[d.key].closed).length;
+
+  return (
+    <div className="mt-4 space-y-4">
+      {/* Seleção de dias com horários individuais */}
+      <div>
+        <p className="text-xs text-slate-400 mb-2">📅 Clique nos dias para ativar/desativar. Toque no horário para editar:</p>
+        <div className="space-y-2">
+          {DAYS.map(day => {
+            const isOpen = !dayHours[day.key].closed;
+            const isEditing = editingDay === day.key;
+
+            return (
+              <div key={day.key} className="flex items-center gap-2">
+                {/* Botão do dia */}
+                <button
+                  onClick={() => toggleDay(day.key)}
+                  className={`w-12 py-2 rounded-lg text-xs font-semibold transition-all ${
+                    isOpen
+                      ? 'bg-purple-500 text-white shadow-lg shadow-purple-500/30'
+                      : 'bg-slate-700 text-slate-500 line-through'
+                  }`}
+                >
+                  {day.short}
+                </button>
+
+                {/* Horários do dia */}
+                {isOpen && (
+                  <div className="flex-1 flex items-center gap-2">
+                    {isEditing ? (
+                      // Modo edição com seletores
+                      <div className="flex items-center gap-2 bg-slate-800 rounded-lg p-2 flex-1">
+                        <div className="flex items-center">
+                          <button
+                            onClick={() => updateDayTime(day.key, 'open', 'up')}
+                            className="p-1 hover:bg-slate-600 rounded transition-colors"
+                          >
+                            <ChevronUp className="h-3 w-3 text-slate-300" />
+                          </button>
+                          <span className="px-2 text-sm font-bold text-white min-w-[45px] text-center">
+                            {formatTimeDisplay(dayHours[day.key].open)}
+                          </span>
+                          <button
+                            onClick={() => updateDayTime(day.key, 'open', 'down')}
+                            className="p-1 hover:bg-slate-600 rounded transition-colors"
+                          >
+                            <ChevronDown className="h-3 w-3 text-slate-300" />
+                          </button>
+                        </div>
+                        <span className="text-slate-400 text-xs">às</span>
+                        <div className="flex items-center">
+                          <button
+                            onClick={() => updateDayTime(day.key, 'close', 'up')}
+                            className="p-1 hover:bg-slate-600 rounded transition-colors"
+                          >
+                            <ChevronUp className="h-3 w-3 text-slate-300" />
+                          </button>
+                          <span className="px-2 text-sm font-bold text-white min-w-[45px] text-center">
+                            {formatTimeDisplay(dayHours[day.key].close)}
+                          </span>
+                          <button
+                            onClick={() => updateDayTime(day.key, 'close', 'down')}
+                            className="p-1 hover:bg-slate-600 rounded transition-colors"
+                          >
+                            <ChevronDown className="h-3 w-3 text-slate-300" />
+                          </button>
+                        </div>
+                        <button
+                          onClick={() => setEditingDay(null)}
+                          className="ml-auto p-1 bg-purple-500 rounded text-white hover:bg-purple-600 transition-colors"
+                        >
+                          <Check className="h-3 w-3" />
+                        </button>
+                      </div>
+                    ) : (
+                      // Modo visualização - clique para editar
+                      <button
+                        onClick={() => setEditingDay(day.key)}
+                        className="flex-1 flex items-center justify-between bg-slate-800/50 hover:bg-slate-700/50 rounded-lg px-3 py-2 transition-colors group"
+                      >
+                        <span className="text-sm text-slate-200">
+                          {formatTimeDisplay(dayHours[day.key].open)} às {formatTimeDisplay(dayHours[day.key].close)}
+                        </span>
+                        <span className="text-xs text-slate-500 group-hover:text-purple-400 transition-colors">
+                          editar
+                        </span>
+                      </button>
+                    )}
+                  </div>
+                )}
+
+                {/* Fechado */}
+                {!isOpen && (
+                  <span className="text-xs text-slate-500 italic">Fechado</span>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Preview do horário */}
+      {openDaysCount > 0 && (
+        <div className="bg-slate-800/50 rounded-lg p-3 border border-slate-700">
+          <p className="text-xs text-purple-400 font-semibold mb-2">✨ Preview:</p>
+          <p className="text-sm text-white">{getPreviewText()}</p>
+        </div>
+      )}
+
+      {/* Botões de ação */}
+      <div className="flex gap-2">
+        <button
+          onClick={handleConfirm}
+          disabled={openDaysCount === 0}
+          className="flex-1 flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-purple-500 to-blue-600 py-3 text-sm font-semibold text-white hover:from-purple-600 hover:to-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <Check className="h-4 w-4" />
+          Confirmar
+        </button>
+        <button
+          onClick={onSkip}
+          className="px-4 py-3 rounded-lg border border-slate-600 text-slate-300 text-sm font-semibold hover:bg-slate-700 transition-colors"
+        >
+          Pular
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// Mapeamento de strings para componentes de ícones
+const iconMap: Record<string, LucideIcon> = {
+  Laptop,
+  Store,
+  Handshake,
+  Utensils,
+  Heart,
+  GraduationCap,
+  Palette,
+  Moon,
+  Sun,
+  Briefcase,
+  PartyPopper,
+  Sparkles,
+  Home,
+  BookOpen,
+  Zap,
+  Camera,
+  Smartphone,
+  MessageCircle,
+  MapPin,
+  HelpCircle,
+  DollarSign,
+  Users,
+  Clock,
+  UploadCloud,
+  Calendar,
+  SkipForward,
+  Type,
+  Plus,
+  ArrowRight,
+};
+
+// Componente de typing indicator animado
+function TypingIndicator() {
+  return (
+    <div className="flex items-center space-x-1 px-2 py-1">
+      <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+      <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+      <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+    </div>
+  );
+}
+
+// Componente de mensagem com animação de entrada
+function AnimatedMessage({ children, isUser, index }: { children: React.ReactNode; isUser: boolean; index: number }) {
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setIsVisible(true), 50);
+    return () => clearTimeout(timer);
+  }, []);
+
+  return (
+    <div
+      className={`transform transition-all duration-500 ease-out ${
+        isVisible ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'
+      } ${isUser ? 'justify-end' : 'justify-start'} flex`}
+    >
+      {children}
+    </div>
+  );
+}
 
 type ChatPanelProps = {
   // Hooks
@@ -40,6 +372,7 @@ type ChatPanelProps = {
   handleSendMessage: () => void;
   handleColorCategorySelect: (category: string) => void;
   handlePaletteSelect: (palette: any) => void;
+  handleTemplateSelect: (templateId: number) => void;
   handleSectionSelect: (section: string) => void;
   handleConfirmSections: () => void;
   handleImageUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
@@ -49,7 +382,27 @@ type ChatPanelProps = {
   openInputModal: (config: any) => void;
   goBack: () => void;
   handleGenerateSite: () => void;
-  askSectionQuestions: () => void;
+  askSectionQuestions: (skip?: {
+    services?: boolean;
+    gallery?: boolean;
+    address?: boolean;
+    phone?: boolean;
+    email?: boolean;
+    socialLinks?: boolean;
+    businessHours?: boolean;
+    logo?: boolean;
+    stats?: boolean;
+    team?: boolean;
+    pricing?: boolean;
+    whatsapp?: boolean;
+    seo?: boolean;
+  }) => void;
+  // Novos handlers
+  handleBusinessHoursSelect?: (option: string) => void;
+  handleBusinessHoursCustom?: (hours: Record<string, { open: string; close: string } | { closed: boolean }>) => void;
+  handleLogoOption?: (option: string) => void;
+  handleLogoUpload?: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  handlePricingOption?: (option: string) => void;
 
   // Refs
   fileInputRef: React.RefObject<HTMLInputElement | null>;
@@ -79,6 +432,7 @@ export function ChatPanel({
   handleSendMessage,
   handleColorCategorySelect,
   handlePaletteSelect,
+  handleTemplateSelect,
   handleSectionSelect,
   handleConfirmSections,
   handleImageUpload,
@@ -89,6 +443,11 @@ export function ChatPanel({
   goBack,
   handleGenerateSite,
   askSectionQuestions,
+  handleBusinessHoursSelect,
+  handleBusinessHoursCustom,
+  handleLogoOption,
+  handleLogoUpload,
+  handlePricingOption,
   fileInputRef,
   messagesEndRef,
 }: ChatPanelProps) {
@@ -139,7 +498,10 @@ export function ChatPanel({
               {message.options && (
                 <div className="mt-4 grid grid-cols-2 gap-2">
                   {message.options.map((option: any, idx: number) => {
-                    const Icon = option.icon;
+                    // Suporta tanto componentes quanto strings de ícones
+                    const Icon = typeof option.icon === 'string'
+                      ? iconMap[option.icon]
+                      : option.icon;
                     const isSelected =
                       conversation.currentStep === 5 &&
                       site.siteData.sections.includes(
@@ -157,12 +519,23 @@ export function ChatPanel({
                             handleColorCategorySelect(option.value);
                           } else if (conversation.currentStep === 5) {
                             handleSectionSelect(option.value);
+                          } else if (conversation.currentStep === 9.4 && handleBusinessHoursSelect) {
+                            // Horario de funcionamento
+                            handleBusinessHoursSelect(option.value);
+                          } else if (conversation.currentStep === 9.45 && handleLogoOption) {
+                            // Opcao de logo
+                            handleLogoOption(option.value);
+                          } else if (conversation.currentStep === 12 && handlePricingOption) {
+                            // Opcao de precos
+                            handlePricingOption(option.value);
                           } else if (option.value === 'more') {
                             // Adicionar mais imagens
                             fileInputRef.current?.click();
                           } else if (option.value === 'continue') {
                             // Continuar para próxima pergunta
-                            askSectionQuestions();
+                            // Como acabamos de adicionar imagens à galeria, passamos services e gallery: true
+                            // (services já foi processado antes de gallery no fluxo)
+                            askSectionQuestions({ services: true, gallery: true });
                           }
                         }}
                         className={`flex items-center space-x-2 rounded-lg border p-3 text-left transition-colors ${
@@ -250,44 +623,83 @@ export function ChatPanel({
 
               {message.requiresImages && (
                 <div className="mt-4">
-                  <input
-                    type="file"
-                    ref={fileInputRef}
-                    onChange={handleImageUpload}
-                    accept="image/*"
-                    multiple
-                    className="hidden"
-                  />
-                  <button
-                    onClick={() => fileInputRef.current?.click()}
-                    className="w-full flex items-center justify-center space-x-2 rounded-lg bg-gradient-to-r from-purple-500 to-blue-600 py-3 text-sm font-semibold text-white hover:from-purple-600 hover:to-blue-700 transition-colors"
-                  >
-                    <Upload className="h-4 w-4" />
-                    <span>Fazer Upload de Imagens</span>
-                  </button>
-                  {uploadedImages.length > 0 && (
-                    <div className="mt-3 grid grid-cols-3 gap-2">
-                      {uploadedImages.map((img, idx) => (
-                        <div key={idx} className="relative group">
-                          <img
-                            src={img}
-                            alt={`Upload ${idx + 1}`}
-                            className="w-full h-16 object-cover rounded"
-                          />
-                          <button
-                            onClick={() => {
-                              setUploadedImages((prev) =>
-                                prev.filter((_, i) => i !== idx),
-                              );
-                              site.removeGalleryImage(idx);
-                            }}
-                            className="absolute top-1 right-1 bg-red-500 rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                          >
-                            <X className="h-3 w-3 text-white" />
-                          </button>
+                  {/* Logo upload at step 9.46, Gallery upload otherwise */}
+                  {conversation.currentStep === 9.46 ? (
+                    <>
+                      <input
+                        type="file"
+                        ref={fileInputRef}
+                        onChange={handleLogoUpload}
+                        accept="image/*"
+                        className="hidden"
+                      />
+                      <button
+                        onClick={() => fileInputRef.current?.click()}
+                        className="w-full flex items-center justify-center space-x-2 rounded-lg bg-gradient-to-r from-purple-500 to-blue-600 py-3 text-sm font-semibold text-white hover:from-purple-600 hover:to-blue-700 transition-colors"
+                      >
+                        <Upload className="h-4 w-4" />
+                        <span>Fazer Upload da Logo</span>
+                      </button>
+                      {site.siteData.logo && (
+                        <div className="mt-3 flex justify-center">
+                          <div className="relative group">
+                            <img
+                              src={site.siteData.logo}
+                              alt="Logo"
+                              className="h-20 object-contain rounded"
+                            />
+                            <button
+                              onClick={() => site.updateLogo('')}
+                              className="absolute top-1 right-1 bg-red-500 rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                            >
+                              <X className="h-3 w-3 text-white" />
+                            </button>
+                          </div>
                         </div>
-                      ))}
-                    </div>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      <input
+                        type="file"
+                        ref={fileInputRef}
+                        onChange={handleImageUpload}
+                        accept="image/*"
+                        multiple
+                        className="hidden"
+                      />
+                      <button
+                        onClick={() => fileInputRef.current?.click()}
+                        className="w-full flex items-center justify-center space-x-2 rounded-lg bg-gradient-to-r from-purple-500 to-blue-600 py-3 text-sm font-semibold text-white hover:from-purple-600 hover:to-blue-700 transition-colors"
+                      >
+                        <Upload className="h-4 w-4" />
+                        <span>Fazer Upload de Imagens</span>
+                      </button>
+                      {uploadedImages.length > 0 && (
+                        <div className="mt-3 grid grid-cols-3 gap-2">
+                          {uploadedImages.map((img, idx) => (
+                            <div key={idx} className="relative group">
+                              <img
+                                src={img}
+                                alt={`Upload ${idx + 1}`}
+                                className="w-full h-16 object-cover rounded"
+                              />
+                              <button
+                                onClick={() => {
+                                  setUploadedImages((prev) =>
+                                    prev.filter((_, i) => i !== idx),
+                                  );
+                                  site.removeGalleryImage(idx);
+                                }}
+                                className="absolute top-1 right-1 bg-red-500 rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                              >
+                                <X className="h-3 w-3 text-white" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
               )}
@@ -301,6 +713,28 @@ export function ChatPanel({
                   Continuar ({site.siteData.sections.length} seções)
                 </button>
               )}
+
+              {/* Seletor Visual de Template */}
+              {message.templatePicker &&
+                message.role === 'assistant' &&
+                index === conversation.messages.length - 1 && (
+                  <TemplatePicker
+                    recommendedTemplateId={message.templatePicker.recommendedId}
+                    alternativeTemplateIds={message.templatePicker.alternativeIds}
+                    onSelect={handleTemplateSelect}
+                  />
+                )}
+
+              {/* Seletor Visual de Horário de Funcionamento */}
+              {conversation.currentStep === 9.41 &&
+                message.role === 'assistant' &&
+                index === conversation.messages.length - 1 &&
+                handleBusinessHoursCustom && (
+                  <BusinessHoursPicker
+                    onConfirm={(hours) => handleBusinessHoursCustom(hours)}
+                    onSkip={() => handleBusinessHoursSelect?.('skip')}
+                  />
+                )}
 
               {/* Confirmação de Endereço com Google Maps */}
               {addressManagement.addressConfirmation &&

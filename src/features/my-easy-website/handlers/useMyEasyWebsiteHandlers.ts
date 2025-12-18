@@ -4,6 +4,11 @@ import { contentRewritingService } from '../../../services/ContentRewritingServi
 import type { CountryAddressConfig } from '../../../constants/countries';
 import type { Message } from '../hooks/useConversationFlow';
 import type { BusinessArea, SectionKey } from '../hooks/useSiteData';
+import { siteManagementService, type SiteData } from '../../../services/SiteManagementService';
+import { authService } from '../../../services/AuthServiceV2';
+import { generateSiteHTML } from '../utils/siteGenerator';
+import { TEMPLATE_CONFIGS } from '../constants/templateConfig';
+import { selectBestTemplate } from '../utils/templateSelector';
 
 /**
  * Custom hook que centraliza todos os handlers do MyEasyWebsite
@@ -21,6 +26,7 @@ export function useMyEasyWebsiteHandlers({
   setSitePreviewUrl,
   setShowSummary,
   setSummaryMessageIndex,
+  onSiteCreated,
 }: {
   conversation: any;
   site: any;
@@ -34,6 +40,7 @@ export function useMyEasyWebsiteHandlers({
   setSitePreviewUrl: Dispatch<SetStateAction<string>>;
   setShowSummary: Dispatch<SetStateAction<boolean>>;
   setSummaryMessageIndex: Dispatch<SetStateAction<number | null>>;
+  onSiteCreated?: (site: SiteData) => void;
 }) {
   // Função auxiliar para salvar snapshot
   const saveSnapshot = () => {
@@ -151,11 +158,21 @@ export function useMyEasyWebsiteHandlers({
     if (!addressManagement.addressConfirmation) return;
 
     site.updateAddress(addressManagement.addressConfirmation.formatted);
+
+    // Salvar coordenadas para o mapa e habilitar exibicao do mapa
+    if (addressManagement.addressConfirmation.lat && addressManagement.addressConfirmation.lng) {
+      site.updateMapCoordinates(
+        addressManagement.addressConfirmation.lat,
+        addressManagement.addressConfirmation.lng
+      );
+      site.updateShowMap(true);
+    }
+
     addressManagement.clearAddressConfirmation();
 
     conversation.addMessage({
       role: 'assistant',
-      content: 'Perfeito! 📞\n\nAgora me diga o telefone de contato:',
+      content: 'Endereço salvo! ✅\n\nAgora o telefone para contato 📞\n\nEsse número vai aparecer no WhatsApp do seu site!',
     });
     conversation.goToStep(8);
   };
@@ -165,73 +182,241 @@ export function useMyEasyWebsiteHandlers({
     addressManagement.clearAddressConfirmation();
     conversation.addMessage({
       role: 'assistant',
-      content: 'Ok! Digite o endereço correto:',
+      content: 'Sem problemas! 😊\n\nDigite o endereço correto com cidade e estado.',
     });
     conversation.goToStep(7.5);
   };
 
-  // Fazer perguntas sobre seções
-  const askSectionQuestions = () => {
+  // Tipo para opções de skip no fluxo de perguntas
+  type SkipOptions = {
+    services?: boolean;
+    gallery?: boolean;
+    address?: boolean;
+    phone?: boolean;
+    email?: boolean;
+    socialLinks?: boolean;
+    businessHours?: boolean;
+    logo?: boolean;
+    stats?: boolean;
+    team?: boolean;
+    pricing?: boolean;
+    whatsapp?: boolean;
+    seo?: boolean;
+  };
+
+  // Fazer perguntas sobre seções - SEMPRE coleta informações básicas
+  // O parâmetro skip é usado para evitar loops quando acabamos de salvar um campo
+  // (o React state ainda não atualizou quando askSectionQuestions é chamado)
+  const askSectionQuestions = (skip: SkipOptions = {}) => {
     const sections = site.siteData.sections;
 
-    // Perguntas para Serviços
-    if (sections.includes('services') && site.siteData.services.length === 0) {
+    // 1. PRIMEIRO: Perguntar sobre Serviços (se a seção foi selecionada)
+    if (sections.includes('services') && site.siteData.services.length === 0 && !skip.services) {
       conversation.addMessage({
         role: 'assistant',
         content:
-          '📋 Vamos configurar a seção de SERVIÇOS\n\nListe seus serviços separados por vírgula.\n\n(Exemplo: Corte Premium, Barboterapia, Hidratação Capilar)',
+          'Ótimo! Agora vamos listar seus serviços ⚡\n\nQuais serviços ou produtos você oferece?\n\nSepare cada um por vírgula, por exemplo:\nCorte de Cabelo, Barba, Hidratação, Massagem',
       });
       conversation.goToStep(7);
       return;
     }
 
-    // Perguntas para Galeria
-    if (sections.includes('gallery') && site.siteData.gallery.length === 0) {
+    // 2. SEGUNDO: Perguntar sobre Galeria (se a seção foi selecionada)
+    if (sections.includes('gallery') && site.siteData.gallery.length === 0 && !skip.gallery) {
       conversation.addMessage({
         role: 'assistant',
         content:
-          '📸 Vamos configurar a seção de GALERIA\n\nEnvie as imagens que você quer na galeria do seu site.\n\nClique no botão de upload abaixo ⬇️',
+          'Hora de mostrar seu trabalho! 📸\n\nEnvie as melhores fotos do seu negócio.\n\nFotos de boa qualidade fazem toda a diferença!',
         requiresImages: true,
       });
       conversation.goToStep(7);
       return;
     }
 
-    // Perguntas para Contato
-    if (sections.includes('contact') && !site.siteData.address) {
+    // 3. SEMPRE: Perguntar sobre endereço (necessário para mapa e WhatsApp)
+    if (!site.siteData.address && !skip.address) {
       conversation.addMessage({
         role: 'assistant',
         content:
-          '📧 Vamos configurar a seção de CONTATO\n\nQual é o endereço completo da sua empresa com CEP?',
+          'Agora vamos ao contato 📍\n\nQual é o endereço da sua empresa?\n\nInclua rua, número, bairro, cidade e CEP.\n\nDigite "pular" se preferir não mostrar',
       });
-      conversation.goToStep(7);
+      conversation.goToStep(7.5);
       return;
     }
 
-    // SEMPRE mostrar resumo antes de gerar o site
+    // 4. SEMPRE: Perguntar sobre telefone (necessário para WhatsApp flutuante)
+    if (!site.siteData.phone && !skip.phone) {
+      conversation.addMessage({
+        role: 'assistant',
+        content:
+          'Agora o telefone 📞\n\nEsse número vai aparecer no botão de WhatsApp do seu site!\n\nDigite o número com DDD:',
+      });
+      conversation.goToStep(8);
+      return;
+    }
+
+    // 5. SEMPRE: Perguntar sobre email
+    if (!site.siteData.email && !skip.email) {
+      conversation.addMessage({
+        role: 'assistant',
+        content:
+          'Agora falta só o e-mail ✉️\n\nQual é o e-mail de contato da empresa?',
+      });
+      conversation.goToStep(9);
+      return;
+    }
+
+    // 6. Perguntar sobre redes sociais (se ainda não configurou)
+    // socialLinks === undefined significa "não perguntado", {} significa "perguntado mas vazio"
+    if (site.siteData.socialLinks === undefined && !skip.socialLinks) {
+      conversation.addMessage({
+        role: 'assistant',
+        content:
+          'Vamos às redes sociais 📱\n\nQual é o Instagram da sua empresa?\n\nCole o link ou só o @\n\nDigite "pular" se não tiver',
+      });
+      conversation.goToStep(9.1);
+      return;
+    }
+
+    // 7. Perguntar sobre horário de funcionamento
+    // businessHours === undefined significa "não perguntado", {} significa "perguntado mas vazio"
+    if (site.siteData.businessHours === undefined && !skip.businessHours) {
+      conversation.addMessage({
+        role: 'assistant',
+        content:
+          'Qual é o horário de funcionamento? 🕐',
+        options: [
+          { label: 'Seg-Sex 9h às 18h', value: 'weekdays-9-18', icon: 'Briefcase' },
+          { label: 'Seg-Sex 8h às 17h', value: 'weekdays-8-17', icon: 'Briefcase' },
+          { label: 'Seg-Sáb 9h às 18h', value: 'weeksat-9-18', icon: 'Calendar' },
+          { label: '24 horas', value: 'always', icon: 'Clock' },
+          { label: 'Personalizar', value: 'custom', icon: 'Plus' },
+          { label: 'Pular', value: 'skip', icon: 'SkipForward' },
+        ],
+      });
+      conversation.goToStep(9.4);
+      return;
+    }
+
+    // 8. Perguntar sobre logo (se ainda não tem)
+    if (site.siteData.logo === undefined && !skip.logo) {
+      conversation.addMessage({
+        role: 'assistant',
+        content:
+          'Você tem uma logo da empresa? 🎨',
+        options: [
+          { label: 'Sim, quero enviar', value: 'upload-logo', icon: 'UploadCloud' },
+          { label: 'Não tenho, usar nome', value: 'skip-logo', icon: 'Type' },
+        ],
+      });
+      conversation.goToStep(9.45);
+      return;
+    }
+
+    // 9. Perguntar sobre estatísticas (se ainda não foram processadas)
+    const statsNotProcessed = !site.siteData.heroStats ||
+      (site.siteData.heroStats.length === 0) ||
+      (site.siteData.heroStats.length > 0 && !site.siteData.heroStats.some((s: { label: string }) => s.label === '_processed' || s.label === 'Anos de Experiência' || s.label === 'Clientes Satisfeitos' || s.label === 'Avaliação Média'));
+
+    if (statsNotProcessed && !skip.stats) {
+      conversation.addMessage({
+        role: 'assistant',
+        content:
+          'Vamos adicionar números ao seu site 📊\n\nHá quantos anos você está no mercado?\n\nExemplo: 5, 10, 20\n\nDigite "pular" se preferir não mostrar',
+      });
+      conversation.goToStep(10);
+      return;
+    }
+
+    // 10. Perguntar sobre equipe (se a seção foi selecionada)
+    const teamNotProcessed = sections.includes('team') &&
+      site.siteData.team.length === 0 &&
+      !site.siteData.team.some((t: { name: string }) => t.name === '_processed');
+
+    if (teamNotProcessed && !skip.team) {
+      conversation.addMessage({
+        role: 'assistant',
+        content:
+          'Agora sua equipe! 👥\n\nDigite cada pessoa assim:\nNome - Cargo\n\nExemplo:\nJoão Silva - Fundador\nMaria Santos - Gerente\n\nDigite "pular" para continuar',
+      });
+      conversation.goToStep(11);
+      return;
+    }
+
+    // 11. Perguntar sobre preços (se a seção foi selecionada)
+    const pricingNotProcessed = sections.includes('pricing') &&
+      site.siteData.pricing.length === 0 &&
+      !site.siteData.pricing.some((p: { name: string }) => p.name === '_processed');
+
+    if (pricingNotProcessed && !skip.pricing) {
+      conversation.addMessage({
+        role: 'assistant',
+        content:
+          'Vamos aos preços! 💰\n\nQuer mostrar uma tabela de preços no site?',
+        options: [
+          { label: 'Sim, quero adicionar', value: 'add-pricing', icon: 'DollarSign' },
+          { label: 'Pular', value: 'skip-pricing', icon: 'SkipForward' },
+        ],
+      });
+      conversation.goToStep(12);
+      return;
+    }
+
+    // 12. Perguntar sobre mensagem do WhatsApp
+    if (!site.siteData.whatsappConfig?.welcomeMessage && !skip.whatsapp) {
+      conversation.addMessage({
+        role: 'assistant',
+        content:
+          'Quase lá! 🎉\n\nQual mensagem você quer que apareça quando alguém clicar no WhatsApp?\n\nExemplo: "Olá! Vi seu site e gostaria de saber mais..."\n\nDigite "pular" para usar a mensagem padrão',
+      });
+      conversation.goToStep(13);
+      return;
+    }
+
+    // 13. Perguntar sobre SEO (palavras-chave)
+    if ((!site.siteData.seoData?.keywords || site.siteData.seoData.keywords.length === 0) && !skip.seo) {
+      conversation.addMessage({
+        role: 'assistant',
+        content:
+          'Última etapa: SEO 🔍\n\nDigite até 5 palavras-chave do seu negócio.\n\nExemplo: barbearia, corte masculino, barba\n\nDigite "pular" se preferir',
+      });
+      conversation.goToStep(15);
+      return;
+    }
+
+    // 14. FINALMENTE: Mostrar resumo
     setShowSummary(true);
     conversation.addMessage({
       role: 'assistant',
       content:
-        '📋 Perfeito! Agora vou mostrar um resumo de todas as suas informações para você confirmar:',
+        'Parabéns! Você terminou! 🎊\n\nVamos revisar tudo antes de criar seu site:',
     });
-    setSummaryMessageIndex(conversation.messagesCount); // Salvar índice da mensagem atual
-    conversation.goToStep(9.5); // Ir direto para confirmação do resumo
+    setSummaryMessageIndex(conversation.messagesCount);
+    conversation.goToStep(9.5);
   };
 
   // Handler para seleção de área
   const handleAreaSelect = (area: BusinessArea) => {
     saveSnapshot();
 
+    const areaLabels: Record<string, string> = {
+      technology: '💻 Tecnologia',
+      retail: '🛍️ Varejo',
+      services: '🔧 Serviços',
+      food: '🍔 Alimentação',
+      health: '🏥 Saúde',
+      education: '📚 Educação',
+    };
+
     const userMessage: Message = {
       role: 'user',
-      content: `Selecionei: ${area}`,
+      content: `Selecionei: ${areaLabels[area] || area}`,
     };
 
     const assistantMessage: Message = {
       role: 'assistant',
       content:
-        'Ótima escolha! 🎯\n\nAgora me diga, qual é o nome da sua empresa?',
+        'Ótima escolha! 🎯\n\nVamos criar seu site! 🚀\n\nQual é o nome da sua empresa?',
       requiresInput: true,
     };
 
@@ -262,7 +447,7 @@ export function useMyEasyWebsiteHandlers({
     const assistantMessage: Message = {
       role: 'assistant',
       content:
-        'Perfeito! 🎨\n\nAgora vamos escolher as cores perfeitas para o seu site!\n\nPrimeiro, escolha uma cor base:',
+        'Excelente! 🎨\n\nQual é sua cor favorita?',
       options: [
         { label: '💙 Azul', value: 'blue' },
         { label: '💚 Verde', value: 'green' },
@@ -305,7 +490,7 @@ export function useMyEasyWebsiteHandlers({
           site.updateName(inputMessage);
           assistantResponse = {
             role: 'assistant',
-            content: `Perfeito, ${inputMessage}! 🌟\n\nAgora, crie um slogan impactante para sua empresa.\n\n(Exemplo: "Elevando seu estilo a um novo nível")`,
+            content: `Adorei o nome "${inputMessage}"! 🌟\n\nAgora crie um slogan para sua empresa.\n\nExemplo: "Transformando sonhos em realidade"`,
           };
           conversation.goToStep(2);
           break;
@@ -315,7 +500,7 @@ export function useMyEasyWebsiteHandlers({
           assistantResponse = {
             role: 'assistant',
             content:
-              'Excelente slogan! 📝\n\nAgora, descreva brevemente sua empresa. O que vocês fazem? Quais produtos ou serviços oferecem?',
+              'Slogan salvo! 🎉\n\nAgora descreva sua empresa... Me conte um pouco sobre o que vocês fazem. 😉',
           };
           conversation.goToStep(3);
           break;
@@ -325,14 +510,14 @@ export function useMyEasyWebsiteHandlers({
           assistantResponse = {
             role: 'assistant',
             content:
-              '✨ Perfeito! Agora me diga:\n\n**Que sentimento você quer transmitir ao visitante do seu site?**',
+              'Perfeito! 🎯\n\nQual clima você quer passar no seu site?',
             options: [
-              { label: '🎨 Vibrante & Animado', value: 'vibrant' },
-              { label: '🌑 Dark & Profissional', value: 'dark' },
-              { label: '☀️ Claro & Alegre', value: 'light' },
-              { label: '💼 Corporativo & Formal', value: 'corporate' },
-              { label: '🎪 Divertido & Criativo', value: 'fun' },
-              { label: '✨ Elegante & Minimalista', value: 'elegant' },
+              { label: 'Vibrante & Animado', value: 'vibrant', icon: 'Palette' },
+              { label: 'Dark & Profissional', value: 'dark', icon: 'Moon' },
+              { label: 'Claro & Alegre', value: 'light', icon: 'Sun' },
+              { label: 'Corporativo & Formal', value: 'corporate', icon: 'Briefcase' },
+              { label: 'Divertido & Criativo', value: 'fun', icon: 'PartyPopper' },
+              { label: 'Elegante & Minimalista', value: 'elegant', icon: 'Sparkles' },
             ],
           };
           conversation.goToStep(3.5);
@@ -348,22 +533,25 @@ export function useMyEasyWebsiteHandlers({
           assistantResponse = {
             role: 'assistant',
             content:
-              'Perfeito! ✨\n\nSua paleta personalizada foi criada!\n\nAgora selecione quais seções você quer no seu site:',
+              'Paleta definida! ✨\n\nQuais seções você quer no site?',
             options: [
-              { label: 'Hero (Início)', value: 'hero' },
-              { label: 'Sobre Nós', value: 'about' },
-              { label: 'Serviços', value: 'services' },
-              { label: 'Galeria', value: 'gallery' },
-              { label: 'App Download', value: 'app' },
-              { label: 'Depoimentos', value: 'testimonials' },
-              { label: 'Contato', value: 'contact' },
+              { label: 'Início', value: 'hero', icon: 'Home' },
+              { label: 'Sobre Nós', value: 'about', icon: 'BookOpen' },
+              { label: 'Serviços', value: 'services', icon: 'Zap' },
+              { label: 'Galeria', value: 'gallery', icon: 'Camera' },
+              { label: 'Download App', value: 'app', icon: 'Smartphone' },
+              { label: 'Depoimentos', value: 'testimonials', icon: 'MessageCircle' },
+              { label: 'Contato', value: 'contact', icon: 'MapPin' },
+              { label: 'FAQ', value: 'faq', icon: 'HelpCircle' },
+              { label: 'Preços', value: 'pricing', icon: 'DollarSign' },
+              { label: 'Equipe', value: 'team', icon: 'Users' },
             ],
           };
           conversation.goToStep(5);
           break;
         }
 
-        case 7: // Respostas das perguntas de seções
+        case 7: // Respostas das perguntas de seções (serviços)
           // Processar serviços
           if (
             site.siteData.sections.includes('services') &&
@@ -375,81 +563,39 @@ export function useMyEasyWebsiteHandlers({
               .filter((s) => s);
             site.setServices(servicesList);
 
-            // Próxima pergunta
-            if (site.siteData.sections.includes('gallery')) {
-              assistantResponse = {
-                role: 'assistant',
-                content:
-                  '📸 Vamos configurar a seção de GALERIA\n\nEnvie as imagens que você quer na galeria do seu site.\n\nClique no botão de upload abaixo ⬇️',
-                requiresImages: true,
-              };
-            } else if (site.siteData.sections.includes('contact')) {
-              assistantResponse = {
-                role: 'assistant',
-                content:
-                  '📧 Vamos configurar a seção de CONTATO\n\nQual é o endereço completo da sua empresa com CEP?',
-              };
-              conversation.goToStep(7.5);
-            } else {
-              // SEMPRE mostrar resumo antes de gerar o site
-              setShowSummary(true);
-              assistantResponse = {
-                role: 'assistant',
-                content:
-                  '📋 Perfeito! Agora vou mostrar um resumo de todas as suas informações para você confirmar:',
-              };
-              setSummaryMessageIndex(conversation.messagesCount + 1);
-              conversation.goToStep(9.5);
-            }
-          }
-          // Processar endereço e buscar coordenadas
-          else if (site.siteData.sections.includes('contact') && !site.siteData.address) {
-            // Buscar coordenadas do endereço
-            const isValid = await addressManagement.validateAddress(inputMessage);
-
-            if (isValid) {
-              assistantResponse = {
-                role: 'assistant',
-                content:
-                  '📍 Encontrei a localização!\n\nVerifique no mapa abaixo se está correto:',
-              };
-              conversation.goToStep(7.6);
-            } else {
-              assistantResponse = {
-                role: 'assistant',
-                content:
-                  '❌ Não consegui encontrar esse endereço.\n\nPor favor, digite um endereço mais completo com cidade e estado.',
-              };
-            }
-          } else {
-            // SEMPRE mostrar resumo antes de gerar o site
-            setShowSummary(true);
-            assistantResponse = {
-              role: 'assistant',
-              content:
-                '📋 Perfeito! Agora vou mostrar um resumo de todas as suas informações para você confirmar:',
-            };
-            setSummaryMessageIndex(conversation.messagesCount + 1);
-            conversation.goToStep(9.5);
+            // Ir direto para próxima pergunta (sem mensagem de confirmação redundante)
+            setTimeout(() => askSectionQuestions({ services: true }), 300);
+            setInputMessage('');
+            return;
           }
           break;
 
         case 7.5: {
-          // Correção de endereço
+          // Endereço - pode ser pulado
+          if (inputMessage.toLowerCase().includes('pular')) {
+            // Marcar endereço como vazio mas processado (usando espaço para diferenciar de não-preenchido)
+            site.updateAddress(' ');
+            // Ir direto para próxima pergunta
+            setTimeout(() => askSectionQuestions({ services: true, gallery: true, address: true }), 300);
+            setInputMessage('');
+            return;
+          }
+
+          // Validar endereço
           const isValid = await addressManagement.validateAddress(inputMessage);
 
           if (isValid) {
             assistantResponse = {
               role: 'assistant',
               content:
-                '📍 Encontrei a localização!\n\nVerifique no mapa abaixo se está correto:',
+                'Encontrei a localização! 📍\n\nVerifique no mapa se está correto:',
             };
             conversation.goToStep(7.6);
           } else {
             assistantResponse = {
               role: 'assistant',
               content:
-                '❌ Não consegui encontrar esse endereço.\n\nPor favor, digite um endereço mais completo com cidade e estado.',
+                'Não encontrei esse endereço ❌\n\nDigite um endereço mais completo com cidade e estado.\n\nOu digite "pular" para continuar',
             };
           }
           break;
@@ -463,19 +609,28 @@ export function useMyEasyWebsiteHandlers({
           ) {
             if (addressManagement.addressConfirmation) {
               site.updateAddress(addressManagement.addressConfirmation.formatted);
+
+              // Salvar coordenadas para o mapa
+              if (addressManagement.addressConfirmation.lat && addressManagement.addressConfirmation.lng) {
+                site.updateMapCoordinates(
+                  addressManagement.addressConfirmation.lat,
+                  addressManagement.addressConfirmation.lng
+                );
+                site.updateShowMap(true);
+              }
+
               addressManagement.clearAddressConfirmation();
 
-              assistantResponse = {
-                role: 'assistant',
-                content: 'Perfeito! 📞\n\nAgora me diga o telefone de contato:',
-              };
-              conversation.goToStep(8);
+              // Ir direto para próxima pergunta
+              setTimeout(() => askSectionQuestions({ services: true, gallery: true, address: true }), 300);
+              setInputMessage('');
+              return;
             }
           } else {
             addressManagement.clearAddressConfirmation();
             assistantResponse = {
               role: 'assistant',
-              content: 'Ok! Digite o endereço correto:',
+              content: 'Ok! Digite o endereço correto ou "pular" para continuar',
             };
             conversation.goToStep(7.5);
           }
@@ -489,24 +644,281 @@ export function useMyEasyWebsiteHandlers({
           );
           site.updatePhone(`${addressManagement.selectedCountry.dial} ${formattedPhone}`);
 
-          assistantResponse = {
-            role: 'assistant',
-            content: 'Perfeito! ✉️\n\nPor último, qual é o e-mail de contato?',
-          };
-          conversation.goToStep(9);
-          break;
+          // Ir direto para próxima pergunta
+          setTimeout(() => askSectionQuestions({ services: true, gallery: true, address: true, phone: true }), 300);
+          setInputMessage('');
+          return;
         }
 
         case 9: // Email
           site.updateEmail(inputMessage);
-          setShowSummary(true);
+
+          // Ir direto para próxima pergunta
+          setTimeout(() => askSectionQuestions({ services: true, gallery: true, address: true, phone: true, email: true }), 300);
+          setInputMessage('');
+          return;
+
+        case 9.1: // Instagram
+          if (inputMessage.trim() && !inputMessage.toLowerCase().includes('pular')) {
+            site.updateSocialLink('instagram', inputMessage.trim());
+          }
+          // Sempre inicializa o objeto socialLinks se não existir (marca como "perguntado")
+          if (!site.siteData.socialLinks) {
+            site.updateSocialLinks({});
+          }
           assistantResponse = {
             role: 'assistant',
-            content:
-              '📋 Perfeito! Agora vou mostrar um resumo de todas as suas informações para você confirmar:',
+            content: 'E o Facebook? 👍\n\nCole o link da sua página ou digite "pular"',
           };
+          conversation.goToStep(9.2);
+          break;
+
+        case 9.2: // Facebook
+          if (inputMessage.trim() && !inputMessage.toLowerCase().includes('pular')) {
+            site.updateSocialLink('facebook', inputMessage.trim());
+          }
+          assistantResponse = {
+            role: 'assistant',
+            content: 'E o LinkedIn? 💼\n\nCole o link ou digite "pular"',
+          };
+          conversation.goToStep(9.3);
+          break;
+
+        case 9.3: // LinkedIn
+          if (inputMessage.trim() && !inputMessage.toLowerCase().includes('pular')) {
+            site.updateSocialLink('linkedin', inputMessage.trim());
+          }
+
+          // Marcar que redes sociais foram processadas usando objeto vazio (sem campo 'processed')
+          // O fluxo usa o skip parameter em askSectionQuestions para evitar loop
+          if (!site.siteData.socialLinks) {
+            site.updateSocialLinks({});
+          }
+
+          // Ir direto para próxima pergunta
+          setTimeout(() => askSectionQuestions({
+            services: true, gallery: true, address: true, phone: true, email: true, socialLinks: true
+          }), 300);
+          setInputMessage('');
+          return;
+
+        case 9.4: // Horario de funcionamento (texto) - fallback se precisar digitar
+          if (inputMessage.trim() && !inputMessage.toLowerCase().includes('pular')) {
+            // Parse horario personalizado ou usar o texto direto
+            const defaultHours = { open: '09:00', close: '18:00' };
+            site.updateBusinessHours({
+              monday: defaultHours,
+              tuesday: defaultHours,
+              wednesday: defaultHours,
+              thursday: defaultHours,
+              friday: defaultHours,
+            });
+          } else {
+            // Marcar que horário foi processado (mesmo que vazio)
+            site.updateBusinessHours({});
+          }
+
+          // Ir direto para próxima pergunta
+          setTimeout(() => askSectionQuestions({
+            services: true, gallery: true, address: true, phone: true, email: true, socialLinks: true, businessHours: true
+          }), 300);
+          setInputMessage('');
+          return;
+
+        case 9.41: // Horário de funcionamento personalizado (texto livre)
+          if (inputMessage.trim()) {
+            // Salvar horário como texto customizado
+            site.updateBusinessHours({
+              customText: inputMessage.trim(),
+            });
+          } else {
+            // Marcar que horário foi processado (mesmo que vazio)
+            site.updateBusinessHours({});
+          }
+
+          // Ir direto para próxima pergunta
+          setTimeout(() => askSectionQuestions({
+            services: true, gallery: true, address: true, phone: true, email: true, socialLinks: true, businessHours: true
+          }), 300);
+          setInputMessage('');
+          return;
+
+        // === NOVOS STEPS PARA FUNCIONALIDADES 1-7 ===
+
+        case 10: // Estatísticas/Números - Anos de experiência
+          if (inputMessage.trim() && !inputMessage.toLowerCase().includes('pular')) {
+            const years = inputMessage.trim();
+            const currentStats = site.siteData.heroStats || [];
+            site.updateHeroStats([
+              ...currentStats.filter((s: { value: string; label: string }) => s.label !== 'Anos de Experiência'),
+              { value: years.includes('+') ? years : `${years}+`, label: 'Anos de Experiência' }
+            ]);
+          }
+          assistantResponse = {
+            role: 'assistant',
+            content: 'Ótimo! 📊\n\nQuantos clientes você já atendeu?\n\nExemplo: 500, 1000, 5000\n\nDigite "pular" se preferir não mostrar',
+          };
+          conversation.goToStep(10.1);
+          break;
+
+        case 10.1: // Estatísticas - Clientes
+          if (inputMessage.trim() && !inputMessage.toLowerCase().includes('pular')) {
+            const clients = inputMessage.trim();
+            const currentStats = site.siteData.heroStats || [];
+            site.updateHeroStats([
+              ...currentStats.filter((s: { value: string; label: string }) => s.label !== 'Clientes Satisfeitos'),
+              { value: clients.includes('+') ? clients : `${clients}+`, label: 'Clientes Satisfeitos' }
+            ]);
+          }
+          assistantResponse = {
+            role: 'assistant',
+            content: 'Excelente! ⭐\n\nQual é a nota média das suas avaliações?\n\nExemplo: 4.5, 4.8, 5.0\n\nDigite "pular" se preferir não mostrar',
+          };
+          conversation.goToStep(10.2);
+          break;
+
+        case 10.2: // Estatísticas - Avaliação
+          if (inputMessage.trim() && !inputMessage.toLowerCase().includes('pular')) {
+            const rating = inputMessage.trim();
+            const currentStats = site.siteData.heroStats || [];
+            site.updateHeroStats([
+              ...currentStats.filter((s: { value: string; label: string }) => s.label !== 'Avaliação Média'),
+              { value: rating.includes('★') ? rating : `${rating}★`, label: 'Avaliação Média' }
+            ]);
+          } else if (site.siteData.heroStats?.length === 0) {
+            // Marcar que estatísticas foram processadas (mesmo que vazias)
+            site.updateHeroStats([{ value: '', label: '_processed' }]);
+          }
+
+          // Ir direto para próxima pergunta
+          setTimeout(() => askSectionQuestions({
+            services: true, gallery: true, address: true, phone: true, email: true, socialLinks: true,
+            businessHours: true, logo: true, stats: true
+          }), 300);
+          setInputMessage('');
+          return;
+
+        case 11: // Equipe
+          if (inputMessage.trim() && !inputMessage.toLowerCase().includes('pular')) {
+            const lines = inputMessage.split('\n').filter(l => l.trim());
+            const teamMembers = lines.map(line => {
+              const parts = line.split('-').map(p => p.trim());
+              return {
+                name: parts[0] || 'Membro',
+                role: parts[1] || 'Equipe',
+              };
+            });
+            site.updateTeam(teamMembers);
+          } else {
+            // Marcar que equipe foi processada (pulada) com marcador especial
+            site.updateTeam([{ name: '_processed', role: '_skipped' }]);
+          }
+
+          // Ir direto para próxima pergunta
+          setTimeout(() => askSectionQuestions({
+            services: true, gallery: true, address: true, phone: true, email: true, socialLinks: true,
+            businessHours: true, logo: true, stats: true, team: true
+          }), 300);
+          setInputMessage('');
+          return;
+
+        case 12.1: // Preços - entrada de texto
+          if (inputMessage.trim() && !inputMessage.toLowerCase().includes('pular')) {
+            // Formato esperado: Plano1 - R$99 - feature1, feature2 | Plano2 - R$199 - feature1, feature2
+            const plans = inputMessage.split('|').map(plan => {
+              const parts = plan.split('-').map(p => p.trim());
+              return {
+                name: parts[0] || 'Plano',
+                price: parts[1] || 'Consulte',
+                features: parts[2] ? parts[2].split(',').map(f => f.trim()) : ['Atendimento personalizado'],
+              };
+            });
+            site.updatePricing(plans);
+          } else {
+            // Marcar que preços foram processados (pulados) com marcador especial
+            site.updatePricing([{ name: '_processed', price: '', features: [] }]);
+          }
+
+          // Ir direto para próxima pergunta
+          setTimeout(() => askSectionQuestions({
+            services: true, gallery: true, address: true, phone: true, email: true, socialLinks: true,
+            businessHours: true, logo: true, stats: true, team: true, pricing: true
+          }), 300);
+          setInputMessage('');
+          return;
+
+        case 13: // WhatsApp customizado
+          if (inputMessage.trim() && !inputMessage.toLowerCase().includes('pular')) {
+            site.updateWhatsAppMessage(inputMessage.trim());
+          } else {
+            // Marcar como processado com mensagem padrão
+            site.updateWhatsAppConfig({ welcomeMessage: 'Olá! Vi seu site e gostaria de saber mais.' });
+          }
+
+          // Ir direto para próxima pergunta
+          setTimeout(() => askSectionQuestions({
+            services: true, gallery: true, address: true, phone: true, email: true, socialLinks: true,
+            businessHours: true, logo: true, stats: true, team: true, pricing: true, whatsapp: true
+          }), 300);
+          setInputMessage('');
+          return;
+
+        case 14: // Domínio personalizado (removido do fluxo básico - pode ser configurado depois)
+          if (inputMessage.trim() && !inputMessage.toLowerCase().includes('pular')) {
+            site.updateCustomDomain({
+              customDomain: inputMessage.trim(),
+              hasCustomDomain: true,
+              dnsConfigured: false,
+            });
+          }
+
+          // Ir direto para próxima pergunta (SEO)
+          setTimeout(() => askSectionQuestions({
+            services: true, gallery: true, address: true, phone: true, email: true, socialLinks: true,
+            businessHours: true, logo: true, stats: true, team: true, pricing: true, whatsapp: true, seo: true
+          }), 300);
+          setInputMessage('');
+          return;
+
+        case 15: // SEO Keywords
+          if (inputMessage.trim() && !inputMessage.toLowerCase().includes('pular')) {
+            const keywords = inputMessage.split(',').map(k => k.trim()).filter(k => k).slice(0, 5);
+            site.updateSEOKeywords(keywords);
+          } else {
+            // Marcar como processado
+            site.updateSEOData({ keywords: [] });
+          }
+
+          // Ir para resumo (Analytics será opcional/avançado)
+          setShowSummary(true);
+          conversation.addMessage({
+            role: 'assistant',
+            content:
+              'Parabéns! Você terminou! 🎊\n\nVamos revisar tudo antes de criar seu site:',
+          });
           setSummaryMessageIndex(conversation.messagesCount + 1);
           conversation.goToStep(9.5);
+          setInputMessage('');
+          return;
+
+        case 16: // Google Analytics (opcional - não está mais no fluxo básico)
+          if (inputMessage.trim() && !inputMessage.toLowerCase().includes('pular')) {
+            site.updateGoogleAnalyticsId(inputMessage.trim());
+          }
+          assistantResponse = {
+            role: 'assistant',
+            content: 'Analytics configurado! 📊',
+          };
+          break;
+
+        case 17: // Facebook Pixel (opcional - não está mais no fluxo básico)
+          if (inputMessage.trim() && !inputMessage.toLowerCase().includes('pular')) {
+            site.updateFacebookPixelId(inputMessage.trim());
+          }
+          assistantResponse = {
+            role: 'assistant',
+            content: 'Pixel configurado! 📈',
+          };
           break;
 
         case 9.5: // Após confirmar o resumo
@@ -585,23 +997,236 @@ export function useMyEasyWebsiteHandlers({
     site.updateColors(JSON.stringify(paletteColors));
     site.updateSelectedPaletteId(palette.id);
 
+    // Selecionar template baseado na área e vibe
+    const userData = {
+      area: site.siteData.area || 'services',
+      name: site.siteData.name || '',
+      slogan: site.siteData.slogan || '',
+      description: site.siteData.description || '',
+      vibe: site.siteData.vibe || 'vibrant',
+      services: site.siteData.services || [],
+    };
+
+    const templateResult = selectBestTemplate(userData);
+    const selectedTemplate = templateResult.template;
+
+    // Salvar template automaticamente selecionado
+    site.updateTemplateId(selectedTemplate.id);
+
+    // Mensagem com dados de template para o TemplatePicker visual
     conversation.addMessage({
       role: 'assistant',
-      content: `Excelente escolha! 🎨\n\nPaleta "${palette.name}" selecionada com sucesso!\n\nAgora selecione quais seções você quer no seu site:`,
-      options: [
-        { label: 'Hero (Início)', value: 'hero' },
-        { label: 'Sobre Nós', value: 'about' },
-        { label: 'Serviços', value: 'services' },
-        { label: 'Galeria', value: 'gallery' },
-        { label: 'Preços', value: 'pricing' },
-        { label: 'Equipe', value: 'team' },
-        { label: 'FAQ', value: 'faq' },
-        { label: 'App Download', value: 'app' },
-        { label: 'Depoimentos', value: 'testimonials' },
-        { label: 'Contato', value: 'contact' },
-      ],
+      content: `Paleta "${palette.name}" aplicada! 🎨\n\nAgora escolha o visual do seu site. Recomendamos o template "${selectedTemplate.name}" para o seu negócio:`,
+      templatePicker: {
+        recommendedId: selectedTemplate.id,
+        alternativeIds: templateResult.alternativeTemplates.slice(0, 2).map(t => t.id),
+      },
     });
-    conversation.goToStep(5);
+    conversation.goToStep(4.7); // Step para seleção visual de template
+  };
+
+  // Handler para seleção de template (usado pelo TemplatePicker visual)
+  const handleTemplateSelect = (templateId: number) => {
+    saveSnapshot();
+
+    const template = TEMPLATE_CONFIGS.find(t => t.id === templateId);
+
+    if (template) {
+      site.updateTemplateId(templateId);
+
+      conversation.addMessage({
+        role: 'user',
+        content: `Template escolhido: ${template.name}`,
+      });
+
+      conversation.addMessage({
+        role: 'assistant',
+        content: `Template "${template.name}" selecionado! 🎯\n\nAgora selecione quais seções você quer no seu site:`,
+        options: [
+          { label: 'Hero (Início)', value: 'hero' },
+          { label: 'Sobre Nós', value: 'about' },
+          { label: 'Serviços', value: 'services' },
+          { label: 'Galeria', value: 'gallery' },
+          { label: 'Preços', value: 'pricing' },
+          { label: 'Equipe', value: 'team' },
+          { label: 'FAQ', value: 'faq' },
+          { label: 'App Download', value: 'app' },
+          { label: 'Depoimentos', value: 'testimonials' },
+          { label: 'Contato', value: 'contact' },
+        ],
+      });
+      conversation.goToStep(5);
+    }
+  };
+
+  // Handler para selecao de horario de funcionamento
+  const handleBusinessHoursSelect = (option: string) => {
+    saveSnapshot();
+
+    const optionLabels: Record<string, string> = {
+      'weekdays-9-18': 'Seg-Sex 9h às 18h',
+      'weekdays-8-17': 'Seg-Sex 8h às 17h',
+      'weeksat-9-18': 'Seg-Sáb 9h às 18h',
+      'always': 'Todos os dias 24h',
+      'custom': 'Personalizar',
+      'skip': 'Pular',
+    };
+
+    conversation.addMessage({
+      role: 'user',
+      content: `Escolhi: ${optionLabels[option] || option}`,
+    });
+
+    // Se escolheu personalizar, mostrar seletor visual
+    if (option === 'custom') {
+      conversation.addMessage({
+        role: 'assistant',
+        content: 'Configure seu horário de funcionamento 🕐\n\nSelecione os dias e horários abaixo:',
+      });
+      conversation.goToStep(9.41); // Step para seletor visual de horário
+      return;
+    }
+
+    if (option !== 'skip') {
+      let hours: any = {};
+      const weekdays = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
+      const allDays = [...weekdays, 'saturday', 'sunday'];
+
+      switch (option) {
+        case 'weekdays-9-18':
+          weekdays.forEach(day => { hours[day] = { open: '09:00', close: '18:00' }; });
+          hours.saturday = { closed: true };
+          hours.sunday = { closed: true };
+          break;
+        case 'weekdays-8-17':
+          weekdays.forEach(day => { hours[day] = { open: '08:00', close: '17:00' }; });
+          hours.saturday = { closed: true };
+          hours.sunday = { closed: true };
+          break;
+        case 'weeksat-9-18':
+          [...weekdays, 'saturday'].forEach(day => { hours[day] = { open: '09:00', close: '18:00' }; });
+          hours.sunday = { closed: true };
+          break;
+        case 'always':
+          allDays.forEach(day => { hours[day] = { open: '00:00', close: '23:59' }; });
+          break;
+      }
+      site.updateBusinessHours(hours);
+    } else {
+      // Marcar como processado (vazio)
+      site.updateBusinessHours({});
+    }
+
+    // Ir direto para próxima pergunta
+    setTimeout(() => askSectionQuestions({
+      services: true, gallery: true, address: true, phone: true, email: true, socialLinks: true, businessHours: true
+    }), 300);
+  };
+
+  // Handler para horário de funcionamento customizado (visual picker)
+  const handleBusinessHoursCustom = (hours: Record<string, { open: string; close: string } | { closed: boolean }>) => {
+    saveSnapshot();
+
+    // Formatar preview para mensagem do usuário
+    const openDays = Object.entries(hours)
+      .filter(([_, value]) => 'open' in value)
+      .map(([key]) => {
+        const dayLabels: Record<string, string> = {
+          monday: 'Seg', tuesday: 'Ter', wednesday: 'Qua',
+          thursday: 'Qui', friday: 'Sex', saturday: 'Sáb', sunday: 'Dom'
+        };
+        return dayLabels[key];
+      });
+
+    const firstOpenDay = Object.entries(hours).find(([_, value]) => 'open' in value);
+    const openTime = firstOpenDay && 'open' in firstOpenDay[1] ? firstOpenDay[1].open.replace(':00', 'h') : '';
+    const closeTime = firstOpenDay && 'close' in firstOpenDay[1] ? firstOpenDay[1].close.replace(':00', 'h') : '';
+
+    conversation.addMessage({
+      role: 'user',
+      content: `Horário: ${openDays.join(', ')} das ${openTime} às ${closeTime}`,
+    });
+
+    site.updateBusinessHours(hours);
+
+    // Ir direto para próxima pergunta
+    setTimeout(() => askSectionQuestions({
+      services: true, gallery: true, address: true, phone: true, email: true, socialLinks: true, businessHours: true
+    }), 300);
+  };
+
+  // Handler para opcao de logo
+  const handleLogoOption = (option: string) => {
+    saveSnapshot();
+
+    if (option === 'upload-logo') {
+      conversation.addMessage({
+        role: 'user',
+        content: 'Quero fazer upload da minha logo',
+      });
+      conversation.addMessage({
+        role: 'assistant',
+        content: 'Perfeito! Faça o upload da sua logo abaixo 📤',
+        requiresImages: true,
+      });
+      conversation.goToStep(9.46);
+    } else {
+      conversation.addMessage({
+        role: 'user',
+        content: 'Vou usar o nome estilizado',
+      });
+      // Marcar logo como processada (sem logo)
+      site.updateLogo('');
+      // Ir direto para próxima pergunta
+      setTimeout(() => askSectionQuestions({
+        services: true, gallery: true, address: true, phone: true, email: true, socialLinks: true, businessHours: true, logo: true
+      }), 300);
+    }
+  };
+
+  // Handler para upload de logo
+  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    const file = files[0];
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const logoUrl = reader.result as string;
+      site.updateLogo(logoUrl);
+
+      // Ir direto para próxima pergunta
+      setTimeout(() => askSectionQuestions({
+        services: true, gallery: true, address: true, phone: true, email: true, socialLinks: true, businessHours: true, logo: true
+      }), 300);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // Handler para opções de preços
+  const handlePricingOption = (option: string) => {
+    saveSnapshot();
+
+    conversation.addMessage({
+      role: 'user',
+      content: option === 'add-pricing' ? 'Quero adicionar preços' : 'Pular esta etapa',
+    });
+
+    if (option === 'add-pricing') {
+      conversation.addMessage({
+        role: 'assistant',
+        content: 'Vamos criar sua tabela de preços! 💰\n\nDigite assim:\nNome - Preço - recursos\n\nUse | para separar planos.\n\nExemplo:\nBásico - R$99 - Corte, Barba | Premium - R$199 - Corte, Barba, Hidratação\n\nDigite "pular" para continuar sem preços',
+      });
+      conversation.goToStep(12.1);
+    } else {
+      // Marcar preços como processados (pulados) com marcador especial
+      site.updatePricing([{ name: '_processed', price: '', features: [] }]);
+      // Ir direto para próxima pergunta
+      setTimeout(() => askSectionQuestions({
+        services: true, gallery: true, address: true, phone: true, email: true, socialLinks: true,
+        businessHours: true, logo: true, stats: true, team: true, pricing: true
+      }), 300);
+    }
   };
 
   // Handler para seleção de seção
@@ -660,7 +1285,7 @@ export function useMyEasyWebsiteHandlers({
     });
     conversation.addMessage({
       role: 'assistant',
-      content: `🎨 Entendi! Você quer cores "${description}"...\n\n🤖 Deixa eu criar algumas paletas profissionais para você escolher!\n\n✨ Usando IA para gerar 6 opções incríveis...`,
+      content: `Entendi! Você quer cores "${description}" 🎨\n\nGerando paletas profissionais com IA...`,
     });
 
     try {
@@ -668,7 +1293,7 @@ export function useMyEasyWebsiteHandlers({
 
       conversation.addMessage({
         role: 'assistant',
-        content: `✅ Paletas geradas com sucesso!\n\n🎨 Criei ${colorPalettes.generatedPalettes.length} opções de paletas baseadas em "${description}".\n\nEscolha sua favorita:`,
+        content: `Paletas geradas! ✅\n\nCriei ${colorPalettes.generatedPalettes.length} opções baseadas em "${description}".\n\nEscolha sua favorita:`,
         showColorPalettes: true,
       });
     } catch (error) {
@@ -678,7 +1303,7 @@ export function useMyEasyWebsiteHandlers({
 
       conversation.addMessage({
         role: 'assistant',
-        content: `✅ Paleta personalizada criada!\n\nAgora selecione quais seções você quer no seu site:`,
+        content: `Paleta personalizada criada! ✅\n\nAgora selecione quais seções você quer no seu site:`,
         options: [
           { label: 'Hero (Início)', value: 'hero' },
           { label: 'Sobre Nós', value: 'about' },
@@ -700,7 +1325,7 @@ export function useMyEasyWebsiteHandlers({
     conversation.addMessage({
       role: 'assistant',
       content:
-        '🤖 Estou processando seus textos com IA...\n\n✨ Reescrevendo slogan\n📝 Otimizando descrição\n🎯 Melhorando serviços\n❓ Gerando FAQ personalizado\n\nIsso vai deixar seu site muito mais profissional e persuasivo!',
+        'Processando seus textos com IA... 🤖\n\nSlogan, descrição, serviços e FAQ serão otimizados para deixar seu site mais profissional!',
     });
 
     try {
@@ -728,21 +1353,106 @@ export function useMyEasyWebsiteHandlers({
       conversation.addMessage({
         role: 'assistant',
         content:
-          '✅ Textos otimizados com sucesso!\n\n🎨 Slogan reescrito com impacto\n📖 Descrição persuasiva criada\n🌟 Serviços profissionalizados\n💬 FAQ personalizado gerado\n\nAgora vou gerar seu site...',
+          'Textos otimizados! ✅\n\nAgora vou gerar seu site...',
       });
 
       await new Promise((resolve) => setTimeout(resolve, 1500));
 
+      // Gerar HTML do site
+      const generatedHtml = generateSiteHTML(site.siteData, site);
+
+      // Salvar site no banco imediatamente (status: building)
+      const user = authService.getUser();
+      if (user?.uuid) {
+        const slug = correctedName.toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-');
+
+        try {
+          // Salvar TODOS os dados do site para poder restaurar depois
+          const fullSiteData = {
+            // Dados básicos
+            businessName: correctedName,
+            tagline: site.siteData.slogan,
+            description: site.siteData.description,
+            phone: site.siteData.phone,
+            email: site.siteData.email,
+            address: site.siteData.address,
+
+            // Configurações visuais
+            colors: site.siteData.colors, // JSON string com todas as cores
+            selectedPaletteId: site.siteData.selectedPaletteId,
+            templateId: site.siteData.templateId, // ID do template selecionado (1-11)
+            vibe: site.siteData.vibe,
+            area: site.siteData.area,
+
+            // Seções e conteúdo
+            sections: site.siteData.sections,
+            services: site.siteData.services,
+            serviceDescriptions: site.siteData.serviceDescriptions,
+            gallery: site.siteData.gallery,
+            faq: site.siteData.faq,
+            pricing: site.siteData.pricing,
+            team: site.siteData.team,
+            testimonials: site.siteData.testimonials,
+            heroStats: site.siteData.heroStats,
+            features: site.siteData.features,
+            aboutContent: site.siteData.aboutContent,
+
+            // Apps
+            appPlayStore: site.siteData.appPlayStore,
+            appAppStore: site.siteData.appAppStore,
+            showPlayStore: site.siteData.showPlayStore,
+            showAppStore: site.siteData.showAppStore,
+
+            // Novos campos
+            logo: site.siteData.logo,
+            socialLinks: site.siteData.socialLinks,
+            businessHours: site.siteData.businessHours,
+            showMap: site.siteData.showMap,
+            mapCoordinates: site.siteData.mapCoordinates,
+
+            // Funcionalidades 1-7
+            whatsappConfig: site.siteData.whatsappConfig,
+            customDomain: site.siteData.customDomain,
+            seoData: site.siteData.seoData,
+            analyticsData: site.siteData.analyticsData,
+
+            // HTML gerado
+            generatedHtml,
+
+            // Estado da conversa (para restaurar depois)
+            conversationMessages: conversation.messages,
+            conversationStep: conversation.currentStep,
+          };
+
+          const createResult = await siteManagementService.createSite({
+            user_uuid: user.uuid,
+            slug,
+            name: correctedName,
+            business_type: site.siteData.area || 'business',
+            status: 'building',
+            settings: JSON.stringify(fullSiteData),
+          });
+
+          if (createResult.success && createResult.data) {
+            console.log('✅ [handleGenerateSite] Site salvo no banco:', createResult.data.slug);
+            onSiteCreated?.(createResult.data);
+          }
+        } catch (err) {
+          console.error('❌ [handleGenerateSite] Erro ao salvar site no banco:', err);
+        }
+      }
+
       setGeneratedSite(`site-${Date.now()}`);
+      const domain = import.meta.env.VITE_SITE_DOMAIN || 'myeasyai.com';
       setSitePreviewUrl(
-        `https://${site.siteData.name.toLowerCase().replace(/\s+/g, '-')}.netlify.app`,
+        `https://${correctedName.toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-')}.${domain}`,
       );
       setIsGenerating(false);
 
       const successMessage: Message = {
         role: 'assistant',
         content:
-          '🎊 Seu site foi gerado com sucesso!\n\n✨ Todos os textos foram otimizados por IA para máxima conversão!\n\nVocê pode visualizá-lo no preview ao lado.\n\nAgora você pode:\n✏️ Editar cores e textos\n👁️ Abrir em uma nova aba\n🚀 Publicar no Netlify!',
+          'Seu site foi gerado com sucesso! 🎊\n\nTextos otimizados por IA para máxima conversão.\n\nVeja o preview ao lado e quando estiver pronto, publique!',
       };
 
       conversation.addMessage(successMessage);
@@ -758,8 +1468,9 @@ export function useMyEasyWebsiteHandlers({
 
       setTimeout(() => {
         setGeneratedSite(`site-${Date.now()}`);
+        const domain = import.meta.env.VITE_SITE_DOMAIN || 'myeasyai.com';
         setSitePreviewUrl(
-          `https://${site.siteData.name.toLowerCase().replace(/\s+/g, '-')}.netlify.app`,
+          `https://${site.siteData.name.toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-')}.${domain}`,
         );
       }, 1000);
     }
@@ -771,6 +1482,7 @@ export function useMyEasyWebsiteHandlers({
     handleSendMessage,
     handleColorCategorySelect,
     handlePaletteSelect,
+    handleTemplateSelect,
     handleSectionSelect,
     handleConfirmSections,
     handleImageUpload,
@@ -778,5 +1490,13 @@ export function useMyEasyWebsiteHandlers({
     confirmAddress,
     correctAddress,
     handleGenerateSite,
+    // Novos handlers
+    handleBusinessHoursSelect,
+    handleBusinessHoursCustom,
+    handleLogoOption,
+    handleLogoUpload,
+    handlePricingOption,
+    // Função auxiliar para perguntas de seções (exportada para uso no ChatPanel)
+    askSectionQuestions,
   };
 }

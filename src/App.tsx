@@ -29,15 +29,22 @@ import { MyEasyCRM } from './features/my-easy-crm';
 import { MyEasyWebsite } from './features/my-easy-website/MyEasyWebsite';
 import { useInactivityTimeout } from './hooks/useInactivityTimeout';
 import { useModalState } from './hooks/useModalState';
+import { useRealtimeSync } from './hooks/useRealtimeSync';
 import { supabase } from './lib/api-clients/supabase-client';
+<<<<<<< HEAD
 import { ROUTES } from './router';
 import { userManagementService } from './services/UserManagementService';
+=======
+import { userManagementServiceV2 } from './services/UserManagementServiceV2';
+import { authService, type AuthUser } from './services/AuthServiceV2';
+>>>>>>> 3cbaa27 (feat: ajustes do dashboard e onboarding)
 
 // Configuration: Enable/Disable Splash Screen
 // Change to `true` to re-enable the splash screen "Welcome to the future of AI"
 const ENABLE_SPLASH_SCREEN = false;
 
 /**
+<<<<<<< HEAD
  * ProtectedRoute - Component that protects routes requiring authentication
  */
 function ProtectedRoute({
@@ -82,6 +89,30 @@ function ProtectedRoute({
  */
 function AppContent() {
   const navigate = useNavigate();
+=======
+ * Converte AuthUser do AuthServiceV2 para formato compatível com Supabase User
+ * Permite usar o mesmo fluxo de UI para ambos os provedores
+ */
+function authUserToUser(authUser: AuthUser | null): User | null {
+  if (!authUser) return null;
+  return {
+    id: authUser.uuid,
+    email: authUser.email,
+    user_metadata: {
+      full_name: authUser.name,
+      preferred_name: authUser.preferred_name,
+      avatar_url: authUser.avatar_url,
+    },
+    app_metadata: {},
+    aud: 'authenticated',
+    created_at: '',
+  } as User;
+}
+
+function App() {
+  // Inicializa sincronização bidirecional Supabase ↔ D1
+  useRealtimeSync();
+>>>>>>> 3cbaa27 (feat: ajustes do dashboard e onboarding)
 
   const loginModal = useModalState();
   const signupModal = useModalState();
@@ -104,9 +135,16 @@ function AppContent() {
     return !localStorage.getItem('userName');
   });
   const [dashboardKey, setDashboardKey] = useState(Date.now());
+<<<<<<< HEAD
   const isUserActionRef = useRef(false);
   const wasPageHiddenRef = useRef(false);
   const ignoreNextAuthEventRef = useRef(false);
+=======
+  const [dashboardInitialTab, setDashboardInitialTab] = useState<'overview' | 'subscription' | 'products' | 'usage' | 'settings' | 'profile'>('overview');
+  const isUserActionRef = useRef(false); // Track if action is user-initiated
+  const wasPageHiddenRef = useRef(false); // Track if page was hidden (tab switch/minimize)
+  const ignoreNextAuthEventRef = useRef(false); // Ignore auth events after visibility change
+>>>>>>> 3cbaa27 (feat: ajustes do dashboard e onboarding)
 
   const openLogin = () => {
     isUserActionRef.current = true;
@@ -120,20 +158,18 @@ function AppContent() {
   };
   const closeSignup = () => signupModal.close();
 
-  // Function to fetch user data from database
+  // Function to fetch user data from database (D1 Primary + Supabase Fallback)
   const fetchUserData = async (userEmail: string) => {
     try {
-      const { data, error } = await supabase
-        .from('users')
-        .select('name, preferred_name, avatar_url')
-        .eq('email', userEmail)
-        .single();
+      // Use UserManagementServiceV2 (D1 Primary + Supabase Fallback)
+      const result = await userManagementServiceV2.getUserProfile(userEmail);
 
-      if (error) {
-        console.error('Erro ao buscar dados do usuário:', error);
+      if (!result.success || !result.data) {
+        console.error('Erro ao buscar dados do usuário:', result.error);
         return { name: 'Usuário', avatarUrl: undefined };
       }
 
+      const data = result.data;
       let displayName = 'Usuário';
 
       if (data?.preferred_name) {
@@ -158,11 +194,24 @@ function AppContent() {
     }
   };
 
+<<<<<<< HEAD
   const handleLogout = () => {
     isUserActionRef.current = true;
     setIsAuthLoading(true);
 
     setTimeout(() => {
+=======
+  const handleLogout = async () => {
+    // Mark as user-initiated action
+    isUserActionRef.current = true;
+
+    // Enable loading bar FIRST
+    setIsAuthLoading(true);
+
+    // Use setTimeout to avoid blocking - clear UI immediately but after bar renders
+    setTimeout(async () => {
+      // Clear React states for UI to update (dropdown menu disappears)
+>>>>>>> 3cbaa27 (feat: ajustes do dashboard e onboarding)
       setUser(null);
       setUserName('Usuário');
       setNeedsOnboarding(false);
@@ -171,6 +220,10 @@ function AppContent() {
       signupModal.close();
       setIsCheckingAuth(false);
 
+<<<<<<< HEAD
+=======
+      // Clear localStorage (Supabase keys)
+>>>>>>> 3cbaa27 (feat: ajustes do dashboard e onboarding)
       const localKeys = Object.keys(localStorage);
       for (const key of localKeys) {
         if (key.startsWith('sb-')) {
@@ -188,9 +241,17 @@ function AppContent() {
         }
       }
 
+<<<<<<< HEAD
       supabase.auth.signOut().catch((error) => {
+=======
+      // Sign out from AuthServiceV2 (handles both Cloudflare and Supabase)
+      try {
+        await authService.signOut();
+        console.log('✅ [APP] Logout successful via AuthServiceV2');
+      } catch (error) {
+>>>>>>> 3cbaa27 (feat: ajustes do dashboard e onboarding)
         console.error('Erro ao fazer logout:', error);
-      });
+      }
 
       // Navigate to home after logout
       navigate(ROUTES.HOME);
@@ -230,6 +291,12 @@ function AppContent() {
     setCurrentView('myeasypricing');
   };
 
+  const goToSubscription = () => {
+    setDashboardInitialTab('subscription');
+    setCurrentView('dashboard');
+    setDashboardKey(Date.now()); // Force remount to apply new initial tab
+  };
+
   const handleOnboardingComplete = () => {
     onboardingModal.close();
     setNeedsOnboarding(false);
@@ -255,6 +322,10 @@ function AppContent() {
         ignoreNextAuthEventRef.current = true;
         wasPageHiddenRef.current = false;
 
+<<<<<<< HEAD
+=======
+        // Reset the ignore flag after a short delay to catch the revalidation event
+>>>>>>> 3cbaa27 (feat: ajustes do dashboard e onboarding)
         setTimeout(() => {
           ignoreNextAuthEventRef.current = false;
         }, 2000);
@@ -263,7 +334,133 @@ function AppContent() {
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
+<<<<<<< HEAD
     const checkUser = async () => {
+=======
+    // Intercept clicks on navigation links
+    const handleNavigationClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      const link = target.closest('a');
+
+      if (link && link.href) {
+        const url = new URL(link.href);
+        if (url.pathname === '/myeasywebsite') {
+          e.preventDefault();
+          setCurrentView('myeasywebsite');
+        } else if (url.pathname === '/business-guru') {
+          e.preventDefault();
+          setCurrentView('businessguru');
+        } else if (url.pathname === '/') {
+          e.preventDefault();
+          setCurrentView('home');
+        }
+      }
+    };
+
+    // Add click listener
+    document.addEventListener('click', handleNavigationClick);
+
+    // ==================== CLOUDFLARE AUTH CALLBACK ====================
+    // Handle OAuth callback from Cloudflare (when redirected with ?token=...)
+    const handleCloudflareCallback = async () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const cloudflareToken = urlParams.get('token');
+
+      if (cloudflareToken) {
+        console.log('🔄 [APP] Processing Cloudflare OAuth callback...');
+        setIsAuthLoading(true);
+        isUserActionRef.current = true;
+
+        try {
+          const result = await authService.handleAuthCallback();
+
+          if (result.success && result.user) {
+            console.log('✅ [APP] Cloudflare OAuth successful:', result.user.email);
+
+            // Convert AuthUser to User format for compatibility
+            const convertedUser = authUserToUser(result.user);
+            setUser(convertedUser);
+
+            // Fetch user data and update display name
+            if (result.user.email) {
+              const userData = await fetchUserData(result.user.email);
+              setUserName(userData.name);
+            }
+
+            // Check if needs onboarding
+            if (convertedUser) {
+              const needsOnboardingCheck = await userManagementServiceV2.checkUserNeedsOnboarding(
+                convertedUser,
+              );
+              setNeedsOnboarding(needsOnboardingCheck);
+
+              // Navigate based on onboarding status
+              if (needsOnboardingCheck) {
+                setCurrentView('home');
+                setTimeout(() => {
+                  onboardingModal.open();
+                }, 100);
+              } else {
+                setCurrentView('dashboard');
+              }
+            }
+
+            // Clean URL (remove token from address bar)
+            window.history.replaceState({}, document.title, window.location.pathname);
+          } else {
+            console.error('❌ [APP] Cloudflare OAuth failed:', result.error);
+          }
+        } catch (error) {
+          console.error('❌ [APP] Error processing Cloudflare callback:', error);
+        } finally {
+          setTimeout(() => {
+            setIsAuthLoading(false);
+            isUserActionRef.current = false;
+          }, 1500);
+        }
+
+        setLoading(false);
+        setIsCheckingAuth(false);
+        return true; // Indicates callback was handled
+      }
+      return false;
+    };
+
+    // ==================== INIT AUTH ====================
+    const initAuth = async () => {
+      // First, check if this is a Cloudflare OAuth callback
+      const wasCallback = await handleCloudflareCallback();
+      if (wasCallback) return;
+
+      // Then check AuthServiceV2 for existing session (Cloudflare or Supabase)
+      await authService.waitForInit();
+      const authUser = authService.getUser();
+
+      if (authUser) {
+        console.log('✅ [APP] Session restored from AuthServiceV2:', authUser.email);
+        const convertedUser = authUserToUser(authUser);
+        setUser(convertedUser);
+
+        if (authUser.email) {
+          const userData = await fetchUserData(authUser.email);
+          setUserName(userData.name);
+        }
+
+        if (convertedUser) {
+          const needsOnboardingCheck = await userManagementServiceV2.checkUserNeedsOnboarding(
+            convertedUser,
+          );
+          setNeedsOnboarding(needsOnboardingCheck);
+        }
+
+        setLoading(false);
+        setIsCheckingAuth(false);
+        isInitialLoadRef.current = false;
+        return;
+      }
+
+      // Fallback: Check Supabase session directly
+>>>>>>> 3cbaa27 (feat: ajustes do dashboard e onboarding)
       try {
         const {
           data: { session },
@@ -283,29 +480,66 @@ function AppContent() {
       }
     };
 
-    checkUser();
+    initAuth();
 
     const timeoutId = setTimeout(() => {
       setLoading(false);
       setIsCheckingAuth(false);
     }, 5000);
 
+<<<<<<< HEAD
+=======
+    // ==================== AUTHSERVICE V2 LISTENER ====================
+    // Listen for auth state changes from AuthServiceV2 (Cloudflare PRIMARY)
+    const unsubscribeAuthV2 = authService.onAuthStateChange(async (authUser) => {
+      console.log('🔄 [APP] AuthServiceV2 state change:', authUser?.email || 'null');
+
+      if (authUser && !isInitialLoadRef.current) {
+        const convertedUser = authUserToUser(authUser);
+        setUser(convertedUser);
+
+        if (authUser.email) {
+          const userData = await fetchUserData(authUser.email);
+          setUserName(userData.name);
+        }
+      } else if (!authUser) {
+        // Only clear if this is intentional logout (not initial load)
+        if (!isInitialLoadRef.current && user) {
+          setUser(null);
+          setUserName('Usuário');
+          setUserAvatarUrl(undefined);
+          setCurrentView('home');
+          setNeedsOnboarding(false);
+        }
+      }
+    });
+
+    // ==================== SUPABASE LISTENER (FALLBACK) ====================
+    // Listen for authentication changes from Supabase (FALLBACK)
+>>>>>>> 3cbaa27 (feat: ajustes do dashboard e onboarding)
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
+      // Only process Supabase events if we're using Supabase as auth source
+      const authSource = authService.getAuthSource();
+      if (authSource === 'cloudflare') {
+        console.log('📢 [APP] Ignoring Supabase event (using Cloudflare):', event);
+        return;
+      }
+
       console.log('Auth event:', event, 'isInitialLoad:', isInitialLoadRef.current);
       setUser(session?.user ?? null);
 
       if (event === 'INITIAL_SESSION') {
         if (session?.user) {
-          await userManagementService.ensureUserInDatabase(session.user);
+          await userManagementServiceV2.ensureUserInDatabase(session.user);
 
           if (session.user.email) {
             const userData = await fetchUserData(session.user.email);
             setUserName(userData.name);
           }
 
-          const needsOnboardingCheck = await userManagementService.checkUserNeedsOnboarding(
+          const needsOnboardingCheck = await userManagementServiceV2.checkUserNeedsOnboarding(
             session.user,
           );
           setNeedsOnboarding(needsOnboardingCheck);
@@ -326,14 +560,19 @@ function AppContent() {
         signupModal.close();
 
         if (session?.user) {
-          await userManagementService.ensureUserInDatabase(session.user);
+          await userManagementServiceV2.ensureUserInDatabase(session.user);
 
           if (session.user.email) {
             const userData = await fetchUserData(session.user.email);
             setUserName(userData.name);
           }
 
+<<<<<<< HEAD
           const needsOnboardingCheck = await userManagementService.checkUserNeedsOnboarding(
+=======
+          // Check if needs onboarding
+          const needsOnboardingCheck = await userManagementServiceV2.checkUserNeedsOnboarding(
+>>>>>>> 3cbaa27 (feat: ajustes do dashboard e onboarding)
             session.user,
           );
           setNeedsOnboarding(needsOnboardingCheck);
@@ -373,6 +612,7 @@ function AppContent() {
 
     return () => {
       subscription.unsubscribe();
+      unsubscribeAuthV2();
       clearTimeout(timeoutId);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
@@ -393,10 +633,16 @@ function AppContent() {
           onGoHome={goToHome}
           onGoToMyEasyWebsite={goToMyEasyWebsite}
           onGoToBusinessGuru={goToBusinessGuru}
+<<<<<<< HEAD
           onGoToMyEasyPricing={goToMyEasyPricing}
+=======
+          initialTab={dashboardInitialTab}
+>>>>>>> 3cbaa27 (feat: ajustes do dashboard e onboarding)
           onLoadingComplete={() => {
             // Callback when dashboard loading finishes
             console.log('Dashboard loaded successfully!');
+            // Reset initial tab to overview for next time
+            setDashboardInitialTab('overview');
           }}
         />
       </>
@@ -404,7 +650,7 @@ function AppContent() {
   }
 
   if (user && currentView === 'myeasywebsite') {
-    return <MyEasyWebsite onBackToDashboard={goToDashboard} />;
+    return <MyEasyWebsite onBackToDashboard={goToDashboard} onGoToSubscription={goToSubscription} />;
   }
   return (
     <Routes>

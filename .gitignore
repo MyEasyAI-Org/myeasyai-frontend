@@ -39,3 +39,12 @@ dist-ssr
 
 # Documentation (local only)
 docs/
+
+# Cloudflare / Wrangler
+.wrangler/
+**/.wrangler/state/
+
+# SQLite local
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal

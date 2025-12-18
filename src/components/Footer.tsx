@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 import { Youtube, Instagram } from 'lucide-react';
+=======
+import { Instagram, Youtube } from 'lucide-react';
+>>>>>>> 3cbaa27 (feat: ajustes do dashboard e onboarding)
 
 // X (Twitter) icon component
 const XIcon = ({ className }: { className?: string }) => (

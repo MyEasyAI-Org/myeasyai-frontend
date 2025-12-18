@@ -1,0 +1,42 @@
+name = "myeasyai-sync-cron"
+main = "src/index.ts"
+compatibility_date = "2024-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+# Cron triggers - roda a cada 5 minutos
+[triggers]
+crons = ["*/5 * * * *"]
+
+# D1 Database binding (mesmo banco do api-d1)
+[[d1_databases]]
+binding = "DB"
+database_name = "myeasyai-db"
+database_id = "9601951e-ad41-4037-b09f-fe607d09030b"
+
+# Environment variables
+[vars]
+ENVIRONMENT = "production"
+SUPABASE_URL = "https://abmixlwlizdyvlxrizmi.supabase.co"
+# Janela de tempo para buscar registros modificados (em minutos)
+SYNC_WINDOW_MINUTES = "10"
+
+# ============================================
+# SECRETS (configurar via wrangler secret put)
+# ============================================
+# wrangler secret put SUPABASE_SERVICE_ROLE_KEY
+# ============================================
+
+# Development overrides
+[env.dev]
+name = "myeasyai-sync-cron-dev"
+[env.dev.triggers]
+# Em dev, não roda automaticamente - use wrangler dev --test-scheduled
+crons = []
+[[env.dev.d1_databases]]
+binding = "DB"
+database_name = "myeasyai-db"
+database_id = "9601951e-ad41-4037-b09f-fe607d09030b"
+[env.dev.vars]
+ENVIRONMENT = "development"
+SUPABASE_URL = "https://abmixlwlizdyvlxrizmi.supabase.co"
+SYNC_WINDOW_MINUTES = "10"
