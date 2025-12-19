@@ -26,6 +26,7 @@ import { Preview } from './components/Preview';
 import { PWAInstallBanner } from './components/PWAInstallBanner';
 import { BusinessGuru } from './features/business-guru/BusinessGuru';
 import { MyEasyCRM } from './features/my-easy-crm';
+import { MyEasyPricing } from './features/my-easy-pricing/MyEasyPricing';
 import { MyEasyWebsite } from './features/my-easy-website/MyEasyWebsite';
 import { useInactivityTimeout } from './hooks/useInactivityTimeout';
 import { useModalState } from './hooks/useModalState';
@@ -227,7 +228,7 @@ function AppContent() {
   };
 
   const goToMyEasyPricing = () => {
-    setCurrentView('myeasypricing');
+    navigate(ROUTES.MY_EASY_PRICING);
   };
 
   const handleOnboardingComplete = () => {
@@ -491,6 +492,7 @@ function AppContent() {
                 onGoHome={goToHome}
                 onGoToMyEasyWebsite={goToMyEasyWebsite}
                 onGoToBusinessGuru={goToBusinessGuru}
+                onGoToMyEasyPricing={goToMyEasyPricing}
                 onGoToMyEasyCRM={goToMyEasyCRM}
                 onLoadingComplete={() => {
                   console.log('Dashboard loaded successfully!');
@@ -544,6 +546,20 @@ function AppContent() {
               onLogout={handleLogout}
               onBackToMain={goToDashboard}
             />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path={ROUTES.MY_EASY_PRICING}
+        element={
+          <ProtectedRoute
+            user={user}
+            needsOnboarding={needsOnboarding}
+            onOpenOnboarding={() => onboardingModal.open()}
+            isLoading={loading}
+          >
+            <MyEasyPricing onBackToDashboard={goToDashboard} />
           </ProtectedRoute>
         }
       />

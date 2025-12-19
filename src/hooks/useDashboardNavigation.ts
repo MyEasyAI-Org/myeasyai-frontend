@@ -167,8 +167,8 @@ export function useDashboardNavigation(
   /**
    * Navigate to MyEasyPricing feature
    * @description
-   * Attempts to use the provided callback. If not available, falls back to
-   * hash-based routing.
+   * Attempts to use the provided callback. If not available, uses React Router
+   * to navigate to the MyEasyPricing route.
    *
    * @returns {void}
    */
@@ -176,9 +176,9 @@ export function useDashboardNavigation(
     if (onGoToMyEasyPricing) {
       onGoToMyEasyPricing();
     } else {
-      window.location.href = '/#myeasypricing';
+      navigate(ROUTES.MY_EASY_PRICING);
     }
-  }, [onGoToMyEasyPricing]);
+  }, [onGoToMyEasyPricing, navigate]);
 
   /**
    * Navigate to a feature based on product name
@@ -209,8 +209,7 @@ export function useDashboardNavigation(
         goToHome();
       }
     },
-    [goToWebsite, goToGuru, goToPricing, goToHome],
-    [goToWebsite, goToGuru, goToCRM, goToHome],
+    [goToWebsite, goToGuru, goToPricing, goToCRM, goToHome],
   );
 
   // ============================================================================

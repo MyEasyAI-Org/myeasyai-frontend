@@ -101,6 +101,7 @@ export const PRICING_LABELS = {
     store: 'Loja',
     product: 'Produto',
     costs: 'Custos',
+    insights: 'Insights',
   },
 
   // -------------------------------------------------------------------------
@@ -461,6 +462,57 @@ export const PRICING_LABELS = {
     noCosts: 'Nenhum custo adicionado.',
     noTaxes: 'Nenhuma taxa adicionada.',
     createFirst: 'Crie seu primeiro item para comecar.',
+  },
+
+  // -------------------------------------------------------------------------
+  // Insights (Assistente de Precificação)
+  // -------------------------------------------------------------------------
+  insights: {
+    title: 'Insights',
+    subtitle: 'Análise inteligente da sua precificação',
+    healthScore: {
+      title: 'Saúde da Precificação',
+      grades: {
+        excellent: 'Excelente',
+        good: 'Bom',
+        fair: 'Regular',
+        poor: 'Ruim',
+        critical: 'Crítico',
+      },
+      factors: {
+        marginHealth: 'Saúde das Margens',
+        marketAlignment: 'Alinhamento com Mercado',
+        costEfficiency: 'Eficiência de Custos',
+        breakEvenSafety: 'Segurança Break-even',
+        dataCompleteness: 'Completude de Dados',
+      },
+    },
+    severity: {
+      critical: 'Crítico',
+      warning: 'Atenção',
+      positive: 'Positivo',
+      tip: 'Dica',
+    },
+    chat: {
+      title: 'Assistente de Precificação',
+      subtitle: 'Tire suas dúvidas sobre precificação',
+      placeholder: 'Digite sua pergunta...',
+      send: 'Enviar',
+      thinking: 'Analisando...',
+      error: 'Erro ao processar. Tente novamente.',
+      welcome: 'Olá! Sou seu assistente de precificação. Como posso ajudar?',
+    },
+    actions: {
+      adjustPrice: 'Ajustar Preço',
+      viewProduct: 'Ver Produto',
+      reviewCosts: 'Revisar Custos',
+      learnMore: 'Saiba Mais',
+    },
+    empty: {
+      noStore: 'Selecione uma loja para ver insights',
+      noProducts: 'Adicione produtos para gerar análises',
+      analyzing: 'Analisando dados...',
+    },
   },
 } as const;
 
