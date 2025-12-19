@@ -66,7 +66,7 @@ export function TutorialController({
   // ---------------------------------------------------------------------------
   const handleStartTutorial = useCallback(async () => {
     if (!userUuid) {
-      toast.error('Usuario nao autenticado');
+      toast.error('Usuário não autenticado');
       return;
     }
 
@@ -85,7 +85,7 @@ export function TutorialController({
       const result = await tutorialDemoService.createDemoData(userUuid);
 
       if (!result.success || !result.data) {
-        toast.error('Erro ao criar dados de demonstracao');
+        toast.error('Erro ao criar dados de demonstração');
         return;
       }
 
@@ -142,7 +142,7 @@ export function TutorialController({
       const result = await tutorialDemoService.convertDemoToRegular(tutorialState.demoStoreId);
 
       if (result.success) {
-        toast.success('Dados de demonstracao mantidos!');
+        toast.success('Dados de demonstração mantidos!');
       } else {
         toast.error('Erro ao manter dados');
       }
@@ -173,7 +173,7 @@ export function TutorialController({
 
       if (result.success) {
         onDemoDataDeleted(tutorialState.demoStoreId);
-        toast.success('Dados de demonstracao excluidos!');
+        toast.success('Dados de demonstração excluídos!');
       } else {
         toast.error('Erro ao excluir dados');
       }

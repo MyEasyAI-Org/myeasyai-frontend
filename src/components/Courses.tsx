@@ -1,3 +1,5 @@
+import { Button } from './Button';
+
 export function Courses() {
   return (
     <section id="cursos" className="bg-gradient-to-b from-slate-900/30 via-slate-800/40 to-slate-900/30 px-4 py-20 sm:px-6 lg:px-8">
@@ -70,9 +72,7 @@ export function Courses() {
         </div>
 
         <div className="mt-12 text-center">
-          <button className="rounded-lg border border-slate-700 px-8 py-3 font-semibold text-slate-300 transition-colors hover:bg-slate-800">
-            Saiba mais sobre os cursos
-          </button>
+          <Button variant="outline">Saiba mais sobre os cursos</Button>
         </div>
       </div>
     </section>

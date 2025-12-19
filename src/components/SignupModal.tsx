@@ -1,7 +1,12 @@
 import { useState } from 'react';
 import { toast } from 'sonner';
 import type { SubscriptionPlan } from '../constants/plans';
+<<<<<<< HEAD
 import { authService } from '../services/AuthServiceV2';
+=======
+import { authService } from '../services/AuthService';
+import { translateAuthError, validateFormFields } from '../utils/authErrors';
+>>>>>>> 4da9a4a23d7969c3d283d2981522f1cfea49747f
 import { DSButton, DSInput } from './design-system';
 import { Modal } from './Modal';
 // CAPTCHA temporariamente desabilitado para testes E2E
@@ -37,17 +42,29 @@ export function SignupModal({
     const password = formData.get('password') as string;
     const confirmPassword = formData.get('confirmPassword') as string;
 
-    if (password !== confirmPassword) {
-      toast.error('As senhas não coincidem!', {
-        description: 'Digite a mesma senha nos dois campos.',
-      });
-      return;
-    }
+    // Validar todos os campos usando o helper
+    const validationErrors = validateFormFields({
+      fullName,
+      email,
+      password,
+      confirmPassword,
+    });
 
-    // Validar nome completo
-    if (fullName.trim().split(' ').length < 2) {
-      toast.error('Nome incompleto', {
-        description: 'Por favor, digite seu nome completo (nome e sobrenome).',
+    if (Object.keys(validationErrors).length > 0) {
+      // Mostrar o primeiro erro encontrado
+      const firstErrorField = Object.keys(validationErrors)[0];
+      const firstErrorMessage = validationErrors[firstErrorField];
+
+      // Mapear nome do campo para label amigável
+      const fieldLabels: Record<string, string> = {
+        fullName: 'Nome',
+        email: 'E-mail',
+        password: 'Senha',
+        confirmPassword: 'Confirmação de senha',
+      };
+
+      toast.error(`Verifique o campo ${fieldLabels[firstErrorField] || firstErrorField}`, {
+        description: firstErrorMessage,
       });
       return;
     }
@@ -60,10 +77,23 @@ export function SignupModal({
     // }
 
     try {
+<<<<<<< HEAD
       const result = await authService.signUp(email, password, fullName);
       if (!result.success) {
         toast.error('Erro ao criar conta', {
           description: result.error || 'Falha ao criar conta',
+=======
+      const { error } = await authService.signUpWithEmail(
+        email,
+        password,
+        fullName,
+        preferredName
+      );
+      if (error) {
+        const translatedError = translateAuthError(error);
+        toast.error(translatedError.title, {
+          description: translatedError.description,
+>>>>>>> 4da9a4a23d7969c3d283d2981522f1cfea49747f
         });
         return;
       }
@@ -78,8 +108,9 @@ export function SignupModal({
       onClose();
       // O modal será fechado automaticamente pelo listener de auth no App.tsx
     } catch (error) {
-      toast.error('Erro inesperado', {
-        description: String(error),
+      const translatedError = translateAuthError(error);
+      toast.error(translatedError.title, {
+        description: translatedError.description,
       });
     }
     // CAPTCHA temporariamente desabilitado
@@ -100,6 +131,35 @@ export function SignupModal({
       if (provider === 'google') setIsGoogleLoading(true);
       if (provider === 'facebook') setIsFacebookLoading(true);
 
+<<<<<<< HEAD
+=======
+      let result;
+      switch (provider) {
+        case 'google':
+          result = await authService.signInWithGoogle();
+          break;
+        case 'facebook':
+          result = await authService.signInWithFacebook();
+          break;
+        case 'apple':
+          toast.warning('Cadastro com Apple indisponível', {
+            description: 'Use Google ou Facebook para se cadastrar.',
+          });
+          return;
+      }
+
+      if (result.error) {
+        const translatedError = translateAuthError(result.error);
+        toast.error(translatedError.title, {
+          description: translatedError.description,
+        });
+        // Desativar loading em caso de erro
+        if (provider === 'google') setIsGoogleLoading(false);
+        if (provider === 'facebook') setIsFacebookLoading(false);
+        return;
+      }
+
+>>>>>>> 4da9a4a23d7969c3d283d2981522f1cfea49747f
       // Se há um plano selecionado, salvar para vincular depois do login
       if (selectedPlan) {
         localStorage.setItem('selectedPlan', selectedPlan);
@@ -133,8 +193,9 @@ export function SignupModal({
         return;
       }
     } catch (error) {
-      toast.error('Erro inesperado', {
-        description: String(error),
+      const translatedError = translateAuthError(error);
+      toast.error(translatedError.title, {
+        description: translatedError.description,
       });
       // Desativar loading em caso de erro
       if (provider === 'google') setIsGoogleLoading(false);

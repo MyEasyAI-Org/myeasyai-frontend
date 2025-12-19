@@ -4,13 +4,14 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { PRICING_LABELS } from '../../constants/pricing.constants';
-import type { Store, Product, IndirectCost, HiddenCost, TaxItem } from '../../types/pricing.types';
+import type { Store, Product, IndirectCost, HiddenCost, TaxItem, MainTabType } from '../../types/pricing.types';
 import type { ProductCalculation, StoreCostsSummary } from '../../hooks/useCalculations';
 import { TableHeader } from '../table/TableHeader';
 import { ProductsTable } from '../table/ProductsTable';
 import { CostsBreakdownTable } from '../table/CostsBreakdownTable';
 import { EmptyState } from '../shared/EmptyState';
 import { ExportModal } from '../export/ExportModal';
+import { InsightsPanel } from '../insights/InsightsPanel';
 
 // =============================================================================
 // Types
@@ -32,6 +33,12 @@ interface RightPanelProps {
   isTutorialLoading?: boolean;
   // Tutorial: external control to open export modal
   tutorialOpenExportModal?: boolean;
+  // Current main tab - controls what to display
+  mainTab?: MainTabType;
+  // Insights actions
+  onNavigateToProduct?: (productId: string) => void;
+  onOpenCostsTab?: () => void;
+  onOpenProductModal?: (productId: string) => void;
 }
 
 // =============================================================================
@@ -121,6 +128,10 @@ export function RightPanel({
   onStartTutorial,
   isTutorialLoading = false,
   tutorialOpenExportModal = false,
+  mainTab = 'store',
+  onNavigateToProduct,
+  onOpenCostsTab,
+  onOpenProductModal,
 }: RightPanelProps) {
   const labels = PRICING_LABELS;
 
@@ -165,8 +176,8 @@ export function RightPanel({
         <div className="rounded-xl border border-slate-800 bg-slate-900/50 overflow-hidden">
           <EmptyState
             icon="store"
-            title="Selecione uma loja para comecar"
-            description="Crie ou selecione uma loja no painel esquerdo para configurar custos e ver a tabela de precificacao."
+            title="Selecione uma loja para começar"
+            description="Crie ou selecione uma loja no painel esquerdo para configurar custos e ver a tabela de precificação."
             actionLabel={labels.stores.createFirstButton}
             onAction={onCreateStore}
           />
@@ -177,6 +188,21 @@ export function RightPanel({
 
   // Store selected but no products
   const hasProducts = products.length > 0;
+
+  // Insights Dashboard View
+  if (mainTab === 'insights') {
+    return (
+      <InsightsPanel
+        store={selectedStore}
+        products={products}
+        calculations={calculations}
+        costsSummary={summary || DEFAULT_SUMMARY}
+        onNavigateToProduct={onNavigateToProduct}
+        onOpenCostsTab={onOpenCostsTab}
+        onOpenProductModal={onOpenProductModal}
+      />
+    );
+  }
 
   return (
     <div className="p-4 sm:p-6">

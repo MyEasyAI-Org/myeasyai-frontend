@@ -26,6 +26,7 @@ import { IndirectCostsForm } from '../forms/IndirectCostsForm';
 import { HiddenCostsForm } from '../forms/HiddenCostsForm';
 import { TaxConfigForm } from '../forms/TaxConfigForm';
 import { PriceAdjustSliders } from '../forms/PriceAdjustSliders';
+import { ChatPanel } from '../chat/ChatPanel';
 
 // =============================================================================
 // Types
@@ -233,6 +234,18 @@ export function LeftPanel({
           >
             {labels.mainTabs.product}
           </button>
+          <button
+            onClick={() => handleMainTabChange('insights')}
+            disabled={!hasSelectedStore}
+            data-tutorial="insights-tab"
+            className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
+              mainTab === 'insights'
+                ? 'text-yellow-400 border-b-2 border-yellow-400 -mb-px'
+                : 'text-slate-400 hover:text-slate-300'
+            } ${!hasSelectedStore ? 'opacity-50 cursor-not-allowed' : ''}`}
+          >
+            {labels.mainTabs.insights}
+          </button>
         </div>
       </div>
 
@@ -310,7 +323,7 @@ export function LeftPanel({
 
               {selectedProduct.market_price && (
                 <InfoCard
-                  label="Preco de Mercado (referencia)"
+                  label="Preço de Mercado (referência)"
                   value={`R$ ${selectedProduct.market_price.toFixed(2)}`}
                 />
               )}
@@ -374,6 +387,11 @@ export function LeftPanel({
               </div>
             )}
           </>
+        )}
+
+        {/* Insights Tab Content - Chat Interface */}
+        {mainTab === 'insights' && hasSelectedStore && (
+          <ChatPanel storeId={selectedStore?.id ?? null} />
         )}
       </div>
     </div>

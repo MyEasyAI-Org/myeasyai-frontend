@@ -176,8 +176,8 @@ export function ProductModal({
             </h2>
             <p className="text-sm text-slate-400 mt-0.5">
               {isEditing
-                ? 'Atualize as informacoes do produto.'
-                : 'Adicione um novo produto a sua tabela de precos.'}
+                ? 'Atualize as informações do produto.'
+                : 'Adicione um novo produto à sua tabela de preços.'}
             </p>
           </div>
           <button

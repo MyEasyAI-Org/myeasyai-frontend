@@ -3,10 +3,15 @@ export function Preview() {
     <section id="preview" className="bg-gradient-to-b from-transparent via-slate-900/20 to-transparent px-4 py-20 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-7xl">
         <div className="mb-16 text-center">
-          <h2 className="mb-4 text-4xl font-bold">Veja como funciona</h2>
+          <h2 className="mb-4 text-4xl font-bold">
+            Crie seu assistente de atendimento{' '}
+            <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+              em 3 passos simples
+            </span>
+          </h2>
           <p className="mx-auto max-w-2xl text-xl text-slate-400">
-            Uma prévia de como será sua experiência criando e interagindo com
-            assistentes virtuais
+            Configure, treine e publique — seu assistente estará pronto para
+            atender clientes em minutos
           </p>
         </div>
 

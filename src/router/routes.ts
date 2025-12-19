@@ -16,6 +16,7 @@ export const ROUTES = {
   MY_EASY_WEBSITE: '/myeasywebsite',
   BUSINESS_GURU: '/businessguru',
   MY_EASY_CRM: '/crm',
+  MY_EASY_PRICING: '/pricing',
 } as const;
 
 export type RouteKey = keyof typeof ROUTES;

@@ -166,15 +166,30 @@ export function MyEasyPricing({ onBackToDashboard }: MyEasyPricingProps) {
     return () => unsubscribe();
   }, []);
 
+  // Track previous tutorial state to detect when exiting tutorial mode
+  const wasTutorialActiveRef = useRef(false);
+
   // ---------------------------------------------------------------------------
   // Tutorial Auto-Navigation
   // ---------------------------------------------------------------------------
   // Automatically navigate to the appropriate section based on tutorial step
   useEffect(() => {
-    if (!tutorialState.isActive || !currentStep) {
-      // Reset tutorial tabs when tutorial is not active
-      setTutorialActiveTab(null);
-      setTutorialMainTab('store');
+    // Only reset tabs when transitioning FROM tutorial mode TO non-tutorial mode
+    if (!tutorialState.isActive) {
+      if (wasTutorialActiveRef.current) {
+        // Was in tutorial, now exiting - reset to store tab
+        setTutorialActiveTab(null);
+        setTutorialMainTab('store');
+        wasTutorialActiveRef.current = false;
+      }
+      // Don't do anything else when tutorial is not active
+      return;
+    }
+
+    // Tutorial is active
+    wasTutorialActiveRef.current = true;
+
+    if (!currentStep) {
       return;
     }
 
@@ -390,6 +405,26 @@ export function MyEasyPricing({ onBackToDashboard }: MyEasyPricingProps) {
     return updateProduct(productId, { desired_margin: newMargin });
   };
 
+  // Handler for navigating to a product from insights
+  const handleNavigateToProduct = useCallback((productId: string) => {
+    setTutorialMainTab('product');
+    selectProduct(productId);
+  }, [selectProduct]);
+
+  // Handler for opening costs tab from insights
+  const handleOpenCostsTab = useCallback(() => {
+    setTutorialMainTab('costs');
+    setTutorialActiveTab('indirect');
+  }, []);
+
+  // Handler for opening product modal from insights (for price adjustment)
+  const handleOpenProductModalById = useCallback((productId: string) => {
+    const product = products.find(p => p.id === productId);
+    if (product) {
+      handleOpenProductModal(product);
+    }
+  }, [products]);
+
   // ---------------------------------------------------------------------------
   // Tutorial Handlers
   // ---------------------------------------------------------------------------
@@ -569,8 +604,8 @@ export function MyEasyPricing({ onBackToDashboard }: MyEasyPricingProps) {
               onProductMarginChange={handleProductMarginChange}
               tutorialActiveTab={tutorialState.isActive ? tutorialActiveTab : undefined}
               onTabChange={tutorialState.isActive ? setTutorialActiveTab : undefined}
-              tutorialMainTab={tutorialState.isActive ? tutorialMainTab : undefined}
-              onMainTabChange={tutorialState.isActive ? setTutorialMainTab : undefined}
+              tutorialMainTab={tutorialMainTab}
+              onMainTabChange={setTutorialMainTab}
               onOpenStoreModal={handleOpenStoreModal}
               onOpenProductModal={handleOpenProductModal}
             />
@@ -591,6 +626,10 @@ export function MyEasyPricing({ onBackToDashboard }: MyEasyPricingProps) {
               onStartTutorial={handleStartTutorial}
               isTutorialLoading={isTutorialLoading}
               tutorialOpenExportModal={tutorialState.isActive && currentStep?.id === 'exportHide'}
+              mainTab={tutorialMainTab}
+              onNavigateToProduct={handleNavigateToProduct}
+              onOpenCostsTab={handleOpenCostsTab}
+              onOpenProductModal={handleOpenProductModalById}
             />
           </section>
         </div>

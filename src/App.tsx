@@ -275,13 +275,7 @@ function AppContent() {
   };
 
   const goToMyEasyPricing = () => {
-    navigate('/pricing');
-  };
-
-  const goToSubscription = () => {
-    setDashboardInitialTab('subscription');
-    setDashboardKey(Date.now());
-    navigate(ROUTES.DASHBOARD);
+    navigate(ROUTES.MY_EASY_PRICING);
   };
 
   const handleOnboardingComplete = () => {
@@ -706,7 +700,7 @@ function AppContent() {
             <Packages user={user} />
             <MidStats />
             <Courses />
-            <FinalCta />
+            <FinalCta onSignupClick={openSignup} />
             <Footer />
 
             {user && (
@@ -745,6 +739,7 @@ function AppContent() {
                 onGoHome={goToHome}
                 onGoToMyEasyWebsite={goToMyEasyWebsite}
                 onGoToBusinessGuru={goToBusinessGuru}
+                onGoToMyEasyPricing={goToMyEasyPricing}
                 onGoToMyEasyCRM={goToMyEasyCRM}
                 onGoToMyEasyPricing={goToMyEasyPricing}
                 initialTab={dashboardInitialTab}
@@ -812,14 +807,21 @@ function AppContent() {
       />
 
       <Route
+<<<<<<< HEAD
         path="/pricing"
+=======
+        path={ROUTES.MY_EASY_PRICING}
+>>>>>>> 4da9a4a23d7969c3d283d2981522f1cfea49747f
         element={
           <ProtectedRoute
             user={user}
             needsOnboarding={needsOnboarding}
             onOpenOnboarding={() => onboardingModal.open()}
             isLoading={loading}
+<<<<<<< HEAD
             isCheckingAuth={isCheckingAuth}
+=======
+>>>>>>> 4da9a4a23d7969c3d283d2981522f1cfea49747f
           >
             <MyEasyPricing onBackToDashboard={goToDashboard} />
           </ProtectedRoute>

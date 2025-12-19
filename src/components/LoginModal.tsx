@@ -1,6 +1,11 @@
 import { useState } from 'react';
 import { toast } from 'sonner';
+<<<<<<< HEAD
 import { authService } from '../services/AuthServiceV2';
+=======
+import { authService } from '../services/AuthService';
+import { translateAuthError, validateFormFields } from '../utils/authErrors';
+>>>>>>> 4da9a4a23d7969c3d283d2981522f1cfea49747f
 import { DSButton, DSInput } from './design-system';
 import { Modal } from './Modal';
 // CAPTCHA temporariamente desabilitado para testes E2E
@@ -31,6 +36,16 @@ export function LoginModal({
     const email = formData.get('email') as string;
     const password = formData.get('password') as string;
 
+    // Validar campos antes de enviar
+    const validationErrors = validateFormFields({ email, password });
+    if (Object.keys(validationErrors).length > 0) {
+      const firstError = Object.values(validationErrors)[0];
+      toast.error('Campo inválido', {
+        description: firstError,
+      });
+      return;
+    }
+
     // CAPTCHA temporariamente desabilitado para testes E2E
     // Validar CAPTCHA (exceto em ambiente de teste)
     // if (!isTestEnvironment && !captchaToken) {
@@ -39,10 +54,18 @@ export function LoginModal({
     // }
 
     try {
+<<<<<<< HEAD
       const result = await authService.signInWithPassword(email, password);
       if (!result.success) {
         toast.error('Erro ao fazer login', {
           description: result.error || 'Falha na autenticação',
+=======
+      const { error } = await authService.signInWithEmail(email, password);
+      if (error) {
+        const translatedError = translateAuthError(error);
+        toast.error(translatedError.title, {
+          description: translatedError.description,
+>>>>>>> 4da9a4a23d7969c3d283d2981522f1cfea49747f
         });
         return;
       }
@@ -50,8 +73,9 @@ export function LoginModal({
       onClose();
       // O modal será fechado automaticamente pelo listener de auth no App.tsx
     } catch (error) {
-      toast.error('Erro inesperado', {
-        description: String(error),
+      const translatedError = translateAuthError(error);
+      toast.error(translatedError.title, {
+        description: translatedError.description,
       });
     }
     // CAPTCHA temporariamente desabilitado
@@ -79,6 +103,7 @@ export function LoginModal({
           toast.error('Erro ao fazer login com Google', {
             description: result.error,
           });
+<<<<<<< HEAD
           setIsGoogleLoading(false);
         }
         // Redirect acontece automaticamente
@@ -99,11 +124,25 @@ export function LoginModal({
         toast.warning('Login com Apple indisponível', {
           description: 'Use Google para fazer login.',
         });
+=======
+          return;
+      }
+
+      if (result.error) {
+        const translatedError = translateAuthError(result.error);
+        toast.error(translatedError.title, {
+          description: translatedError.description,
+        });
+        // Desativar loading em caso de erro
+        if (provider === 'google') setIsGoogleLoading(false);
+        if (provider === 'facebook') setIsFacebookLoading(false);
+>>>>>>> 4da9a4a23d7969c3d283d2981522f1cfea49747f
         return;
       }
     } catch (error) {
-      toast.error('Erro inesperado', {
-        description: String(error),
+      const translatedError = translateAuthError(error);
+      toast.error(translatedError.title, {
+        description: translatedError.description,
       });
       // Desativar loading em caso de erro
       if (provider === 'google') setIsGoogleLoading(false);
