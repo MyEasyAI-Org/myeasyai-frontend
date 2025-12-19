@@ -3,7 +3,7 @@
 // =============================================================================
 
 import { supabase } from '../../../lib/api-clients/supabase-client';
-import { PRICING_LABELS, CALCULATION_CONSTANTS } from '../constants/pricing.constants';
+import { PRICING_LABELS } from '../constants/pricing.constants';
 import type { Store, Product, IndirectCost, HiddenCost, TaxItem } from '../types/pricing.types';
 
 // =============================================================================
@@ -12,7 +12,8 @@ import type { Store, Product, IndirectCost, HiddenCost, TaxItem } from '../types
 
 export interface DemoData {
   store: Store;
-  product: Product;
+  product: Product; // First product (for backwards compatibility)
+  products: Product[]; // All demo products
   indirectCosts: IndirectCost[];
   hiddenCosts: HiddenCost[];
   taxItems: TaxItem[];
@@ -41,19 +42,34 @@ const DEMO_STORE_CONFIG = {
   is_demo: true,
 };
 
-const DEMO_PRODUCT_CONFIG = {
-  name: PRICING_LABELS.tutorial.demoProductName,
-  description: 'Produto de exemplo para demonstracao dos calculos de precificacao.',
-  category: 'Exemplo',
-  direct_cost: 25.0,
-  unit_type: 'unit' as const,
-  desired_margin: 40,
-  positioning: 'intermediate' as const,
-  market_price: 65.0,
-  weight: 1,
-  monthly_units_estimate: 100,
-  is_demo: true,
-};
+const DEMO_PRODUCTS_CONFIG = [
+  {
+    name: PRICING_LABELS.tutorial.demoProductName,
+    description: 'Produto de exemplo para demonstracao dos calculos de precificacao.',
+    category: 'Exemplo',
+    direct_cost: 25.0,
+    unit_type: 'unit' as const,
+    desired_margin: 40,
+    positioning: 'intermediate' as const,
+    market_price: 65.0,
+    weight: 1,
+    monthly_units_estimate: 100,
+    is_demo: true,
+  },
+  {
+    name: 'Produto Exemplo 2',
+    description: 'Segundo produto de exemplo com posicionamento economico.',
+    category: 'Exemplo',
+    direct_cost: 50.0,
+    unit_type: 'unit' as const,
+    desired_margin: 10,
+    positioning: 'economy' as const,
+    market_price: 50.0,
+    weight: 1,
+    monthly_units_estimate: 100,
+    is_demo: true,
+  },
+];
 
 const DEMO_INDIRECT_COSTS = [
   {
@@ -150,27 +166,28 @@ export class TutorialDemoService {
 
       console.log('[TutorialDemoService] Demo store created:', store.id);
 
-      // 2. Create demo product
-      const { data: product, error: productError } = await supabase
-        .from('pricing_products')
-        .insert({
-          store_id: store.id,
-          ...DEMO_PRODUCT_CONFIG,
-          is_active: true,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        })
-        .select()
-        .single();
+      // 2. Create demo products
+      const productsToInsert = DEMO_PRODUCTS_CONFIG.map(productConfig => ({
+        store_id: store.id,
+        ...productConfig,
+        is_active: true,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      }));
 
-      if (productError || !product) {
-        console.error('[TutorialDemoService] Error creating demo product:', productError);
+      const { data: products, error: productError } = await supabase
+        .from('pricing_products')
+        .insert(productsToInsert)
+        .select();
+
+      if (productError || !products || products.length === 0) {
+        console.error('[TutorialDemoService] Error creating demo products:', productError);
         // Cleanup: delete store
         await this.deleteDemoStore(store.id);
-        return { success: false, data: null, error: new Error(productError?.message || 'Erro ao criar produto demo') };
+        return { success: false, data: null, error: new Error(productError?.message || 'Erro ao criar produtos demo') };
       }
 
-      console.log('[TutorialDemoService] Demo product created:', product.id);
+      console.log('[TutorialDemoService] Demo products created:', products.length);
 
       // 3. Create demo indirect costs
       const indirectCostsToInsert = DEMO_INDIRECT_COSTS.map(cost => ({
@@ -238,7 +255,8 @@ export class TutorialDemoService {
         success: true,
         data: {
           store: store as Store,
-          product: product as Product,
+          product: products[0] as Product, // First product for backwards compatibility
+          products: products as Product[],
           indirectCosts: (indirectCosts || []) as IndirectCost[],
           hiddenCosts: (hiddenCosts || []) as HiddenCost[],
           taxItems: (taxItems || []) as TaxItem[],
@@ -346,6 +364,43 @@ export class TutorialDemoService {
   }
 
   // ---------------------------------------------------------------------------
+  // CONVERT: Convert demo store to regular store (keep data)
+  // ---------------------------------------------------------------------------
+  async convertDemoToRegular(storeId: string): Promise<DeleteDemoDataResult> {
+    try {
+      console.log('[TutorialDemoService] Converting demo store to regular:', storeId);
+
+      // Update store to remove demo flag
+      const { error: storeError } = await supabase
+        .from('pricing_stores')
+        .update({ is_demo: false, updated_at: new Date().toISOString() })
+        .eq('id', storeId);
+
+      if (storeError) {
+        console.error('[TutorialDemoService] Error converting store:', storeError);
+        return { success: false, error: new Error(storeError.message) };
+      }
+
+      // Update products to remove demo flag
+      const { error: productError } = await supabase
+        .from('pricing_products')
+        .update({ is_demo: false, updated_at: new Date().toISOString() })
+        .eq('store_id', storeId);
+
+      if (productError) {
+        console.error('[TutorialDemoService] Error converting products:', productError);
+        // Continue anyway, store is already converted
+      }
+
+      console.log('[TutorialDemoService] Demo store converted to regular successfully');
+      return { success: true, error: null };
+    } catch (error) {
+      console.error('[TutorialDemoService] Exception in convertDemoToRegular:', error);
+      return { success: false, error: error as Error };
+    }
+  }
+
+  // ---------------------------------------------------------------------------
   // CHECK: Check if user has existing demo data
   // ---------------------------------------------------------------------------
   async hasExistingDemoData(userUuid: string): Promise<{ hasDemoData: boolean; storeId: string | null; productId: string | null }> {
@@ -368,14 +423,14 @@ export class TutorialDemoService {
         return { hasDemoData: false, storeId: null, productId: null };
       }
 
-      // Then, get the demo product for this store
+      // Then, get the first demo product for this store
       const { data: productData, error: productError } = await supabase
         .from('pricing_products')
         .select('id')
         .eq('store_id', storeData.id)
         .eq('is_demo', true)
         .eq('is_active', true)
-        .maybeSingle();
+        .limit(1);
 
       if (productError) {
         console.error('[TutorialDemoService] Error checking demo product:', productError);
@@ -383,10 +438,12 @@ export class TutorialDemoService {
         return { hasDemoData: true, storeId: storeData.id, productId: null };
       }
 
+      const firstProduct = productData?.[0];
+
       return {
         hasDemoData: true,
         storeId: storeData.id,
-        productId: productData?.id || null,
+        productId: firstProduct?.id || null,
       };
     } catch (error) {
       console.error('[TutorialDemoService] Exception in hasExistingDemoData:', error);

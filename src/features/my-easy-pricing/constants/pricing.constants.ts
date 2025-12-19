@@ -465,52 +465,52 @@ export const PRICING_LABELS = {
   },
 
   // -------------------------------------------------------------------------
-  // Insights (Assistente de Precificacao)
+  // Insights (Assistente de Precificação)
   // -------------------------------------------------------------------------
   insights: {
     title: 'Insights',
-    subtitle: 'Analise inteligente da sua precificacao',
+    subtitle: 'Análise inteligente da sua precificação',
     healthScore: {
-      title: 'Saude da Precificacao',
+      title: 'Saúde da Precificação',
       grades: {
         excellent: 'Excelente',
         good: 'Bom',
         fair: 'Regular',
         poor: 'Ruim',
-        critical: 'Critico',
+        critical: 'Crítico',
       },
       factors: {
-        marginHealth: 'Saude das Margens',
+        marginHealth: 'Saúde das Margens',
         marketAlignment: 'Alinhamento com Mercado',
-        costEfficiency: 'Eficiencia de Custos',
-        breakEvenSafety: 'Seguranca Break-even',
+        costEfficiency: 'Eficiência de Custos',
+        breakEvenSafety: 'Segurança Break-even',
         dataCompleteness: 'Completude de Dados',
       },
     },
     severity: {
-      critical: 'Critico',
-      warning: 'Atencao',
+      critical: 'Crítico',
+      warning: 'Atenção',
       positive: 'Positivo',
       tip: 'Dica',
     },
     chat: {
-      title: 'Assistente de Precificacao',
-      subtitle: 'Tire suas duvidas sobre precificacao',
+      title: 'Assistente de Precificação',
+      subtitle: 'Tire suas dúvidas sobre precificação',
       placeholder: 'Digite sua pergunta...',
       send: 'Enviar',
       thinking: 'Analisando...',
       error: 'Erro ao processar. Tente novamente.',
-      welcome: 'Ola! Sou seu assistente de precificacao. Como posso ajudar?',
+      welcome: 'Olá! Sou seu assistente de precificação. Como posso ajudar?',
     },
     actions: {
-      adjustPrice: 'Ajustar Preco',
+      adjustPrice: 'Ajustar Preço',
       viewProduct: 'Ver Produto',
       reviewCosts: 'Revisar Custos',
       learnMore: 'Saiba Mais',
     },
     empty: {
       noStore: 'Selecione uma loja para ver insights',
-      noProducts: 'Adicione produtos para gerar analises',
+      noProducts: 'Adicione produtos para gerar análises',
       analyzing: 'Analisando dados...',
     },
   },
