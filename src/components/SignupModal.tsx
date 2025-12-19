@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import type { SubscriptionPlan } from '../constants/plans';
 import { authService } from '../services/AuthService';
+import { translateAuthError, validateFormFields } from '../utils/authErrors';
 import { DSButton, DSInput } from './design-system';
 import { Modal } from './Modal';
 // CAPTCHA temporariamente desabilitado para testes E2E
@@ -37,17 +38,29 @@ export function SignupModal({
     const password = formData.get('password') as string;
     const confirmPassword = formData.get('confirmPassword') as string;
 
-    if (password !== confirmPassword) {
-      toast.error('As senhas não coincidem!', {
-        description: 'Digite a mesma senha nos dois campos.',
-      });
-      return;
-    }
+    // Validar todos os campos usando o helper
+    const validationErrors = validateFormFields({
+      fullName,
+      email,
+      password,
+      confirmPassword,
+    });
 
-    // Validar nome completo
-    if (fullName.trim().split(' ').length < 2) {
-      toast.error('Nome incompleto', {
-        description: 'Por favor, digite seu nome completo (nome e sobrenome).',
+    if (Object.keys(validationErrors).length > 0) {
+      // Mostrar o primeiro erro encontrado
+      const firstErrorField = Object.keys(validationErrors)[0];
+      const firstErrorMessage = validationErrors[firstErrorField];
+
+      // Mapear nome do campo para label amigável
+      const fieldLabels: Record<string, string> = {
+        fullName: 'Nome',
+        email: 'E-mail',
+        password: 'Senha',
+        confirmPassword: 'Confirmação de senha',
+      };
+
+      toast.error(`Verifique o campo ${fieldLabels[firstErrorField] || firstErrorField}`, {
+        description: firstErrorMessage,
       });
       return;
     }
@@ -67,8 +80,9 @@ export function SignupModal({
         preferredName
       );
       if (error) {
-        toast.error('Erro ao criar conta', {
-          description: error.message,
+        const translatedError = translateAuthError(error);
+        toast.error(translatedError.title, {
+          description: translatedError.description,
         });
         return;
       }
@@ -82,8 +96,9 @@ export function SignupModal({
       // Com email confirmation desabilitado, o usuário é autenticado imediatamente
       // O modal será fechado automaticamente pelo listener de auth no App.tsx
     } catch (error) {
-      toast.error('Erro inesperado', {
-        description: String(error),
+      const translatedError = translateAuthError(error);
+      toast.error(translatedError.title, {
+        description: translatedError.description,
       });
     }
     // CAPTCHA temporariamente desabilitado
@@ -120,8 +135,9 @@ export function SignupModal({
       }
 
       if (result.error) {
-        toast.error(`Erro ao cadastrar com ${provider}`, {
-          description: result.error.message,
+        const translatedError = translateAuthError(result.error);
+        toast.error(translatedError.title, {
+          description: translatedError.description,
         });
         // Desativar loading em caso de erro
         if (provider === 'google') setIsGoogleLoading(false);
@@ -136,8 +152,9 @@ export function SignupModal({
 
       // O modal será fechado automaticamente pelo listener de auth no App.tsx
     } catch (error) {
-      toast.error('Erro inesperado', {
-        description: String(error),
+      const translatedError = translateAuthError(error);
+      toast.error(translatedError.title, {
+        description: translatedError.description,
       });
       // Desativar loading em caso de erro
       if (provider === 'google') setIsGoogleLoading(false);

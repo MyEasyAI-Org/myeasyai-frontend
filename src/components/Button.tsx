@@ -6,7 +6,8 @@ type ButtonVariant =
   | 'outline'
   | 'log'
   | 'nav'
-  | 'ghostNav';
+  | 'ghostNav'
+  | 'primaryLarge';
 
 type ButtonProps = {
   children: ReactNode;
@@ -26,11 +27,13 @@ export function Button({
   disabled = false,
 }: ButtonProps) {
   const base =
-    'inline-flex items-center justify-center rounded-lg px-6 py-3 font-semibold transition-all duration-300';
+    'inline-flex items-center justify-center rounded-lg px-6 py-3 font-semibold transition-all duration-300 cursor-pointer';
 
   const variants: Record<ButtonVariant, string> = {
     primary:
       'bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700',
+    primaryLarge:
+      'bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700 px-10 py-4 text-lg',
     secondary:
       'bg-slate-800 text-slate-200 hover:bg-slate-700 border border-slate-700',
     outline: 'border border-slate-700 text-slate-300 hover:bg-slate-800',

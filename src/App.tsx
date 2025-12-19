@@ -457,7 +457,7 @@ function AppContent() {
             <Packages user={user} />
             <MidStats />
             <Courses />
-            <FinalCta />
+            <FinalCta onSignupClick={openSignup} />
             <Footer />
 
             {user && (

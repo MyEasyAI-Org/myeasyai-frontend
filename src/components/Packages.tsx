@@ -3,6 +3,7 @@ import { Check } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { PLANS, type SubscriptionPlan } from '../constants/plans';
+import { Button } from './Button';
 import { LoginModal } from './LoginModal';
 import { SignupModal } from './SignupModal';
 
@@ -45,14 +46,14 @@ export function Packages({ user }: PackagesProps) {
       <div className="mx-auto max-w-7xl">
         <div className="mb-16 text-center">
           <h2 className="mb-4 text-4xl font-bold text-white md:text-5xl">
-            Escolha seu{' '}
+            Quanto custa ter um{' '}
             <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-              Pacote Ideal
+              assistente de IA próprio?
             </span>
           </h2>
           <p className="mx-auto max-w-2xl text-lg text-slate-400">
-            Planos flexíveis para todas as necessidades. Comece gratuitamente e
-            escale conforme seu negócio cresce.
+            Planos para cada fase do seu negócio — do pequeno empreendedor à
+            empresa com milhares de atendimentos diários
           </p>
         </div>
 
@@ -77,10 +78,14 @@ export function Packages({ user }: PackagesProps) {
               <div className="text-center">
                 <h3 className="text-2xl font-bold text-white">{plan.name}</h3>
                 <div className="mt-6">
-                  <span className="text-5xl font-bold text-white">
+                  <span
+                    className={`font-bold text-white ${
+                      plan.price === 'Customizado' ? 'text-3xl' : 'text-5xl'
+                    }`}
+                  >
                     {plan.price}
                   </span>
-                  {plan.price !== 'Custom' && (
+                  {plan.price !== 'Customizado' && (
                     <span className="text-slate-400">/mês</span>
                   )}
                 </div>
@@ -98,16 +103,14 @@ export function Packages({ user }: PackagesProps) {
                 ))}
               </ul>
 
-              <button
-                onClick={() => handleSelectPlan(plan.value)}
-                className={`mt-8 w-full rounded-xl px-6 py-3 font-semibold transition-all ${
-                  plan.popular
-                    ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600 shadow-lg shadow-purple-500/30'
-                    : 'border border-slate-700 bg-slate-800 text-white hover:border-purple-500 hover:bg-slate-700'
-                }`}
-              >
-                Obter agora!
-              </button>
+              <div className="mt-8 flex justify-center">
+                <Button
+                  variant={plan.popular ? 'primary' : 'secondary'}
+                  onClick={() => handleSelectPlan(plan.value)}
+                >
+                  Obter agora!
+                </Button>
+              </div>
             </div>
           ))}
         </div>
