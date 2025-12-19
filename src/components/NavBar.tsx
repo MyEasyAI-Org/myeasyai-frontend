@@ -230,7 +230,16 @@ export default function NavBar({
                       {getAvatarContent()}
                     </div>
                     <span className="text-sm font-medium text-slate-200">
-                      Olá, {userName}
+                      Olá,{' '}
+                      {userName === 'Usuário' ? (
+                        <span className="loading-dots">
+                          <span>.</span>
+                          <span>.</span>
+                          <span>.</span>
+                        </span>
+                      ) : (
+                        userName
+                      )}
                     </span>
                   </button>
 
@@ -282,7 +291,7 @@ export default function NavBar({
                 </div>
               </div>
             ) : isCheckingAuth ? (
-              // Checking authentication - show loading
+              // Checking authentication - show loading dots
               <div className="flex items-center space-x-2 px-4 py-2">
                 <span className="loading-dots text-slate-300">
                   <span>.</span>

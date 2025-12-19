@@ -19,6 +19,8 @@ export interface D1User {
   preferred_language: string;
   subscription_plan: string | null;
   subscription_status: string | null;
+  bio: string | null;
+  company_name: string | null;
   created_at: string;
   last_online: string | null;
 }
@@ -54,6 +56,88 @@ export interface D1ApiResponse<T> {
   code?: string;
   success?: boolean;
   created?: boolean;
+}
+
+// =============================================================================
+// Pricing Types
+// =============================================================================
+
+export interface D1PricingStore {
+  id: string;
+  user_uuid: string;
+  name: string;
+  description: string | null;
+  currency: string;
+  cost_allocation_method: string;
+  is_active: boolean;
+  is_demo: boolean;
+  created_at: string;
+  updated_at: string | null;
+}
+
+export interface D1PricingProduct {
+  id: string;
+  store_id: string;
+  name: string;
+  description: string | null;
+  category: string | null;
+  direct_cost: number;
+  unit_type: string;
+  desired_margin: number;
+  positioning: string;
+  market_price: number | null;
+  weight: number;
+  monthly_units_estimate: number;
+  is_active: boolean;
+  is_demo: boolean;
+  created_at: string;
+  updated_at: string | null;
+}
+
+export interface D1PricingIndirectCost {
+  id: string;
+  store_id: string;
+  name: string;
+  category: string;
+  amount: number;
+  frequency: string;
+  amortization_months: number;
+  notes: string | null;
+  created_at: string;
+  updated_at: string | null;
+}
+
+export interface D1PricingHiddenCost {
+  id: string;
+  store_id: string;
+  name: string;
+  category: string;
+  amount: number;
+  frequency: string;
+  amortization_months: number;
+  is_auto_calculated: boolean;
+  auxiliary_data: string | null; // JSON string
+  notes: string | null;
+  created_at: string;
+  updated_at: string | null;
+}
+
+export interface D1PricingTaxConfig {
+  id: string;
+  store_id: string;
+  tax_regime: string;
+  created_at: string;
+  updated_at: string | null;
+}
+
+export interface D1PricingTaxItem {
+  id: string;
+  store_id: string;
+  name: string;
+  category: string;
+  percentage: number;
+  created_at: string;
+  updated_at: string | null;
 }
 
 /**
@@ -426,6 +510,282 @@ export class D1Client {
    */
   async deleteProduct(userUuid: string, productId: string): Promise<D1ApiResponse<{ success: boolean }>> {
     return this.fetch(`/products/user/${userUuid}/product/${productId}`, { method: 'DELETE' });
+  }
+
+  // ==================== PRICING ====================
+
+  // --- Stores ---
+
+  /**
+   * Lista lojas de pricing do usuário
+   */
+  async getPricingStores(userUuid: string): Promise<D1ApiResponse<D1PricingStore[]>> {
+    return this.fetch<D1PricingStore[]>(`/pricing/stores/user/${userUuid}`);
+  }
+
+  /**
+   * Busca loja de pricing por ID
+   */
+  async getPricingStoreById(storeId: string): Promise<D1ApiResponse<D1PricingStore>> {
+    return this.fetch<D1PricingStore>(`/pricing/stores/${storeId}`);
+  }
+
+  /**
+   * Cria nova loja de pricing
+   */
+  async createPricingStore(store: {
+    user_uuid: string;
+    name: string;
+    description?: string;
+    currency?: string;
+    cost_allocation_method?: string;
+    is_demo?: boolean;
+  }): Promise<D1ApiResponse<D1PricingStore>> {
+    return this.fetch<D1PricingStore>('/pricing/stores', {
+      method: 'POST',
+      body: JSON.stringify(store),
+    });
+  }
+
+  /**
+   * Atualiza loja de pricing
+   */
+  async updatePricingStore(
+    storeId: string,
+    updates: Partial<D1PricingStore>
+  ): Promise<D1ApiResponse<D1PricingStore>> {
+    return this.fetch<D1PricingStore>(`/pricing/stores/${storeId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(updates),
+    });
+  }
+
+  /**
+   * Deleta loja de pricing (soft delete)
+   */
+  async deletePricingStore(storeId: string): Promise<D1ApiResponse<{ success: boolean }>> {
+    return this.fetch(`/pricing/stores/${storeId}`, { method: 'DELETE' });
+  }
+
+  // --- Products ---
+
+  /**
+   * Lista produtos de pricing da loja
+   */
+  async getPricingProducts(storeId: string): Promise<D1ApiResponse<D1PricingProduct[]>> {
+    return this.fetch<D1PricingProduct[]>(`/pricing/products/store/${storeId}`);
+  }
+
+  /**
+   * Busca produto de pricing por ID
+   */
+  async getPricingProductById(productId: string): Promise<D1ApiResponse<D1PricingProduct>> {
+    return this.fetch<D1PricingProduct>(`/pricing/products/${productId}`);
+  }
+
+  /**
+   * Cria novo produto de pricing
+   */
+  async createPricingProduct(product: {
+    store_id: string;
+    name: string;
+    description?: string;
+    category?: string;
+    direct_cost?: number;
+    unit_type?: string;
+    desired_margin?: number;
+    positioning?: string;
+    market_price?: number | null;
+    weight?: number;
+    monthly_units_estimate?: number;
+    is_demo?: boolean;
+  }): Promise<D1ApiResponse<D1PricingProduct>> {
+    return this.fetch<D1PricingProduct>('/pricing/products', {
+      method: 'POST',
+      body: JSON.stringify(product),
+    });
+  }
+
+  /**
+   * Atualiza produto de pricing
+   */
+  async updatePricingProduct(
+    productId: string,
+    updates: Partial<D1PricingProduct>
+  ): Promise<D1ApiResponse<D1PricingProduct>> {
+    return this.fetch<D1PricingProduct>(`/pricing/products/${productId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(updates),
+    });
+  }
+
+  /**
+   * Deleta produto de pricing (soft delete)
+   */
+  async deletePricingProduct(productId: string): Promise<D1ApiResponse<{ success: boolean }>> {
+    return this.fetch(`/pricing/products/${productId}`, { method: 'DELETE' });
+  }
+
+  // --- Indirect Costs ---
+
+  /**
+   * Lista custos indiretos da loja
+   */
+  async getPricingIndirectCosts(storeId: string): Promise<D1ApiResponse<D1PricingIndirectCost[]>> {
+    return this.fetch<D1PricingIndirectCost[]>(`/pricing/indirect-costs/store/${storeId}`);
+  }
+
+  /**
+   * Cria novo custo indireto
+   */
+  async createPricingIndirectCost(cost: {
+    store_id: string;
+    name: string;
+    category: string;
+    amount?: number;
+    frequency?: string;
+    amortization_months?: number;
+    notes?: string;
+  }): Promise<D1ApiResponse<D1PricingIndirectCost>> {
+    return this.fetch<D1PricingIndirectCost>('/pricing/indirect-costs', {
+      method: 'POST',
+      body: JSON.stringify(cost),
+    });
+  }
+
+  /**
+   * Atualiza custo indireto
+   */
+  async updatePricingIndirectCost(
+    costId: string,
+    updates: Partial<D1PricingIndirectCost>
+  ): Promise<D1ApiResponse<D1PricingIndirectCost>> {
+    return this.fetch<D1PricingIndirectCost>(`/pricing/indirect-costs/${costId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(updates),
+    });
+  }
+
+  /**
+   * Deleta custo indireto
+   */
+  async deletePricingIndirectCost(costId: string): Promise<D1ApiResponse<{ success: boolean }>> {
+    return this.fetch(`/pricing/indirect-costs/${costId}`, { method: 'DELETE' });
+  }
+
+  // --- Hidden Costs ---
+
+  /**
+   * Lista custos ocultos da loja
+   */
+  async getPricingHiddenCosts(storeId: string): Promise<D1ApiResponse<D1PricingHiddenCost[]>> {
+    return this.fetch<D1PricingHiddenCost[]>(`/pricing/hidden-costs/store/${storeId}`);
+  }
+
+  /**
+   * Cria novo custo oculto
+   */
+  async createPricingHiddenCost(cost: {
+    store_id: string;
+    name: string;
+    category: string;
+    amount?: number;
+    frequency?: string;
+    amortization_months?: number;
+    is_auto_calculated?: boolean;
+    auxiliary_data?: any;
+    notes?: string;
+  }): Promise<D1ApiResponse<D1PricingHiddenCost>> {
+    return this.fetch<D1PricingHiddenCost>('/pricing/hidden-costs', {
+      method: 'POST',
+      body: JSON.stringify(cost),
+    });
+  }
+
+  /**
+   * Atualiza custo oculto
+   */
+  async updatePricingHiddenCost(
+    costId: string,
+    updates: Partial<D1PricingHiddenCost>
+  ): Promise<D1ApiResponse<D1PricingHiddenCost>> {
+    return this.fetch<D1PricingHiddenCost>(`/pricing/hidden-costs/${costId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(updates),
+    });
+  }
+
+  /**
+   * Deleta custo oculto
+   */
+  async deletePricingHiddenCost(costId: string): Promise<D1ApiResponse<{ success: boolean }>> {
+    return this.fetch(`/pricing/hidden-costs/${costId}`, { method: 'DELETE' });
+  }
+
+  // --- Tax Config ---
+
+  /**
+   * Busca configuração de impostos da loja
+   */
+  async getPricingTaxConfig(storeId: string): Promise<D1ApiResponse<D1PricingTaxConfig | null>> {
+    return this.fetch<D1PricingTaxConfig | null>(`/pricing/tax-config/store/${storeId}`);
+  }
+
+  /**
+   * Cria ou atualiza configuração de impostos
+   */
+  async upsertPricingTaxConfig(
+    storeId: string,
+    taxRegime: string
+  ): Promise<D1ApiResponse<D1PricingTaxConfig>> {
+    return this.fetch<D1PricingTaxConfig>(`/pricing/tax-config/store/${storeId}`, {
+      method: 'PUT',
+      body: JSON.stringify({ tax_regime: taxRegime }),
+    });
+  }
+
+  // --- Tax Items ---
+
+  /**
+   * Lista itens de impostos da loja
+   */
+  async getPricingTaxItems(storeId: string): Promise<D1ApiResponse<D1PricingTaxItem[]>> {
+    return this.fetch<D1PricingTaxItem[]>(`/pricing/tax-items/store/${storeId}`);
+  }
+
+  /**
+   * Cria novo item de imposto
+   */
+  async createPricingTaxItem(item: {
+    store_id: string;
+    name: string;
+    category: string;
+    percentage?: number;
+  }): Promise<D1ApiResponse<D1PricingTaxItem>> {
+    return this.fetch<D1PricingTaxItem>('/pricing/tax-items', {
+      method: 'POST',
+      body: JSON.stringify(item),
+    });
+  }
+
+  /**
+   * Atualiza item de imposto
+   */
+  async updatePricingTaxItem(
+    itemId: string,
+    updates: Partial<D1PricingTaxItem>
+  ): Promise<D1ApiResponse<D1PricingTaxItem>> {
+    return this.fetch<D1PricingTaxItem>(`/pricing/tax-items/${itemId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(updates),
+    });
+  }
+
+  /**
+   * Deleta item de imposto
+   */
+  async deletePricingTaxItem(itemId: string): Promise<D1ApiResponse<{ success: boolean }>> {
+    return this.fetch(`/pricing/tax-items/${itemId}`, { method: 'DELETE' });
   }
 
   // ==================== HEALTH ====================

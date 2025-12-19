@@ -394,6 +394,40 @@ export class TutorialDemoService {
     }
   }
 
+  // ===========================================================================
+  // Convert Demo to Regular
+  // ===========================================================================
+
+  /**
+   * Converts a demo store to a regular store by removing the demo flag
+   * This allows the user to keep their demo data as real data
+   */
+  async convertDemoToRegular(storeId: string): Promise<{ success: boolean; error?: string }> {
+    try {
+      console.log('[TutorialDemoService] Converting demo store to regular:', storeId);
+
+      const { error } = await supabase
+        .from('pricing_stores')
+        .update({
+          is_demo: false,
+          name: 'Minha Loja', // Rename from demo name
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', storeId);
+
+      if (error) {
+        console.error('[TutorialDemoService] Error converting store:', error);
+        return { success: false, error: error.message };
+      }
+
+      console.log('[TutorialDemoService] Store converted successfully');
+      return { success: true };
+    } catch (error) {
+      console.error('[TutorialDemoService] Exception in convertDemoToRegular:', error);
+      return { success: false, error: 'Erro ao converter loja de demonstração' };
+    }
+  }
+
 }
 
 // =============================================================================

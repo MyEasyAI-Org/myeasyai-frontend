@@ -9,6 +9,7 @@
 export const ROUTES = {
   // Public routes
   HOME: '/',
+  AUTH_CALLBACK: '/auth/callback',
 
   // Protected routes (require authentication)
   DASHBOARD: '/dashboard',

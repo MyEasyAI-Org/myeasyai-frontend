@@ -21,6 +21,8 @@ export const users = sqliteTable('users', {
   preferred_language: text('preferred_language').default('pt'),
   subscription_plan: text('subscription_plan').default('individual'),
   subscription_status: text('subscription_status').default('active'),
+  bio: text('bio'),
+  company_name: text('company_name'),
   created_at: text('created_at').default(sql`(datetime('now'))`),
   last_online: text('last_online'),
 });
@@ -70,6 +72,125 @@ export const sites = sqliteTable('sites', {
   published_at: text('published_at'),
 });
 
+// =============================================================================
+// Pricing Tables (MyEasyPricing)
+// =============================================================================
+
+/**
+ * Tabela de lojas de precificação
+ * Equivalente à tabela 'pricing_stores' do Supabase
+ */
+export const pricingStores = sqliteTable('pricing_stores', {
+  id: text('id').primaryKey(),
+  user_uuid: text('user_uuid')
+    .notNull()
+    .references(() => users.uuid, { onDelete: 'cascade' }),
+  name: text('name').notNull(),
+  description: text('description'),
+  currency: text('currency').default('BRL'),
+  cost_allocation_method: text('cost_allocation_method').default('equal'), // 'equal' | 'weighted' | 'revenue_based'
+  is_active: integer('is_active', { mode: 'boolean' }).default(true),
+  is_demo: integer('is_demo', { mode: 'boolean' }).default(false),
+  created_at: text('created_at').default(sql`(datetime('now'))`),
+  updated_at: text('updated_at'),
+});
+
+/**
+ * Tabela de produtos de precificação
+ * Equivalente à tabela 'pricing_products' do Supabase
+ */
+export const pricingProducts = sqliteTable('pricing_products', {
+  id: text('id').primaryKey(),
+  store_id: text('store_id')
+    .notNull()
+    .references(() => pricingStores.id, { onDelete: 'cascade' }),
+  name: text('name').notNull(),
+  description: text('description'),
+  category: text('category'),
+  direct_cost: integer('direct_cost').default(0), // stored as cents
+  unit_type: text('unit_type').default('unit'), // 'unit' | 'hour' | 'kg' | 'meter' | 'service'
+  desired_margin: integer('desired_margin').default(30), // stored as percentage * 100
+  positioning: text('positioning').default('intermediate'), // 'premium' | 'intermediate' | 'economy'
+  market_price: integer('market_price'), // stored as cents, nullable
+  weight: integer('weight').default(100), // stored as weight * 100
+  monthly_units_estimate: integer('monthly_units_estimate').default(100),
+  is_active: integer('is_active', { mode: 'boolean' }).default(true),
+  is_demo: integer('is_demo', { mode: 'boolean' }).default(false),
+  created_at: text('created_at').default(sql`(datetime('now'))`),
+  updated_at: text('updated_at'),
+});
+
+/**
+ * Tabela de custos indiretos
+ * Equivalente à tabela 'pricing_indirect_costs' do Supabase
+ */
+export const pricingIndirectCosts = sqliteTable('pricing_indirect_costs', {
+  id: text('id').primaryKey(),
+  store_id: text('store_id')
+    .notNull()
+    .references(() => pricingStores.id, { onDelete: 'cascade' }),
+  name: text('name').notNull(),
+  category: text('category').notNull(), // IndirectCostCategory
+  amount: integer('amount').default(0), // stored as cents
+  frequency: text('frequency').default('monthly'), // 'monthly' | 'yearly' | 'one_time'
+  amortization_months: integer('amortization_months').default(12),
+  notes: text('notes'),
+  created_at: text('created_at').default(sql`(datetime('now'))`),
+  updated_at: text('updated_at'),
+});
+
+/**
+ * Tabela de custos ocultos
+ * Equivalente à tabela 'pricing_hidden_costs' do Supabase
+ */
+export const pricingHiddenCosts = sqliteTable('pricing_hidden_costs', {
+  id: text('id').primaryKey(),
+  store_id: text('store_id')
+    .notNull()
+    .references(() => pricingStores.id, { onDelete: 'cascade' }),
+  name: text('name').notNull(),
+  category: text('category').notNull(), // HiddenCostCategory
+  amount: integer('amount').default(0), // stored as cents
+  frequency: text('frequency').default('monthly'),
+  amortization_months: integer('amortization_months').default(12),
+  is_auto_calculated: integer('is_auto_calculated', { mode: 'boolean' }).default(false),
+  auxiliary_data: text('auxiliary_data'), // JSON string
+  notes: text('notes'),
+  created_at: text('created_at').default(sql`(datetime('now'))`),
+  updated_at: text('updated_at'),
+});
+
+/**
+ * Tabela de configuração de impostos
+ * Equivalente à tabela 'pricing_tax_config' do Supabase
+ */
+export const pricingTaxConfig = sqliteTable('pricing_tax_config', {
+  id: text('id').primaryKey(),
+  store_id: text('store_id')
+    .notNull()
+    .unique()
+    .references(() => pricingStores.id, { onDelete: 'cascade' }),
+  tax_regime: text('tax_regime').default('simples'), // 'simples' | 'mei' | 'lucro_presumido' | 'lucro_real'
+  created_at: text('created_at').default(sql`(datetime('now'))`),
+  updated_at: text('updated_at'),
+});
+
+/**
+ * Tabela de itens de impostos/taxas
+ * Equivalente à tabela 'pricing_tax_items' do Supabase
+ */
+export const pricingTaxItems = sqliteTable('pricing_tax_items', {
+  id: text('id').primaryKey(),
+  store_id: text('store_id')
+    .notNull()
+    .references(() => pricingStores.id, { onDelete: 'cascade' }),
+  name: text('name').notNull(),
+  category: text('category').notNull(), // 'tax_rate' | 'card_fee' | 'marketplace_fee' | 'commission' | 'other'
+  percentage: integer('percentage').default(0), // stored as percentage * 100
+  created_at: text('created_at').default(sql`(datetime('now'))`),
+  updated_at: text('updated_at'),
+});
+
 // Types inferidos do schema
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
@@ -77,3 +198,17 @@ export type UserProduct = typeof userProducts.$inferSelect;
 export type NewUserProduct = typeof userProducts.$inferInsert;
 export type Site = typeof sites.$inferSelect;
 export type NewSite = typeof sites.$inferInsert;
+
+// Pricing types
+export type PricingStore = typeof pricingStores.$inferSelect;
+export type NewPricingStore = typeof pricingStores.$inferInsert;
+export type PricingProduct = typeof pricingProducts.$inferSelect;
+export type NewPricingProduct = typeof pricingProducts.$inferInsert;
+export type PricingIndirectCost = typeof pricingIndirectCosts.$inferSelect;
+export type NewPricingIndirectCost = typeof pricingIndirectCosts.$inferInsert;
+export type PricingHiddenCost = typeof pricingHiddenCosts.$inferSelect;
+export type NewPricingHiddenCost = typeof pricingHiddenCosts.$inferInsert;
+export type PricingTaxConfig = typeof pricingTaxConfig.$inferSelect;
+export type NewPricingTaxConfig = typeof pricingTaxConfig.$inferInsert;
+export type PricingTaxItem = typeof pricingTaxItems.$inferSelect;
+export type NewPricingTaxItem = typeof pricingTaxItems.$inferInsert;

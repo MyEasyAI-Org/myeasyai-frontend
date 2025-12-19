@@ -209,8 +209,7 @@ export function useDashboardNavigation(
         goToHome();
       }
     },
-    [goToWebsite, goToGuru, goToPricing, goToHome],
-    [goToWebsite, goToGuru, goToCRM, goToHome],
+    [goToWebsite, goToGuru, goToPricing, goToCRM, goToHome],
   );
 
   // ============================================================================

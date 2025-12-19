@@ -4,8 +4,8 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import { toast } from 'sonner';
-import { supabase } from '../../../lib/api-clients/supabase-client';
-import { pricingService } from '../services/PricingService';
+import { authService } from '../../../services/AuthServiceV2';
+import { pricingServiceV2 } from '../services/PricingServiceV2';
 import type { Store, StoreFormData } from '../types/pricing.types';
 
 // =============================================================================
@@ -43,16 +43,21 @@ export function useStoreData(): UseStoreDataReturn {
   const [userUuid, setUserUuid] = useState<string | null>(null);
 
   // ---------------------------------------------------------------------------
-  // Get current user UUID
+  // Get current user UUID from AuthServiceV2 (supports both Cloudflare and Supabase)
   // ---------------------------------------------------------------------------
   useEffect(() => {
-    const getCurrentUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+    // Subscribe to auth state changes
+    const unsubscribe = authService.onAuthStateChange((user) => {
       if (user) {
-        setUserUuid(user.id);
+        console.log('[useStoreData] User authenticated:', user.uuid);
+        setUserUuid(user.uuid);
+      } else {
+        console.log('[useStoreData] No user authenticated');
+        setUserUuid(null);
       }
-    };
-    getCurrentUser();
+    });
+
+    return () => unsubscribe();
   }, []);
 
   // ---------------------------------------------------------------------------
@@ -69,7 +74,7 @@ export function useStoreData(): UseStoreDataReturn {
     setError(null);
 
     try {
-      const { data, error: fetchError } = await pricingService.getStores(userUuid);
+      const { data, error: fetchError } = await pricingServiceV2.getStores(userUuid);
 
       if (fetchError) {
         console.error('[useStoreData] Error loading stores:', fetchError.message);
@@ -131,7 +136,7 @@ export function useStoreData(): UseStoreDataReturn {
     setIsLoading(true);
 
     try {
-      const { data: newStore, error: createError } = await pricingService.createStore(userUuid, data);
+      const { data: newStore, error: createError } = await pricingServiceV2.createStore(userUuid, data);
 
       if (createError) {
         console.error('[useStoreData] Error creating store:', createError.message);
@@ -174,7 +179,7 @@ export function useStoreData(): UseStoreDataReturn {
     setIsLoading(true);
 
     try {
-      const { data: updatedStore, error: updateError } = await pricingService.updateStore(storeId, data);
+      const { data: updatedStore, error: updateError } = await pricingServiceV2.updateStore(storeId, data);
 
       if (updateError || !updatedStore) {
         toast.error('Erro ao atualizar loja');
@@ -206,7 +211,7 @@ export function useStoreData(): UseStoreDataReturn {
     setIsLoading(true);
 
     try {
-      const { success, error: deleteError } = await pricingService.deleteStore(storeId);
+      const { success, error: deleteError } = await pricingServiceV2.deleteStore(storeId);
 
       if (deleteError || !success) {
         toast.error('Erro ao excluir loja');

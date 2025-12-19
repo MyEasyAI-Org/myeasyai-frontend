@@ -4,7 +4,7 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import { toast } from 'sonner';
-import { pricingService } from '../services/PricingService';
+import { pricingServiceV2 } from '../services/PricingServiceV2';
 import { CALCULATION_CONSTANTS } from '../constants/pricing.constants';
 import type {
   IndirectCost,
@@ -93,7 +93,7 @@ export function useIndirectCosts(): UseIndirectCostsReturn {
     setError(null);
 
     try {
-      const { data, error: fetchError } = await pricingService.getIndirectCosts(storeId);
+      const { data, error: fetchError } = await pricingServiceV2.getIndirectCosts(storeId);
 
       if (fetchError) {
         setError(fetchError.message);
@@ -121,7 +121,7 @@ export function useIndirectCosts(): UseIndirectCostsReturn {
     setIsLoading(true);
 
     try {
-      const { data: newCost, error: createError } = await pricingService.createIndirectCost(
+      const { data: newCost, error: createError } = await pricingServiceV2.createIndirectCost(
         storeId,
         {
           name: data.name,
@@ -157,7 +157,7 @@ export function useIndirectCosts(): UseIndirectCostsReturn {
     data: Partial<IndirectCostFormData>
   ): Promise<boolean> => {
     try {
-      const { data: updatedCost, error: updateError } = await pricingService.updateIndirectCost(
+      const { data: updatedCost, error: updateError } = await pricingServiceV2.updateIndirectCost(
         costId,
         data
       );
@@ -180,7 +180,7 @@ export function useIndirectCosts(): UseIndirectCostsReturn {
   // ---------------------------------------------------------------------------
   const deleteCost = useCallback(async (costId: string): Promise<boolean> => {
     try {
-      const { success, error: deleteError } = await pricingService.deleteIndirectCost(costId);
+      const { success, error: deleteError } = await pricingServiceV2.deleteIndirectCost(costId);
 
       if (deleteError || !success) {
         toast.error('Erro ao remover custo');

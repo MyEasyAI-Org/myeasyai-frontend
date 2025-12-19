@@ -102,7 +102,7 @@ export function Dashboard({
     console.log('Ver todas as notificações');
   };
 
-  // Show loading screen while data is being loaded
+  // Show loading screen while data is being fetched
   if (isLoading) {
     return (
       <LoadingScreen
@@ -150,6 +150,7 @@ export function Dashboard({
             isLoading={isLoading}
             onAccessProduct={navigateToProduct}
             onGoToCRM={goToCRM}
+            accountCreatedAt={cadastralInfo.created_at}
           />
         )}
 

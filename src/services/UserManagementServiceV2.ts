@@ -241,6 +241,8 @@ export class UserManagementServiceV2 {
       postal_code?: string;
       address?: string;
       preferred_language?: string;
+      bio?: string;
+      company_name?: string;
     }
   ): Promise<OperationResult> {
     let d1Success = false;
@@ -261,6 +263,7 @@ export class UserManagementServiceV2 {
     }
 
     // ========== 2️⃣ SUPABASE DEPOIS (BACKUP) ==========
+    let supabaseSuccess = false;
     if (this.isSupabaseEnabled()) {
       try {
         const { error } = await supabase
@@ -274,6 +277,7 @@ export class UserManagementServiceV2 {
         if (error) {
           console.error('❌ [SUPABASE BACKUP] Erro ao atualizar perfil:', error);
         } else {
+          supabaseSuccess = true;
           console.log('✅ [SUPABASE BACKUP] Perfil replicado:', email);
         }
       } catch (error) {
@@ -282,9 +286,10 @@ export class UserManagementServiceV2 {
       }
     }
 
+    // Success if either D1 or Supabase succeeded
     return {
-      success: d1Success || this.mode === 'supabase-only',
-      source: 'd1',
+      success: d1Success || supabaseSuccess,
+      source: d1Success ? 'd1' : 'supabase',
     };
   }
 

@@ -11,6 +11,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 export type UseLoadingStateOptions = {
   /** Timeout duration in milliseconds after which loading auto-completes (default: 30000ms = 30s) */
   timeout?: number;
+  /** Start in loading state immediately (default: false) */
+  initialLoading?: boolean;
 };
 
 // ============================================================================
@@ -57,13 +59,13 @@ const DEFAULT_INITIAL_STEP = 'Iniciando...';
  * @returns {Function} returns.resetLoading - Reset to initial state
  */
 export function useLoadingState(options: UseLoadingStateOptions = {}) {
-  const { timeout = DEFAULT_TIMEOUT } = options;
+  const { timeout = DEFAULT_TIMEOUT, initialLoading = false } = options;
 
   // ============================================================================
   // STATE
   // ============================================================================
 
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(initialLoading);
   const [progress, setProgress] = useState(0);
   const [step, setStep] = useState(DEFAULT_INITIAL_STEP);
 

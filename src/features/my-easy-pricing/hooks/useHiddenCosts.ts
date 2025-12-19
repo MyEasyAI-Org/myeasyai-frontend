@@ -4,7 +4,7 @@
 
 import { useState, useCallback } from 'react';
 import { toast } from 'sonner';
-import { pricingService } from '../services/PricingService';
+import { pricingServiceV2 } from '../services/PricingServiceV2';
 import { CALCULATION_CONSTANTS } from '../constants/pricing.constants';
 import { calculateMonthlyCost } from './useIndirectCosts';
 import type {
@@ -76,7 +76,7 @@ export function useHiddenCosts(): UseHiddenCostsReturn {
     setError(null);
 
     try {
-      const { data, error: fetchError } = await pricingService.getHiddenCosts(storeId);
+      const { data, error: fetchError } = await pricingServiceV2.getHiddenCosts(storeId);
 
       if (fetchError) {
         setError(fetchError.message);
@@ -104,7 +104,7 @@ export function useHiddenCosts(): UseHiddenCostsReturn {
     setIsLoading(true);
 
     try {
-      const { data: newCost, error: createError } = await pricingService.createHiddenCost(
+      const { data: newCost, error: createError } = await pricingServiceV2.createHiddenCost(
         storeId,
         {
           name: data.name,
@@ -142,7 +142,7 @@ export function useHiddenCosts(): UseHiddenCostsReturn {
     data: Partial<HiddenCostFormData>
   ): Promise<boolean> => {
     try {
-      const { data: updatedCost, error: updateError } = await pricingService.updateHiddenCost(
+      const { data: updatedCost, error: updateError } = await pricingServiceV2.updateHiddenCost(
         costId,
         data
       );
@@ -165,7 +165,7 @@ export function useHiddenCosts(): UseHiddenCostsReturn {
   // ---------------------------------------------------------------------------
   const deleteCost = useCallback(async (costId: string): Promise<boolean> => {
     try {
-      const { success, error: deleteError } = await pricingService.deleteHiddenCost(costId);
+      const { success, error: deleteError } = await pricingServiceV2.deleteHiddenCost(costId);
 
       if (deleteError || !success) {
         toast.error('Erro ao remover custo');

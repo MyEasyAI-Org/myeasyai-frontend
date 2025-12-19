@@ -1,0 +1,14 @@
+name = "myeasyai-frontend"
+main = "src/index.ts"
+compatibility_date = "2024-01-01"
+
+# Rotas para o domínio principal myeasyai.com
+routes = [
+  { pattern = "myeasyai.com/*", zone_name = "myeasyai.com" },
+  { pattern = "www.myeasyai.com/*", zone_name = "myeasyai.com" }
+]
+
+# R2 bucket binding - usa o mesmo bucket que sites-proxy
+[[r2_buckets]]
+binding = "FRONTEND_BUCKET"
+bucket_name = "myeasyai-sites"

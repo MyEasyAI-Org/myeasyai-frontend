@@ -292,7 +292,7 @@ export function useUserData() {
     startLoading,
     updateProgress,
     completeLoading,
-  } = useLoadingState({ timeout: 30000 }); // 30s timeout for safety
+  } = useLoadingState({ timeout: 30000, initialLoading: true }); // Start loading immediately
 
   // Cache timestamps
   const cacheTimestamps = useRef<CacheTimestamps>({
@@ -326,9 +326,14 @@ export function useUserData() {
   /**
    * Fetch user session with retry and timeout
    * Checks Cloudflare AuthServiceV2 first, then falls back to Supabase
+   * IMPORTANT: Waits for AuthServiceV2 initialization before checking user
    */
   const fetchSession = async () => {
     updateProgress(10, 'Verificando autenticação...');
+
+    // CRITICAL: Wait for AuthServiceV2 to finish initialization
+    // This prevents race condition where getUser() returns null before session is restored
+    await authService.waitForInit();
 
     // First, check if user is authenticated via Cloudflare (AuthServiceV2)
     const cloudflareUser = authService.getUser();

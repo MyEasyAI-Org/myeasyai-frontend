@@ -4,7 +4,7 @@
 
 import { useState, useCallback } from 'react';
 import { toast } from 'sonner';
-import { pricingService } from '../services/PricingService';
+import { pricingServiceV2 } from '../services/PricingServiceV2';
 import { CALCULATION_CONSTANTS } from '../constants/pricing.constants';
 import type {
   Product,
@@ -75,7 +75,7 @@ export function useProducts(): UseProductsReturn {
     setError(null);
 
     try {
-      const { data, error: fetchError } = await pricingService.getProducts(storeId);
+      const { data, error: fetchError } = await pricingServiceV2.getProducts(storeId);
 
       if (fetchError) {
         setError(fetchError.message);
@@ -116,7 +116,7 @@ export function useProducts(): UseProductsReturn {
     setIsLoading(true);
 
     try {
-      const { data: newProduct, error: createError } = await pricingService.createProduct(
+      const { data: newProduct, error: createError } = await pricingServiceV2.createProduct(
         storeId,
         data
       );
@@ -146,7 +146,7 @@ export function useProducts(): UseProductsReturn {
     data: Partial<ProductFormData>
   ): Promise<boolean> => {
     try {
-      const { data: updatedProduct, error: updateError } = await pricingService.updateProduct(
+      const { data: updatedProduct, error: updateError } = await pricingServiceV2.updateProduct(
         productId,
         data
       );
@@ -176,7 +176,7 @@ export function useProducts(): UseProductsReturn {
   // ---------------------------------------------------------------------------
   const deleteProduct = useCallback(async (productId: string): Promise<boolean> => {
     try {
-      const { success, error: deleteError } = await pricingService.deleteProduct(productId);
+      const { success, error: deleteError } = await pricingServiceV2.deleteProduct(productId);
 
       if (deleteError || !success) {
         toast.error('Erro ao excluir produto');

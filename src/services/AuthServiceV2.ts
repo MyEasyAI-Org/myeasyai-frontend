@@ -49,28 +49,53 @@ class AuthServiceV2 {
   private currentUser: AuthUser | null = null;
   private listeners: Set<AuthStateChangeCallback> = new Set();
   private initialized = false;
+  private initPromise: Promise<void>;
   private authSource: 'cloudflare' | 'supabase' | null = null;
 
   constructor() {
-    this.init();
+    // Store the init promise so waitForInit() can properly await it
+    this.initPromise = this.init();
   }
 
   /**
    * Inicializa o serviço
    */
   private async init(): Promise<void> {
-    // Restaurar sessão
+    console.log('🔐 [AUTH V2] Starting initialization...');
+
+    // Restaurar sessão FIRST and wait for it to complete
     await this.restoreSession();
 
-    // Configurar listener do Supabase (para fallback)
+    console.log('🔐 [AUTH V2] Session restore complete, user:', this.currentUser?.email);
+
+    // Configurar listener do Supabase (para fallback e OAuth)
+    // IMPORTANT: Always process Supabase auth events when there's a session
+    // This is needed because OAuth with Google always goes through Supabase
     supabase.auth.onAuthStateChange(async (event, session) => {
-      if (this.authSource === 'supabase' && session?.user) {
+      console.log('🔄 [AUTH V2] Supabase auth event:', event, session?.user?.email);
+
+      if (session?.user) {
+        // If we have a Supabase session, update the state
         this.currentUser = this.mapSupabaseUser(session.user);
+        this.authSource = 'supabase';
         localStorage.setItem(USER_KEY, JSON.stringify(this.currentUser));
+        localStorage.setItem(AUTH_SOURCE_KEY, 'supabase');
+
+        // Sync user to D1 for consistency
+        if (event === 'SIGNED_IN') {
+          await this.syncUserToD1(this.currentUser);
+        }
+
         this.notifyListeners();
+      } else if (event === 'SIGNED_OUT') {
+        // Only clear if we were using Supabase auth
+        if (this.authSource === 'supabase') {
+          this.clearSession();
+        }
       }
     });
 
+    // Mark as initialized AFTER everything is done
     this.initialized = true;
     console.log('📊 [AUTH V2] Initialized - Cloudflare Primary, Supabase Fallback');
   }
@@ -222,13 +247,18 @@ class AuthServiceV2 {
    * Tenta Cloudflare primeiro, fallback para Supabase
    */
   async signInWithGoogle(): Promise<AuthResult> {
+    console.log('🔐 [AUTH V2] signInWithGoogle called');
+
     // 1️⃣ TENTAR CLOUDFLARE PRIMEIRO
     try {
+      console.log('🔐 [AUTH V2] Checking Cloudflare health...');
       const cloudflareAvailable = await this.checkCloudflareHealth();
+      console.log('🔐 [AUTH V2] Cloudflare available:', cloudflareAvailable);
 
       if (cloudflareAvailable) {
         // Redirecionar para OAuth do Cloudflare com redirect_to para voltar ao frontend atual
         const currentOrigin = window.location.origin;
+        console.log('🔐 [AUTH V2] Redirecting to Cloudflare OAuth...');
         window.location.href = `${API_URL}/auth/google?redirect_to=${encodeURIComponent(currentOrigin)}`;
         return { success: true, source: 'cloudflare' };
       }
@@ -238,21 +268,29 @@ class AuthServiceV2 {
 
     // 2️⃣ FALLBACK PARA SUPABASE
     console.log('⚠️ [AUTH V2] Falling back to Supabase for Google OAuth');
+    console.log('🔐 [AUTH V2] Redirect URL will be:', window.location.origin);
 
     try {
+      // IMPORTANT: Don't use /auth/callback - let Supabase handle the redirect to origin
+      // The detectSessionInUrl option in the client config will process the hash/params
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
+          redirectTo: window.location.origin,
         },
       });
 
+      console.log('🔐 [AUTH V2] Supabase signInWithOAuth result:', { data, error });
+
       if (error) {
+        console.error('❌ [AUTH V2] Supabase OAuth error:', error);
         return { success: false, error: error.message, source: 'supabase' };
       }
 
+      console.log('✅ [AUTH V2] Supabase OAuth initiated, redirecting...');
       return { success: true, source: 'supabase' };
     } catch (error: any) {
+      console.error('❌ [AUTH V2] Exception in Supabase OAuth:', error);
       return { success: false, error: error.message, source: 'supabase' };
     }
   }
@@ -502,19 +540,33 @@ class AuthServiceV2 {
 
   /**
    * Aguarda inicialização
+   * Now properly awaits the init promise instead of polling
    */
   async waitForInit(): Promise<void> {
-    while (!this.initialized) {
-      await new Promise((r) => setTimeout(r, 50));
+    if (this.initialized) {
+      return;
     }
+    // Wait for the actual init promise to complete
+    await this.initPromise;
   }
 
   /**
    * Registra listener de mudança de auth
+   * IMPORTANT: Now waits for initialization before calling callback
+   * This prevents the callback from being called with undefined before session is restored
    */
   onAuthStateChange(callback: AuthStateChangeCallback): () => void {
     this.listeners.add(callback);
-    callback(this.currentUser);
+
+    // Wait for initialization before calling callback with current state
+    // This prevents race conditions where callback fires before session restore
+    this.initPromise.then(() => {
+      // Only call if listener is still registered (wasn't unsubscribed)
+      if (this.listeners.has(callback)) {
+        callback(this.currentUser);
+      }
+    });
+
     return () => this.listeners.delete(callback);
   }
 
