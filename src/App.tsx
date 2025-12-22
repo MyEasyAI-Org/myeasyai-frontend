@@ -26,6 +26,7 @@ import { Preview } from './components/Preview';
 import { PWAInstallBanner } from './components/PWAInstallBanner';
 import { AuthCallback } from './components/AuthCallback';
 import { BusinessGuru } from './features/business-guru/BusinessGuru';
+import { MyEasyContent } from './features/my-easy-content';
 import { MyEasyCRM } from './features/my-easy-crm';
 import { MyEasyPricing } from './features/my-easy-pricing/MyEasyPricing';
 import { MyEasyWebsite } from './features/my-easy-website/MyEasyWebsite';
@@ -276,6 +277,10 @@ function AppContent() {
 
   const goToMyEasyPricing = () => {
     navigate(ROUTES.MY_EASY_PRICING);
+  };
+
+  const goToMyEasyContent = () => {
+    navigate(ROUTES.MY_EASY_CONTENT);
   };
 
   const goToSubscription = () => {
@@ -821,6 +826,21 @@ function AppContent() {
             isCheckingAuth={isCheckingAuth}
           >
             <MyEasyPricing onBackToDashboard={goToDashboard} />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path={ROUTES.MY_EASY_CONTENT}
+        element={
+          <ProtectedRoute
+            user={user}
+            needsOnboarding={needsOnboarding}
+            onOpenOnboarding={() => onboardingModal.open()}
+            isLoading={loading}
+            isCheckingAuth={isCheckingAuth}
+          >
+            <MyEasyContent onBackToDashboard={goToDashboard} />
           </ProtectedRoute>
         }
       />

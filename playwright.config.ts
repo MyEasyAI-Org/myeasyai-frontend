@@ -19,14 +19,8 @@ export default defineConfig({
     timeout: 10000,
   },
 
-<<<<<<< HEAD
-  // Rodar testes SEQUENCIALMENTE (não em paralelo)
-  // Isso garante que todos os testes rodem no mesmo navegador, um após o outro
-  fullyParallel: false,
-=======
   // Rodar testes em paralelo (mais rápido)
   fullyParallel: true,
->>>>>>> 72ed26ba1c909357039aff7d840526f7b58bdea4
 
   // Não permitir .only no CI (evita commit acidental de testes focados)
   forbidOnly: !!process.env.CI,
@@ -36,16 +30,10 @@ export default defineConfig({
   // - Local: 0 tentativas (para feedback rápido durante desenvolvimento)
   retries: process.env.CI ? 2 : 0,
 
-<<<<<<< HEAD
-  // Usar apenas 1 worker para garantir que tudo rode no mesmo navegador sequencialmente
-  // Isso faz com que o navegador não feche entre os testes
-  workers: 1,
-=======
   // Quantos testes rodar ao mesmo tempo
   // - CI: 1 worker (para economizar recursos)
   // - Local: 2 workers (para evitar sobrecarga)
   workers: process.env.CI ? 1 : 2,
->>>>>>> 72ed26ba1c909357039aff7d840526f7b58bdea4
 
   // Formato dos relatórios
   reporter: [
@@ -59,17 +47,6 @@ export default defineConfig({
     // URL base da aplicação (não precisa repetir em cada teste)
     baseURL: 'http://localhost:5173',
 
-<<<<<<< HEAD
-    // Gravar trace SEMPRE para visualização completa na timeline
-    // Isso permite ver cada passo do teste na UI do Playwright
-    trace: 'on',
-
-    // Tirar screenshot SEMPRE para acompanhar visualmente
-    screenshot: 'on',
-
-    // Gravar vídeo SEMPRE para ter registro completo
-    video: 'on',
-=======
     // Gravar trace (filmagem detalhada) apenas na primeira retry
     // Isso ajuda a debugar falhas sem sobrecarregar o sistema
     trace: 'on-first-retry',
@@ -79,7 +56,6 @@ export default defineConfig({
 
     // Gravar vídeo apenas quando o teste falhar
     video: 'retain-on-failure',
->>>>>>> 72ed26ba1c909357039aff7d840526f7b58bdea4
 
     // Timeout para navegação
     navigationTimeout: 15000,

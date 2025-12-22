@@ -31,9 +31,9 @@
       "Bash(curl:*)",
       "Bash(npx wrangler deploy)",
       "Bash(npx wrangler:*)",
-      "Bash(git add:*)",
-      "Bash(git commit:*)",
-      "Bash(git push:*)"
+      "Bash(tasklist:*)",
+      "Bash(findstr:*)",
+      "Bash(taskkill:*)"
     ],
     "deny": [],
     "ask": []
