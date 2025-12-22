@@ -20,14 +20,11 @@ import { useContentData } from './hooks/useContentData';
 import { ContentChatPanel } from './components/ContentChatPanel';
 import { ContentPreview } from './components/ContentPreview';
 import {
-  buildContentPrompt,
   exportCalendar,
   generateCalendarEntries,
   generateContentIdeas,
-  generateId,
-  getHashtagsForNiche,
-  parseGeneratedContent,
 } from './utils/contentGenerator';
+import { socialContentService } from '../../services/SocialContentService';
 
 type MyEasyContentProps = {
   onBackToDashboard?: () => void;
@@ -249,97 +246,75 @@ export function MyEasyContent({ onBackToDashboard }: MyEasyContentProps) {
 
       addMessage({
         role: 'assistant',
-        content: `Gerando seu conteudo... Isso pode levar alguns segundos.`,
+        content: `Gerando seu conteudo com IA... Isso pode levar alguns segundos.`,
       });
 
+      // Helper to add delay between API calls (avoid rate limiting)
+      const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
       try {
-        // Generate content for each selected type and network combination
         const generatedContents: GeneratedContent[] = [];
 
-        for (const contentType of content.contentData.selectedContentTypes) {
-          for (const network of content.contentData.selectedNetworks) {
-            // Special handling for calendar
-            if (contentType === 'calendar') {
-              const calendar = generateCalendarEntries(
-                new Date(),
-                content.contentData.selectedNetworks,
-                content.contentData.businessNiche,
-                3,
-              );
-              content.setCalendar(calendar);
-              continue;
+        // Filter content types that need AI vs local generation
+        const aiContentTypes = content.contentData.selectedContentTypes.filter(
+          (ct) => ['feed_post', 'caption', 'story', 'reel'].includes(ct)
+        );
+        const localContentTypes = content.contentData.selectedContentTypes.filter(
+          (ct) => ['calendar', 'ideas', 'hashtags', 'best_times'].includes(ct)
+        );
+
+        // Handle local content types first (no API calls)
+        for (const contentType of localContentTypes) {
+          if (contentType === 'calendar') {
+            const calendar = generateCalendarEntries(
+              new Date(),
+              content.contentData.selectedNetworks,
+              content.contentData.businessNiche,
+              3,
+            );
+            content.setCalendar(calendar);
+          } else if (contentType === 'ideas') {
+            const ideas = generateContentIdeas(
+              content.contentData.businessNiche,
+              content.contentData.selectedNetworks,
+            );
+            content.setIdeas(ideas);
+          }
+          // hashtags and best_times are included in feed_post/caption generation
+        }
+
+        // Generate AI content - ONE call per network (most valuable content type)
+        // Priority: feed_post > reel > story > caption
+        const priorityOrder: ContentType[] = ['feed_post', 'reel', 'story', 'caption'];
+        const primaryContentType = priorityOrder.find((ct) => aiContentTypes.includes(ct));
+
+        if (primaryContentType) {
+          for (let i = 0; i < content.contentData.selectedNetworks.length; i++) {
+            const network = content.contentData.selectedNetworks[i];
+
+            // Add delay between API calls (except first one)
+            if (i > 0) {
+              await delay(2000); // 2 second delay between calls
             }
 
-            // Special handling for ideas
-            if (contentType === 'ideas') {
-              const ideas = generateContentIdeas(
-                content.contentData.businessNiche,
-                content.contentData.selectedNetworks,
-              );
-              content.setIdeas(ideas);
-              continue;
-            }
-
-            // Special handling for hashtags
-            if (contentType === 'hashtags') {
-              const hashtags = getHashtagsForNiche(
-                content.contentData.businessNiche,
-              );
-              const hashtagContent: GeneratedContent = {
-                id: generateId(),
-                type: 'hashtags',
-                network,
-                title: `Hashtags para ${content.contentData.businessName}`,
-                content: `Aqui estao as hashtags sugeridas para o seu nicho de ${content.contentData.businessNiche}:`,
-                hashtags,
-                createdAt: new Date(),
-              };
-              generatedContents.push(hashtagContent);
-              continue;
-            }
-
-            // For other content types, simulate AI generation
-            // In a real implementation, this would call the AI API
-            const prompt = buildContentPrompt(
-              {
-                contentType,
+            try {
+              const generatedContent = await socialContentService.generateContent({
+                contentType: primaryContentType,
                 network,
                 topic: content.contentData.currentTopic,
-                objective,
-                tone: content.contentData.brandVoice,
-                includeHashtags: true,
-                includeImageDescription: true,
-                includeBestTime: true,
-                generateVariations: true,
-                variationCount: 2,
-              },
-              {
-                name: content.contentData.businessName,
+                businessName: content.contentData.businessName,
                 niche: content.contentData.businessNiche,
                 audience: content.contentData.targetAudience,
                 tone: content.contentData.brandVoice,
-              },
-            );
+                objective,
+                includeHashtags: true,
+                includeImageDescription: primaryContentType === 'feed_post',
+              });
 
-            // Simulate AI response (in production, call actual API)
-            await new Promise((resolve) => setTimeout(resolve, 1000));
-
-            const mockResponse = generateMockContent(
-              contentType,
-              network,
-              content.contentData.currentTopic,
-              content.contentData.businessName,
-              content.contentData.businessNiche,
-              content.contentData.brandVoice,
-            );
-
-            const parsedContent = parseGeneratedContent(mockResponse, {
-              contentType,
-              network,
-              topic: content.contentData.currentTopic,
-            });
-
-            generatedContents.push(parsedContent);
+              generatedContents.push(generatedContent);
+            } catch (aiError) {
+              console.error('Erro ao gerar conteudo com IA:', aiError);
+            }
           }
         }
 
@@ -348,13 +323,21 @@ export function MyEasyContent({ onBackToDashboard }: MyEasyContentProps) {
           content.addGeneratedContent(generatedContent);
         }
 
-        addMessage({
-          role: 'assistant',
-          content: `Pronto! Gerei ${generatedContents.length} conteudo(s) para voce!\n\nConfira no painel ao lado. Voce pode:\n- Copiar com 1 clique\n- Salvar na biblioteca\n- Gerar variacoes\n\nQuer criar mais conteudo? Me diz o proximo tema!`,
-        });
+        if (generatedContents.length > 0) {
+          addMessage({
+            role: 'assistant',
+            content: `Pronto! Gerei ${generatedContents.length} conteudo(s) para voce!\n\nConfira no painel ao lado. Voce pode:\n- Copiar com 1 clique\n- Salvar na biblioteca\n- Gerar variacoes\n\nQuer criar mais conteudo? Me diz o proximo tema!`,
+          });
+        } else {
+          addMessage({
+            role: 'assistant',
+            content: `Nao consegui gerar conteudo no momento. Por favor, verifique sua conexao e tente novamente.`,
+          });
+        }
 
         setCurrentStep(CONVERSATION_STEPS.RESULT);
       } catch (error) {
+        console.error('Erro na geracao de conteudo:', error);
         addMessage({
           role: 'assistant',
           content: `Ops! Ocorreu um erro ao gerar o conteudo. Por favor, tente novamente.`,
@@ -380,29 +363,30 @@ export function MyEasyContent({ onBackToDashboard }: MyEasyContentProps) {
     async (oldContent: GeneratedContent) => {
       setIsGenerating(true);
 
-      // Remove old content
-      content.removeGeneratedContent(oldContent.id);
+      try {
+        // Remove old content
+        content.removeGeneratedContent(oldContent.id);
 
-      // Generate new version
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+        // Generate new version using AI
+        const newContent = await socialContentService.generateContent({
+          contentType: oldContent.type,
+          network: oldContent.network,
+          topic: oldContent.title,
+          businessName: content.contentData.businessName,
+          niche: content.contentData.businessNiche,
+          audience: content.contentData.targetAudience,
+          tone: content.contentData.brandVoice,
+          objective: content.contentData.currentObjective,
+          includeHashtags: true,
+          includeImageDescription: oldContent.type === 'feed_post',
+        });
 
-      const mockResponse = generateMockContent(
-        oldContent.type,
-        oldContent.network,
-        oldContent.title,
-        content.contentData.businessName,
-        content.contentData.businessNiche,
-        content.contentData.brandVoice,
-      );
-
-      const newContent = parseGeneratedContent(mockResponse, {
-        contentType: oldContent.type,
-        network: oldContent.network,
-        topic: oldContent.title,
-      });
-
-      content.addGeneratedContent(newContent);
-      setIsGenerating(false);
+        content.addGeneratedContent(newContent);
+      } catch (error) {
+        console.error('Erro ao regenerar conteudo:', error);
+      } finally {
+        setIsGenerating(false);
+      }
     },
     [content],
   );
@@ -494,90 +478,6 @@ export function MyEasyContent({ onBackToDashboard }: MyEasyContentProps) {
       </div>
     </div>
   );
-}
-
-// Mock content generation (replace with actual AI API call in production)
-function generateMockContent(
-  contentType: ContentType,
-  network: SocialNetwork,
-  topic: string,
-  businessName: string,
-  niche: BusinessNiche,
-  tone: ContentTone,
-): string {
-  const toneEmojis: Record<ContentTone, string> = {
-    professional: '',
-    casual: '',
-    funny: '',
-    inspirational: '',
-    educational: '',
-    promotional: '',
-  };
-
-  const templates: Record<ContentType, string> = {
-    feed_post: `${topic}
-
-Voce sabia que ${topic.toLowerCase()} pode transformar seu dia a dia?
-
-Na ${businessName}, acreditamos que cada detalhe faz a diferenca. Por isso, estamos sempre buscando as melhores solucoes para voce.
-
-O que voce acha? Conta pra gente nos comentarios!
-
-#${niche} #${businessName.replace(/\s+/g, '')} #conteudo #dicas`,
-
-    caption: `${topic}
-
-Essa e a nossa missao aqui na ${businessName}!
-
-Curte ai se voce concorda!`,
-
-    story: `STORY 1:
-Titulo: "${topic}"
-Texto: "Voce ja pensou nisso?"
-CTA: Enquete - Sim / Nao
-
-STORY 2:
-Titulo: "A verdade e que..."
-Texto: Explicacao sobre ${topic}
-CTA: Deslize para cima
-
-STORY 3:
-Titulo: "${businessName}"
-Texto: "Estamos aqui pra te ajudar!"
-CTA: Link nos comentarios`,
-
-    reel: `ROTEIRO DE REEL
-
-GANCHO (0-3s):
-"Voce precisa saber disso sobre ${topic}!"
-
-DESENVOLVIMENTO (3-15s):
-- Ponto 1: Apresente o problema
-- Ponto 2: Mostre a solucao
-- Ponto 3: De um exemplo pratico
-
-CTA (15-30s):
-"Salva esse video e manda pra alguem que precisa ver isso!"
-
-MUSICA: Trending audio
-HASHTAGS: #${niche} #dicas #viral`,
-
-    calendar: '',
-    ideas: '',
-    hashtags: '',
-    best_times: `MELHORES HORARIOS PARA POSTAR:
-
-Segunda a Sexta:
-- Manha: 7h - 9h (alta)
-- Almoco: 12h - 14h (media)
-- Noite: 19h - 21h (alta)
-
-Fins de Semana:
-- Sabado: 11h - 13h (media)
-- Domingo: 17h - 19h (media)`,
-  };
-
-  return templates[contentType] || `Conteudo sobre ${topic} para ${businessName}`;
 }
 
 export default MyEasyContent;
