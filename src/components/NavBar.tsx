@@ -69,19 +69,32 @@ export default function NavBar({
     };
   }, [dropdownModal.isOpen, notificationModal.isOpen, dropdownModal, notificationModal]);
 
+  // Check if avatar URL is a real photo or just a Google default placeholder
+  const isRealAvatar = (url: string | null | undefined): boolean => {
+    if (!url) return false;
+    // Google default avatars contain these patterns
+    if (url.includes('default-user') || url.includes('=s96-c')) return false;
+    // UI Avatars or similar placeholder services
+    if (url.includes('ui-avatars.com')) return false;
+    // DiceBear or similar placeholder services
+    if (url.includes('dicebear') || url.includes('avatars.dicebear')) return false;
+    return true;
+  };
+
   // Function to generate name initials
+  // Single word (ex: "Jonny") → "J", Multiple words (ex: "Jonny Zin") → "JZ"
   const getInitials = (name: string) => {
-    const names = name.trim().split(' ');
+    const names = name.trim().split(' ').filter(Boolean);
     if (names.length >= 2) {
       return `${names[0][0]}${names[names.length - 1][0]}`.toUpperCase();
     }
-    return name.substring(0, 2).toUpperCase();
+    return names[0]?.[0]?.toUpperCase() || '';
   };
 
   // Function to get avatar (photo or initials)
   const getAvatarContent = () => {
-    // If has avatar_url, display image
-    if (userAvatarUrl) {
+    // If has real avatar_url (not a placeholder), display image
+    if (isRealAvatar(userAvatarUrl)) {
       return (
         <img
           src={userAvatarUrl}
@@ -93,7 +106,7 @@ export default function NavBar({
 
     // Otherwise, display initials
     return (
-      <div className="flex h-full w-full items-center justify-center rounded-full bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 text-white font-bold">
+      <div className="flex h-full w-full items-center justify-center rounded-full bg-gradient-to-br from-fuchsia-500 to-purple-600 text-white font-bold">
         {getInitials(userName)}
       </div>
     );
@@ -133,14 +146,15 @@ export default function NavBar({
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between">
           <div className="flex items-center space-x-4">
-            <button onClick={onLogoClick} className="cursor-pointer">
+            <button
+              onClick={onLogoClick}
+              className="flex items-center gap-3 cursor-pointer"
+            >
               <img
                 src="/bone-logo.png"
                 alt="MyEasyAI Logo"
                 className="h-12 w-12 object-contain"
               />
-            </button>
-            <button onClick={onLogoClick} className="cursor-pointer">
               <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-xl font-bold text-transparent">
                 MyEasyAI
               </span>
@@ -210,13 +224,22 @@ export default function NavBar({
                 <div className="relative" ref={dropdownRef}>
                   <button
                     onClick={() => dropdownModal.toggle()}
-                    className="flex items-center space-x-3 rounded-lg border border-slate-700 bg-slate-700/30 px-3 py-2 transition-all hover:border-slate-600 hover:bg-slate-600/40 hover:shadow-lg hover:shadow-purple-500/20"
+                    className="flex items-center space-x-3 rounded-lg border border-slate-700 bg-slate-700/30 px-3 py-2 transition-all hover:border-slate-600 hover:bg-slate-600/40 hover:shadow-lg hover:shadow-purple-500/20 cursor-pointer"
                   >
                     <div className="h-9 w-9 flex-shrink-0 overflow-hidden rounded-full ring-2 ring-purple-500/30">
                       {getAvatarContent()}
                     </div>
                     <span className="text-sm font-medium text-slate-200">
-                      Olá, {userName}
+                      Olá,{' '}
+                      {userName === 'Usuário' ? (
+                        <span className="loading-dots">
+                          <span>.</span>
+                          <span>.</span>
+                          <span>.</span>
+                        </span>
+                      ) : (
+                        userName
+                      )}
                     </span>
                   </button>
 
@@ -244,7 +267,7 @@ export default function NavBar({
                             dropdownModal.close();
                             onDashboardClick?.();
                           }}
-                          className="flex w-full items-center space-x-3 rounded-lg px-3 py-2.5 text-left text-slate-200 transition-colors hover:bg-slate-700"
+                          className="flex w-full items-center space-x-3 rounded-lg px-3 py-2.5 text-left text-slate-200 transition-colors hover:bg-slate-700 cursor-pointer"
                         >
                           <Home className="h-4 w-4" />
                           <span className="text-sm">Dashboard</span>
@@ -257,7 +280,7 @@ export default function NavBar({
                             dropdownModal.close();
                             onLogout?.();
                           }}
-                          className="flex w-full items-center space-x-3 rounded-lg px-3 py-2.5 text-left text-red-400 transition-colors hover:bg-red-500/10"
+                          className="flex w-full items-center space-x-3 rounded-lg px-3 py-2.5 text-left text-red-400 transition-colors hover:bg-red-500/10 cursor-pointer"
                         >
                           <LogOut className="h-4 w-4" />
                           <span className="text-sm font-medium">Sair</span>
@@ -268,7 +291,7 @@ export default function NavBar({
                 </div>
               </div>
             ) : isCheckingAuth ? (
-              // Checking authentication - show loading
+              // Checking authentication - show loading dots
               <div className="flex items-center space-x-2 px-4 py-2">
                 <span className="loading-dots text-slate-300">
                   <span>.</span>

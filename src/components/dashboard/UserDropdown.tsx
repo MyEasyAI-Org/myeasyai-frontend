@@ -42,6 +42,7 @@ export function UserDropdown({
           <div className="h-12 w-12 flex-shrink-0 overflow-hidden rounded-full ring-2 ring-purple-500/40">
             <Avatar
               name={profile.name}
+              displayName={profile.preferred_name}
               avatarUrl={profile.avatar_url}
               size="md"
             />

@@ -1,4 +1,4 @@
-import { Package } from 'lucide-react';
+import { DollarSign, ExternalLink, Package, Target } from 'lucide-react';
 import type { UserProduct } from '../../hooks/useUserData';
 import { ProductCard } from './ProductCard';
 
@@ -6,12 +6,16 @@ type ProductsTabProps = {
   userProducts: UserProduct[];
   isLoading: boolean;
   onAccessProduct: (productName: string) => void;
+  onGoToCRM?: () => void;
+  accountCreatedAt?: string;
 };
 
 export function ProductsTab({
   userProducts,
   isLoading,
   onAccessProduct,
+  onGoToCRM,
+  accountCreatedAt,
 }: ProductsTabProps) {
   return (
     <div className="space-y-6">
@@ -22,14 +26,60 @@ export function ProductsTab({
         </p>
       </div>
 
-      {/* Active Products */}
+      {/* Active Products + MyEasyPricing */}
       {isLoading ? (
         <div className="text-center py-12">
           <p className="text-slate-400">Carregando produtos...</p>
         </div>
-      ) : userProducts.length > 0 ? (
+      ) : (
         <>
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {/* MyEasyPricing Card - Always visible in Meus Produtos */}
+            <div className="rounded-lg border border-slate-800 bg-slate-900/50 p-6 hover:border-yellow-500 transition-colors">
+              <div className="flex items-start justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="rounded-lg bg-yellow-500/20 p-3">
+                    <DollarSign className="h-6 w-6 text-yellow-400" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-white">
+                      MyEasyPricing
+                    </h3>
+                    <span className="inline-block mt-1 rounded-full bg-green-500/20 px-2 py-1 text-xs font-semibold text-green-400">
+                      Ativo
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-4 space-y-2 text-sm">
+                <div className="flex justify-between text-slate-400">
+                  <span>Assinado em:</span>
+                  <span className="text-white">
+                    {new Date().toLocaleDateString('pt-BR')}
+                  </span>
+                </div>
+                <div className="flex justify-between text-slate-400">
+                  <span>Tabelas criadas:</span>
+                  <span className="text-white font-semibold">0</span>
+                </div>
+              </div>
+
+              <div className="mt-6 flex space-x-2">
+                <button
+                  onClick={() => onAccessProduct('MyEasyPricing')}
+                  className="flex-1 rounded-lg bg-yellow-600 px-4 py-2 text-sm font-semibold text-white hover:bg-yellow-500 transition-colors flex items-center justify-center space-x-2"
+                >
+                  <ExternalLink className="h-4 w-4" />
+                  <span>Acessar</span>
+                </button>
+                <button className="rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-sm text-white hover:bg-slate-700 transition-colors">
+                  Gerenciar
+                </button>
+              </div>
+            </div>
+
+            {/* User Products */}
             {userProducts.map((product, index) => (
               <ProductCard
                 key={product.id}
@@ -38,9 +88,47 @@ export function ProductsTab({
                 onAccessProduct={onAccessProduct}
               />
             ))}
+
+            {/* MyEasyCRM Card - Always visible */}
+            <div className="rounded-lg border border-slate-800 bg-slate-900/50 p-6 hover:border-emerald-500 transition-colors">
+              <div className="flex items-start justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="rounded-lg bg-emerald-500/20 p-3">
+                    <Target className="h-6 w-6 text-emerald-400" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-white">
+                      MyEasyCRM
+                    </h3>
+                    <span className="inline-block mt-1 rounded-full bg-emerald-500/20 text-emerald-400 px-2 py-1 text-xs font-semibold">
+                      Ativo
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-4 space-y-2 text-sm">
+                <p className="text-slate-400">
+                  Gerencie contatos, empresas, pipeline de vendas, tarefas e atividades.
+                </p>
+              </div>
+
+              <div className="mt-6 flex space-x-2">
+                <button
+                  onClick={onGoToCRM}
+                  className="flex-1 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 transition-colors flex items-center justify-center space-x-2"
+                >
+                  <ExternalLink className="h-4 w-4" />
+                  <span>Acessar</span>
+                </button>
+                <button className="rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-sm text-white hover:bg-slate-700 transition-colors">
+                  Gerenciar
+                </button>
+              </div>
+            </div>
           </div>
 
-          {/* Summary Card */}
+          {/* Summary Card - always show (includes hard-coded products) */}
           <div className="rounded-lg border border-slate-800 bg-slate-900/50 p-6">
             <h2 className="text-xl font-bold text-white">
               Resumo de Assinaturas
@@ -48,11 +136,8 @@ export function ProductsTab({
             <div className="mt-4 grid gap-4 md:grid-cols-3">
               <div className="text-center">
                 <p className="text-3xl font-bold text-white">
-                  {
-                    userProducts.filter(
-                      (p) => p.product_status === 'active',
-                    ).length
-                  }
+                  {/* Count userProducts + 2 hard-coded products (MyEasyPricing + MyEasyCRM) */}
+                  {userProducts.filter((p) => p.product_status === 'active').length + 2}
                 </p>
                 <p className="mt-1 text-sm text-slate-400">
                   Produtos Ativos
@@ -74,32 +159,17 @@ export function ProductsTab({
               </div>
               <div className="text-center">
                 <p className="text-3xl font-bold text-green-400">
-                  {new Date(
-                    Math.min(
-                      ...userProducts.map((p) =>
-                        new Date(p.subscribed_at).getTime(),
-                      ),
-                    ),
-                  ).toLocaleDateString('pt-BR')}
+                  {accountCreatedAt
+                    ? new Date(accountCreatedAt).toLocaleDateString('pt-BR')
+                    : new Date().toLocaleDateString('pt-BR')}
                 </p>
                 <p className="mt-1 text-sm text-slate-400">
-                  Primeiro Produto
+                  Membro desde
                 </p>
               </div>
             </div>
           </div>
         </>
-      ) : (
-        <div className="rounded-lg border border-slate-800 bg-slate-900/50 p-12 text-center">
-          <Package className="mx-auto h-16 w-16 text-slate-600" />
-          <h3 className="mt-4 text-xl font-semibold text-white">
-            Nenhum produto ativo
-          </h3>
-          <p className="mt-2 text-slate-400">
-            Você ainda não possui produtos ativos. Explore os produtos
-            disponíveis abaixo!
-          </p>
-        </div>
       )}
 
       {/* Available Products */}

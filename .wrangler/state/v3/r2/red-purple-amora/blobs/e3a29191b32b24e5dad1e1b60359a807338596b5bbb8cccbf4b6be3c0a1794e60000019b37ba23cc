@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="pt-BR" class="scroll-smooth">
+  <head>
+    <meta charset="UTF-8" />
+    
+    <!-- PWA Icons -->
+    <link rel="icon" type="image/png" sizes="16x16" href="/bone-logo.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/bone-logo.png" />
+    <link rel="icon" type="image/png" sizes="48x48" href="/icon-48.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/bone-logo-192.png" />
+    <link rel="icon" type="image/png" sizes="512x512" href="/bone-logo-512.png" />
+    <link rel="apple-touch-icon" href="/bone-logo-192.png" />
+    <link rel="apple-touch-icon" sizes="192x192" href="/bone-logo-192.png" />
+    
+    <!-- PWA Meta Tags -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#000000" />
+    <meta name="background-color" content="#000000" />
+    <meta name="display" content="standalone" />
+    <meta name="description" content="Sua plataforma de IA fácil e acessível" />
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.json" />
+    
+    <!-- Apple PWA Meta Tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="MyEasyAI" />
+    
+    <!-- Microsoft PWA Meta Tags -->
+    <meta name="msapplication-TileColor" content="#000000" />
+    <meta name="msapplication-TileImage" content="/bone-logo-192.png" />
+    
+    <title>MyEasyAI</title>
+    <script type="module" crossorigin src="/assets/index-BH8DIcXT.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/react-ClZwdvRs.js">
+    <link rel="modulepreload" crossorigin href="/assets/lucide-icons-C8zBUUL0.js">
+    <link rel="modulepreload" crossorigin href="/assets/supabase-D_IVvZoV.js">
+    <link rel="stylesheet" crossorigin href="/assets/index-CUuZBTXh.css">
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>

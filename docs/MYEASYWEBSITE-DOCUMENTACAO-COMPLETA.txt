@@ -1,0 +1,2655 @@
+================================================================================
+                    MYEASYWEBSITE - DOCUMENTACAO COMPLETA
+                    CRIADOR DE SITES INTELIGENTE COM IA
+================================================================================
+
+Versao do Documento: 1.0
+Data: 27/11/2025
+Autor: MyEasyAI Development Team
+
+================================================================================
+                              INDICE
+================================================================================
+
+1. VISAO GERAL DO SISTEMA
+2. ARQUITETURA E ESTRUTURA DE ARQUIVOS
+3. FLUXO COMPLETO DO CHAT (TODAS AS ETAPAS)
+4. ESTRUTURA DE DADOS (SITEDATA)
+5. TODAS AS SECOES DO SITE
+6. SISTEMA DE CORES E PALETAS
+7. SISTEMA DE VIBES/ESTILOS
+8. AREAS DE NEGOCIO
+9. SISTEMA DE EDICAO
+10. MODAIS DO SISTEMA
+11. GERACAO DE CONTEUDO COM IA
+12. PREVIEW E TEMPLATE
+13. DEPLOY NO NETLIFY
+14. INTEGRACAO COM APIs
+15. MELHORIAS SUGERIDAS - GERACAO DE IMAGENS
+16. MELHORIAS SUGERIDAS - SUPER PROMPT PARA CRIACAO DO ZERO
+17. MELHORIAS SUGERIDAS - NOVAS FUNCIONALIDADES
+
+================================================================================
+                    1. VISAO GERAL DO SISTEMA
+================================================================================
+
+O MyEasyWebsite e um construtor de sites inteligente que utiliza IA para guiar
+o usuario atraves de um chat conversacional. O sistema coleta informacoes sobre
+o negocio do usuario e gera um site profissional completo.
+
+FUNCIONALIDADES PRINCIPAIS:
+- Chat interativo com assistente de IA
+- Coleta de informacoes do negocio passo a passo
+- Selecao de cores com paletas profissionais ou geracao via IA
+- Selecao de secoes do site
+- Preview em tempo real
+- Edicao inline de todos os elementos
+- Otimizacao de textos com IA (Gemini)
+- Deploy automatico no Netlify
+
+TECNOLOGIAS UTILIZADAS:
+- React com TypeScript
+- Tailwind CSS para estilizacao
+- Google Gemini AI para geracao de conteudo
+- Google Maps API para geocodificacao
+- Netlify para deploy
+- Custom Hooks para gerenciamento de estado
+
+================================================================================
+                    2. ARQUITETURA E ESTRUTURA DE ARQUIVOS
+================================================================================
+
+DIRETORIO PRINCIPAL:
+src/features/my-easy-website/
+
+ARQUIVOS PRINCIPAIS:
+--------------------------------------------------------------------------------
+
+MyEasyWebsite.tsx (502 linhas)
+  - Componente principal que orquestra toda a aplicacao
+  - Gerencia estados globais da UI
+  - Integra todos os hooks e componentes
+  - Renderiza ChatPanel, PreviewPanel e modais
+
+components/ChatPanel.tsx (860 linhas)
+  - Interface do chat com todas as interacoes
+  - Renderiza mensagens, opcoes, botoes
+  - Gerencia input do usuario
+  - Exibe resumo das informacoes
+  - Seletor de pais para telefone
+
+components/PreviewPanel.tsx (92 linhas)
+  - Painel de preview do site
+  - Mostra site em tempo real
+  - Botoes de edicao e visualizacao
+
+SiteTemplate.tsx (2000+ linhas)
+  - Template React do site gerado (somente leitura)
+  - Todas as secoes renderizadas
+  - Estilos dinamicos baseados em cores/vibe
+
+EditableSiteTemplate.tsx (2078 linhas)
+  - Versao editavel do template
+  - Click-to-edit em todos os textos
+  - Adicionar/remover servicos e imagens
+  - Edicao inline com salvamento
+
+HOOKS:
+--------------------------------------------------------------------------------
+
+hooks/useConversationFlow.ts (226 linhas)
+  - Gerencia array de mensagens
+  - Controle de step atual
+  - Navegacao para tras (snapshots)
+  - Auto-scroll para ultima mensagem
+
+hooks/useSiteData.ts (375 linhas)
+  - Estado completo do site
+  - Metodos de atualizacao type-safe
+  - Validacoes de secoes
+  - Reset e setAll
+
+hooks/useColorPalettes.ts (108 linhas)
+  - Gerencia paletas de cores
+  - Filtragem por categoria
+  - Geracao de paletas customizadas via IA
+
+hooks/useAddressManagement.ts (178 linhas)
+  - Selecao de pais
+  - Geocodificacao de enderecos
+  - Formatacao de telefone
+  - Validacao de CEP
+
+HANDLERS:
+--------------------------------------------------------------------------------
+
+handlers/useMyEasyWebsiteHandlers.ts (782 linhas)
+  - Todos os handlers de eventos
+  - Processamento de respostas do usuario
+  - Logica de transicao entre steps
+  - Chamadas de API
+
+MODAIS:
+--------------------------------------------------------------------------------
+
+components/modals/InputModal.tsx (75 linhas)
+  - Modal generico para entrada de texto
+  - Suporta single-line e multiline
+
+components/modals/SectionsEditModal.tsx (77 linhas)
+  - Modal para selecao de secoes
+  - Checkboxes com toggle
+
+components/modals/ColorsEditModal.tsx (115 linhas)
+  - Modal para selecao de cores
+  - Grid de paletas
+  - Opcao de cores customizadas
+
+UTILS:
+--------------------------------------------------------------------------------
+
+utils/siteGenerator.ts (1490 linhas)
+  - Gera HTML completo standalone
+  - CSS inline para independencia
+  - Responsivo para mobile
+  - SEO tags incluidas
+
+utils/formatters.ts
+  - Formatacao de dados
+  - Helpers de texto
+
+utils/geocoding.ts
+  - Integracao com Google Maps
+  - Validacao de enderecos
+
+CONSTANTS:
+--------------------------------------------------------------------------------
+
+constants/labels.ts (45 linhas)
+  - Labels de vibes
+  - Labels de categorias
+  - Labels de areas
+  - Opcoes de secoes
+
+constants/initialData.ts
+  - Dados iniciais padrao
+
+================================================================================
+                    3. FLUXO COMPLETO DO CHAT (TODAS AS ETAPAS)
+================================================================================
+
+O chat segue um fluxo linear com steps numerados. Cada step coleta uma
+informacao especifica do usuario.
+
+--------------------------------------------------------------------------------
+STEP 0 - SELECAO DE AREA DE NEGOCIO
+--------------------------------------------------------------------------------
+PERGUNTA: "Para comecar, escolha a area de atuacao do seu negocio:"
+
+OPCOES DISPONIVEIS:
+  1. Tecnologia     - Empresas de TI, software, apps
+  2. Varejo         - Lojas, comercio em geral
+  3. Servicos       - Prestadores de servico
+  4. Alimentacao    - Restaurantes, lanchonetes, delivery
+  5. Saude          - Clinicas, consultorios, farmacias
+  6. Educacao       - Escolas, cursos, treinamentos
+
+TIPO DE INPUT: Botoes de selecao (6 opcoes)
+CAMPO SALVO: siteData.area
+PROXIMO STEP: 1
+
+--------------------------------------------------------------------------------
+STEP 1 - NOME DA EMPRESA
+--------------------------------------------------------------------------------
+PERGUNTA: "Otima escolha! Agora me diga, qual e o nome da sua empresa?"
+
+TIPO DE INPUT: Campo de texto livre
+VALIDACAO: Obrigatorio, texto nao vazio
+CAMPO SALVO: siteData.name
+PROXIMO STEP: 2
+
+EXEMPLOS DE ENTRADA:
+  - "Barbearia do Ze"
+  - "Doces da Maria"
+  - "Tech Solutions"
+  - "Clinica Bem Estar"
+
+--------------------------------------------------------------------------------
+STEP 2 - SLOGAN DA EMPRESA
+--------------------------------------------------------------------------------
+PERGUNTA: "Perfeito, [NOME]! Agora, crie um slogan impactante para sua empresa."
+EXEMPLO: "(Exemplo: 'Elevando seu estilo a um novo nivel')"
+
+TIPO DE INPUT: Campo de texto livre
+VALIDACAO: Obrigatorio
+CAMPO SALVO: siteData.slogan
+PROXIMO STEP: 3
+
+EXEMPLOS DE ENTRADA:
+  - "Transformando sonhos em realidade"
+  - "Qualidade que voce merece"
+  - "Sua satisfacao e nossa prioridade"
+
+--------------------------------------------------------------------------------
+STEP 3 - DESCRICAO DA EMPRESA
+--------------------------------------------------------------------------------
+PERGUNTA: "Excelente slogan! Agora, descreva brevemente sua empresa.
+O que voces fazem? Quais produtos ou servicos oferecem?"
+
+TIPO DE INPUT: Campo de texto multiline
+VALIDACAO: Obrigatorio
+CAMPO SALVO: siteData.description
+PROXIMO STEP: 3.5
+
+EXEMPLOS DE ENTRADA:
+  - "Somos uma barbearia tradicional com mais de 10 anos de experiencia.
+     Oferecemos cortes classicos e modernos, barba, hidratacao e muito mais."
+  - "Restaurante especializado em comida italiana caseira, com ingredientes
+     frescos e receitas tradicionais da familia."
+
+--------------------------------------------------------------------------------
+STEP 3.5 - SELECAO DE VIBE/ESTILO
+--------------------------------------------------------------------------------
+PERGUNTA: "Perfeito! Agora me diga: Que sentimento voce quer transmitir
+ao visitante do seu site?"
+
+OPCOES DISPONIVEIS:
+  1. Vibrante & Animado   (vibrant)  - Cores vivas, animacoes
+  2. Dark & Profissional  (dark)     - Fundo escuro, elegante
+  3. Claro & Alegre       (light)    - Fundo claro, minimalista
+  4. Corporativo & Formal (corporate)- Serio, institucional
+  5. Divertido & Criativo (fun)      - Colorido, descontraido
+  6. Elegante & Minimalista (elegant)- Sofisticado, clean
+
+TIPO DE INPUT: Botoes de selecao (6 opcoes)
+CAMPO SALVO: siteData.vibe
+PROXIMO STEP: 4
+
+--------------------------------------------------------------------------------
+STEP 4 - SELECAO DE COR BASE
+--------------------------------------------------------------------------------
+PERGUNTA: "Perfeito! Agora vamos escolher as cores perfeitas para o seu site!
+Primeiro, escolha uma cor base:"
+
+OPCOES DISPONIVEIS:
+  1. Azul     (blue)    - Tons de azul
+  2. Verde    (green)   - Tons de verde
+  3. Roxo     (purple)  - Tons de roxo
+  4. Rosa     (pink)    - Tons de rosa
+  5. Vermelho (red)     - Tons de vermelho
+  6. Laranja  (orange)  - Tons de laranja
+  7. Amarelo  (yellow)  - Tons de amarelo
+  8. Neutro   (neutral) - Cinzas e neutros
+
+TIPO DE INPUT: Botoes de selecao (8 opcoes)
+CAMPO SALVO: colorPalettes.selectedCategory
+PROXIMO STEP: 4.5
+
+--------------------------------------------------------------------------------
+STEP 4.5 - SELECAO DE PALETA DE CORES
+--------------------------------------------------------------------------------
+PERGUNTA: "Otima escolha! [COR] Agora escolha uma das paletas profissionais abaixo:"
+
+EXIBICAO:
+  - Grid visual de paletas (12 opcoes por categoria)
+  - Cada paleta mostra: primary, secondary, accent
+  - Nome da paleta
+  - Botao "Cores customizadas via IA"
+
+OPCAO ALTERNATIVA:
+  - Botao para descrever cores em texto
+  - IA gera 6 paletas personalizadas
+  - Exemplo: "azul e laranja", "tons pasteis", "cores vibrantes"
+
+TIPO DE INPUT: Clique em paleta OU descricao textual
+CAMPO SALVO: siteData.colors (JSON string)
+CAMPO SALVO: siteData.selectedPaletteId
+PROXIMO STEP: 5
+
+ESTRUTURA DE CORES:
+{
+  "primary": "#1E40AF",    // Cor principal
+  "secondary": "#3B82F6",  // Cor secundaria
+  "accent": "#60A5FA",     // Cor de destaque
+  "dark": "#1E3A8A",       // Cor escura (textos, fundos)
+  "light": "#DBEAFE"       // Cor clara (fundos, bordas)
+}
+
+--------------------------------------------------------------------------------
+STEP 5 - SELECAO DE SECOES DO SITE
+--------------------------------------------------------------------------------
+PERGUNTA: "Agora selecione quais secoes voce quer no seu site:"
+
+OPCOES DISPONIVEIS (10 SECOES):
+  1. Hero (Inicio)    (hero)         - Secao principal, sempre visivel
+  2. Sobre Nos        (about)        - Informacoes da empresa
+  3. Servicos         (services)     - Lista de servicos oferecidos
+  4. Galeria          (gallery)      - Fotos do trabalho/produtos
+  5. Precos           (pricing)      - Tabela de precos/planos
+  6. Equipe           (team)         - Membros da equipe
+  7. FAQ              (faq)          - Perguntas frequentes
+  8. App Download     (app)          - Links para app stores
+  9. Depoimentos      (testimonials) - Avaliacoes de clientes
+  10. Contato         (contact)      - Informacoes de contato
+
+TIPO DE INPUT: Checkbox multiplo (toggle)
+VALIDACAO: Minimo 1 secao selecionada
+CAMPO SALVO: siteData.sections (array)
+PROXIMO STEP: 6
+
+BOTAO: "Continuar (X secoes)" - Apenas habilitado se sections.length > 0
+
+--------------------------------------------------------------------------------
+STEP 6 - INICIO DAS PERGUNTAS DE SECOES
+--------------------------------------------------------------------------------
+Este step e transitorio. O sistema verifica quais secoes foram selecionadas
+e redireciona para as perguntas especificas.
+
+LOGICA:
+1. Se selecionou "services" e services.length == 0 -> Pergunta servicos
+2. Se selecionou "gallery" e gallery.length == 0 -> Pergunta imagens
+3. Se selecionou "contact" e !address -> Pergunta endereco
+4. Se nenhuma pendencia -> Vai para resumo (step 9.5)
+
+--------------------------------------------------------------------------------
+STEP 7 - PERGUNTAS ESPECIFICAS DE SECOES
+--------------------------------------------------------------------------------
+
+>> SERVICOS (se selecionou "services"):
+PERGUNTA: "Vamos configurar a secao de SERVICOS. Liste seus servicos
+separados por virgula."
+EXEMPLO: "(Exemplo: Corte Premium, Barboterapia, Hidratacao Capilar)"
+
+TIPO DE INPUT: Campo de texto
+PROCESSAMENTO: Split por virgula, trim de espacos
+CAMPO SALVO: siteData.services (array)
+
+EXEMPLOS DE ENTRADA:
+  - "Corte masculino, Barba, Sobrancelha, Hidratacao"
+  - "Pizza, Hamburguer, Batata frita, Refrigerante"
+  - "Consultoria, Desenvolvimento, Manutencao, Suporte"
+
+>> GALERIA (se selecionou "gallery"):
+PERGUNTA: "Vamos configurar a secao de GALERIA. Envie as imagens que
+voce quer na galeria do seu site."
+
+TIPO DE INPUT: Upload de arquivos (multiplo)
+FORMATOS: JPG, PNG, GIF, WebP
+PROCESSAMENTO: Converte para base64
+CAMPO SALVO: siteData.gallery (array de URLs base64)
+
+APOS UPLOAD:
+  - Exibe preview das imagens
+  - Botao "Adicionar mais" -> Novo upload
+  - Botao "Continuar" -> Proxima pergunta
+
+>> CONTATO (se selecionou "contact"):
+PERGUNTA: "Vamos configurar a secao de CONTATO. Qual e o endereco
+completo da sua empresa com CEP?"
+
+TIPO DE INPUT: Campo de texto
+PROCESSAMENTO: Geocodificacao via Google Maps
+CAMPO SALVO: siteData.address (apos confirmacao)
+PROXIMO STEP: 7.6 (confirmacao de endereco)
+
+--------------------------------------------------------------------------------
+STEP 7.5 - CORRECAO DE ENDERECO
+--------------------------------------------------------------------------------
+Acionado quando o usuario diz que o endereco esta incorreto.
+
+PERGUNTA: "Ok! Digite o endereco correto:"
+
+TIPO DE INPUT: Campo de texto
+PROCESSAMENTO: Nova geocodificacao
+PROXIMO STEP: 7.6
+
+--------------------------------------------------------------------------------
+STEP 7.6 - CONFIRMACAO DE ENDERECO
+--------------------------------------------------------------------------------
+EXIBICAO:
+  - Mapa Google Maps com pin no endereco
+  - Endereco formatado exibido
+  - Botao "Confirmar" (verde)
+  - Botao "Corrigir" (vermelho)
+
+ACAO CONFIRMAR: Salva endereco, vai para step 8
+ACAO CORRIGIR: Vai para step 7.5
+
+--------------------------------------------------------------------------------
+STEP 8 - TELEFONE DE CONTATO
+--------------------------------------------------------------------------------
+PERGUNTA: "Perfeito! Agora me diga o telefone de contato:"
+
+EXIBICAO ESPECIAL:
+  - Dropdown de selecao de pais (bandeiras)
+  - Codigo do pais automatico
+  - Mascara de formatacao por pais
+
+PAISES DISPONIVEIS:
+  - Brasil       (+55)  - (##) #####-####
+  - Estados Unidos (+1) - (###) ###-####
+  - Portugal     (+351) - ### ### ###
+  - Argentina    (+54)  - ## ####-####
+  - Mexico       (+52)  - ## #### ####
+  - Espanha      (+34)  - ### ### ###
+  - Reino Unido  (+44)  - #### ######
+  - Franca       (+33)  - # ## ## ## ##
+  - Alemanha     (+49)  - ### #######
+  - Italia       (+39)  - ### ### ####
+  - Japao        (+81)  - ##-####-####
+  - China        (+86)  - ### #### ####
+  - India        (+91)  - ##### #####
+  - Australia    (+61)  - #### ### ###
+  - Canada       (+1)   - (###) ###-####
+
+TIPO DE INPUT: Campo de texto com mascara
+CAMPO SALVO: siteData.phone (com codigo do pais)
+PROXIMO STEP: 9
+
+--------------------------------------------------------------------------------
+STEP 9 - EMAIL DE CONTATO
+--------------------------------------------------------------------------------
+PERGUNTA: "Perfeito! Por ultimo, qual e o e-mail de contato?"
+
+TIPO DE INPUT: Campo de texto
+VALIDACAO: Formato de email basico
+CAMPO SALVO: siteData.email
+PROXIMO STEP: 9.5
+
+--------------------------------------------------------------------------------
+STEP 9.5 - RESUMO E CONFIRMACAO
+--------------------------------------------------------------------------------
+PERGUNTA: "Perfeito! Agora vou mostrar um resumo de todas as suas
+informacoes para voce confirmar:"
+
+EXIBICAO DO RESUMO:
+Cartao com todas as informacoes coletadas:
+
+  +------------------------------------------+
+  |     RESUMO DAS SUAS INFORMACOES          |
+  +------------------------------------------+
+  | Nome da Empresa: [nome]          [Editar]|
+  +------------------------------------------+
+  | Slogan: [slogan]                 [Editar]|
+  +------------------------------------------+
+  | Descricao: [descricao...]        [Editar]|
+  +------------------------------------------+
+  | Paleta de Cores:                 [Editar]|
+  | [cor1] [cor2] [cor3]                     |
+  +------------------------------------------+
+  | Secoes do Site:                  [Editar]|
+  | [hero] [about] [services] [contact]      |
+  +------------------------------------------+
+  | Servicos: [lista]                [Editar]|
+  +------------------------------------------+
+  | Galeria: [thumbnails]                    |
+  +------------------------------------------+
+  | Endereco: [endereco]             [Editar]|
+  +------------------------------------------+
+  | Telefone: [telefone]             [Editar]|
+  +------------------------------------------+
+  | E-mail: [email]                  [Editar]|
+  +------------------------------------------+
+
+BOTOES DE ACAO:
+  - "Voltar a pergunta anterior" - Navega para step anterior
+  - "Confirmar e Gerar Site" - Inicia geracao com IA
+
+EDICAO:
+Cada campo tem botao "Editar" que abre modal apropriado:
+  - Campos de texto: InputModal
+  - Cores: ColorsEditModal
+  - Secoes: SectionsEditModal
+
+--------------------------------------------------------------------------------
+STEP 10 - GERACAO DO SITE COM IA
+--------------------------------------------------------------------------------
+Acionado ao confirmar resumo.
+
+PROCESSO DE GERACAO:
+
+1. MENSAGEM INICIAL:
+   "Estou processando seus textos com IA...
+    - Reescrevendo slogan
+    - Otimizando descricao
+    - Melhorando servicos
+    - Gerando FAQ personalizado
+    Isso vai deixar seu site muito mais profissional e persuasivo!"
+
+2. CHAMADAS DE IA (ContentRewritingService):
+   a) correctNameCapitalization(name) -> Nome com capitalizacao correta
+   b) rewriteAllContent({...}) -> Retorna:
+      - slogan: Slogan otimizado
+      - description: Descricao persuasiva
+      - services: Servicos profissionalizados
+      - faq: Perguntas e respostas geradas
+      - heroStats: Estatisticas para hero
+      - features: Beneficios/diferenciais
+      - aboutContent: Conteudo do "Sobre"
+      - serviceDescriptions: Descricoes dos servicos
+      - testimonials: Depoimentos ficticios
+
+3. MENSAGEM DE SUCESSO:
+   "Textos otimizados com sucesso!
+    - Slogan reescrito com impacto
+    - Descricao persuasiva criada
+    - Servicos profissionalizados
+    - FAQ personalizado gerado
+    Agora vou gerar seu site..."
+
+4. GERACAO DO SITE:
+   - setGeneratedSite() ativado
+   - Preview renderizado
+   - URL provisoria gerada
+
+5. MENSAGEM FINAL:
+   "Seu site foi gerado com sucesso!
+    Todos os textos foram otimizados por IA para maxima conversao!
+    Voce pode visualiza-lo no preview ao lado.
+    Agora voce pode:
+    - Editar cores e textos
+    - Abrir em uma nova aba
+    - Publicar no Netlify!"
+
+================================================================================
+                    4. ESTRUTURA DE DADOS (SITEDATA)
+================================================================================
+
+Interface TypeScript completa do SiteData:
+
+interface SiteData {
+  // INFORMACOES BASICAS
+  area: string;              // Area de negocio (technology, retail, etc)
+  name: string;              // Nome da empresa
+  slogan: string;            // Slogan/tagline
+  description: string;       // Descricao do negocio
+
+  // ESTILO VISUAL
+  vibe: string;              // Estilo visual (vibrant, dark, light, etc)
+  colors: string;            // JSON: {primary, secondary, accent, dark, light}
+  selectedPaletteId?: string;// ID da paleta selecionada
+
+  // SECOES SELECIONADAS
+  sections: SectionKey[];    // Array de secoes escolhidas
+
+  // CONTEUDO POR SECAO
+  services: string[];        // Lista de servicos (nomes)
+  gallery: string[];         // URLs das imagens (base64)
+
+  // INFORMACOES DE CONTATO
+  address: string;           // Endereco completo
+  phone: string;             // Telefone com codigo do pais
+  email: string;             // Email de contato
+
+  // APP DOWNLOAD
+  appPlayStore: string;      // URL da Play Store
+  appAppStore: string;       // URL da App Store
+  showPlayStore: boolean;    // Exibir link Play Store
+  showAppStore: boolean;     // Exibir link App Store
+
+  // CONTEUDO AVANCADO (gerado por IA)
+  faq: Array<{
+    question: string;
+    answer: string;
+  }>;
+
+  pricing: Array<{
+    name: string;
+    price: string;
+    features: string[];
+  }>;
+
+  team: Array<{
+    name: string;
+    role: string;
+    photo?: string;
+  }>;
+
+  testimonials: Array<{
+    name: string;
+    role: string;
+    text: string;
+  }>;
+
+  heroStats?: Array<{
+    value: string;
+    label: string;
+  }>;
+
+  features?: Array<{
+    title: string;
+    description: string;
+  }>;
+
+  aboutContent?: {
+    title: string;
+    subtitle: string;
+    checklist: string[];
+  };
+
+  serviceDescriptions?: Array<{
+    name: string;
+    description: string;
+  }>;
+}
+
+VALORES PADRAO:
+
+{
+  area: '',
+  name: '',
+  slogan: '',
+  description: '',
+  vibe: 'vibrant',
+  colors: JSON.stringify({
+    primary: '#6366F1',
+    secondary: '#8B5CF6',
+    accent: '#EC4899',
+    dark: '#1E293B',
+    light: '#F1F5F9'
+  }),
+  sections: [],
+  services: [],
+  gallery: [],
+  appPlayStore: '',
+  appAppStore: '',
+  showPlayStore: false,
+  showAppStore: false,
+  testimonials: [],
+  address: '',
+  phone: '',
+  email: '',
+  faq: [
+    { question: 'Como posso agendar um horario?',
+      answer: 'Voce pode agendar atraves do nosso site, app ou WhatsApp.' },
+    { question: 'Quais sao as formas de pagamento?',
+      answer: 'Aceitamos dinheiro, cartao de credito/debito e PIX.' },
+    { question: 'Voces atendem aos finais de semana?',
+      answer: 'Sim, atendemos de segunda a sabado, das 9h as 18h.' }
+  ],
+  pricing: [
+    { name: 'Basico', price: 'R$ 99',
+      features: ['Atendimento basico', 'Produtos padrao', 'Sem agendamento'] },
+    { name: 'Premium', price: 'R$ 199',
+      features: ['Atendimento premium', 'Produtos premium',
+                 'Agendamento prioritario', 'Brindes exclusivos'] },
+    { name: 'VIP', price: 'R$ 299',
+      features: ['Atendimento VIP', 'Produtos top de linha',
+                 'Agendamento exclusivo', 'Tratamento especial',
+                 'Beneficios extras'] }
+  ],
+  team: [
+    { name: 'Joao Silva', role: 'CEO & Fundador' },
+    { name: 'Maria Santos', role: 'Diretora de Operacoes' },
+    { name: 'Pedro Costa', role: 'Gerente de Atendimento' }
+  ]
+}
+
+================================================================================
+                    5. TODAS AS SECOES DO SITE
+================================================================================
+
+Cada secao do site tem estrutura e conteudo especificos:
+
+--------------------------------------------------------------------------------
+SECAO: HERO (hero) - SEMPRE VISIVEL
+--------------------------------------------------------------------------------
+DESCRICAO: Secao principal de entrada do site
+
+ELEMENTOS:
+  - Badge com area de negocio (ex: "Alimentacao")
+  - Titulo principal (slogan ou nome)
+  - Descricao do negocio
+  - Botao CTA primario "Comecar Agora"
+  - Botao CTA secundario "Saiba Mais"
+  - 3 Estatisticas (heroStats)
+  - Elementos decorativos animados (circulos, particulas)
+
+ESTILOS:
+  - Fundo com cor primaria
+  - Texto com contraste automatico
+  - Animacoes: float, pulse, slideUp
+
+EDITAVEL:
+  - Slogan (click-to-edit)
+  - Descricao (click-to-edit)
+  - Estatisticas valor/label (click-to-edit)
+
+--------------------------------------------------------------------------------
+SECAO: FEATURES (sempre exibida)
+--------------------------------------------------------------------------------
+DESCRICAO: Beneficios/diferenciais da empresa
+
+ELEMENTOS:
+  - Badge "Por Que Escolher a Gente?"
+  - Titulo "Beneficios Exclusivos"
+  - 3 Cards de features com:
+    - Icone (SVG)
+    - Titulo (4 palavras max)
+    - Descricao (15 palavras max)
+
+EDITAVEL:
+  - Titulo de cada feature
+  - Descricao de cada feature
+
+--------------------------------------------------------------------------------
+SECAO: ABOUT (about)
+--------------------------------------------------------------------------------
+DESCRICAO: Informacoes sobre a empresa
+
+ELEMENTOS:
+  - Badge "Sobre Nos"
+  - Titulo principal
+  - Subtitulo
+  - Descricao detalhada
+  - Checklist com 3 itens (diferenciais)
+  - 2 Imagens decorativas (placeholder)
+  - Card de avaliacao (4.9 estrelas)
+  - Botao "Agende seu horario"
+
+EDITAVEL:
+  - Titulo
+  - Subtitulo
+  - Descricao
+  - Itens da checklist
+
+--------------------------------------------------------------------------------
+SECAO: SERVICES (services)
+--------------------------------------------------------------------------------
+DESCRICAO: Lista de servicos oferecidos
+
+ELEMENTOS:
+  - Badge "Nossos Servicos"
+  - Titulo "Servicos que Transformam"
+  - Grid de cards (maximo 6)
+  - Cada card tem:
+    - Icone (emoji)
+    - Nome do servico
+    - Descricao do servico
+    - Linha decorativa
+    - Botao "Saiba Mais"
+  - Botao "Adicionar Servico" (no editor)
+
+EDITAVEL:
+  - Nome de cada servico
+  - Descricao de cada servico
+  - Adicionar/remover servicos
+
+--------------------------------------------------------------------------------
+SECAO: GALLERY (gallery)
+--------------------------------------------------------------------------------
+DESCRICAO: Galeria de imagens do trabalho/produtos
+
+ELEMENTOS:
+  - Badge "Galeria"
+  - Titulo "Nosso Trabalho"
+  - Grid de imagens (3 colunas desktop)
+  - Aspect ratio 4:3
+  - Lazy loading nas imagens
+  - Botao "Adicionar Imagem" (no editor)
+  - Hover com overlay para remover
+
+EDITAVEL:
+  - Adicionar imagens
+  - Remover imagens
+
+--------------------------------------------------------------------------------
+SECAO: PRICING (pricing)
+--------------------------------------------------------------------------------
+DESCRICAO: Tabela de precos/planos
+
+ELEMENTOS:
+  - Badge "Precos"
+  - Titulo "Planos que Cabem no Bolso"
+  - 3 Cards de planos:
+    - Nome do plano
+    - Preco (/mes)
+    - Lista de features
+    - Badge "POPULAR" no plano do meio
+    - Botao "Escolher Plano"
+
+ESTILOS:
+  - Plano do meio destacado (scale 1.05)
+  - Borda colorida no popular
+
+EDITAVEL:
+  - Nome de cada plano
+  - Preco de cada plano
+  - Features de cada plano
+
+--------------------------------------------------------------------------------
+SECAO: TEAM (team)
+--------------------------------------------------------------------------------
+DESCRICAO: Membros da equipe
+
+ELEMENTOS:
+  - Badge "Nossa Equipe"
+  - Titulo "Conheca nosso Time"
+  - Grid de cards (3 membros)
+  - Cada card tem:
+    - Avatar circular (inicial do nome)
+    - Nome completo
+    - Cargo/funcao
+    - Links sociais (Instagram)
+
+EDITAVEL:
+  - Nome de cada membro
+  - Cargo de cada membro
+
+--------------------------------------------------------------------------------
+SECAO: FAQ (faq)
+--------------------------------------------------------------------------------
+DESCRICAO: Perguntas frequentes
+
+ELEMENTOS:
+  - Badge "FAQ"
+  - Titulo "Perguntas Frequentes"
+  - Lista de accordions (details/summary)
+  - Cada item tem:
+    - Pergunta (summary)
+    - Resposta (content)
+    - Icone de seta rotativa
+
+EDITAVEL:
+  - Pergunta de cada item
+  - Resposta de cada item
+
+--------------------------------------------------------------------------------
+SECAO: APP (app)
+--------------------------------------------------------------------------------
+DESCRICAO: Links para download do aplicativo
+
+ELEMENTOS:
+  - Badge "Nosso App"
+  - Titulo "Agende pelo Aplicativo"
+  - Descricao dos beneficios
+  - Checklist (Agendamento em segundos, Lembretes automaticos)
+  - Botao Google Play
+  - Botao App Store
+  - Imagem do app (mockup)
+  - Efeito de blur no fundo
+
+CONDICIONAL:
+  - Exibe Play Store se showPlayStore = true
+  - Exibe App Store se showAppStore = true
+
+--------------------------------------------------------------------------------
+SECAO: TESTIMONIALS (testimonials)
+--------------------------------------------------------------------------------
+DESCRICAO: Depoimentos de clientes
+
+ELEMENTOS:
+  - Badge "Depoimentos"
+  - Titulo "O que dizem Nossos Clientes"
+  - Grid de 3 cards
+  - Cada card tem:
+    - 5 estrelas amarelas
+    - Texto do depoimento (italico)
+    - Linha decorativa gradient
+    - Avatar com inicial
+    - Nome do cliente
+    - Cargo/descricao
+
+EDITAVEL:
+  - Texto de cada depoimento
+  - Nome de cada cliente
+  - Cargo de cada cliente
+
+--------------------------------------------------------------------------------
+SECAO: CONTACT (contact)
+--------------------------------------------------------------------------------
+DESCRICAO: Informacoes de contato e localizacao
+
+ELEMENTOS:
+  - Badge "Fale Conosco"
+  - Titulo "Venha nos Visitar"
+  - Card de endereco com icone
+  - Card de telefone com icone
+  - Card de email com icone
+  - Botao "Como Chegar"
+  - Mapa Google Maps embed (iframe)
+
+EDITAVEL:
+  - Endereco
+  - Telefone
+  - Email
+
+--------------------------------------------------------------------------------
+SECAO: FOOTER (sempre exibida)
+--------------------------------------------------------------------------------
+DESCRICAO: Rodape do site
+
+ELEMENTOS:
+  - Nome da empresa
+  - "Experiencia premium desde 2024"
+  - Links rapidos (Sobre, Servicos, Galeria, Contato)
+  - Informacoes de contato
+  - Copyright
+
+--------------------------------------------------------------------------------
+ELEMENTO FLUTUANTE: WHATSAPP
+--------------------------------------------------------------------------------
+DESCRICAO: Botao flutuante para WhatsApp
+
+ELEMENTOS:
+  - Botao circular verde
+  - Icone do WhatsApp
+  - Posicao: bottom-right fixo
+  - Animacao de pulse
+  - Link para wa.me com numero
+
+CONDICIONAL: Apenas se phone preenchido
+
+================================================================================
+                    6. SISTEMA DE CORES E PALETAS
+================================================================================
+
+O sistema de cores oferece paletas profissionais organizadas por categoria.
+
+CATEGORIAS DE CORES:
+--------------------------------------------------------------------------------
+
+AZUL (blue):
+  - Oceano Profundo: #1E3A8A, #3B82F6, #60A5FA, #0F172A, #DBEAFE
+  - Ceu Noturno: #1E40AF, #2563EB, #3B82F6, #1E3A8A, #EFF6FF
+  - Azul Corporativo: #1D4ED8, #3B82F6, #60A5FA, #1E293B, #F0F9FF
+  - Indigo: #4338CA, #6366F1, #818CF8, #312E81, #EEF2FF
+
+VERDE (green):
+  - Esmeralda: #047857, #10B981, #34D399, #064E3B, #D1FAE5
+  - Floresta: #166534, #22C55E, #4ADE80, #14532D, #DCFCE7
+  - Verde Menta: #0D9488, #14B8A6, #2DD4BF, #134E4A, #CCFBF1
+  - Lime: #65A30D, #84CC16, #A3E635, #3F6212, #ECFCCB
+
+ROXO (purple):
+  - Violeta: #7C3AED, #8B5CF6, #A78BFA, #5B21B6, #EDE9FE
+  - Ametista: #9333EA, #A855F7, #C084FC, #6B21A8, #FAE8FF
+  - Lavanda: #7C3AED, #8B5CF6, #A78BFA, #4C1D95, #F3E8FF
+  - Purpura Real: #6D28D9, #7C3AED, #8B5CF6, #4C1D95, #EDE9FE
+
+ROSA (pink):
+  - Rose: #BE185D, #EC4899, #F472B6, #831843, #FCE7F3
+  - Magenta: #C026D3, #D946EF, #E879F9, #86198F, #FAE8FF
+  - Coral: #DB2777, #EC4899, #F472B6, #9D174D, #FDF2F8
+  - Fuchsia: #A21CAF, #D946EF, #E879F9, #701A75, #FAE8FF
+
+VERMELHO (red):
+  - Rubi: #B91C1C, #DC2626, #EF4444, #7F1D1D, #FEE2E2
+  - Carmim: #991B1B, #DC2626, #F87171, #7F1D1D, #FEF2F2
+  - Vermelho Vivo: #DC2626, #EF4444, #F87171, #991B1B, #FEE2E2
+  - Borgonha: #881337, #BE123C, #F43F5E, #4C0519, #FFE4E6
+
+LARANJA (orange):
+  - Sunset: #C2410C, #EA580C, #F97316, #9A3412, #FFEDD5
+  - Tangerina: #EA580C, #F97316, #FB923C, #C2410C, #FFF7ED
+  - Laranja Queimado: #9A3412, #C2410C, #EA580C, #7C2D12, #FFEDD5
+  - Ambar: #D97706, #F59E0B, #FBBF24, #92400E, #FEF3C7
+
+AMARELO (yellow):
+  - Dourado: #A16207, #CA8A04, #EAB308, #78350F, #FEF9C3
+  - Sol: #CA8A04, #EAB308, #FACC15, #A16207, #FEF08A
+  - Mostarda: #A16207, #CA8A04, #D97706, #78350F, #FEF3C7
+  - Limao: #A3E635, #BEF264, #D9F99D, #65A30D, #F7FEE7
+
+NEUTRO (neutral):
+  - Cinza Moderno: #374151, #4B5563, #6B7280, #1F2937, #F3F4F6
+  - Slate: #334155, #475569, #64748B, #1E293B, #F1F5F9
+  - Grafite: #27272A, #3F3F46, #52525B, #18181B, #FAFAFA
+  - Pedra: #44403C, #57534E, #78716C, #292524, #F5F5F4
+
+PALETAS CUSTOMIZADAS VIA IA:
+--------------------------------------------------------------------------------
+O usuario pode descrever cores em texto e a IA gera 6 paletas:
+
+EXEMPLOS DE DESCRICOES:
+  - "azul e laranja"
+  - "tons pasteis suaves"
+  - "cores vibrantes e modernas"
+  - "verde com dourado"
+  - "roxo e rosa"
+
+PROCESSO:
+1. Usuario descreve cores
+2. ContentRewritingService.generateCustomColorPalettes() chamado
+3. IA (Gemini) gera 6 paletas harmonicas
+4. Paletas exibidas no grid
+5. Usuario seleciona uma
+
+FALLBACK:
+Se IA falhar, usa paletas pre-definidas baseadas nas cores mencionadas.
+
+================================================================================
+                    7. SISTEMA DE VIBES/ESTILOS
+================================================================================
+
+O sistema de vibes define a atmosfera visual do site:
+
+VIBRANT (vibrant) - Vibrante & Animado
+--------------------------------------------------------------------------------
+  - Header: Cor primaria solida
+  - Textos: Brancos com sombra
+  - Efeitos: Animacoes mais intensas
+  - Ideal para: Negocios jovens, criativos
+
+DARK (dark) - Dark & Profissional
+--------------------------------------------------------------------------------
+  - Header: Preto com 95% opacidade
+  - Textos: Brancos
+  - Efeitos: Blur suave
+  - Ideal para: Tech, agencias, consultoria
+
+LIGHT (light) - Claro & Alegre
+--------------------------------------------------------------------------------
+  - Header: Branco com 95% opacidade
+  - Textos: Escuros (gray-900)
+  - Efeitos: Borda inferior clara
+  - Ideal para: Saude, educacao, servicos
+
+CORPORATE (corporate) - Corporativo & Formal
+--------------------------------------------------------------------------------
+  - Header: Slate-900 com 95% opacidade
+  - Textos: Brancos
+  - Efeitos: Minimalistas
+  - Ideal para: Empresas B2B, escritorios
+
+FUN (fun) - Divertido & Criativo
+--------------------------------------------------------------------------------
+  - Header: Roxo vibrante (purple-600)
+  - Textos: Brancos
+  - Efeitos: Coloridos, dinamicos
+  - Ideal para: Entretenimento, festas, criancas
+
+ELEGANT (elegant) - Elegante & Minimalista
+--------------------------------------------------------------------------------
+  - Header: Branco com borda sutil
+  - Textos: Escuros
+  - Efeitos: Clean, sofisticado
+  - Ideal para: Luxo, moda, gastronomia
+
+================================================================================
+                    8. AREAS DE NEGOCIO
+================================================================================
+
+Areas disponiveis e suas caracteristicas:
+
+TECHNOLOGY (technology) - Tecnologia
+--------------------------------------------------------------------------------
+  - Emoji: Laptop
+  - Servicos tipicos: Desenvolvimento, Consultoria, Suporte, Cloud
+  - Cores sugeridas: Azul, Roxo
+  - Vibe sugerida: Dark, Corporate
+
+RETAIL (retail) - Varejo
+--------------------------------------------------------------------------------
+  - Emoji: Store
+  - Servicos tipicos: Venda, Entrega, Troca, Garantia
+  - Cores sugeridas: Laranja, Vermelho
+  - Vibe sugerida: Vibrant, Light
+
+SERVICES (services) - Servicos
+--------------------------------------------------------------------------------
+  - Emoji: Handshake
+  - Servicos tipicos: Consultoria, Manutencao, Reparo, Suporte
+  - Cores sugeridas: Verde, Azul
+  - Vibe sugerida: Corporate, Light
+
+FOOD (food) - Alimentacao
+--------------------------------------------------------------------------------
+  - Emoji: Utensils
+  - Servicos tipicos: Delivery, Buffet, Catering, Reservas
+  - Cores sugeridas: Vermelho, Laranja, Amarelo
+  - Vibe sugerida: Fun, Vibrant
+
+HEALTH (health) - Saude
+--------------------------------------------------------------------------------
+  - Emoji: Heart
+  - Servicos tipicos: Consulta, Exames, Tratamento, Prevencao
+  - Cores sugeridas: Azul, Verde
+  - Vibe sugerida: Light, Corporate
+
+EDUCATION (education) - Educacao
+--------------------------------------------------------------------------------
+  - Emoji: GraduationCap
+  - Servicos tipicos: Aulas, Cursos, Treinamento, Certificacao
+  - Cores sugeridas: Azul, Roxo
+  - Vibe sugerida: Light, Corporate
+
+================================================================================
+                    9. SISTEMA DE EDICAO - ULTRA DETALHADO
+================================================================================
+
+O sistema de edicao permite modificar TODOS os elementos do site gerado.
+Esta secao documenta TODAS as edicoes possiveis atual e sugestoes futuras.
+
+================================================================================
+9.1. EDICAO INLINE (EditableSiteTemplate)
+================================================================================
+
+COMO FUNCIONA:
+--------------------------------------------------------------------------------
+1. Usuario passa o mouse sobre um elemento editavel
+2. Elemento fica destacado com borda roxa (outline-purple-500)
+3. Tooltip aparece: "Clique para editar"
+4. Usuario clica no elemento
+5. Campo de texto (input ou textarea) aparece no lugar
+6. Usuario edita o conteudo
+7. Botoes aparecem: Salvar (verde) e Cancelar (vermelho)
+8. Usuario clica em Salvar ou pressiona Enter
+9. Alteracao e aplicada imediatamente
+
+COMPONENTE EditableText:
+--------------------------------------------------------------------------------
+Props:
+  - field: string        -> Identificador unico do campo
+  - value: string        -> Valor atual
+  - className: string    -> Classes CSS
+  - multiline: boolean   -> Se usa textarea (multiplas linhas)
+  - as: 'span'|'h1'|'h2'|'h3'|'p' -> Tag HTML a renderizar
+  - style: CSSProperties -> Estilos inline
+
+Estados visuais:
+  - Normal: Texto renderizado normalmente
+  - Hover: Borda roxa com tooltip
+  - Editing: Input/textarea com botoes de acao
+
+================================================================================
+9.2. TODOS OS CAMPOS EDITAVEIS ATUALMENTE
+================================================================================
+
+>> HEADER (Cabecalho)
+--------------------------------------------------------------------------------
+CAMPO: name
+  - O que e: Nome da empresa no logo
+  - Tipo: Texto simples
+  - Onde aparece: Header, Footer
+  - Exemplo: "Barbearia do Ze" -> "Barbearia Premium"
+
+>> SECAO HERO
+--------------------------------------------------------------------------------
+CAMPO: slogan
+  - O que e: Titulo principal do site
+  - Tipo: Texto simples ou multiline
+  - Onde aparece: Hero section (h1)
+  - Exemplo: "Transformando Sonhos" -> "Realizando Sonhos"
+
+CAMPO: description
+  - O que e: Texto descritivo abaixo do titulo
+  - Tipo: Multiline (textarea)
+  - Onde aparece: Hero section, About section
+  - Exemplo: "Somos especialistas..." -> "Oferecemos servicos..."
+
+CAMPO: heroStats.0.value
+  - O que e: Primeiro valor estatistico
+  - Tipo: Texto simples
+  - Exemplo: "500+" -> "1000+"
+
+CAMPO: heroStats.0.label
+  - O que e: Label do primeiro valor
+  - Tipo: Texto simples
+  - Exemplo: "Clientes Satisfeitos" -> "Clientes Felizes"
+
+CAMPO: heroStats.1.value
+  - O que e: Segundo valor estatistico
+  - Tipo: Texto simples
+  - Exemplo: "4.9" -> "5.0"
+
+CAMPO: heroStats.1.label
+  - O que e: Label do segundo valor
+  - Tipo: Texto simples
+  - Exemplo: "Avaliacao Media" -> "Nota no Google"
+
+CAMPO: heroStats.2.value
+  - O que e: Terceiro valor estatistico
+  - Tipo: Texto simples
+  - Exemplo: "10+" -> "15+"
+
+CAMPO: heroStats.2.label
+  - O que e: Label do terceiro valor
+  - Tipo: Texto simples
+  - Exemplo: "Anos de Experiencia" -> "Anos no Mercado"
+
+>> SECAO FEATURES (Beneficios)
+--------------------------------------------------------------------------------
+CAMPO: sectionLabels.features
+  - O que e: Badge/etiqueta da secao
+  - Tipo: Texto simples
+  - Exemplo: "Por Que Escolher a Gente?" -> "Nossos Diferenciais"
+
+CAMPO: sectionTitles.features
+  - O que e: Titulo da secao
+  - Tipo: Texto simples
+  - Exemplo: "Beneficios Exclusivos" -> "Vantagens Unicas"
+
+CAMPO: features.0.title
+  - O que e: Titulo do primeiro beneficio
+  - Tipo: Texto simples (max 4 palavras)
+  - Exemplo: "Experiencia Premium" -> "Qualidade Superior"
+
+CAMPO: features.0.description
+  - O que e: Descricao do primeiro beneficio
+  - Tipo: Multiline
+  - Exemplo: "Muito mais que um servico..." -> "Oferecemos..."
+
+CAMPO: features.1.title / features.1.description
+  - Mesmo padrao para segundo beneficio
+
+CAMPO: features.2.title / features.2.description
+  - Mesmo padrao para terceiro beneficio
+
+>> SECAO ABOUT (Sobre Nos)
+--------------------------------------------------------------------------------
+CAMPO: sectionLabels.about
+  - O que e: Badge da secao
+  - Tipo: Texto simples
+  - Exemplo: "Sobre Nos" -> "Quem Somos"
+
+CAMPO: sectionTitles.about
+  - O que e: Titulo da secao
+  - Tipo: Texto simples
+  - Exemplo: "Do Sonho a Realidade" -> "Nossa Historia"
+
+CAMPO: aboutSubtitle
+  - O que e: Subtitulo explicativo
+  - Tipo: Multiline
+  - Exemplo: "Nossa empresa foi projetada..." -> "Fundada em 2020..."
+
+CAMPO: aboutContent.checklist.0
+  - O que e: Primeiro item da checklist
+  - Tipo: Texto simples
+  - Exemplo: "Profissionais certificados" -> "Equipe qualificada"
+
+CAMPO: aboutContent.checklist.1
+  - O que e: Segundo item da checklist
+  - Exemplo: "Produtos premium" -> "Materiais de qualidade"
+
+CAMPO: aboutContent.checklist.2
+  - O que e: Terceiro item da checklist
+  - Exemplo: "Ambiente climatizado" -> "Espaco confortavel"
+
+>> SECAO SERVICES (Servicos)
+--------------------------------------------------------------------------------
+CAMPO: sectionLabels.services
+  - O que e: Badge da secao
+  - Exemplo: "Nossos Servicos" -> "O Que Oferecemos"
+
+CAMPO: sectionTitles.services
+  - O que e: Titulo da secao
+  - Exemplo: "Servicos que Transformam" -> "Servicos Especializados"
+
+CAMPO: services.0
+  - O que e: Nome do primeiro servico
+  - Tipo: Texto simples
+  - Exemplo: "Corte Masculino" -> "Corte Premium"
+
+CAMPO: serviceDescriptions.0.description
+  - O que e: Descricao do primeiro servico
+  - Tipo: Multiline
+  - Exemplo: "Servico de qualidade..." -> "Corte personalizado..."
+
+CAMPO: services.1 / serviceDescriptions.1.description
+  - Mesmo padrao para segundo servico
+
+CAMPO: services.2 / serviceDescriptions.2.description
+  - Mesmo padrao para terceiro servico
+
+(... ate services.5 para maximo de 6 servicos)
+
+ACOES DE COLECAO:
+  - Botao "Adicionar Servico": Cria novo servico "Novo Servico"
+  - Botao Lixeira (hover): Remove servico especifico
+
+>> SECAO FAQ (Perguntas Frequentes)
+--------------------------------------------------------------------------------
+CAMPO: sectionLabels.faq
+  - O que e: Badge da secao
+  - Exemplo: "FAQ" -> "Duvidas Frequentes"
+
+CAMPO: sectionTitles.faq
+  - O que e: Titulo da secao
+  - Exemplo: "Perguntas Frequentes" -> "Tire Suas Duvidas"
+
+CAMPO: faq.0.question
+  - O que e: Primeira pergunta
+  - Tipo: Texto simples
+  - Exemplo: "Como posso agendar?" -> "Como faco para agendar?"
+
+CAMPO: faq.0.answer
+  - O que e: Resposta da primeira pergunta
+  - Tipo: Multiline
+  - Exemplo: "Voce pode agendar..." -> "E simples! Basta..."
+
+CAMPO: faq.1.question / faq.1.answer
+  - Mesmo padrao para segunda pergunta
+
+CAMPO: faq.2.question / faq.2.answer
+  - Mesmo padrao para terceira pergunta
+
+>> SECAO PRICING (Precos)
+--------------------------------------------------------------------------------
+CAMPO: sectionLabels.pricing
+  - O que e: Badge da secao
+  - Exemplo: "Precos" -> "Nossos Planos"
+
+CAMPO: sectionTitles.pricing
+  - O que e: Titulo da secao
+  - Exemplo: "Planos que Cabem no Bolso" -> "Escolha Seu Plano"
+
+CAMPO: pricing.0.name
+  - O que e: Nome do primeiro plano
+  - Exemplo: "Basico" -> "Essencial"
+
+CAMPO: pricing.0.price
+  - O que e: Preco do primeiro plano
+  - Exemplo: "R$ 99" -> "R$ 79"
+
+CAMPO: pricing.0.features.0
+  - O que e: Primeira feature do primeiro plano
+  - Exemplo: "Atendimento basico" -> "Suporte por email"
+
+CAMPO: pricing.0.features.1
+  - O que e: Segunda feature do primeiro plano
+
+CAMPO: pricing.0.features.2
+  - O que e: Terceira feature do primeiro plano
+
+CAMPO: pricing.1.name / pricing.1.price / pricing.1.features.X
+  - Mesmo padrao para segundo plano (Premium)
+
+CAMPO: pricing.2.name / pricing.2.price / pricing.2.features.X
+  - Mesmo padrao para terceiro plano (VIP)
+
+>> SECAO TEAM (Equipe)
+--------------------------------------------------------------------------------
+CAMPO: sectionLabels.team
+  - O que e: Badge da secao
+  - Exemplo: "Nossa Equipe" -> "Time"
+
+CAMPO: sectionTitles.team
+  - O que e: Titulo da secao
+  - Exemplo: "Conheca nosso Time" -> "Quem Faz Acontecer"
+
+CAMPO: team.0.name
+  - O que e: Nome do primeiro membro
+  - Exemplo: "Joao Silva" -> "Carlos Oliveira"
+
+CAMPO: team.0.role
+  - O que e: Cargo do primeiro membro
+  - Exemplo: "CEO & Fundador" -> "Diretor Geral"
+
+CAMPO: team.1.name / team.1.role
+  - Mesmo padrao para segundo membro
+
+CAMPO: team.2.name / team.2.role
+  - Mesmo padrao para terceiro membro
+
+>> SECAO TESTIMONIALS (Depoimentos)
+--------------------------------------------------------------------------------
+CAMPO: sectionLabels.testimonials
+  - O que e: Badge da secao
+  - Exemplo: "Depoimentos" -> "O Que Dizem"
+
+CAMPO: sectionTitles.testimonials
+  - O que e: Titulo da secao
+  - Exemplo: "O que dizem Nossos Clientes" -> "Avaliacoes"
+
+CAMPO: testimonials.0.name
+  - O que e: Nome do primeiro cliente
+  - Exemplo: "Ana Silva" -> "Maria Santos"
+
+CAMPO: testimonials.0.role
+  - O que e: Descricao do primeiro cliente
+  - Exemplo: "Cliente Satisfeita" -> "Cliente desde 2023"
+
+CAMPO: testimonials.0.text
+  - O que e: Texto do primeiro depoimento
+  - Tipo: Multiline
+  - Exemplo: "Excelente servico!" -> "Adorei o atendimento!"
+
+CAMPO: testimonials.1.name / role / text
+  - Mesmo padrao para segundo depoimento
+
+CAMPO: testimonials.2.name / role / text
+  - Mesmo padrao para terceiro depoimento
+
+>> SECAO GALLERY (Galeria)
+--------------------------------------------------------------------------------
+CAMPO: sectionLabels.gallery
+  - O que e: Badge da secao
+  - Exemplo: "Galeria" -> "Portfolio"
+
+CAMPO: sectionTitles.gallery
+  - O que e: Titulo da secao
+  - Exemplo: "Nosso Trabalho" -> "Nossos Projetos"
+
+ACOES DE COLECAO:
+  - Botao "Adicionar Imagem": Abre seletor de arquivos
+  - Hover na imagem: Mostra botao Lixeira para remover
+
+>> SECAO CONTACT (Contato)
+--------------------------------------------------------------------------------
+CAMPO: sectionLabels.contact
+  - O que e: Badge da secao
+  - Exemplo: "Fale Conosco" -> "Entre em Contato"
+
+CAMPO: sectionTitles.contact
+  - O que e: Titulo da secao
+  - Exemplo: "Venha nos Visitar" -> "Onde Estamos"
+
+CAMPO: address
+  - O que e: Endereco completo
+  - Tipo: Texto simples
+  - Exemplo: "Rua das Flores, 123..." -> "Av. Brasil, 456..."
+
+CAMPO: phone
+  - O que e: Telefone de contato
+  - Tipo: Texto simples
+  - Exemplo: "+55 11 99999-9999" -> "+55 11 88888-8888"
+
+CAMPO: email
+  - O que e: Email de contato
+  - Tipo: Texto simples
+  - Exemplo: "contato@empresa.com" -> "ola@empresa.com"
+
+================================================================================
+9.3. EDICAO VIA MODAIS
+================================================================================
+
+>> InputModal - Modal de Entrada de Texto
+--------------------------------------------------------------------------------
+QUANDO USA: Edicao de campos durante o resumo no chat
+
+CAMPOS QUE USAM:
+  - Nome da empresa
+  - Slogan
+  - Descricao (multiline)
+  - Lista de servicos (separados por virgula)
+  - Endereco
+  - Telefone
+  - Email
+
+INTERFACE:
+  +---------------------------------------+
+  |  [Titulo do Campo]              [X]  |
+  +---------------------------------------+
+  |                                       |
+  |  [Campo de Texto/Textarea]            |
+  |                                       |
+  +---------------------------------------+
+  |         [Cancelar]  [Confirmar]       |
+  +---------------------------------------+
+
+>> SectionsEditModal - Modal de Secoes
+--------------------------------------------------------------------------------
+QUANDO USA: Edicao das secoes durante o resumo
+
+INTERFACE:
+  +---------------------------------------+
+  |  Secoes do Site                  [X]  |
+  +---------------------------------------+
+  |  [x] Hero (Inicio)                    |
+  |  [x] Sobre Nos                        |
+  |  [x] Servicos                         |
+  |  [ ] Galeria                          |
+  |  [x] Precos                           |
+  |  [ ] Equipe                           |
+  |  [x] FAQ                              |
+  |  [ ] Apps                             |
+  |  [x] Depoimentos                      |
+  |  [x] Contato                          |
+  +---------------------------------------+
+  |              [Confirmar]              |
+  +---------------------------------------+
+
+>> ColorsEditModal - Modal de Cores
+--------------------------------------------------------------------------------
+QUANDO USA: Edicao da paleta de cores durante o resumo
+
+INTERFACE:
+  +---------------------------------------+
+  |  Paleta de Cores                 [X]  |
+  +---------------------------------------+
+  |  [Paleta 1] [Paleta 2] [Paleta 3]     |
+  |  [Paleta 4] [Paleta 5] [Paleta 6]     |
+  |  [Paleta 7] [Paleta 8] [Paleta 9]     |
+  |  ...                                  |
+  +---------------------------------------+
+  |  [Descrever cores customizadas]       |
+  +---------------------------------------+
+
+================================================================================
+9.4. MELHORIAS SUGERIDAS - NOVAS EDICOES
+================================================================================
+
+EDICOES QUE FALTAM IMPLEMENTAR:
+
+>> EDICAO DE CORES INDIVIDUAIS
+--------------------------------------------------------------------------------
+ATUAL: Usuario escolhe paleta completa
+SUGERIDO:
+  - Color picker para cada cor individual
+  - Ajuste fino de primary, secondary, accent, dark, light
+  - Preview em tempo real da mudanca
+
+IMPLEMENTACAO:
+  - Adicionar campo editavel para cada cor no ColorPicker
+  - Modal com 5 inputs de cor (hex ou color picker visual)
+  - Slider para ajustar saturacao/brilho
+
+>> EDICAO DE ICONES DOS SERVICOS
+--------------------------------------------------------------------------------
+ATUAL: Todos os servicos usam emoji fixo
+SUGERIDO:
+  - Biblioteca de icones para escolher
+  - Upload de icone personalizado
+  - Selecao de emoji
+
+IMPLEMENTACAO:
+  - Componente IconPicker com grid de opcoes
+  - Categorias: Negocio, Tecnologia, Saude, Comida, etc.
+  - Preview do icone selecionado
+
+>> EDICAO DE ICONES DAS FEATURES
+--------------------------------------------------------------------------------
+ATUAL: Icones SVG fixos (estrela, check, relogio)
+SUGERIDO:
+  - Escolher entre 20+ icones
+  - Personalizar cor do icone
+  - Tamanho ajustavel
+
+>> EDICAO DOS BOTOES CTA
+--------------------------------------------------------------------------------
+ATUAL: Textos fixos ("Comecar Agora", "Saiba Mais", "Fale Conosco")
+SUGERIDO:
+  - Editar texto de cada botao
+  - Editar link de destino
+  - Escolher estilo (primario, secundario, outline)
+
+CAMPOS A ADICIONAR:
+  - ctaButtons.hero.primary.text
+  - ctaButtons.hero.primary.link
+  - ctaButtons.hero.secondary.text
+  - ctaButtons.hero.secondary.link
+  - ctaButtons.header.text
+  - ctaButtons.header.link
+
+>> EDICAO DO ANO NO FOOTER
+--------------------------------------------------------------------------------
+ATUAL: Fixo "2025"
+SUGERIDO:
+  - Ano editavel
+  - Opcao de ano dinamico (atual)
+
+>> EDICAO DO TEXTO DE COPYRIGHT
+--------------------------------------------------------------------------------
+ATUAL: "Todos os direitos reservados"
+SUGERIDO:
+  - Texto totalmente editavel
+  - Templates de copyright
+
+>> EDICAO DAS REDES SOCIAIS
+--------------------------------------------------------------------------------
+ATUAL: Apenas icone do Instagram nos membros da equipe
+SUGERIDO:
+  - Adicionar links de redes sociais da empresa
+  - Facebook, Instagram, LinkedIn, Twitter, TikTok, YouTube
+  - Edicao individual por membro da equipe
+
+CAMPOS A ADICIONAR:
+  - socialLinks.facebook
+  - socialLinks.instagram
+  - socialLinks.linkedin
+  - socialLinks.twitter
+  - socialLinks.tiktok
+  - socialLinks.youtube
+  - team.X.socialLinks.instagram
+  - team.X.socialLinks.linkedin
+
+>> EDICAO DO HORARIO DE FUNCIONAMENTO
+--------------------------------------------------------------------------------
+ATUAL: Nao existe
+SUGERIDO:
+  - Adicionar secao de horarios
+  - Edicao por dia da semana
+  - Indicacao de fechado
+
+CAMPOS A ADICIONAR:
+  - businessHours.monday.open
+  - businessHours.monday.close
+  - businessHours.tuesday.open
+  - businessHours.tuesday.close
+  - ... (para cada dia)
+
+>> EDICAO DE LINKS DO MENU
+--------------------------------------------------------------------------------
+ATUAL: Links fixos baseados nas secoes
+SUGERIDO:
+  - Adicionar links customizados
+  - Reordenar itens do menu
+  - Links externos
+
+CAMPOS A ADICIONAR:
+  - navigation.items[]
+  - navigation.items.X.label
+  - navigation.items.X.href
+  - navigation.items.X.external
+
+>> EDICAO DE NUMERO DE ESTRELAS
+--------------------------------------------------------------------------------
+ATUAL: Sempre 5 estrelas nos depoimentos
+SUGERIDO:
+  - Numero editavel de estrelas (1-5)
+  - Meio estrela opcional
+
+CAMPOS A ADICIONAR:
+  - testimonials.X.rating
+
+>> EDICAO DAS IMAGENS DA SECAO ABOUT
+--------------------------------------------------------------------------------
+ATUAL: Placeholders fixos
+SUGERIDO:
+  - Upload de imagens personalizadas
+  - Crop/ajuste de posicao
+
+CAMPOS A ADICIONAR:
+  - aboutImages.main
+  - aboutImages.secondary
+
+>> EDICAO DO TEXTO DO BADGE DO HERO
+--------------------------------------------------------------------------------
+ATUAL: Mostra area de negocio automaticamente
+SUGERIDO:
+  - Texto totalmente customizavel
+  - Emoji editavel
+
+CAMPOS A ADICIONAR:
+  - heroBadge.emoji
+  - heroBadge.text
+
+>> EDICAO DO CARD DE AVALIACAO (About)
+--------------------------------------------------------------------------------
+ATUAL: Fixo "4.9 Avaliacao"
+SUGERIDO:
+  - Nota editavel
+  - Texto editavel
+  - Esconder card opcional
+
+CAMPOS A ADICIONAR:
+  - aboutRating.value
+  - aboutRating.label
+  - aboutRating.visible
+
+>> EDICAO DOS LINKS DOS PLANOS
+--------------------------------------------------------------------------------
+ATUAL: Botoes sem acao real
+SUGERIDO:
+  - Link para pagamento
+  - Link para WhatsApp
+  - Link para formulario
+
+CAMPOS A ADICIONAR:
+  - pricing.X.buttonText
+  - pricing.X.buttonLink
+  - pricing.X.buttonAction (whatsapp/link/form)
+
+>> EDICAO DA IMAGEM DO APP
+--------------------------------------------------------------------------------
+ATUAL: Placeholder fixo
+SUGERIDO:
+  - Upload de mockup do app
+  - Ou gerar com IA
+
+CAMPOS A ADICIONAR:
+  - appSection.mockupImage
+  - appSection.playStoreUrl
+  - appSection.appStoreUrl
+
+>> ADICIONAR/REMOVER ITEMS DE FAQ
+--------------------------------------------------------------------------------
+ATUAL: Apenas edita os 3 existentes
+SUGERIDO:
+  - Botao "Adicionar Pergunta"
+  - Botao "Remover Pergunta"
+  - Maximo de 10 perguntas
+
+>> ADICIONAR/REMOVER PLANOS DE PRECO
+--------------------------------------------------------------------------------
+ATUAL: Sempre 3 planos fixos
+SUGERIDO:
+  - Adicionar mais planos
+  - Remover planos
+  - Minimo 1, maximo 5
+
+>> ADICIONAR/REMOVER FEATURES DOS PLANOS
+--------------------------------------------------------------------------------
+ATUAL: Numero fixo de features
+SUGERIDO:
+  - Adicionar features
+  - Remover features
+  - Reordenar features
+
+>> ADICIONAR/REMOVER MEMBROS DA EQUIPE
+--------------------------------------------------------------------------------
+ATUAL: Sempre 3 membros fixos
+SUGERIDO:
+  - Adicionar membros
+  - Remover membros
+  - Minimo 1, maximo 10
+
+>> ADICIONAR/REMOVER DEPOIMENTOS
+--------------------------------------------------------------------------------
+ATUAL: Sempre 3 depoimentos fixos
+SUGERIDO:
+  - Adicionar depoimentos
+  - Remover depoimentos
+  - Minimo 1, maximo 10
+
+>> ADICIONAR/REMOVER ITEMS DA CHECKLIST (About)
+--------------------------------------------------------------------------------
+ATUAL: Sempre 3 items fixos
+SUGERIDO:
+  - Adicionar items
+  - Remover items
+  - Minimo 1, maximo 6
+
+>> EDICAO DA MENSAGEM DO WHATSAPP
+--------------------------------------------------------------------------------
+ATUAL: Mensagem padrao fixa
+SUGERIDO:
+  - Mensagem customizavel por botao
+  - Variaveis dinamicas (nome, servico)
+
+CAMPOS A ADICIONAR:
+  - whatsapp.defaultMessage
+  - whatsapp.heroMessage
+  - whatsapp.headerMessage
+
+>> EDICAO DE FONTES
+--------------------------------------------------------------------------------
+ATUAL: Fontes fixas (Playfair Display + Poppins)
+SUGERIDO:
+  - Escolher fonte de titulo
+  - Escolher fonte de corpo
+  - Preview das fontes
+
+CAMPOS A ADICIONAR:
+  - fonts.heading (Playfair, Montserrat, Roboto Slab, etc)
+  - fonts.body (Poppins, Open Sans, Lato, etc)
+
+>> EDICAO DE ANIMACOES
+--------------------------------------------------------------------------------
+ATUAL: Animacoes fixas
+SUGERIDO:
+  - Ligar/desligar animacoes
+  - Velocidade das animacoes
+  - Tipo de animacao (fade, slide, scale)
+
+CAMPOS A ADICIONAR:
+  - animations.enabled
+  - animations.speed (slow, normal, fast)
+  - animations.type (fade, slide, scale)
+
+>> EDICAO DE ESPACAMENTO
+--------------------------------------------------------------------------------
+ATUAL: Padding/margin fixos
+SUGERIDO:
+  - Ajustar espacamento entre secoes
+  - Compacto, normal, espacado
+
+CAMPOS A ADICIONAR:
+  - spacing.sections (compact, normal, spacious)
+
+>> EDICAO DO MAPA
+--------------------------------------------------------------------------------
+ATUAL: Zoom fixo em 15
+SUGERIDO:
+  - Ajustar nivel de zoom
+  - Tipo de mapa (roadmap, satellite)
+
+CAMPOS A ADICIONAR:
+  - map.zoom (1-20)
+  - map.type (roadmap, satellite, hybrid)
+
+================================================================================
+9.5. RESUMO DE TODAS AS EDICOES
+================================================================================
+
+EDICOES ATUAIS (JA IMPLEMENTADAS):
+--------------------------------------------------------------------------------
+Total: 50+ campos editaveis
+
+Por Secao:
+  - Header: 1 campo (name)
+  - Hero: 8 campos (slogan, description, 6 stats)
+  - Features: 8 campos (2 labels + 6 features)
+  - About: 7 campos (2 labels + subtitle + 3 checklist + description)
+  - Services: 2 + N*2 campos (labels + servicos + descricoes)
+  - FAQ: 2 + N*2 campos (labels + perguntas + respostas)
+  - Pricing: 2 + N*6 campos (labels + planos + precos + features)
+  - Team: 2 + N*2 campos (labels + nomes + cargos)
+  - Testimonials: 2 + N*3 campos (labels + nomes + roles + textos)
+  - Gallery: 2 campos (labels) + gerenciamento de imagens
+  - Contact: 5 campos (2 labels + endereco + telefone + email)
+
+Acoes de Colecao:
+  - Adicionar/Remover Servicos
+  - Adicionar/Remover Imagens
+
+EDICOES SUGERIDAS (A IMPLEMENTAR):
+--------------------------------------------------------------------------------
+Total: 60+ novos campos
+
+Categorias:
+  - Cores individuais: 5 campos
+  - Icones: 10+ campos
+  - Botoes CTA: 10 campos
+  - Redes sociais: 10+ campos
+  - Horarios: 14 campos
+  - Menu: N campos
+  - Fontes: 2 campos
+  - Animacoes: 3 campos
+  - Espacamento: 1 campo
+  - Mapa: 2 campos
+  - WhatsApp: 3 campos
+  - App: 3 campos
+  - About: 4 campos
+  - Hero badge: 2 campos
+  - Estrelas: N campos
+  - Links planos: N*3 campos
+
+Novas Acoes de Colecao:
+  - Adicionar/Remover FAQ
+  - Adicionar/Remover Planos
+  - Adicionar/Remover Features dos Planos
+  - Adicionar/Remover Membros Equipe
+  - Adicionar/Remover Depoimentos
+  - Adicionar/Remover Checklist Items
+  - Reordenar Secoes
+  - Reordenar Itens do Menu
+
+================================================================================
+                    10. MODAIS DO SISTEMA
+================================================================================
+
+INPUTMODAL - Modal de Entrada de Texto
+--------------------------------------------------------------------------------
+Props:
+  - isOpen: boolean
+  - config: { title, placeholder, defaultValue, onConfirm, multiline? }
+  - value: string
+  - onChange: (value) => void
+  - onConfirm: () => void
+  - onClose: () => void
+
+Uso:
+  - Edicao de nome, slogan, descricao
+  - Edicao de servicos, endereco, telefone, email
+  - Modo single-line ou multiline
+
+SECTIONSEDITMODAL - Modal de Secoes
+--------------------------------------------------------------------------------
+Props:
+  - isOpen: boolean
+  - sections: SectionKey[]
+  - onToggleSection: (section) => void
+  - onClose: () => void
+
+Secoes disponiveis:
+  - hero, about, services, gallery, pricing
+  - team, faq, app, testimonials, contact
+
+COLORSEDITMODAL - Modal de Cores
+--------------------------------------------------------------------------------
+Props:
+  - isOpen: boolean
+  - selectedPaletteId: string | undefined
+  - palettes: ColorPalette[]
+  - onSelectPalette: (palette) => void
+  - onCustomColors: (description) => void
+  - onClose: () => void
+
+Funcoes:
+  - Grid de paletas disponiveis
+  - Selecao visual de paleta
+  - Botao para cores customizadas via IA
+
+NETLIFYDEPLOY - Modal de Deploy
+--------------------------------------------------------------------------------
+Props:
+  - htmlContent: string
+  - siteName: string
+  - onDeploySuccess: (deployedSite) => void
+
+Funcoes:
+  - Autenticacao com Netlify
+  - Upload do HTML
+  - Geracao de URL unica
+  - Feedback de progresso
+
+================================================================================
+                    11. GERACAO DE CONTEUDO COM IA
+================================================================================
+
+O sistema usa Google Gemini AI para otimizar todos os textos.
+
+SERVICO: ContentRewritingService
+--------------------------------------------------------------------------------
+
+METODOS DISPONIVEIS:
+
+1. correctNameCapitalization(name: string)
+   - Corrige capitalizacao do nome da empresa
+   - "doces ja" -> "Doces Ja"
+
+2. rewriteSlogan(slogan: string)
+   - Corrige capitalizacao do slogan
+   - Title Case mantendo artigos em minusculo
+
+3. rewriteDescription(businessInfo)
+   - Reescreve descricao de forma persuasiva
+   - Maximo 50 palavras
+   - Foco em beneficios
+
+4. rewriteServices(businessInfo)
+   - Profissionaliza nomes dos servicos
+   - "corte" -> "Corte Profissional Personalizado"
+   - Maximo 4-6 palavras por servico
+
+5. generateFAQ(businessInfo)
+   - Gera 5 perguntas frequentes
+   - Relevantes para o setor
+   - Respostas completas
+
+6. generateHeroStats(businessInfo)
+   - Gera 3 estatisticas impactantes
+   - Valores realistas
+   - Labels curtos
+
+7. generateFeatures(businessInfo)
+   - Gera 3 beneficios/diferenciais
+   - Titulos de 4 palavras max
+   - Descricoes de 15 palavras max
+
+8. generateAboutContent(businessInfo)
+   - Titulo de 3 palavras
+   - Subtitulo explicativo
+   - Checklist de 3 itens
+
+9. generateServiceDescriptions(businessInfo)
+   - Descricao para cada servico
+   - Maximo 12 palavras
+   - Foco em beneficios
+
+10. generateTestimonials(businessInfo)
+    - 3 depoimentos ficticios realistas
+    - Nomes brasileiros diversos
+    - Maximo 20 palavras cada
+
+11. generateCustomColorPalettes(description)
+    - Gera 6 paletas baseadas em descricao
+    - Cores harmonicas profissionais
+
+12. rewriteAllContent(siteData)
+    - Orquestra todas as chamadas
+    - Executa em paralelo
+    - Fallbacks para cada item
+
+PROMPTS UTILIZADOS:
+--------------------------------------------------------------------------------
+Cada metodo usa prompts especificos com:
+  - Contexto do negocio
+  - Requisitos claros
+  - Formato de saida especifico
+  - Exemplos de resultado esperado
+
+FALLBACKS:
+--------------------------------------------------------------------------------
+Se a IA falhar, o sistema usa valores padrao:
+  - Textos originais do usuario
+  - Estatisticas genericas
+  - Features padrao
+  - Depoimentos pre-definidos
+
+================================================================================
+                    12. PREVIEW E TEMPLATE
+================================================================================
+
+PREVIEWPANEL:
+--------------------------------------------------------------------------------
+Componente que exibe o site em tempo real.
+
+Estados:
+  1. VAZIO: Mensagem instrucional antes de dados
+  2. GERANDO: Spinner com mensagem de loading
+  3. GERADO: Site completo renderizado
+
+Elementos visuais:
+  - Moldura de navegador (traffic lights, URL bar)
+  - Site renderizado em iframe-like
+  - Botoes de acao (Editar, Abrir, Publicar)
+
+SITETEMPLATE:
+--------------------------------------------------------------------------------
+Template React read-only do site gerado.
+
+Caracteristicas:
+  - Renderizacao completa do site
+  - Responsivo (desktop, tablet, mobile)
+  - Cores dinamicas via CSS variables
+  - Animacoes e efeitos visuais
+  - Todas as secoes condicionais
+
+EDITABLESITETEMPLATE:
+--------------------------------------------------------------------------------
+Versao editavel do template.
+
+Caracteristicas:
+  - Herda de SiteTemplate
+  - Adiciona EditableText em todos os campos
+  - Hover states para indicar editaveis
+  - Botoes de adicionar/remover
+  - Salvamento automatico
+
+SITEGENERATOR:
+--------------------------------------------------------------------------------
+Gera HTML standalone para deploy.
+
+Caracteristicas:
+  - HTML completo com CSS inline
+  - Nenhuma dependencia externa (exceto fonts)
+  - Responsivo com media queries
+  - SEO tags (title, description)
+  - JavaScript para menu mobile
+  - WhatsApp floating button
+
+================================================================================
+                    13. DEPLOY NO NETLIFY
+================================================================================
+
+PROCESSO DE DEPLOY:
+--------------------------------------------------------------------------------
+
+1. Usuario clica "Publicar no Netlify"
+2. Modal NetlifyDeploy abre
+3. Autenticacao com Netlify (se necessario)
+4. HTML gerado pelo siteGenerator
+5. Upload para Netlify
+6. URL unica gerada
+7. Sucesso exibido ao usuario
+
+FORMATO DA URL:
+  https://[nome-do-site]-[hash].netlify.app
+
+EXEMPLO:
+  https://barbearia-do-ze-a1b2c3.netlify.app
+
+================================================================================
+                    14. INTEGRACAO COM APIs
+================================================================================
+
+GOOGLE GEMINI AI:
+--------------------------------------------------------------------------------
+  - Modelo: gemini-pro
+  - Uso: Geracao de textos, paletas de cores
+  - Client: src/lib/api-clients/gemini-client.ts
+
+GOOGLE MAPS:
+--------------------------------------------------------------------------------
+  - Uso: Geocodificacao de enderecos
+  - Embed: Maps iframe na secao de contato
+  - Validacao: Confirmacao visual do endereco
+
+NETLIFY:
+--------------------------------------------------------------------------------
+  - Uso: Deploy de sites estaticos
+  - Autenticacao: OAuth
+  - Upload: HTML unico
+
+================================================================================
+         15. MELHORIAS SUGERIDAS - GERACAO DE IMAGENS
+================================================================================
+
+SITUACAO ATUAL:
+--------------------------------------------------------------------------------
+Atualmente o usuario pode:
+  - Fazer upload de imagens proprias para galeria
+  - Usar placeholders para secoes sem imagens
+  - Imagens nao sao geradas automaticamente
+
+MELHORIA PROPOSTA:
+--------------------------------------------------------------------------------
+
+Adicionar GERACAO DE IMAGENS COM IA junto com a criacao do site.
+
+IMPLEMENTACAO SUGERIDA:
+
+1. NOVO SERVICO: ImageGenerationService
+   - Integracao com DALL-E, Midjourney API ou Stable Diffusion
+   - Geracao de imagens baseadas no contexto do negocio
+
+2. TIPOS DE IMAGENS A GERAR:
+
+   HERO IMAGE:
+   - Imagem de fundo para secao hero
+   - Baseada na area de negocio
+   - Exemplo prompt: "Professional [area] business hero image,
+     modern office, [colors] color scheme, high quality"
+
+   ABOUT IMAGES (2):
+   - Imagens para secao sobre nos
+   - Mostrando equipe ou ambiente
+   - Exemplo: "Team meeting in modern [area] office,
+     professional atmosphere"
+
+   SERVICE IMAGES:
+   - Uma imagem por servico
+   - Relacionada ao servico especifico
+   - Exemplo: "Professional [service name] service,
+     high quality photography style"
+
+   GALLERY IMAGES (6-12):
+   - Imagens do portfolio
+   - Variadas baseadas nos servicos
+   - Estilo profissional
+
+   TEAM MEMBER PHOTOS:
+   - Fotos profissionais geradas
+   - Avatares realistas
+   - Diversidade de generos
+
+3. FLUXO NO CHAT:
+
+   NOVO STEP (apos step 9):
+   PERGUNTA: "Voce gostaria que eu gere imagens profissionais para
+   o seu site usando IA?"
+
+   OPCOES:
+   - "Sim, gerar todas as imagens"
+   - "Apenas para galeria"
+   - "Nao, vou usar minhas proprias"
+
+   SE SIM:
+   - Exibir progresso de geracao
+   - Mostrar preview das imagens geradas
+   - Permitir regenerar individualmente
+
+4. PROMPTS DE GERACAO:
+
+   Template base:
+   "Create a professional [image_type] for a [area] business called
+   [name]. The business focuses on [description].
+   Style: modern, professional, high quality.
+   Colors: use [primary_color] and [secondary_color] tones.
+   Mood: [vibe]"
+
+5. ARMAZENAMENTO:
+   - Imagens em base64 ou URL de CDN
+   - Compressao automatica
+   - Otimizacao para web
+
+6. ALTERACOES NO SITEDATA:
+
+   interface SiteData {
+     // ... campos existentes ...
+
+     // NOVAS IMAGENS GERADAS
+     generatedImages: {
+       hero?: string;          // URL/base64 da hero image
+       about: string[];        // 2 imagens para about
+       services: Record<string, string>; // imagem por servico
+       gallery: string[];      // 6-12 imagens de portfolio
+       team: Record<string, string>; // foto por membro
+     };
+     useGeneratedImages: boolean;
+   }
+
+7. UI/UX:
+   - Preview das imagens durante geracao
+   - Opcao de regenerar cada imagem
+   - Slider para escolher entre opcoes
+   - Download das imagens geradas
+
+================================================================================
+         16. MELHORIAS SUGERIDAS - SUPER PROMPT PARA CRIACAO DO ZERO
+================================================================================
+
+SITUACAO ATUAL:
+--------------------------------------------------------------------------------
+O sistema usa templates pre-definidos (SiteTemplate.tsx) e apenas
+preenche com os dados coletados. Limitado a um design.
+
+MELHORIA PROPOSTA:
+--------------------------------------------------------------------------------
+
+Criar SUPER PROMPT que gera site COMPLETO DO ZERO sem uso de templates,
+baseado APENAS nas informacoes coletadas durante o chat.
+
+IMPLEMENTACAO SUGERIDA:
+
+1. NOVO SERVICO: SiteGenerationService
+
+   class SiteGenerationService {
+     async generateCompleteSite(siteData: SiteData): Promise<string> {
+       // Gera HTML/CSS/JS completo via IA
+     }
+   }
+
+2. ESTRUTURA DO SUPER PROMPT:
+
+--------------------------------------------------------------------------------
+SUPER PROMPT PARA GERACAO DE SITE COMPLETO
+--------------------------------------------------------------------------------
+
+VOCE E UM EXPERT DESENVOLVEDOR WEB FULL-STACK.
+
+TAREFA: Criar um site COMPLETO, PROFISSIONAL e RESPONSIVO do ZERO.
+
+======== INFORMACOES DO NEGOCIO ========
+
+NOME DA EMPRESA: ${siteData.name}
+AREA DE ATUACAO: ${siteData.area}
+SLOGAN: ${siteData.slogan}
+DESCRICAO: ${siteData.description}
+
+======== ESTILO VISUAL ========
+
+VIBE/ATMOSFERA: ${siteData.vibe}
+  - vibrant: Cores vivas, animacoes, energia alta
+  - dark: Fundo escuro, elegante, profissional
+  - light: Fundo claro, limpo, minimalista
+  - corporate: Serio, institucional, confiavel
+  - fun: Colorido, descontraido, alegre
+  - elegant: Sofisticado, luxuoso, refinado
+
+PALETA DE CORES:
+  - Cor Primaria: ${colors.primary}
+  - Cor Secundaria: ${colors.secondary}
+  - Cor de Destaque: ${colors.accent}
+  - Cor Escura: ${colors.dark}
+  - Cor Clara: ${colors.light}
+
+======== SECOES DO SITE ========
+
+SECOES SELECIONADAS PELO USUARIO: ${siteData.sections.join(', ')}
+
+PARA CADA SECAO SELECIONADA, CRIAR:
+
+${siteData.sections.includes('hero') ? `
+SECAO HERO:
+  - Banner principal de entrada
+  - Titulo impactante com slogan
+  - Subtitulo com descricao
+  - 2 botoes CTA (Comecar Agora, Saiba Mais)
+  - Estatisticas: ${JSON.stringify(siteData.heroStats)}
+  - Elementos decorativos animados
+  - Altura minima: 100vh
+` : ''}
+
+${siteData.sections.includes('about') ? `
+SECAO SOBRE NOS:
+  - Titulo: ${siteData.aboutContent?.title}
+  - Subtitulo: ${siteData.aboutContent?.subtitle}
+  - Descricao completa
+  - Checklist de diferenciais: ${siteData.aboutContent?.checklist?.join(', ')}
+  - Imagens decorativas (placeholders)
+  - Card de avaliacao
+` : ''}
+
+${siteData.sections.includes('services') ? `
+SECAO SERVICOS:
+  - Titulo da secao
+  - Grid de cards com servicos:
+${siteData.services.map((s, i) => `    ${i + 1}. ${s} - ${siteData.serviceDescriptions?.[i]?.description || 'Servico profissional'}`).join('\n')}
+  - Cada card: icone, titulo, descricao, botao
+  - Estilo visual coerente com vibe
+` : ''}
+
+${siteData.sections.includes('gallery') ? `
+SECAO GALERIA:
+  - Titulo da secao
+  - Grid de imagens responsivo
+  - Imagens: ${siteData.gallery.length} itens
+  - Efeito hover nas imagens
+  - Lightbox opcional
+` : ''}
+
+${siteData.sections.includes('pricing') ? `
+SECAO PRECOS:
+  - Titulo da secao
+  - 3 planos de precos:
+${siteData.pricing.map((p, i) => `    ${i + 1}. ${p.name} - ${p.price}
+       Features: ${p.features.join(', ')}`).join('\n')}
+  - Destaque no plano do meio
+  - Botoes de acao
+` : ''}
+
+${siteData.sections.includes('team') ? `
+SECAO EQUIPE:
+  - Titulo da secao
+  - Cards de membros:
+${siteData.team.map((m, i) => `    ${i + 1}. ${m.name} - ${m.role}`).join('\n')}
+  - Avatar circular
+  - Links sociais
+` : ''}
+
+${siteData.sections.includes('faq') ? `
+SECAO FAQ:
+  - Titulo da secao
+  - Acordeoes com perguntas:
+${siteData.faq.map((f, i) => `    ${i + 1}. P: ${f.question}
+       R: ${f.answer}`).join('\n')}
+  - Animacao de abertura/fechamento
+` : ''}
+
+${siteData.sections.includes('testimonials') ? `
+SECAO DEPOIMENTOS:
+  - Titulo da secao
+  - Cards de depoimentos:
+${siteData.testimonials.map((t, i) => `    ${i + 1}. ${t.name} (${t.role}): "${t.text}"`).join('\n')}
+  - Estrelas de avaliacao
+  - Avatar do cliente
+` : ''}
+
+${siteData.sections.includes('contact') ? `
+SECAO CONTATO:
+  - Titulo da secao
+  - Informacoes de contato:
+    - Endereco: ${siteData.address}
+    - Telefone: ${siteData.phone}
+    - Email: ${siteData.email}
+  - Mapa Google Maps embed
+  - Botao WhatsApp
+` : ''}
+
+${siteData.sections.includes('app') ? `
+SECAO APP:
+  - Titulo da secao
+  - Descricao do app
+  - Beneficios (checklist)
+  - Botoes: Google Play, App Store
+  - Mockup do app
+` : ''}
+
+======== REQUISITOS TECNICOS ========
+
+1. HTML5 SEMANTICO
+   - Tags corretas (header, nav, main, section, footer)
+   - Acessibilidade (aria-labels, alt texts)
+   - SEO (meta tags, title, description)
+
+2. CSS MODERNO
+   - Flexbox e Grid para layouts
+   - CSS Variables para cores
+   - Animacoes CSS (@keyframes)
+   - Media queries para responsividade
+   - Breakpoints: mobile (<768px), tablet (768-1024px), desktop (>1024px)
+
+3. JAVASCRIPT VANILLA
+   - Menu mobile hamburguer
+   - Scroll suave
+   - Acordeoes do FAQ
+   - Lazy loading de imagens
+
+4. PERFORMANCE
+   - CSS inline no head
+   - JS no final do body
+   - Fontes do Google Fonts
+   - Imagens com lazy loading
+
+5. RESPONSIVIDADE
+   - Mobile first
+   - Texto legivel em todos os tamanhos
+   - Imagens responsivas
+   - Menu adaptativo
+
+======== FORMATO DE SAIDA ========
+
+Retorne APENAS o codigo HTML completo, iniciando com <!DOCTYPE html>
+e terminando com </html>.
+
+Inclua:
+- CSS completo dentro de <style> no <head>
+- JavaScript dentro de <script> no final do <body>
+- Todas as secoes solicitadas
+- Header com navegacao
+- Footer com informacoes
+
+NAO inclua:
+- Explicacoes ou comentarios fora do codigo
+- Markdown ou formatacao
+- Arquivos separados
+
+--------------------------------------------------------------------------------
+FIM DO SUPER PROMPT
+--------------------------------------------------------------------------------
+
+3. FLUXO ATUALIZADO:
+
+   OPCAO 1 - Template (atual):
+   - Usa SiteTemplate.tsx existente
+   - Rapido, consistente
+   - Design fixo
+
+   OPCAO 2 - Geracao com IA (novo):
+   - Usa Super Prompt
+   - Mais tempo de geracao
+   - Design unico personalizado
+
+4. NOVA PERGUNTA NO CHAT:
+
+   STEP 9.6 (antes de gerar):
+   PERGUNTA: "Como voce gostaria de criar seu site?"
+
+   OPCOES:
+   - "Template Profissional" - Rapido, design testado
+   - "Design Unico com IA" - Personalizado, mais tempo
+
+5. VALIDACAO DO HTML GERADO:
+   - Verificar estrutura HTML valida
+   - Testar responsividade
+   - Checar links e botoes
+   - Validar cores aplicadas
+
+6. FALLBACK:
+   Se geracao falhar, usar template padrao.
+
+================================================================================
+         17. MELHORIAS SUGERIDAS - NOVAS FUNCIONALIDADES
+================================================================================
+
+ALEM DE IMAGENS E SUPER PROMPT, OUTRAS MELHORIAS SUGERIDAS:
+
+--------------------------------------------------------------------------------
+17.1. EDICAO DE SECOES COMPLETA
+--------------------------------------------------------------------------------
+
+ATUAL: Apenas algumas edicoes inline disponiveis.
+
+SUGERIDO:
+  - Modal de edicao para CADA secao
+  - Arrastar e soltar para reordenar secoes
+  - Duplicar secoes
+  - Remover secoes completamente
+  - Adicionar secoes customizadas
+
+--------------------------------------------------------------------------------
+17.2. MAIS TIPOS DE SECOES
+--------------------------------------------------------------------------------
+
+NOVAS SECOES SUGERIDAS:
+
+  - BLOG/NOTICIAS: Lista de posts/artigos
+  - PORTFOLIO: Projetos com detalhes
+  - PARCEIROS/CLIENTES: Logos de empresas
+  - NUMEROS/ESTATISTICAS: Contadores animados
+  - VIDEO: Secao com video embed
+  - NEWSLETTER: Formulario de inscricao
+  - MAPA DE LOCALIZACOES: Multiplos enderecos
+  - HORARIO DE FUNCIONAMENTO: Tabela de horarios
+  - REDES SOCIAIS: Feed integrado
+  - AGENDA/CALENDARIO: Eventos proximos
+
+--------------------------------------------------------------------------------
+17.3. MULTIPLAS PAGINAS
+--------------------------------------------------------------------------------
+
+ATUAL: Site de pagina unica (one-page).
+
+SUGERIDO:
+  - Pagina inicial
+  - Paginas internas separadas:
+    - /sobre
+    - /servicos
+    - /contato
+    - /blog
+  - Navegacao entre paginas
+  - SEO individual por pagina
+
+--------------------------------------------------------------------------------
+17.4. FORMULARIOS FUNCIONAIS
+--------------------------------------------------------------------------------
+
+ATUAL: Formularios apenas visuais.
+
+SUGERIDO:
+  - Formulario de contato funcional
+  - Integracao com email (SMTP)
+  - Webhook para notificacoes
+  - Validacao de campos
+  - Mensagem de confirmacao
+  - Anti-spam (reCAPTCHA)
+
+--------------------------------------------------------------------------------
+17.5. DOMINIO PERSONALIZADO
+--------------------------------------------------------------------------------
+
+ATUAL: Apenas subdominio Netlify.
+
+SUGERIDO:
+  - Registro de dominio integrado
+  - Configuracao de DNS automatica
+  - SSL automatico
+  - Email corporativo
+
+--------------------------------------------------------------------------------
+17.6. ANALYTICS E METRICAS
+--------------------------------------------------------------------------------
+
+SUGERIDO:
+  - Integracao Google Analytics
+  - Dashboard de metricas
+  - Visitantes, conversoes, fontes
+  - Heatmap de cliques
+
+--------------------------------------------------------------------------------
+17.7. EDICAO POS-DEPLOY
+--------------------------------------------------------------------------------
+
+ATUAL: Apenas edita antes de publicar.
+
+SUGERIDO:
+  - Editor online pos-publicacao
+  - Alteracoes sem regenerar
+  - Versionamento de alteracoes
+  - Preview antes de publicar mudancas
+
+--------------------------------------------------------------------------------
+17.8. TEMPLATES VARIADOS
+--------------------------------------------------------------------------------
+
+ATUAL: Um design fixo.
+
+SUGERIDO:
+  - Biblioteca de templates (5-10 opcoes)
+  - Preview de cada template
+  - Troca de template mantendo conteudo
+  - Templates por segmento
+
+--------------------------------------------------------------------------------
+17.9. INTEGRACAO WHATSAPP AVANCADA
+--------------------------------------------------------------------------------
+
+ATUAL: Apenas botao flutuante.
+
+SUGERIDO:
+  - Widget de chat WhatsApp
+  - Mensagens pre-definidas por secao
+  - Horario de atendimento
+  - Mensagem automatica fora do horario
+  - Multiplos numeros
+
+--------------------------------------------------------------------------------
+17.10. AGENDAMENTO ONLINE
+--------------------------------------------------------------------------------
+
+SUGERIDO:
+  - Calendario de disponibilidade
+  - Selecao de servico e horario
+  - Confirmacao por WhatsApp/email
+  - Lembretes automaticos
+  - Integracao Google Calendar
+
+--------------------------------------------------------------------------------
+17.11. E-COMMERCE BASICO
+--------------------------------------------------------------------------------
+
+SUGERIDO:
+  - Catalogo de produtos
+  - Carrinho de compras
+  - Checkout simplificado
+  - Integracao Pix/Stripe
+  - Gestao de pedidos
+
+--------------------------------------------------------------------------------
+17.12. PWA (Progressive Web App)
+--------------------------------------------------------------------------------
+
+SUGERIDO:
+  - Instalavel no celular
+  - Funciona offline
+  - Notificacoes push
+  - Icone na home
+  - Splash screen
+
+--------------------------------------------------------------------------------
+17.13. MULTI-IDIOMA
+--------------------------------------------------------------------------------
+
+SUGERIDO:
+  - Traducao automatica com IA
+  - Seletor de idioma
+  - URLs por idioma (/en, /es)
+  - SEO multi-idioma
+
+--------------------------------------------------------------------------------
+17.14. ACESSIBILIDADE AVANCADA
+--------------------------------------------------------------------------------
+
+SUGERIDO:
+  - Verificacao WCAG automatica
+  - Alto contraste
+  - Aumento de fonte
+  - Navegacao por teclado
+  - Leitor de tela compativel
+
+================================================================================
+                         CONCLUSAO
+================================================================================
+
+O MyEasyWebsite e uma ferramenta poderosa de criacao de sites que combina:
+  - Interface conversacional intuitiva
+  - Personalizacao visual completa
+  - Inteligencia artificial para otimizacao
+  - Deploy automatizado
+
+Com as melhorias sugeridas (geracao de imagens e super prompt), o sistema
+pode evoluir para oferecer:
+  - Imagens profissionais geradas automaticamente
+  - Designs unicos criados do zero pela IA
+  - Experiencia ainda mais personalizada
+
+Este documento serve como referencia completa para entender, manter e
+expandir o sistema MyEasyWebsite.
+
+================================================================================
+                    FIM DO DOCUMENTO
+================================================================================

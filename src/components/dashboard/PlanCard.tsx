@@ -11,9 +11,14 @@ type PlanCardProps = {
 export function PlanCard({ plan, currentPlan, onSelectPlan }: PlanCardProps) {
   const isCurrentPlan = currentPlan === plan.value;
 
+  const handleSelectPlan = () => {
+    console.log('🔵 [PlanCard] Button clicked:', { planValue: plan.value, currentPlan, isCurrentPlan });
+    onSelectPlan(plan.value);
+  };
+
   return (
     <div
-      className={`relative rounded-lg border p-6 ${
+      className={`relative flex h-full flex-col rounded-lg border p-6 ${
         isCurrentPlan
           ? 'border-blue-500 bg-blue-900/20'
           : 'border-slate-800 bg-slate-900/50'
@@ -38,7 +43,7 @@ export function PlanCard({ plan, currentPlan, onSelectPlan }: PlanCardProps) {
         <p className="mt-2 text-sm text-slate-400">{plan.tokens} tokens</p>
       </div>
 
-      <ul className="mt-6 space-y-3">
+      <ul className="mt-6 flex-1 space-y-3">
         {plan.features.map((feature, index) => (
           <li key={index} className="flex items-start">
             <Check className="mr-2 h-5 w-5 flex-shrink-0 text-green-400" />
@@ -48,7 +53,8 @@ export function PlanCard({ plan, currentPlan, onSelectPlan }: PlanCardProps) {
       </ul>
 
       <button
-        onClick={() => onSelectPlan(plan.value)}
+        type="button"
+        onClick={handleSelectPlan}
         disabled={isCurrentPlan}
         className={`mt-6 w-full rounded-lg px-4 py-2 font-semibold transition-colors ${
           isCurrentPlan

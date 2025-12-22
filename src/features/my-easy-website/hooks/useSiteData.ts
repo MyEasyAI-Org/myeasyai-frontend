@@ -27,6 +27,68 @@ export type BusinessArea =
   | 'education';
 
 /**
+ * Social media links structure
+ */
+export interface SocialLinks {
+  instagram?: string;
+  facebook?: string;
+  tiktok?: string;
+  linkedin?: string;
+  youtube?: string;
+  twitter?: string;
+}
+
+/**
+ * Business hours structure
+ */
+export interface BusinessHours {
+  monday?: { open: string; close: string; closed?: boolean };
+  tuesday?: { open: string; close: string; closed?: boolean };
+  wednesday?: { open: string; close: string; closed?: boolean };
+  thursday?: { open: string; close: string; closed?: boolean };
+  friday?: { open: string; close: string; closed?: boolean };
+  saturday?: { open: string; close: string; closed?: boolean };
+  sunday?: { open: string; close: string; closed?: boolean };
+}
+
+/**
+ * SEO data structure
+ */
+export interface SEOData {
+  keywords?: string[];
+  metaDescription?: string;
+  ogImage?: string;
+  ogTitle?: string;
+}
+
+/**
+ * Analytics data structure
+ */
+export interface AnalyticsData {
+  googleAnalyticsId?: string;
+  facebookPixelId?: string;
+  googleTagManagerId?: string;
+}
+
+/**
+ * WhatsApp customization
+ */
+export interface WhatsAppConfig {
+  welcomeMessage?: string;
+  buttonText?: string;
+  showOnMobile?: boolean;
+}
+
+/**
+ * Custom domain config
+ */
+export interface DomainConfig {
+  customDomain?: string;
+  hasCustomDomain?: boolean;
+  dnsConfigured?: boolean;
+}
+
+/**
  * Site data structure
  */
 export interface SiteData {
@@ -37,6 +99,7 @@ export interface SiteData {
   vibe: string; // Vibração/emoção do site (dark, vibrant, light, corporate, fun, elegant)
   colors: string; // JSON string com { primary, secondary, accent, dark, light }
   selectedPaletteId?: string;
+  templateId?: number; // ID do template selecionado (1-11)
   sections: SectionKey[];
   services: string[];
   gallery: string[];
@@ -55,10 +118,23 @@ export interface SiteData {
   features?: Array<{ title: string; description: string }>;
   aboutContent?: { title: string; subtitle: string; checklist: string[] };
   serviceDescriptions?: Array<{ name: string; description: string }>;
+  // New fields
+  logo?: string; // URL da logo
+  socialLinks?: SocialLinks;
+  businessHours?: BusinessHours;
+  showMap?: boolean; // Mostrar mapa do Google Maps
+  mapCoordinates?: { lat: number; lng: number }; // Coordenadas para o mapa
+  // New features (1-7)
+  whatsappConfig?: WhatsAppConfig;
+  customDomain?: DomainConfig;
+  seoData?: SEOData;
+  analyticsData?: AnalyticsData;
 }
 
 /**
  * Default site data
+ * Note: Arrays that need to be "processed" are left undefined to distinguish
+ * between "not yet asked" and "user chose to skip"
  */
 const DEFAULT_SITE_DATA: SiteData = {
   area: '',
@@ -73,6 +149,7 @@ const DEFAULT_SITE_DATA: SiteData = {
     dark: '#1E293B',
     light: '#F1F5F9',
   }),
+  templateId: 1, // Template Original por padrão
   sections: [],
   services: [],
   gallery: [],
@@ -81,12 +158,12 @@ const DEFAULT_SITE_DATA: SiteData = {
   showPlayStore: false,
   showAppStore: false,
   testimonials: [],
-  address: '',
-  phone: '',
-  email: '',
+  address: '', // Empty string = not yet asked
+  phone: '',   // Empty string = not yet asked
+  email: '',   // Empty string = not yet asked
   faq: [],
-  pricing: [],
-  team: [],
+  pricing: [], // Empty array = not yet asked (will be set to [] when skipped)
+  team: [],    // Empty array = not yet asked (will be set to [] when skipped)
 };
 
 /**
@@ -159,6 +236,10 @@ export function useSiteData(initialData?: Partial<SiteData>) {
 
   const updateSelectedPaletteId = useCallback((paletteId: string) => {
     setSiteData((prev) => ({ ...prev, selectedPaletteId: paletteId }));
+  }, []);
+
+  const updateTemplateId = useCallback((templateId: number) => {
+    setSiteData((prev) => ({ ...prev, templateId }));
   }, []);
 
   // Section management
@@ -291,6 +372,94 @@ export function useSiteData(initialData?: Partial<SiteData>) {
     setSiteData((prev) => ({ ...prev, faq }));
   }, []);
 
+  // New field updaters
+  const updateLogo = useCallback((logo: string) => {
+    setSiteData((prev) => ({ ...prev, logo }));
+  }, []);
+
+  const updateSocialLinks = useCallback((socialLinks: SocialLinks) => {
+    setSiteData((prev) => ({ ...prev, socialLinks }));
+  }, []);
+
+  const updateSocialLink = useCallback((platform: keyof SocialLinks, url: string) => {
+    setSiteData((prev) => ({
+      ...prev,
+      socialLinks: { ...prev.socialLinks, [platform]: url },
+    }));
+  }, []);
+
+  const updateBusinessHours = useCallback((businessHours: BusinessHours) => {
+    setSiteData((prev) => ({ ...prev, businessHours }));
+  }, []);
+
+  const updateShowMap = useCallback((showMap: boolean) => {
+    setSiteData((prev) => ({ ...prev, showMap }));
+  }, []);
+
+  const updateMapCoordinates = useCallback((lat: number, lng: number) => {
+    setSiteData((prev) => ({ ...prev, mapCoordinates: { lat, lng } }));
+  }, []);
+
+  // New features (1-7) updaters
+  const updateWhatsAppConfig = useCallback((config: WhatsAppConfig) => {
+    setSiteData((prev) => ({ ...prev, whatsappConfig: config }));
+  }, []);
+
+  const updateWhatsAppMessage = useCallback((message: string) => {
+    setSiteData((prev) => ({
+      ...prev,
+      whatsappConfig: { ...prev.whatsappConfig, welcomeMessage: message },
+    }));
+  }, []);
+
+  const updateCustomDomain = useCallback((domain: DomainConfig) => {
+    setSiteData((prev) => ({ ...prev, customDomain: domain }));
+  }, []);
+
+  const updateSEOData = useCallback((seo: SEOData) => {
+    setSiteData((prev) => ({ ...prev, seoData: seo }));
+  }, []);
+
+  const updateSEOKeywords = useCallback((keywords: string[]) => {
+    setSiteData((prev) => ({
+      ...prev,
+      seoData: { ...prev.seoData, keywords },
+    }));
+  }, []);
+
+  const updateSEOMetaDescription = useCallback((metaDescription: string) => {
+    setSiteData((prev) => ({
+      ...prev,
+      seoData: { ...prev.seoData, metaDescription },
+    }));
+  }, []);
+
+  const updateAnalyticsData = useCallback((analytics: AnalyticsData) => {
+    setSiteData((prev) => ({ ...prev, analyticsData: analytics }));
+  }, []);
+
+  const updateGoogleAnalyticsId = useCallback((gaId: string) => {
+    setSiteData((prev) => ({
+      ...prev,
+      analyticsData: { ...prev.analyticsData, googleAnalyticsId: gaId },
+    }));
+  }, []);
+
+  const updateFacebookPixelId = useCallback((pixelId: string) => {
+    setSiteData((prev) => ({
+      ...prev,
+      analyticsData: { ...prev.analyticsData, facebookPixelId: pixelId },
+    }));
+  }, []);
+
+  const updatePricing = useCallback((pricing: Array<{ name: string; price: string; features: string[] }>) => {
+    setSiteData((prev) => ({ ...prev, pricing }));
+  }, []);
+
+  const updateTeam = useCallback((team: Array<{ name: string; role: string; photo?: string }>) => {
+    setSiteData((prev) => ({ ...prev, team }));
+  }, []);
+
   // Validation helpers
   const hasSection = useCallback((section: SectionKey) => {
     return siteData.sections.includes(section);
@@ -329,6 +498,7 @@ export function useSiteData(initialData?: Partial<SiteData>) {
     updateVibe,
     updateColors,
     updateSelectedPaletteId,
+    updateTemplateId,
 
     // Sections
     addSection,
@@ -363,6 +533,27 @@ export function useSiteData(initialData?: Partial<SiteData>) {
     updateServiceDescriptions,
     updateTestimonials,
     updateFAQ,
+
+    // New fields
+    updateLogo,
+    updateSocialLinks,
+    updateSocialLink,
+    updateBusinessHours,
+    updateShowMap,
+    updateMapCoordinates,
+
+    // New features (1-7)
+    updateWhatsAppConfig,
+    updateWhatsAppMessage,
+    updateCustomDomain,
+    updateSEOData,
+    updateSEOKeywords,
+    updateSEOMetaDescription,
+    updateAnalyticsData,
+    updateGoogleAnalyticsId,
+    updateFacebookPixelId,
+    updatePricing,
+    updateTeam,
 
     // Validation helpers
     hasSection,

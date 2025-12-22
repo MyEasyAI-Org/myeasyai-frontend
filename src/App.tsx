@@ -1,7 +1,15 @@
-import { useEffect, useRef, useState } from 'react';
-import './App.css';
 import type { User } from '@supabase/supabase-js';
+import { useEffect, useRef, useState } from 'react';
+import {
+  BrowserRouter,
+  Navigate,
+  Route,
+  Routes,
+  useLocation,
+  useNavigate,
+} from 'react-router-dom';
 import { Toaster } from 'sonner';
+import './App.css';
 import { Courses } from './components/Courses';
 import { Dashboard } from './components/Dashboard';
 import { Features } from './components/Features';
@@ -16,79 +24,157 @@ import { OnboardingModal } from './components/OnboardingModal';
 import { Packages } from './components/Packages';
 import { Preview } from './components/Preview';
 import { PWAInstallBanner } from './components/PWAInstallBanner';
+import { AuthCallback } from './components/AuthCallback';
 import { BusinessGuru } from './features/business-guru/BusinessGuru';
+import { MyEasyCRM } from './features/my-easy-crm';
+import { MyEasyPricing } from './features/my-easy-pricing/MyEasyPricing';
 import { MyEasyWebsite } from './features/my-easy-website/MyEasyWebsite';
 import { useInactivityTimeout } from './hooks/useInactivityTimeout';
 import { useModalState } from './hooks/useModalState';
+import { useRealtimeSync } from './hooks/useRealtimeSync';
 import { supabase } from './lib/api-clients/supabase-client';
-import { userManagementService } from './services/UserManagementService';
+import { ROUTES } from './router';
+import { authService, type AuthUser } from './services/AuthServiceV2';
+import { userManagementServiceV2 } from './services/UserManagementServiceV2';
 
-// 🎬 CONFIGURATION: Enable/Disable Splash Screen
+// Configuration: Enable/Disable Splash Screen
 // Change to `true` to re-enable the splash screen "Welcome to the future of AI"
 const ENABLE_SPLASH_SCREEN = false;
 
-function App() {
+/**
+ * Converte AuthUser do AuthServiceV2 para formato compatível com Supabase User
+ * Permite usar o mesmo fluxo de UI para ambos os provedores
+ */
+function authUserToUser(authUser: AuthUser | null): User | null {
+  if (!authUser) return null;
+  return {
+    id: authUser.uuid,
+    email: authUser.email,
+    user_metadata: {
+      name: authUser.name,
+      full_name: authUser.name,
+      avatar_url: authUser.avatar_url,
+    },
+    app_metadata: {},
+    aud: 'authenticated',
+    created_at: '',
+  } as User;
+}
+
+/**
+ * ProtectedRoute - Component that protects routes requiring authentication
+ * No loading spinner here - NavBar shows shimmer on "Olá, ..." and Dashboard has its own LoadingScreen
+ *
+ * IMPORTANT: During auth check (isLoading=true), we render children to:
+ * 1. Show the Dashboard's LoadingScreen instead of a blank page
+ * 2. Keep the user on the same URL so they stay on the same page after F5
+ */
+function ProtectedRoute({
+  children,
+  user,
+  needsOnboarding,
+  onOpenOnboarding,
+  isLoading,
+  isCheckingAuth,
+}: {
+  children: React.ReactNode;
+  user: User | null;
+  needsOnboarding: boolean;
+  onOpenOnboarding: () => void;
+  isLoading: boolean;
+  isCheckingAuth: boolean;
+}) {
+  const location = useLocation();
+
+  // If we have a user, render children immediately
+  // The Dashboard component has its own LoadingScreen with progress bar
+  if (user) {
+    if (needsOnboarding) {
+      onOpenOnboarding();
+      return <Navigate to={ROUTES.HOME} replace />;
+    }
+    return <>{children}</>;
+  }
+
+  // If still checking auth OR loading, render children anyway
+  // This allows Dashboard to show its own LoadingScreen instead of a blank spinner
+  // The NavBar will show loading dots on "Olá, ..." while checking
+  // CRITICAL: This prevents redirect during F5 - keeps user on same page
+  if (isLoading || isCheckingAuth) {
+    return <>{children}</>;
+  }
+
+  // No user and not loading = redirect to home
+  return <Navigate to={ROUTES.HOME} state={{ from: location }} replace />;
+}
+
+/**
+ * AppContent - Main application content with routing logic
+ * Separated to allow useNavigate hook usage inside BrowserRouter
+ */
+function AppContent() {
+  // Inicializa sincronização bidirecional Supabase ↔ D1
+  useRealtimeSync();
+
+  const navigate = useNavigate();
+
   const loginModal = useModalState();
   const signupModal = useModalState();
   const [user, setUser] = useState<User | null>(null);
   const [userName, setUserName] = useState<string>(() => {
-    // Try to load from localStorage on initialization
     return localStorage.getItem('userName') || 'Usuário';
   });
   const [userAvatarUrl, setUserAvatarUrl] = useState<string | undefined>(() => {
-    // Try to load from localStorage on initialization
     return localStorage.getItem('userAvatarUrl') || undefined;
   });
   const [loading, setLoading] = useState(true);
-  const [currentView, setCurrentView] = useState<
-    'home' | 'dashboard' | 'preview' | 'myeasywebsite' | 'businessguru'
-  >('home');
   const onboardingModal = useModalState();
   const [needsOnboarding, setNeedsOnboarding] = useState(false);
   const [isAuthLoading, setIsAuthLoading] = useState(false);
   const isInitialLoadRef = useRef(true);
   const [isCheckingAuth, setIsCheckingAuth] = useState(() => {
-    // If data is already in localStorage, no need to show loading
     return !localStorage.getItem('userName');
   });
+  // Track if we've already processed initial auth to prevent duplicate processing
+  const hasProcessedInitialAuthRef = useRef(false);
   const [dashboardKey, setDashboardKey] = useState(Date.now());
-  const isUserActionRef = useRef(false); // Track if action is user-initiated
-  const wasPageHiddenRef = useRef(false); // Track if page was hidden (tab switch/minimize)
-  const ignoreNextAuthEventRef = useRef(false); // Ignore auth events after visibility change
+  const [dashboardInitialTab, setDashboardInitialTab] = useState<
+    'overview' | 'subscription' | 'products' | 'usage' | 'settings' | 'profile'
+  >('overview');
+  const isUserActionRef = useRef(false);
+  const wasPageHiddenRef = useRef(false);
+  const ignoreNextAuthEventRef = useRef(false);
 
   const openLogin = () => {
-    isUserActionRef.current = true; // Mark as user action
+    isUserActionRef.current = true;
     loginModal.open();
   };
   const closeLogin = () => loginModal.close();
 
   const openSignup = () => {
-    isUserActionRef.current = true; // Mark as user action
+    isUserActionRef.current = true;
     signupModal.open();
   };
   const closeSignup = () => signupModal.close();
 
-  // Function to fetch user data from database
+  // Function to fetch user data from database (D1 Primary + Supabase Fallback)
   const fetchUserData = async (userEmail: string) => {
     try {
-      const { data, error } = await supabase
-        .from('users')
-        .select('name, preferred_name, avatar_url')
-        .eq('email', userEmail)
-        .single();
+      // Use UserManagementServiceV2 (D1 Primary + Supabase Fallback)
+      const result = await userManagementServiceV2.getUserProfile(userEmail);
 
-      if (error) {
-        console.error('Erro ao buscar dados do usuário:', error);
+      if (!result.success || !result.data) {
+        console.error('Erro ao buscar dados do usuário:', result.error);
         return { name: 'Usuário', avatarUrl: undefined };
       }
 
+      const data = result.data;
       let displayName = 'Usuário';
 
       // Prioritize preferred_name, otherwise use first name
       if (data?.preferred_name) {
         displayName = data.preferred_name;
       } else if (data?.name) {
-        // Get only the first name
         displayName = data.name.split(' ')[0];
       }
 
@@ -110,25 +196,21 @@ function App() {
   };
 
   const handleLogout = () => {
-    // Mark as user-initiated action
     isUserActionRef.current = true;
-    
-    // Enable loading bar FIRST
     setIsAuthLoading(true);
 
-    // Use setTimeout to avoid blocking - clear UI immediately but after bar renders
-    setTimeout(() => {
-      // Clear React states for UI to update (dropdown menu disappears)
+    setTimeout(async () => {
+      // Clear React states for UI to update
       setUser(null);
       setUserName('Usuário');
-      setCurrentView('home');
+      setUserAvatarUrl(undefined);
       setNeedsOnboarding(false);
       onboardingModal.close();
       loginModal.close();
       signupModal.close();
       setIsCheckingAuth(false);
 
-      // Clear localStorage
+      // Clear localStorage (Supabase keys)
       const localKeys = Object.keys(localStorage);
       localKeys.forEach((key) => {
         if (key.startsWith('sb-')) {
@@ -148,116 +230,173 @@ function App() {
         }
       });
 
-      // Sign out from Supabase
-      supabase.auth.signOut().catch((error) => {
+      // Sign out from AuthServiceV2 (handles both Cloudflare and Supabase)
+      try {
+        await authService.signOut();
+        console.log('✅ [APP] Logout successful via AuthServiceV2');
+      } catch (error) {
         console.error('Erro ao fazer logout:', error);
-      });
+      }
+
+      // Navigate to home after logout
+      navigate(ROUTES.HOME);
 
       // Disable loading bar after completion
       setTimeout(() => {
         setIsAuthLoading(false);
       }, 2500);
-    }, 50); // Minimum delay for bar to render
+    }, 50);
   };
 
   const goToDashboard = () => {
     if (needsOnboarding) {
       onboardingModal.open();
     } else {
-      // Go directly to dashboard - loading will be done by Dashboard itself
-      setCurrentView('dashboard');
-      // Force Dashboard remount to reload data
       setDashboardKey(Date.now());
+      setDashboardInitialTab('overview');
+      navigate(ROUTES.DASHBOARD);
     }
   };
 
   const goToHome = () => {
-    setCurrentView('home');
+    navigate(ROUTES.HOME);
   };
 
   const goToMyEasyWebsite = () => {
-    setCurrentView('myeasywebsite');
+    navigate(ROUTES.MY_EASY_WEBSITE);
   };
 
   const goToBusinessGuru = () => {
-    setCurrentView('businessguru');
+    navigate(ROUTES.BUSINESS_GURU);
+  };
+
+  const goToMyEasyCRM = () => {
+    navigate(ROUTES.MY_EASY_CRM);
+  };
+
+  const goToMyEasyPricing = () => {
+    navigate(ROUTES.MY_EASY_PRICING);
+  };
+
+  const goToSubscription = () => {
+    navigate(ROUTES.DASHBOARD);
+    // TODO: Add subscription tab navigation when available
   };
 
   const handleOnboardingComplete = () => {
     onboardingModal.close();
     setNeedsOnboarding(false);
-
-    // Go directly to dashboard - loading will be done by Dashboard itself
-    setCurrentView('dashboard');
+    navigate(ROUTES.DASHBOARD);
   };
 
   const closeOnboarding = () => {
     onboardingModal.close();
-    // Keep needsOnboarding as true if user closes without completing
   };
 
   // Inactivity timer - 10 minutes (600000ms)
   useInactivityTimeout({
-    timeout: 10 * 60 * 1000, // 10 minutes
+    timeout: 10 * 60 * 1000,
     onTimeout: handleLogout,
-    enabled: !!user, // Only enable if there's a logged in user
+    enabled: !!user,
   });
 
   useEffect(() => {
     // Monitor page visibility to ignore auth events when tab becomes visible again
     const handleVisibilityChange = () => {
       if (document.hidden) {
-        // Page is now hidden (tab switched away or minimized)
         wasPageHiddenRef.current = true;
       } else if (wasPageHiddenRef.current) {
-        // Page is now visible again after being hidden
         ignoreNextAuthEventRef.current = true;
         wasPageHiddenRef.current = false;
-        
-        // Reset the ignore flag after a short delay to catch the revalidation event
+
         setTimeout(() => {
           ignoreNextAuthEventRef.current = false;
-        }, 2000); // 2 second window to ignore auth events after tab restore
+        }, 2000);
       }
     };
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
-    // Intercept clicks on navigation links
-    const handleNavigationClick = (e: MouseEvent) => {
-      const target = e.target as HTMLElement;
-      const link = target.closest('a');
-
-      if (link && link.href) {
-        const url = new URL(link.href);
-        if (url.pathname === '/myeasywebsite') {
-          e.preventDefault();
-          setCurrentView('myeasywebsite');
-        } else if (url.pathname === '/business-guru') {
-          e.preventDefault();
-          setCurrentView('businessguru');
-        } else if (url.pathname === '/') {
-          e.preventDefault();
-          setCurrentView('home');
-        }
+    // Initialize auth - check for OAuth callback first, then check existing sessions
+    const initAuth = async () => {
+      // Prevent duplicate processing
+      if (hasProcessedInitialAuthRef.current) {
+        console.log('🔐 [APP] Already processed initial auth, skipping...');
+        return;
       }
-    };
+      hasProcessedInitialAuthRef.current = true;
 
-    // Add click listener
-    document.addEventListener('click', handleNavigationClick);
+      console.log('🔐 [APP] Initializing auth...');
+      console.log('🔐 [APP] URL hash:', window.location.hash);
+      console.log('🔐 [APP] URL search:', window.location.search);
+      console.log('🔐 [APP] Full URL:', window.location.href);
 
-    // Check current session
-    const checkUser = async () => {
+      // Check if this is an OAuth callback (contains access_token in hash or code in params)
+      const isOAuthCallback = window.location.hash.includes('access_token') ||
+                               window.location.search.includes('code=');
+
+      if (isOAuthCallback) {
+        console.log('🔐 [APP] OAuth callback detected, waiting for Supabase to process...');
+        // Let the Supabase onAuthStateChange handler process the callback
+        // The detectSessionInUrl option in supabase client will handle this
+        // Just wait a bit and then set loading to false - the auth listener will update the user
+        setLoading(false);
+        setIsCheckingAuth(false);
+        return;
+      }
+
+      // Not an OAuth callback - check for existing sessions
+
+      // IMPORTANT: Wait for AuthServiceV2 to finish initializing
+      // This ensures restoreSession() completes before we check for a user
+      await authService.waitForInit();
+
+      // First, try AuthServiceV2 (Cloudflare Primary)
+      const authUser = authService.getUser();
+      if (authUser) {
+        console.log('✅ [APP] Found Cloudflare session:', authUser.email);
+
+        // Fetch user data FIRST, before setting user state
+        // This prevents Dashboard from rendering before data is ready
+        let userData = { name: 'Usuário', avatarUrl: undefined as string | undefined };
+        if (authUser.email) {
+          userData = await fetchUserData(authUser.email);
+        }
+
+        // Check onboarding
+        const needsOnboardingCheck =
+          await userManagementServiceV2.checkUserNeedsOnboarding(
+            authUserToUser(authUser)!
+          );
+
+        // NOW set all states together to prevent partial renders
+        setUserName(userData.name);
+        setUser(authUserToUser(authUser));
+        setNeedsOnboarding(needsOnboardingCheck);
+        setLoading(false);
+        setIsCheckingAuth(false);
+        return;
+      }
+
+      // Fallback: Check Supabase session directly
       try {
         const {
           data: { session },
         } = await supabase.auth.getSession();
-        setUser(session?.user ?? null);
+        console.log('🔐 [APP] Supabase getSession result:', session?.user?.email);
 
-        // Fetch user data if there's a session
-        if (session?.user?.email) {
-          const userData = await fetchUserData(session.user.email);
+        if (session?.user) {
+          // Fetch user data FIRST, before setting user state
+          let userData = { name: 'Usuário', avatarUrl: undefined as string | undefined };
+          if (session.user.email) {
+            userData = await fetchUserData(session.user.email);
+          }
+
+          // NOW set all states together
           setUserName(userData.name);
+          setUser(session.user);
+        } else {
+          setUser(null);
         }
       } catch (error) {
         console.error('Erro ao verificar sessão:', error);
@@ -268,7 +407,7 @@ function App() {
       }
     };
 
-    checkUser();
+    initAuth();
 
     // Safety fallback - ensure loading is false after 5 seconds
     const timeoutId = setTimeout(() => {
@@ -276,31 +415,159 @@ function App() {
       setIsCheckingAuth(false);
     }, 5000);
 
-    // Listen for authentication changes
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('Auth event:', event, 'isInitialLoad:', isInitialLoadRef.current);
-      setUser(session?.user ?? null);
+    // ==================== AUTHSERVICE V2 LISTENER ====================
+    // Listen for auth state changes from AuthServiceV2 (Cloudflare PRIMARY)
+    const unsubscribeAuthV2 = authService.onAuthStateChange(
+      async (authUser) => {
+        console.log('🔄 [APP] AuthServiceV2 state change:', authUser?.email);
 
-      // Process session restoration silently (without loading bar)
-      if (event === 'INITIAL_SESSION') {
-        if (session?.user) {
-          await userManagementService.ensureUserInDatabase(session.user);
+        if (authUser) {
+          const convertedUser = authUserToUser(authUser);
+          setUser(convertedUser);
+
+          // Ensure user is in database
+          if (convertedUser) {
+            await userManagementServiceV2.ensureUserInDatabase(convertedUser);
+          }
 
           // Fetch user data
-          if (session.user.email) {
-            const userData = await fetchUserData(session.user.email);
+          if (authUser.email) {
+            const userData = await fetchUserData(authUser.email);
             setUserName(userData.name);
           }
 
-          const needsOnboardingCheck = await userManagementService.checkUserNeedsOnboarding(
-            session.user,
-          );
-          setNeedsOnboarding(needsOnboardingCheck);
+          // Check onboarding
+          if (convertedUser) {
+            const needsOnboardingCheck =
+              await userManagementServiceV2.checkUserNeedsOnboarding(
+                convertedUser
+              );
+            setNeedsOnboarding(needsOnboardingCheck);
+
+            if (needsOnboardingCheck) {
+              navigate(ROUTES.HOME);
+              setTimeout(() => {
+                onboardingModal.open();
+              }, 100);
+            }
+            // Don't auto-navigate to dashboard - let user stay on current page
+          }
+
+          // Disable loading bar after completion
+          if (isUserActionRef.current) {
+            setTimeout(() => {
+              setIsAuthLoading(false);
+              isUserActionRef.current = false;
+            }, 1500);
+          }
+        } else {
+          // User signed out from Cloudflare
+          setUser(null);
+          setUserName('Usuário');
+          setUserAvatarUrl(undefined);
         }
-        // Mark that initial load was completed
+
+        setLoading(false);
+        setIsCheckingAuth(false);
+      }
+    );
+
+    // ==================== SUPABASE AUTH LISTENER ====================
+    // FALLBACK: Supabase Auth is used for OAuth (Google, etc.) when D1/Cloudflare is unavailable
+    // D1 is PRIMARY for data storage. This listener only activates when:
+    // 1. OAuth callback (access_token in URL)
+    // 2. User-initiated login action
+    // 3. No D1 session exists
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log(
+        'Auth event:',
+        event,
+        'isInitialLoad:',
+        isInitialLoadRef.current,
+        'session:',
+        session?.user?.email
+      );
+
+      // CRITICAL: Check if D1/AuthServiceV2 already has a session
+      // If so, DON'T let Supabase override it for INITIAL_SESSION events
+      const cloudflareUser = authService.getUser();
+
+      // For INITIAL_SESSION: Only process if D1 doesn't have a user already
+      // This prevents race conditions where Supabase fires before initAuth completes
+      if (event === 'INITIAL_SESSION') {
+        // If initAuth already processed and set a user, skip Supabase processing
+        if (hasProcessedInitialAuthRef.current && cloudflareUser) {
+          console.log('🔄 [APP] D1 already processed auth, skipping Supabase INITIAL_SESSION');
+          isInitialLoadRef.current = false;
+          return;
+        }
+
+        if (session?.user) {
+          console.log('✅ [APP] Processing Supabase INITIAL_SESSION (D1 fallback):', session.user.email);
+
+          // Fetch user data FIRST before setting state
+          let userData = { name: 'Usuário', avatarUrl: undefined as string | undefined };
+          if (session.user.email) {
+            userData = await fetchUserData(session.user.email);
+          }
+
+          await userManagementServiceV2.ensureUserInDatabase(session.user);
+
+          const needsOnboardingCheck =
+            await userManagementServiceV2.checkUserNeedsOnboarding(
+              session.user
+            );
+
+          // Set all states together to prevent partial renders
+          setUserName(userData.name);
+          setUser(session.user);
+          setNeedsOnboarding(needsOnboardingCheck);
+
+          // Check if this is an OAuth callback
+          const isOAuthCallback = window.location.hash.includes('access_token') ||
+                                   window.location.search.includes('code=');
+
+          if (isOAuthCallback || isUserActionRef.current) {
+            console.log('🔐 [APP] OAuth callback detected, staying on home...');
+            loginModal.close();
+            signupModal.close();
+
+            if (needsOnboardingCheck) {
+              navigate(ROUTES.HOME);
+              setTimeout(() => {
+                onboardingModal.open();
+              }, 100);
+            }
+
+            // Clean URL hash/params after OAuth
+            if (isOAuthCallback) {
+              window.history.replaceState({}, document.title, window.location.pathname);
+            }
+
+            isUserActionRef.current = false;
+          }
+
+          setLoading(false);
+          setIsCheckingAuth(false);
+        }
         isInitialLoadRef.current = false;
+        return;
+      }
+
+      // For non-INITIAL_SESSION events, handle normally
+      if (session?.user) {
+        console.log('✅ [APP] Setting user from Supabase:', session.user.email);
+        setUser(session.user);
+      } else {
+        // Check if we have a Cloudflare session before clearing
+        if (!cloudflareUser) {
+          console.log('🔄 [APP] No Supabase session and no Cloudflare session, clearing user');
+          setUser(null);
+        } else {
+          console.log('🔄 [APP] No Supabase session but Cloudflare session exists, keeping user:', cloudflareUser.email);
+        }
       }
 
       // Process intentional login (email, OAuth, etc)
@@ -308,7 +575,7 @@ function App() {
         // IGNORE auth events that occur after tab visibility change (revalidation)
         if (ignoreNextAuthEventRef.current) {
           console.log('Ignoring SIGNED_IN event after tab visibility change');
-          return; // Exit early, don't process this event at all
+          return;
         }
 
         // Enable loading bar ONLY if this is a user-initiated action
@@ -320,37 +587,38 @@ function App() {
 
         // Register user in users table (especially for social login)
         if (session?.user) {
-          await userManagementService.ensureUserInDatabase(session.user);
-
-          // Fetch user data
+          // Fetch user data FIRST before setting state
+          let userData = { name: 'Usuário', avatarUrl: undefined as string | undefined };
           if (session.user.email) {
-            const userData = await fetchUserData(session.user.email);
-            setUserName(userData.name);
+            userData = await fetchUserData(session.user.email);
           }
 
+          await userManagementServiceV2.ensureUserInDatabase(session.user);
+
           // Check if needs onboarding
-          const needsOnboardingCheck = await userManagementService.checkUserNeedsOnboarding(
-            session.user,
-          );
+          const needsOnboardingCheck =
+            await userManagementServiceV2.checkUserNeedsOnboarding(
+              session.user
+            );
+
+          // Set all states together
+          setUserName(userData.name);
           setNeedsOnboarding(needsOnboardingCheck);
 
           // If needs onboarding, stay on home and show onboarding modal
-          // Only go to dashboard after onboarding is completed
           if (needsOnboardingCheck) {
-            setCurrentView('home');
+            navigate(ROUTES.HOME);
             setTimeout(() => {
               onboardingModal.open();
             }, 100);
-          } else {
-            // Navigate to dashboard after successful login if no onboarding needed
-            setCurrentView('dashboard');
           }
+          // Don't auto-navigate to dashboard - let user stay on current page
 
           // Disable loading bar after completion (only if it was enabled)
           if (isUserActionRef.current) {
             setTimeout(() => {
               setIsAuthLoading(false);
-              isUserActionRef.current = false; // Reset flag
+              isUserActionRef.current = false;
             }, 1500);
           }
         }
@@ -361,121 +629,216 @@ function App() {
         setUser(null);
         setUserName('Usuário');
         setUserAvatarUrl(undefined);
-        setCurrentView('home');
         setNeedsOnboarding(false);
         onboardingModal.close();
         loginModal.close();
         signupModal.close();
         setIsAuthLoading(false);
-        isInitialLoadRef.current = true; // Reset flag for next login
-        isUserActionRef.current = false; // Reset user action flag
+        isInitialLoadRef.current = true;
+        isUserActionRef.current = false;
+        navigate(ROUTES.HOME);
       }
     });
 
     return () => {
       subscription.unsubscribe();
+      unsubscribeAuthV2();
       clearTimeout(timeoutId);
-      document.removeEventListener('click', handleNavigationClick);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, []);
+  }, [navigate]);
 
   if (loading && ENABLE_SPLASH_SCREEN) {
     return <LoadingIntro />;
   }
 
-  // Rendering based on current view and user state
-  if (user && currentView === 'dashboard') {
-    return (
-      <>
-        {/* Authentication loading bar */}
-        <LoadingBar isLoading={isAuthLoading} duration={2300} />
-        <Dashboard
-          key={dashboardKey}
-          onGoHome={goToHome}
-          onGoToMyEasyWebsite={goToMyEasyWebsite}
-          onGoToBusinessGuru={goToBusinessGuru}
-          onLoadingComplete={() => {
-            // Callback when dashboard loading finishes
-            console.log('Dashboard loaded successfully!');
-          }}
-        />
-      </>
-    );
-  }
-
-  if (user && currentView === 'myeasywebsite') {
-    return <MyEasyWebsite onBackToDashboard={goToDashboard} />;
-  }
-
-  if (user && currentView === 'businessguru') {
-    return <BusinessGuru onBackToDashboard={goToDashboard} />;
-  }
+  // Debug log to track user state
+  console.log('🎨 [APP] Rendering with user:', user?.email, 'userName:', userName);
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-black-main to-blue-main">
-      {/* Toast Notifications */}
-      <Toaster
-        position="top-right"
-        richColors
-        closeButton
-        duration={4000}
-        toastOptions={{
-          style: {
-            background: '#1e293b',
-            color: '#f1f5f9',
-            border: '1px solid #334155',
-          },
-        }}
+    <Routes>
+      {/* Public route - Home */}
+      <Route
+        path={ROUTES.HOME}
+        element={
+          <main className="min-h-screen bg-gradient-to-br from-black-main to-blue-main">
+            <Toaster
+              position="top-right"
+              richColors
+              closeButton
+              duration={4000}
+              toastOptions={{
+                style: {
+                  background: '#1e293b',
+                  color: '#f1f5f9',
+                  border: '1px solid #334155',
+                },
+              }}
+            />
+
+            <LoadingBar isLoading={isAuthLoading} duration={2300} />
+
+            <NavBar
+              onLoginClick={openLogin}
+              onSignupClick={openSignup}
+              user={user}
+              userName={userName}
+              userAvatarUrl={userAvatarUrl}
+              onDashboardClick={goToDashboard}
+              onLogout={handleLogout}
+              onLogoClick={goToHome}
+              isCheckingAuth={isCheckingAuth}
+            />
+
+            <Hero
+              isLoginOpen={loginModal.isOpen}
+              onOpenLogin={openLogin}
+              onCloseLogin={closeLogin}
+              isSignupOpen={signupModal.isOpen}
+              onOpenSignup={openSignup}
+              onCloseSignup={closeSignup}
+              user={user}
+              onDashboardClick={goToDashboard}
+            />
+            <Features />
+            <Preview />
+            <Packages user={user} />
+            <MidStats />
+            <Courses />
+            <FinalCta onSignupClick={openSignup} />
+            <Footer />
+
+            {user && (
+              <OnboardingModal
+                isOpen={onboardingModal.isOpen}
+                onClose={closeOnboarding}
+                onComplete={handleOnboardingComplete}
+                user={user}
+                disableClose={needsOnboarding}
+              />
+            )}
+
+            <PWAInstallBanner />
+          </main>
+        }
       />
 
-      {/* Authentication loading bar */}
-      <LoadingBar isLoading={isAuthLoading} duration={2300} />
+      {/* Auth callback route - processes OAuth redirects from Cloudflare/Supabase */}
+      <Route path={ROUTES.AUTH_CALLBACK} element={<AuthCallback />} />
 
-      <NavBar
-        onLoginClick={openLogin}
-        onSignupClick={openSignup}
-        user={user}
-        userName={userName}
-        userAvatarUrl={userAvatarUrl}
-        onDashboardClick={goToDashboard}
-        onLogout={handleLogout}
-        onLogoClick={goToHome}
-        isCheckingAuth={isCheckingAuth}
+      {/* Protected routes */}
+      <Route
+        path={ROUTES.DASHBOARD}
+        element={
+          <ProtectedRoute
+            user={user}
+            needsOnboarding={needsOnboarding}
+            onOpenOnboarding={() => onboardingModal.open()}
+            isLoading={loading}
+            isCheckingAuth={isCheckingAuth}
+          >
+            <div>
+              <LoadingBar isLoading={isAuthLoading} duration={2300} />
+              <Dashboard
+                key={dashboardKey}
+                onGoHome={goToHome}
+                onGoToMyEasyWebsite={goToMyEasyWebsite}
+                onGoToBusinessGuru={goToBusinessGuru}
+                onGoToMyEasyPricing={goToMyEasyPricing}
+                onGoToMyEasyCRM={goToMyEasyCRM}
+                initialTab={dashboardInitialTab}
+                onLoadingComplete={() => {
+                  console.log('Dashboard loaded successfully!');
+                  setDashboardInitialTab('overview');
+                }}
+              />
+            </div>
+          </ProtectedRoute>
+        }
       />
 
-      <Hero
-        isLoginOpen={loginModal.isOpen}
-        onOpenLogin={openLogin}
-        onCloseLogin={closeLogin}
-        isSignupOpen={signupModal.isOpen}
-        onOpenSignup={openSignup}
-        onCloseSignup={closeSignup}
-        user={user}
-        onDashboardClick={goToDashboard}
+      <Route
+        path={ROUTES.MY_EASY_WEBSITE}
+        element={
+          <ProtectedRoute
+            user={user}
+            needsOnboarding={needsOnboarding}
+            onOpenOnboarding={() => onboardingModal.open()}
+            isLoading={loading}
+            isCheckingAuth={isCheckingAuth}
+          >
+            <MyEasyWebsite
+              onBackToDashboard={goToDashboard}
+              onGoToSubscription={goToSubscription}
+            />
+          </ProtectedRoute>
+        }
       />
-      <Features />
-      <Preview />
-      <Packages user={user} />
-      <MidStats />
-      <Courses />
-      <FinalCta />
-      <Footer />
 
-      {/* Onboarding Modal */}
-      {user && (
-        <OnboardingModal
-          isOpen={onboardingModal.isOpen}
-          onClose={closeOnboarding}
-          onComplete={handleOnboardingComplete}
-          user={user}
-          disableClose={needsOnboarding}
-        />
-      )}
+      <Route
+        path={ROUTES.BUSINESS_GURU}
+        element={
+          <ProtectedRoute
+            user={user}
+            needsOnboarding={needsOnboarding}
+            onOpenOnboarding={() => onboardingModal.open()}
+            isLoading={loading}
+            isCheckingAuth={isCheckingAuth}
+          >
+            <BusinessGuru onBackToDashboard={goToDashboard} />
+          </ProtectedRoute>
+        }
+      />
 
-      {/* PWA Installation Banner */}
-      <PWAInstallBanner />
-    </main>
+      <Route
+        path={ROUTES.MY_EASY_CRM}
+        element={
+          <ProtectedRoute
+            user={user}
+            needsOnboarding={needsOnboarding}
+            onOpenOnboarding={() => onboardingModal.open()}
+            isLoading={loading}
+            isCheckingAuth={isCheckingAuth}
+          >
+            <MyEasyCRM
+              userName={userName}
+              userEmail={user?.email}
+              onLogout={handleLogout}
+              onBackToMain={goToDashboard}
+            />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path={ROUTES.MY_EASY_PRICING}
+        element={
+          <ProtectedRoute
+            user={user}
+            needsOnboarding={needsOnboarding}
+            onOpenOnboarding={() => onboardingModal.open()}
+            isLoading={loading}
+            isCheckingAuth={isCheckingAuth}
+          >
+            <MyEasyPricing onBackToDashboard={goToDashboard} />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Fallback - redirect unknown routes to home */}
+      <Route path="*" element={<Navigate to={ROUTES.HOME} replace />} />
+    </Routes>
+  );
+}
+
+/**
+ * App - Main application component wrapped with BrowserRouter
+ */
+function App() {
+  return (
+    <BrowserRouter>
+      <AppContent />
+    </BrowserRouter>
   );
 }
 

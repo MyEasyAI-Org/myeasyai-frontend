@@ -37,6 +37,8 @@
 
 .loading-dots span {
   animation: loading-dots 1.4s ease-in-out infinite;
+  font-size: 1.5em;
+  font-weight: bold;
 }
 
 .loading-dots span:nth-child(2) {
@@ -73,4 +75,17 @@
 
 .modal-content-enter {
   animation: modal-content-appear 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.animate-shimmer {
+  animation: shimmer 1.5s ease-in-out infinite;
 }

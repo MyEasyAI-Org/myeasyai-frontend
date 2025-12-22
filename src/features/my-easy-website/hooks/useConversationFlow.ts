@@ -11,6 +11,10 @@ export type Message = {
   requiresImages?: boolean;
   showColorPalettes?: boolean;
   showCustomColorButton?: boolean;
+  templatePicker?: {
+    recommendedId: number;
+    alternativeIds: number[];
+  };
 };
 
 /**

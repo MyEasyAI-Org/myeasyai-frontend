@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { authService } from '../services/AuthService';
+import { authService } from '../services/AuthServiceV2';
+import { translateAuthError, validateFormFields } from '../utils/authErrors';
 import { DSButton, DSInput } from './design-system';
 import { Modal } from './Modal';
 // CAPTCHA temporariamente desabilitado para testes E2E
@@ -31,6 +32,16 @@ export function LoginModal({
     const email = formData.get('email') as string;
     const password = formData.get('password') as string;
 
+    // Validar campos antes de enviar
+    const validationErrors = validateFormFields({ email, password });
+    if (Object.keys(validationErrors).length > 0) {
+      const firstError = Object.values(validationErrors)[0];
+      toast.error('Campo inválido', {
+        description: firstError,
+      });
+      return;
+    }
+
     // CAPTCHA temporariamente desabilitado para testes E2E
     // Validar CAPTCHA (exceto em ambiente de teste)
     // if (!isTestEnvironment && !captchaToken) {
@@ -39,17 +50,19 @@ export function LoginModal({
     // }
 
     try {
-      const { error } = await authService.signInWithEmail(email, password);
-      if (error) {
-        toast.error('Erro ao fazer login', {
-          description: error.message,
+      const result = await authService.signInWithPassword(email, password);
+      if (!result.success) {
+        const translatedError = translateAuthError(result.error);
+        toast.error(translatedError.title, {
+          description: translatedError.description,
         });
         return;
       }
       // O modal será fechado automaticamente pelo listener de auth no App.tsx
     } catch (error) {
-      toast.error('Erro inesperado', {
-        description: String(error),
+      const translatedError = translateAuthError(error);
+      toast.error(translatedError.title, {
+        description: translatedError.description,
       });
     }
     // CAPTCHA temporariamente desabilitado
@@ -76,32 +89,35 @@ export function LoginModal({
           result = await authService.signInWithGoogle();
           break;
         case 'facebook':
-          result = await authService.signInWithFacebook();
-          break;
+          toast.warning('Login com Facebook indisponível', {
+            description: 'Use Google para fazer login.',
+          });
+          if (provider === 'facebook') setIsFacebookLoading(false);
+          return;
         case 'apple':
           toast.warning('Login com Apple indisponível', {
-            description: 'Use Google ou Facebook para fazer login.',
+            description: 'Use Google para fazer login.',
           });
           return;
       }
 
-      if (result.error) {
-        toast.error(`Erro ao fazer login com ${provider}`, {
-          description: result.error.message,
+      if (!result.success) {
+        const translatedError = translateAuthError(result.error);
+        toast.error(translatedError.title, {
+          description: translatedError.description,
         });
         // Desativar loading em caso de erro
-        if (provider === 'google') setIsGoogleLoading(false);
-        if (provider === 'facebook') setIsFacebookLoading(false);
+        setIsGoogleLoading(false);
         return;
       }
       // O modal será fechado automaticamente pelo listener de auth no App.tsx
     } catch (error) {
-      toast.error('Erro inesperado', {
-        description: String(error),
+      const translatedError = translateAuthError(error);
+      toast.error(translatedError.title, {
+        description: translatedError.description,
       });
       // Desativar loading em caso de erro
-      if (provider === 'google') setIsGoogleLoading(false);
-      if (provider === 'facebook') setIsFacebookLoading(false);
+      setIsGoogleLoading(false);
     }
   };
   return (

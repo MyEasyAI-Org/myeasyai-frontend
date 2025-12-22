@@ -22,7 +22,15 @@
       "Bash(python:*)",
       "Bash(npx tsc:*)",
       "Bash(for file in MyEasyWebsite.tsx components/ChatPanel.tsx components/PreviewPanel.tsx components/shared/FlagIcon.tsx components/modals/*.tsx handlers/*.ts utils/siteGenerator.ts utils/formatters.ts utils/geocoding.ts constants/*.ts)",
-      "Bash(done)"
+      "Bash(done)",
+      "Bash(npm install:*)",
+      "Bash(npx vite:*)",
+      "Bash(npx wrangler d1 execute:*)",
+      "Bash(npm run check:*)",
+      "Bash(npx wrangler d1 migrations apply:*)",
+      "Bash(curl:*)",
+      "Bash(npx wrangler deploy)",
+      "Bash(npx wrangler:*)"
     ],
     "deny": [],
     "ask": []

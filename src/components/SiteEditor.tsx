@@ -1,4 +1,5 @@
 import {
+  Check,
   Image as ImageIcon,
   Layout,
   Monitor,
@@ -57,24 +58,23 @@ export function SiteEditor({ siteData, onUpdate, onClose }: SiteEditorProps) {
 
   const [selectedColors, setSelectedColors] = useState(colors);
 
-  // Atualizar dados com histórico
+  // Atualizar dados com histórico (mantém local, não propaga para o pai)
   const updateData = (newData: any) => {
     const newHistory = history.slice(0, historyIndex + 1);
     newHistory.push(newData);
     setHistory(newHistory);
     setHistoryIndex(newHistory.length - 1);
     setTempData(newData);
-    onUpdate(newData);
+    // Não chama onUpdate aqui - alterações ficam locais até salvar
   };
 
-  // Undo/Redo
+  // Undo/Redo (mantém local, não propaga para o pai)
   const handleUndo = () => {
     if (historyIndex > 0) {
       const newIndex = historyIndex - 1;
       setHistoryIndex(newIndex);
       const previousData = history[newIndex];
       setTempData(previousData);
-      onUpdate(previousData);
 
       // Atualizar cores
       try {
@@ -93,7 +93,6 @@ export function SiteEditor({ siteData, onUpdate, onClose }: SiteEditorProps) {
       setHistoryIndex(newIndex);
       const nextData = history[newIndex];
       setTempData(nextData);
-      onUpdate(nextData);
 
       // Atualizar cores
       try {
@@ -203,12 +202,27 @@ export function SiteEditor({ siteData, onUpdate, onClose }: SiteEditorProps) {
     }
   };
 
-  // Salvar alterações
+  // Salvar alterações (apenas salva, não fecha)
   const handleSave = () => {
     onUpdate(tempData);
     toast.success('Alterações salvas!', {
       description: 'As alterações foram salvas com sucesso.',
     });
+  };
+
+  // Salvar e fechar
+  const handleSaveAndClose = () => {
+    onUpdate(tempData);
+    toast.success('Alterações salvas!', {
+      description: 'As alterações foram salvas com sucesso.',
+    });
+    onClose();
+  };
+
+  // Descartar alterações e fechar
+  const handleDiscard = () => {
+    // Não chama onUpdate - simplesmente fecha sem salvar
+    onClose();
   };
 
   // Viewport dimensions - Usando larguras FIXAS para ativar media queries
@@ -798,12 +812,22 @@ export function SiteEditor({ siteData, onUpdate, onClose }: SiteEditorProps) {
                 `${historyIndex} alteração${historyIndex > 1 ? 'ões' : ''}`}
             </div>
 
+            {/* Botão Descartar (Fechar sem salvar) */}
             <button
-              onClick={onClose}
+              onClick={handleDiscard}
               className="flex items-center space-x-2 px-4 py-2 rounded-lg border border-slate-700 bg-slate-800 text-slate-300 hover:bg-slate-700 transition-colors"
             >
               <X className="h-4 w-4" />
-              <span className="text-sm">Fechar</span>
+              <span className="text-sm">Descartar</span>
+            </button>
+
+            {/* Botão Salvar e Fechar */}
+            <button
+              onClick={handleSaveAndClose}
+              className="flex items-center space-x-2 px-4 py-2 rounded-lg bg-green-600 text-white hover:bg-green-700 transition-colors"
+            >
+              <Check className="h-4 w-4" />
+              <span className="text-sm">Salvar e Fechar</span>
             </button>
           </div>
         </div>

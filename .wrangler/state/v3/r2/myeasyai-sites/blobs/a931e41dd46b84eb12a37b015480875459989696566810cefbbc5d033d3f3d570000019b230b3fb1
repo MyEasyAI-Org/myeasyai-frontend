@@ -1,0 +1,46 @@
+{
+  "name": "MyEasyAI",
+  "short_name": "MyEasyAI",
+  "description": "Sua plataforma de IA fácil e acessível",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#000000",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/bone-logo-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/bone-logo-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/bone-logo-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/bone-logo-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/bone-logo.png",
+      "sizes": "48x48 72x72 96x96 128x128 256x256 384x384",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "categories": ["productivity", "education", "technology"],
+  "lang": "pt-BR",
+  "scope": "/",
+  "prefer_related_applications": false
+}
