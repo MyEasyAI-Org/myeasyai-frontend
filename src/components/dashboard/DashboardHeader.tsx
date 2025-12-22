@@ -85,6 +85,7 @@ export function DashboardHeader({
                 <div className="h-9 w-9 flex-shrink-0 overflow-hidden rounded-full ring-2 ring-purple-500/30">
                   <Avatar
                     name={profile.name}
+                    displayName={profile.preferred_name}
                     avatarUrl={profile.avatar_url}
                     size="sm"
                   />

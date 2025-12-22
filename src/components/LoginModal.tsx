@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { authService } from '../services/AuthService';
+import { authService } from '../services/AuthServiceV2';
 import { translateAuthError, validateFormFields } from '../utils/authErrors';
 import { DSButton, DSInput } from './design-system';
 import { Modal } from './Modal';
@@ -50,9 +50,9 @@ export function LoginModal({
     // }
 
     try {
-      const { error } = await authService.signInWithEmail(email, password);
-      if (error) {
-        const translatedError = translateAuthError(error);
+      const result = await authService.signInWithPassword(email, password);
+      if (!result.success) {
+        const translatedError = translateAuthError(result.error);
         toast.error(translatedError.title, {
           description: translatedError.description,
         });
@@ -89,23 +89,25 @@ export function LoginModal({
           result = await authService.signInWithGoogle();
           break;
         case 'facebook':
-          result = await authService.signInWithFacebook();
-          break;
+          toast.warning('Login com Facebook indisponível', {
+            description: 'Use Google para fazer login.',
+          });
+          if (provider === 'facebook') setIsFacebookLoading(false);
+          return;
         case 'apple':
           toast.warning('Login com Apple indisponível', {
-            description: 'Use Google ou Facebook para fazer login.',
+            description: 'Use Google para fazer login.',
           });
           return;
       }
 
-      if (result.error) {
+      if (!result.success) {
         const translatedError = translateAuthError(result.error);
         toast.error(translatedError.title, {
           description: translatedError.description,
         });
         // Desativar loading em caso de erro
-        if (provider === 'google') setIsGoogleLoading(false);
-        if (provider === 'facebook') setIsFacebookLoading(false);
+        setIsGoogleLoading(false);
         return;
       }
       // O modal será fechado automaticamente pelo listener de auth no App.tsx
@@ -115,8 +117,7 @@ export function LoginModal({
         description: translatedError.description,
       });
       // Desativar loading em caso de erro
-      if (provider === 'google') setIsGoogleLoading(false);
-      if (provider === 'facebook') setIsFacebookLoading(false);
+      setIsGoogleLoading(false);
     }
   };
   return (

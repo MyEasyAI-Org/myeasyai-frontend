@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { toast } from 'sonner';
 import type { SubscriptionPlan } from '../constants/plans';
-import { authService } from '../services/AuthService';
+import { authService } from '../services/AuthServiceV2';
 import { translateAuthError, validateFormFields } from '../utils/authErrors';
 import { DSButton, DSInput } from './design-system';
 import { Modal } from './Modal';
@@ -73,14 +73,9 @@ export function SignupModal({
     // }
 
     try {
-      const { error } = await authService.signUpWithEmail(
-        email,
-        password,
-        fullName,
-        preferredName
-      );
-      if (error) {
-        const translatedError = translateAuthError(error);
+      const result = await authService.signUp(email, password, fullName);
+      if (!result.success) {
+        const translatedError = translateAuthError(result.error);
         toast.error(translatedError.title, {
           description: translatedError.description,
         });
@@ -125,23 +120,25 @@ export function SignupModal({
           result = await authService.signInWithGoogle();
           break;
         case 'facebook':
-          result = await authService.signInWithFacebook();
-          break;
+          toast.warning('Cadastro com Facebook indisponível', {
+            description: 'Use Google para se cadastrar.',
+          });
+          if (provider === 'facebook') setIsFacebookLoading(false);
+          return;
         case 'apple':
           toast.warning('Cadastro com Apple indisponível', {
-            description: 'Use Google ou Facebook para se cadastrar.',
+            description: 'Use Google para se cadastrar.',
           });
           return;
       }
 
-      if (result.error) {
+      if (!result.success) {
         const translatedError = translateAuthError(result.error);
         toast.error(translatedError.title, {
           description: translatedError.description,
         });
         // Desativar loading em caso de erro
-        if (provider === 'google') setIsGoogleLoading(false);
-        if (provider === 'facebook') setIsFacebookLoading(false);
+        setIsGoogleLoading(false);
         return;
       }
 
@@ -157,17 +154,15 @@ export function SignupModal({
         description: translatedError.description,
       });
       // Desativar loading em caso de erro
-      if (provider === 'google') setIsGoogleLoading(false);
-      if (provider === 'facebook') setIsFacebookLoading(false);
+      setIsGoogleLoading(false);
     }
   };
   const getModalTitle = () => {
     if (selectedPlan) {
-      const planNames = {
-        free: 'Plano Free',
-        basic: 'Plano Basic',
-        pro: 'Plano Pro',
-        enterprise: 'Plano Enterprise',
+      const planNames: Record<SubscriptionPlan, string> = {
+        individual: 'Plano Individual',
+        plus: 'Plano Plus',
+        premium: 'Plano Premium',
       };
       return `Cadastre-se no ${planNames[selectedPlan]}`;
     }

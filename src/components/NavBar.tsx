@@ -69,19 +69,32 @@ export default function NavBar({
     };
   }, [dropdownModal.isOpen, notificationModal.isOpen, dropdownModal, notificationModal]);
 
+  // Check if avatar URL is a real photo or just a Google default placeholder
+  const isRealAvatar = (url: string | null | undefined): boolean => {
+    if (!url) return false;
+    // Google default avatars contain these patterns
+    if (url.includes('default-user') || url.includes('=s96-c')) return false;
+    // UI Avatars or similar placeholder services
+    if (url.includes('ui-avatars.com')) return false;
+    // DiceBear or similar placeholder services
+    if (url.includes('dicebear') || url.includes('avatars.dicebear')) return false;
+    return true;
+  };
+
   // Function to generate name initials
+  // Single word (ex: "Jonny") → "J", Multiple words (ex: "Jonny Zin") → "JZ"
   const getInitials = (name: string) => {
-    const names = name.trim().split(' ');
+    const names = name.trim().split(' ').filter(Boolean);
     if (names.length >= 2) {
       return `${names[0][0]}${names[names.length - 1][0]}`.toUpperCase();
     }
-    return name.substring(0, 2).toUpperCase();
+    return names[0]?.[0]?.toUpperCase() || '';
   };
 
   // Function to get avatar (photo or initials)
   const getAvatarContent = () => {
-    // If has avatar_url, display image
-    if (userAvatarUrl) {
+    // If has real avatar_url (not a placeholder), display image
+    if (isRealAvatar(userAvatarUrl)) {
       return (
         <img
           src={userAvatarUrl}
@@ -93,7 +106,7 @@ export default function NavBar({
 
     // Otherwise, display initials
     return (
-      <div className="flex h-full w-full items-center justify-center rounded-full bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 text-white font-bold">
+      <div className="flex h-full w-full items-center justify-center rounded-full bg-gradient-to-br from-fuchsia-500 to-purple-600 text-white font-bold">
         {getInitials(userName)}
       </div>
     );
@@ -217,7 +230,16 @@ export default function NavBar({
                       {getAvatarContent()}
                     </div>
                     <span className="text-sm font-medium text-slate-200">
-                      Olá, {userName}
+                      Olá,{' '}
+                      {userName === 'Usuário' ? (
+                        <span className="loading-dots">
+                          <span>.</span>
+                          <span>.</span>
+                          <span>.</span>
+                        </span>
+                      ) : (
+                        userName
+                      )}
                     </span>
                   </button>
 
@@ -269,7 +291,7 @@ export default function NavBar({
                 </div>
               </div>
             ) : isCheckingAuth ? (
-              // Checking authentication - show loading
+              // Checking authentication - show loading dots
               <div className="flex items-center space-x-2 px-4 py-2">
                 <span className="loading-dots text-slate-300">
                   <span>.</span>

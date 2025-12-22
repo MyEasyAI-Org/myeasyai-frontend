@@ -19,8 +19,8 @@ import { TutorialTooltip } from './components/tutorial/TutorialTooltip';
 import { StoreForm } from './components/forms/StoreForm';
 import { ProductModal } from './components/forms/ProductModal';
 import { tutorialDemoService } from './services/TutorialDemoService';
-import { pricingService } from './services/PricingService';
-import { supabase } from '../../lib/api-clients/supabase-client';
+import { pricingServiceV2 } from './services/PricingServiceV2';
+import { authService } from '../../services/AuthServiceV2';
 import { toast } from 'sonner';
 import type { Store, Product, IndirectCost, HiddenCost, TaxItem, TabType, MainTabType, StoreFormData, ProductFormData } from './types/pricing.types';
 
@@ -153,15 +153,17 @@ export function MyEasyPricing({ onBackToDashboard }: MyEasyPricingProps) {
   // Mobile sidebar state
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
-  // Get user UUID on mount
+  // Get user UUID on mount from AuthServiceV2 (supports both Cloudflare and Supabase)
   useEffect(() => {
-    const getUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+    const unsubscribe = authService.onAuthStateChange((user) => {
       if (user) {
-        setUserUuid(user.id);
+        setUserUuid(user.uuid);
+      } else {
+        setUserUuid(null);
       }
-    };
-    getUser();
+    });
+
+    return () => unsubscribe();
   }, []);
 
   // Track previous tutorial state to detect when exiting tutorial mode
@@ -449,7 +451,7 @@ export function MyEasyPricing({ onBackToDashboard }: MyEasyPricingProps) {
 
         // If not found in current state (stale closure), fetch directly from service
         if (!existingStore) {
-          const { data: fetchedStores } = await pricingService.getStores(userUuid);
+          const { data: fetchedStores } = await pricingServiceV2.getStores(userUuid);
           existingStore = fetchedStores?.find(s => s.id === existingStoreId) || undefined;
         }
 

@@ -7,6 +7,7 @@ type ProductsTabProps = {
   isLoading: boolean;
   onAccessProduct: (productName: string) => void;
   onGoToCRM?: () => void;
+  accountCreatedAt?: string;
 };
 
 export function ProductsTab({
@@ -14,6 +15,7 @@ export function ProductsTab({
   isLoading,
   onAccessProduct,
   onGoToCRM,
+  accountCreatedAt,
 }: ProductsTabProps) {
   return (
     <div className="space-y-6">
@@ -126,56 +128,47 @@ export function ProductsTab({
             </div>
           </div>
 
-          {/* Summary Card - only show if user has products */}
-          {userProducts.length > 0 && (
-            <div className="rounded-lg border border-slate-800 bg-slate-900/50 p-6">
-              <h2 className="text-xl font-bold text-white">
-                Resumo de Assinaturas
-              </h2>
-              <div className="mt-4 grid gap-4 md:grid-cols-3">
-                <div className="text-center">
-                  <p className="text-3xl font-bold text-white">
-                    {
-                      userProducts.filter(
-                        (p) => p.product_status === 'active',
-                      ).length
-                    }
-                  </p>
-                  <p className="mt-1 text-sm text-slate-400">
-                    Produtos Ativos
-                  </p>
-                </div>
-                <div className="text-center">
-                  <p className="text-3xl font-bold text-white">
-                    {userProducts.reduce(
-                      (sum, p) =>
-                        sum +
-                        (p.sites_created || 0) +
-                        (p.consultations_made || 0),
-                      0,
-                    )}
-                  </p>
-                  <p className="mt-1 text-sm text-slate-400">
-                    Total de Uso
-                  </p>
-                </div>
-                <div className="text-center">
-                  <p className="text-3xl font-bold text-green-400">
-                    {new Date(
-                      Math.min(
-                        ...userProducts.map((p) =>
-                          new Date(p.subscribed_at).getTime(),
-                        ),
-                      ),
-                    ).toLocaleDateString('pt-BR')}
-                  </p>
-                  <p className="mt-1 text-sm text-slate-400">
-                    Primeiro Produto
-                  </p>
-                </div>
+          {/* Summary Card - always show (includes hard-coded products) */}
+          <div className="rounded-lg border border-slate-800 bg-slate-900/50 p-6">
+            <h2 className="text-xl font-bold text-white">
+              Resumo de Assinaturas
+            </h2>
+            <div className="mt-4 grid gap-4 md:grid-cols-3">
+              <div className="text-center">
+                <p className="text-3xl font-bold text-white">
+                  {/* Count userProducts + 2 hard-coded products (MyEasyPricing + MyEasyCRM) */}
+                  {userProducts.filter((p) => p.product_status === 'active').length + 2}
+                </p>
+                <p className="mt-1 text-sm text-slate-400">
+                  Produtos Ativos
+                </p>
+              </div>
+              <div className="text-center">
+                <p className="text-3xl font-bold text-white">
+                  {userProducts.reduce(
+                    (sum, p) =>
+                      sum +
+                      (p.sites_created || 0) +
+                      (p.consultations_made || 0),
+                    0,
+                  )}
+                </p>
+                <p className="mt-1 text-sm text-slate-400">
+                  Total de Uso
+                </p>
+              </div>
+              <div className="text-center">
+                <p className="text-3xl font-bold text-green-400">
+                  {accountCreatedAt
+                    ? new Date(accountCreatedAt).toLocaleDateString('pt-BR')
+                    : new Date().toLocaleDateString('pt-BR')}
+                </p>
+                <p className="mt-1 text-sm text-slate-400">
+                  Membro desde
+                </p>
               </div>
             </div>
-          )}
+          </div>
         </>
       )}
 

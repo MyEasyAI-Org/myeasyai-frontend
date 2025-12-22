@@ -1,0 +1,77 @@
+name = "myeasyai-api"
+main = "src/index.ts"
+compatibility_date = "2024-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+# Custom Domain - connect.myeasyai.com
+# Usando route pattern (mais específico que wildcard CNAME)
+routes = [
+  { pattern = "connect.myeasyai.com/*", zone_name = "myeasyai.com" }
+]
+
+# D1 Database binding
+[[d1_databases]]
+binding = "DB"
+database_name = "myeasyai-db"
+database_id = "9601951e-ad41-4037-b09f-fe607d09030b"
+
+# Environment variables (non-secrets)
+[vars]
+ENVIRONMENT = "production"
+CORS_ORIGIN = "https://myeasyai.com"
+FRONTEND_URL = "https://myeasyai.com"
+SUPABASE_URL = "https://abmixlwlizdyvlxrizmi.supabase.co"
+
+# ============================================
+# SECRETS (configurar via wrangler secret put)
+# ============================================
+# Execute os comandos abaixo para configurar:
+#
+# wrangler secret put JWT_SECRET
+# wrangler secret put GOOGLE_CLIENT_ID
+# wrangler secret put GOOGLE_CLIENT_SECRET
+# wrangler secret put SUPABASE_SERVICE_ROLE_KEY
+#
+# Para obter as credenciais do Google:
+# 1. Acesse https://console.cloud.google.com/apis/credentials
+# 2. Crie um OAuth 2.0 Client ID
+# 3. Adicione como Authorized redirect URI:
+#    - https://connect.myeasyai.com/auth/google/callback (PRODUÇÃO)
+#    - http://localhost:8787/auth/google/callback (para dev)
+#
+# Para Supabase sync (sincronização bidirecional):
+# 1. Acesse o projeto no Supabase Dashboard
+# 2. Settings > API > service_role key (NÃO anon key!)
+# 3. Execute: wrangler secret put SUPABASE_SERVICE_ROLE_KEY
+# ============================================
+
+# Cron Triggers para sync automático
+# Executa a cada 5 minutos para manter D1 e Supabase sincronizados
+[triggers]
+crons = ["*/5 * * * *"]
+
+# Development overrides
+[env.dev]
+name = "myeasyai-api-dev"
+[[env.dev.d1_databases]]
+binding = "DB"
+database_name = "myeasyai-db"
+database_id = "9601951e-ad41-4037-b09f-fe607d09030b"
+[env.dev.vars]
+ENVIRONMENT = "development"
+CORS_ORIGIN = "http://localhost:5173"
+FRONTEND_URL = "http://localhost:5173"
+SUPABASE_URL = "https://abmixlwlizdyvlxrizmi.supabase.co"
+
+# Staging overrides
+[env.staging]
+name = "myeasyai-api-staging"
+[[env.staging.d1_databases]]
+binding = "DB"
+database_name = "myeasyai-db"
+database_id = "9601951e-ad41-4037-b09f-fe607d09030b"
+[env.staging.vars]
+ENVIRONMENT = "staging"
+CORS_ORIGIN = "https://staging.myeasyai.com"
+FRONTEND_URL = "https://staging.myeasyai.com"
+SUPABASE_URL = "https://abmixlwlizdyvlxrizmi.supabase.co"

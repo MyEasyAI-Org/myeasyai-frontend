@@ -1,0 +1,13 @@
+name = "site-router"
+main = "src/index.ts"
+compatibility_date = "2024-01-01"
+
+# Rota para TODOS os subdomínios de myeasyai.com (exceto os específicos)
+routes = [
+  { pattern = "*.myeasyai.com/*", zone_name = "myeasyai.com" }
+]
+
+# R2 bucket binding
+[[r2_buckets]]
+binding = "SITES_BUCKET"
+bucket_name = "myeasyai-sites"

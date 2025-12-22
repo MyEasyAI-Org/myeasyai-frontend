@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useDashboardNavigation } from '../hooks/useDashboardNavigation';
 import { useNotifications } from '../hooks/useNotifications';
 import { useUserData } from '../hooks/useUserData';
-import { authService } from '../services/AuthService';
+import { authService } from '../services/AuthServiceV2';
 import type { Notification } from '../types/notification';
 import { Footer } from './Footer';
 import NotificationDetailModal from './NotificationDetailModal';
@@ -23,6 +23,7 @@ type DashboardProps = {
   onGoToMyEasyPricing?: () => void;
   onGoToMyEasyCRM?: () => void;
   onLoadingComplete?: () => void;
+  initialTab?: 'overview' | 'subscription' | 'products' | 'usage' | 'settings' | 'profile';
 };
 
 export function Dashboard({
@@ -32,6 +33,7 @@ export function Dashboard({
   onGoToMyEasyPricing,
   onGoToMyEasyCRM,
   onLoadingComplete,
+  initialTab,
 }: DashboardProps = {}) {
   // User data hook (manages profile, subscription, products, cadastral info, etc.)
   const {
@@ -45,6 +47,7 @@ export function Dashboard({
     loadingStep,
     error,
     updateProfile,
+    updateSubscriptionPlan,
     refreshSubscription,
     refreshProducts,
     refreshAll,
@@ -77,10 +80,7 @@ export function Dashboard({
 
   const handleLogout = async () => {
     try {
-      const { error } = await authService.signOut();
-      if (error) {
-        console.error('Erro ao fazer logout:', error);
-      }
+      await authService.signOut();
       window.location.href = '/';
     } catch (error) {
       console.error('Erro ao fazer logout:', error);
@@ -102,7 +102,7 @@ export function Dashboard({
     console.log('Ver todas as notificações');
   };
 
-  // Show loading screen while data is being loaded
+  // Show loading screen while data is being fetched
   if (isLoading) {
     return (
       <LoadingScreen
@@ -134,11 +134,14 @@ export function Dashboard({
       {/* Content */}
       <div className="mx-auto max-w-7xl flex-1 px-4 py-8 pb-32 sm:px-6 lg:px-8">
         {activeTab === 'overview' && (
-          <OverviewTab profile={profile} subscription={subscription} />
+          <OverviewTab profile={profile} subscription={subscription} cadastralInfo={cadastralInfo} />
         )}
 
         {activeTab === 'subscription' && (
-          <SubscriptionTab subscription={subscription} />
+          <SubscriptionTab
+            subscription={subscription}
+            onPlanChange={updateSubscriptionPlan}
+          />
         )}
 
         {activeTab === 'products' && (
@@ -147,10 +150,11 @@ export function Dashboard({
             isLoading={isLoading}
             onAccessProduct={navigateToProduct}
             onGoToCRM={goToCRM}
+            accountCreatedAt={cadastralInfo.created_at}
           />
         )}
 
-        {activeTab === 'usage' && <UsageTab subscription={subscription} />}
+        {activeTab === 'usage' && <UsageTab subscription={subscription} cadastralInfo={cadastralInfo} />}
 
         {activeTab === 'settings' && <SettingsTab />}
 

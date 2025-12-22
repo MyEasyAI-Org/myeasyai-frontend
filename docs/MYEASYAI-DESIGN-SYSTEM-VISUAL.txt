@@ -1,0 +1,2020 @@
+================================================================================
+                    MYEASYAI - DESIGN SYSTEM COMPLETO
+                    GUIA VISUAL PARA REPLICACAO POR PROMPT
+================================================================================
+
+Versao do Documento: 1.0
+Data: 27/11/2025
+Projeto: MyEasyAI Frontend
+Stack: React 19 + TypeScript + Tailwind CSS 4 + Vite
+
+================================================================================
+                              INDICE
+================================================================================
+
+1. VISAO GERAL DO DESIGN
+2. PALETA DE CORES COMPLETA
+3. TIPOGRAFIA
+4. ESPACAMENTO E GRID
+5. BORDAS E SOMBRAS
+6. ANIMACOES E TRANSICOES
+7. COMPONENTES - BOTOES
+8. COMPONENTES - INPUTS
+9. COMPONENTES - CARDS
+10. COMPONENTES - MODAIS
+11. COMPONENTES - AVATARES
+12. NAVBAR (CABECALHO)
+13. LANDING PAGE - HERO
+14. LANDING PAGE - FEATURES
+15. LANDING PAGE - PACOTES/PRECOS
+16. LANDING PAGE - FOOTER
+17. DASHBOARD - HEADER
+18. DASHBOARD - NAVEGACAO
+19. DASHBOARD - CARDS DE ESTATISTICAS
+20. DASHBOARD - DROPDOWN DO USUARIO
+21. EFEITOS ESPECIAIS
+22. RESPONSIVIDADE
+23. PROMPT PARA REPLICAR O DESIGN
+
+================================================================================
+                    1. VISAO GERAL DO DESIGN
+================================================================================
+
+ESTILO GERAL:
+- Tema escuro moderno (dark mode)
+- Gradientes vibrantes azul-para-roxo
+- Efeitos de glassmorphism (backdrop-blur)
+- Animacoes suaves e fluidas
+- Design mobile-first responsivo
+- Minimalista com acentos coloridos
+
+FILOSOFIA VISUAL:
+- Fundos escuros com superficies cinza sutis
+- Gradientes azul/roxo como CTAs principais
+- Cinza/slate para elementos secundarios
+- Cores vibrantes (verde, ciano) para icones e destaques
+- Transicoes suaves de 200-300ms
+- Contrastes acessiveis
+
+================================================================================
+                    2. PALETA DE CORES COMPLETA
+================================================================================
+
+--------------------------------------------------------------------------------
+CORES PRINCIPAIS (PRIMARY)
+--------------------------------------------------------------------------------
+--color-primary:        #3b82f6  (Azul-500)
+--color-primary-dark:   #2563eb  (Azul-600)
+--color-primary-light:  #60a5fa  (Azul-400)
+
+--color-secondary:      #a855f7  (Roxo-500)
+--color-secondary-dark: #9333ea  (Roxo-600)
+--color-secondary-light:#c084fc  (Roxo-400)
+
+--------------------------------------------------------------------------------
+CORES SEMANTICAS
+--------------------------------------------------------------------------------
+--color-success:        #10b981  (Esmeralda-500)
+--color-success-dark:   #059669  (Esmeralda-600)
+
+--color-warning:        #f59e0b  (Ambar-500)
+--color-warning-dark:   #d97706  (Ambar-600)
+
+--color-error:          #ef4444  (Vermelho-500)
+--color-error-dark:     #dc2626  (Vermelho-600)
+
+--color-info:           #06b6d4  (Ciano-500)
+
+--------------------------------------------------------------------------------
+CORES DE FUNDO/SUPERFICIE
+--------------------------------------------------------------------------------
+--color-background:     #000000  (Preto puro - fundo principal)
+--color-black-main:     #000000  (Preto da marca)
+--color-blue-main:      #002a9e  (Azul da marca)
+
+--color-surface:        #1e293b  (Slate-800 - cards, modais)
+--color-surface-dark:   #0f172a  (Slate-900 - mais escuro)
+--color-surface-elevated:#334155 (Slate-700 - elevado)
+--color-surface-hover:  #475569  (Slate-600 - hover)
+
+--------------------------------------------------------------------------------
+CORES DE BORDA
+--------------------------------------------------------------------------------
+--color-border:         #334155  (Slate-700 - padrao)
+--color-border-light:   #475569  (Slate-600 - mais clara)
+--color-border-dark:    #1e293b  (Slate-800 - mais escura)
+--color-border-focus:   #3b82f6  (Azul-500 - foco)
+
+--------------------------------------------------------------------------------
+CORES DE TEXTO
+--------------------------------------------------------------------------------
+--color-text-primary:   #f1f5f9  (Slate-100 - texto principal)
+--color-text-secondary: #cbd5e1  (Slate-300 - texto secundario)
+--color-text-tertiary:  #94a3b8  (Slate-400 - texto terciario)
+--color-text-muted:     #64748b  (Slate-500 - texto apagado)
+--color-text-inverted:  #0f172a  (Slate-900 - texto invertido)
+
+--------------------------------------------------------------------------------
+GRADIENTES
+--------------------------------------------------------------------------------
+GRADIENTE PRINCIPAL (Azul para Roxo):
+  background: linear-gradient(to right, #3b82f6, #9333ea);
+  Tailwind: bg-gradient-to-r from-blue-500 to-purple-600
+
+GRADIENTE HOVER:
+  background: linear-gradient(to right, #2563eb, #7e22ce);
+  Tailwind: from-blue-600 to-purple-700
+
+GRADIENTE DE SUPERFICIE:
+  background: linear-gradient(to bottom right, slate-800, slate-900);
+  Tailwind: bg-gradient-to-br from-slate-800 to-slate-900
+
+GRADIENTE DE TEXTO:
+  background: linear-gradient(135deg, #3b82f6, #a855f7);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+
+GRADIENTE SUTIL (Cards):
+  background: linear-gradient(to bottom right,
+    rgba(59, 130, 246, 0.1),
+    rgba(147, 51, 234, 0.1));
+
+================================================================================
+                    3. TIPOGRAFIA
+================================================================================
+
+--------------------------------------------------------------------------------
+FONTE PRINCIPAL
+--------------------------------------------------------------------------------
+font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont,
+             'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+
+--------------------------------------------------------------------------------
+TAMANHOS DE FONTE
+--------------------------------------------------------------------------------
+--text-xs:    0.75rem   (12px)  - Badges, labels pequenos
+--text-sm:    0.875rem  (14px)  - Texto secundario, botoes pequenos
+--text-base:  1rem      (16px)  - Texto padrao
+--text-lg:    1.125rem  (18px)  - Texto destacado
+--text-xl:    1.25rem   (20px)  - Subtitulos
+--text-2xl:   1.5rem    (24px)  - Titulos de secao
+--text-3xl:   1.875rem  (30px)  - Titulos grandes
+--text-4xl:   2.25rem   (36px)  - Titulos muito grandes
+--text-5xl:   3rem      (48px)  - Hero mobile
+--text-6xl:   3.75rem   (60px)  - Hero tablet
+--text-7xl:   4.5rem    (72px)  - Hero desktop
+
+--------------------------------------------------------------------------------
+PESOS DE FONTE
+--------------------------------------------------------------------------------
+--font-normal:    400   - Texto corrido
+--font-medium:    500   - Texto com enfase leve
+--font-semibold:  600   - Botoes, labels
+--font-bold:      700   - Titulos, destaques
+
+--------------------------------------------------------------------------------
+ALTURA DE LINHA
+--------------------------------------------------------------------------------
+--leading-none:    1      - Titulos compactos
+--leading-tight:   1.25   - Titulos
+--leading-snug:    1.375  - Subtitulos
+--leading-normal:  1.5    - Texto padrao
+--leading-relaxed: 1.625  - Texto longo
+--leading-loose:   2      - Texto muito espacado
+
+--------------------------------------------------------------------------------
+ESPACAMENTO DE LETRAS
+--------------------------------------------------------------------------------
+--tracking-tighter: -0.05em  - Titulos grandes
+--tracking-tight:   -0.025em - Titulos
+--tracking-normal:  0        - Texto padrao
+--tracking-wide:    0.025em  - Labels, botoes
+
+================================================================================
+                    4. ESPACAMENTO E GRID
+================================================================================
+
+--------------------------------------------------------------------------------
+ESCALA DE ESPACAMENTO (REM)
+--------------------------------------------------------------------------------
+--space-0:    0
+--space-0.5:  0.125rem  (2px)
+--space-1:    0.25rem   (4px)
+--space-1.5:  0.375rem  (6px)
+--space-2:    0.5rem    (8px)
+--space-2.5:  0.625rem  (10px)
+--space-3:    0.75rem   (12px)
+--space-3.5:  0.875rem  (14px)
+--space-4:    1rem      (16px)
+--space-5:    1.25rem   (20px)
+--space-6:    1.5rem    (24px)
+--space-7:    1.75rem   (28px)
+--space-8:    2rem      (32px)
+--space-9:    2.25rem   (36px)
+--space-10:   2.5rem    (40px)
+--space-11:   2.75rem   (44px)
+--space-12:   3rem      (48px)
+--space-14:   3.5rem    (56px)
+--space-16:   4rem      (64px)
+--space-20:   5rem      (80px)
+--space-24:   6rem      (96px)
+
+--------------------------------------------------------------------------------
+PADROES DE ESPACAMENTO COMUNS
+--------------------------------------------------------------------------------
+PADDING DE PAGINA:
+  Mobile:  px-4        (16px horizontal)
+  Tablet:  sm:px-6     (24px horizontal)
+  Desktop: lg:px-8     (32px horizontal)
+
+PADDING DE SECAO:
+  Vertical: py-20      (80px)
+  Com pagina: px-4 py-20 sm:px-6 lg:px-8
+
+PADDING DE CARD:
+  Pequeno: p-4         (16px)
+  Medio:   p-6         (24px)
+  Grande:  p-8         (32px)
+
+GAP ENTRE COMPONENTES:
+  Pequeno: gap-2       (8px)
+  Medio:   gap-4       (16px)
+  Grande:  gap-6       (24px)
+  Extra:   gap-8       (32px)
+
+--------------------------------------------------------------------------------
+LARGURAS MAXIMAS
+--------------------------------------------------------------------------------
+--max-w-sm:    24rem    (384px)
+--max-w-md:    28rem    (448px)
+--max-w-lg:    32rem    (512px)
+--max-w-xl:    36rem    (576px)
+--max-w-2xl:   42rem    (672px)
+--max-w-3xl:   48rem    (768px)
+--max-w-4xl:   56rem    (896px)
+--max-w-5xl:   64rem    (1024px)
+--max-w-6xl:   72rem    (1152px)
+--max-w-7xl:   80rem    (1280px)
+
+Container principal: max-w-7xl mx-auto
+
+================================================================================
+                    5. BORDAS E SOMBRAS
+================================================================================
+
+--------------------------------------------------------------------------------
+BORDER RADIUS
+--------------------------------------------------------------------------------
+--rounded-none:   0
+--rounded-sm:     0.125rem  (2px)
+--rounded:        0.25rem   (4px)
+--rounded-md:     0.375rem  (6px)
+--rounded-lg:     0.5rem    (8px)   - Botoes, inputs
+--rounded-xl:     0.75rem   (12px)  - Cards
+--rounded-2xl:    1rem      (16px)  - Cards grandes, modais
+--rounded-3xl:    1.5rem    (24px)  - Elementos especiais
+--rounded-full:   9999px             - Circulos, pills
+
+USO COMUM:
+  - Botoes: rounded-lg
+  - Inputs: rounded-lg
+  - Cards: rounded-xl ou rounded-2xl
+  - Modais: rounded-2xl
+  - Avatares: rounded-full
+  - Badges/Pills: rounded-full
+
+--------------------------------------------------------------------------------
+SOMBRAS
+--------------------------------------------------------------------------------
+--shadow-sm:    0 1px 2px 0 rgba(0, 0, 0, 0.05);
+--shadow:       0 1px 3px 0 rgba(0, 0, 0, 0.1),
+                0 1px 2px -1px rgba(0, 0, 0, 0.1);
+--shadow-md:    0 4px 6px -1px rgba(0, 0, 0, 0.1),
+                0 2px 4px -2px rgba(0, 0, 0, 0.1);
+--shadow-lg:    0 10px 15px -3px rgba(0, 0, 0, 0.1),
+                0 4px 6px -4px rgba(0, 0, 0, 0.1);
+--shadow-xl:    0 20px 25px -5px rgba(0, 0, 0, 0.1),
+                0 8px 10px -6px rgba(0, 0, 0, 0.1);
+--shadow-2xl:   0 25px 50px -12px rgba(0, 0, 0, 0.25);
+
+SOMBRAS COLORIDAS (GLOW):
+  Azul:    shadow-lg shadow-blue-500/20
+  Roxo:    shadow-lg shadow-purple-500/20
+  Combinado: shadow-[0_0_20px_rgba(59,130,246,0.4)]
+
+SOMBRA DE MODAL:
+  shadow-2xl shadow-black/50
+
+================================================================================
+                    6. ANIMACOES E TRANSICOES
+================================================================================
+
+--------------------------------------------------------------------------------
+DURACOES
+--------------------------------------------------------------------------------
+--duration-75:    75ms
+--duration-100:   100ms
+--duration-150:   150ms   - Rapida
+--duration-200:   200ms   - Padrao (mais usada)
+--duration-300:   300ms   - Suave
+--duration-500:   500ms   - Lenta
+--duration-700:   700ms
+--duration-1000:  1000ms
+
+--------------------------------------------------------------------------------
+EASING (CURVAS DE ANIMACAO)
+--------------------------------------------------------------------------------
+--ease-linear:    linear
+--ease-in:        cubic-bezier(0.4, 0, 1, 1)
+--ease-out:       cubic-bezier(0, 0, 0.2, 1)
+--ease-in-out:    cubic-bezier(0.4, 0, 0.2, 1)  - Padrao
+
+EASING CUSTOMIZADO (Modal):
+  cubic-bezier(0.16, 1, 0.3, 1)  - Efeito spring
+
+--------------------------------------------------------------------------------
+KEYFRAMES CUSTOMIZADOS
+--------------------------------------------------------------------------------
+
+/* Pulso sutil para botoes com glow */
+@keyframes pulse-subtle {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 35px rgba(59, 130, 246, 0.7),
+                0 0 15px rgba(147, 51, 234, 0.4);
+  }
+}
+
+/* Dots de loading */
+@keyframes loading-dots {
+  0%, 20%, 100% { opacity: 0.2; }
+  50% { opacity: 1; }
+}
+
+/* Fade in do backdrop do modal */
+@keyframes modal-backdrop-fadein {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Aparecimento do conteudo do modal */
+@keyframes modal-content-appear {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* Spin para loading */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+--------------------------------------------------------------------------------
+CLASSES DE ANIMACAO
+--------------------------------------------------------------------------------
+.animate-pulse-subtle {
+  animation: pulse-subtle 2s ease-in-out infinite;
+}
+
+.loading-dots span:nth-child(1) { animation-delay: 0s; }
+.loading-dots span:nth-child(2) { animation-delay: 0.2s; }
+.loading-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+.modal-backdrop-enter {
+  animation: modal-backdrop-fadein 0.2s ease-out forwards;
+}
+
+.modal-content-enter {
+  animation: modal-content-appear 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+--------------------------------------------------------------------------------
+TRANSICOES COMUNS
+--------------------------------------------------------------------------------
+TRANSICAO PADRAO:
+  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  Tailwind: transition-all duration-200
+
+TRANSICAO DE COR:
+  transition: color 150ms ease;
+  Tailwind: transition-colors duration-150
+
+TRANSICAO DE TRANSFORM:
+  transition: transform 200ms ease;
+  Tailwind: transition-transform duration-200
+
+================================================================================
+                    7. COMPONENTES - BOTOES
+================================================================================
+
+--------------------------------------------------------------------------------
+BOTAO PRIMARIO (Principal)
+--------------------------------------------------------------------------------
+CLASSES:
+  bg-gradient-to-r from-blue-500 to-purple-600
+  text-white font-semibold
+  py-3 px-6
+  rounded-lg
+  hover:from-blue-600 hover:to-purple-700
+  transition-all duration-300
+  hover:scale-105
+  hover:shadow-lg hover:shadow-purple-500/25
+
+CSS EQUIVALENTE:
+  background: linear-gradient(to right, #3b82f6, #9333ea);
+  color: white;
+  font-weight: 600;
+  padding: 12px 24px;
+  border-radius: 8px;
+  transition: all 300ms ease;
+
+HOVER:
+  background: linear-gradient(to right, #2563eb, #7e22ce);
+  transform: scale(1.05);
+  box-shadow: 0 10px 15px -3px rgba(147, 51, 234, 0.25);
+
+--------------------------------------------------------------------------------
+BOTAO SECUNDARIO (Outline)
+--------------------------------------------------------------------------------
+CLASSES:
+  bg-transparent
+  border border-slate-700
+  text-slate-300
+  py-3 px-6
+  rounded-lg
+  hover:bg-slate-800
+  hover:border-slate-600
+  transition-all duration-200
+
+CSS EQUIVALENTE:
+  background: transparent;
+  border: 1px solid #334155;
+  color: #cbd5e1;
+  padding: 12px 24px;
+  border-radius: 8px;
+
+HOVER:
+  background: #1e293b;
+  border-color: #475569;
+
+--------------------------------------------------------------------------------
+BOTAO GHOST (Fantasma)
+--------------------------------------------------------------------------------
+CLASSES:
+  bg-transparent
+  text-slate-400
+  py-2 px-4
+  rounded-lg
+  hover:text-slate-200
+  hover:bg-slate-800/50
+  transition-all duration-200
+
+--------------------------------------------------------------------------------
+BOTAO DE NAVEGACAO (Nav)
+--------------------------------------------------------------------------------
+CLASSES:
+  bg-gradient-to-r from-blue-500 to-purple-600
+  text-white
+  h-8 px-3 py-1.5
+  rounded-md
+  text-sm font-medium
+  hover:from-blue-600 hover:to-purple-700
+  transition-all duration-200
+
+--------------------------------------------------------------------------------
+BOTAO GHOST NAV (Com Glow)
+--------------------------------------------------------------------------------
+CLASSES:
+  bg-transparent
+  border border-blue-400/50
+  text-blue-400
+  h-8 px-3 py-1.5
+  rounded-md
+  text-sm font-medium
+  animate-pulse-subtle
+  shadow-[0_0_20px_rgba(59,130,246,0.4)]
+  hover:shadow-[0_0_35px_rgba(59,130,246,0.7),0_0_15px_rgba(147,51,234,0.4)]
+  hover:border-blue-400
+  transition-all duration-300
+
+--------------------------------------------------------------------------------
+BOTAO DANGER (Perigo)
+--------------------------------------------------------------------------------
+CLASSES:
+  bg-red-500
+  text-white
+  py-2 px-4
+  rounded-lg
+  hover:bg-red-600
+  transition-colors duration-200
+
+--------------------------------------------------------------------------------
+TAMANHOS DE BOTAO
+--------------------------------------------------------------------------------
+PEQUENO (sm):
+  h-8 px-3 py-1.5 text-sm
+
+MEDIO (md) - Padrao:
+  h-10 px-4 py-2 text-sm
+
+GRANDE (lg):
+  h-12 px-6 py-3 text-base
+
+EXTRA GRANDE (xl):
+  h-14 px-8 py-4 text-lg
+
+================================================================================
+                    8. COMPONENTES - INPUTS
+================================================================================
+
+--------------------------------------------------------------------------------
+INPUT DE TEXTO PADRAO
+--------------------------------------------------------------------------------
+CLASSES:
+  w-full
+  bg-slate-900
+  border border-slate-800
+  text-slate-100
+  placeholder-slate-500
+  py-3 px-3
+  rounded-lg
+  focus:outline-none
+  focus:border-blue-500
+  focus:ring-1 focus:ring-blue-500
+  transition-all duration-200
+
+CSS EQUIVALENTE:
+  width: 100%;
+  background: #0f172a;
+  border: 1px solid #1e293b;
+  color: #f1f5f9;
+  padding: 12px;
+  border-radius: 8px;
+  transition: all 200ms ease;
+
+FOCUS:
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 1px #3b82f6;
+  outline: none;
+
+PLACEHOLDER:
+  color: #64748b;
+
+--------------------------------------------------------------------------------
+INPUT COM ICONE
+--------------------------------------------------------------------------------
+CONTAINER:
+  relative
+
+ICONE (Esquerda):
+  absolute left-3 top-1/2 -translate-y-1/2
+  text-slate-500
+  h-5 w-5
+
+INPUT:
+  pl-10 (padding-left para icone)
+  ... (resto igual ao padrao)
+
+--------------------------------------------------------------------------------
+INPUT COM ERRO
+--------------------------------------------------------------------------------
+CLASSES ADICIONAIS:
+  border-red-500
+  focus:border-red-500
+  focus:ring-red-500
+
+MENSAGEM DE ERRO:
+  text-red-400 text-sm mt-1
+
+--------------------------------------------------------------------------------
+TEXTAREA
+--------------------------------------------------------------------------------
+CLASSES:
+  w-full
+  bg-slate-900
+  border border-slate-800
+  text-slate-100
+  placeholder-slate-500
+  py-3 px-3
+  rounded-lg
+  min-h-[120px]
+  resize-y
+  focus:outline-none
+  focus:border-blue-500
+  transition-all duration-200
+
+--------------------------------------------------------------------------------
+SELECT
+--------------------------------------------------------------------------------
+CLASSES:
+  w-full
+  bg-slate-900
+  border border-slate-800
+  text-slate-100
+  py-3 px-3
+  rounded-lg
+  appearance-none
+  cursor-pointer
+  focus:outline-none
+  focus:border-blue-500
+  transition-all duration-200
+
+ICONE DE SETA:
+  absolute right-3 top-1/2 -translate-y-1/2
+  pointer-events-none
+  text-slate-500
+
+--------------------------------------------------------------------------------
+CHECKBOX
+--------------------------------------------------------------------------------
+CONTAINER:
+  flex items-center gap-2
+
+INPUT:
+  h-4 w-4
+  rounded
+  border-slate-700
+  bg-slate-900
+  text-blue-500
+  focus:ring-blue-500
+  focus:ring-offset-slate-900
+
+LABEL:
+  text-slate-300 text-sm
+
+================================================================================
+                    9. COMPONENTES - CARDS
+================================================================================
+
+--------------------------------------------------------------------------------
+CARD BASICO
+--------------------------------------------------------------------------------
+CLASSES:
+  bg-slate-900/50
+  border border-slate-800
+  rounded-xl
+  p-6
+  transition-all duration-300
+
+CSS EQUIVALENTE:
+  background: rgba(15, 23, 42, 0.5);
+  border: 1px solid #1e293b;
+  border-radius: 12px;
+  padding: 24px;
+
+--------------------------------------------------------------------------------
+CARD COM HOVER
+--------------------------------------------------------------------------------
+CLASSES ADICIONAIS:
+  hover:border-blue-500/50
+  hover:shadow-lg
+  hover:shadow-blue-500/10
+
+--------------------------------------------------------------------------------
+CARD DE FEATURE (Landing Page)
+--------------------------------------------------------------------------------
+ESTRUTURA:
+<div class="group rounded-xl border border-slate-700 bg-slate-800 p-6
+            transition-all duration-300 hover:border-blue-500/50">
+
+  <!-- Icone -->
+  <div class="mb-4 flex h-12 w-12 items-center justify-center rounded-lg
+              bg-gradient-to-r from-blue-500 to-cyan-400
+              transition-transform group-hover:scale-110">
+    <IconComponent class="h-6 w-6 text-white" />
+  </div>
+
+  <!-- Titulo -->
+  <h3 class="mb-2 text-xl font-semibold text-blue-400">
+    Titulo da Feature
+  </h3>
+
+  <!-- Descricao -->
+  <p class="text-slate-400">
+    Descricao da feature...
+  </p>
+</div>
+
+--------------------------------------------------------------------------------
+CARD DE PRECO/PLANO
+--------------------------------------------------------------------------------
+ESTRUTURA (Plano Normal):
+<div class="relative rounded-2xl border border-slate-800 bg-slate-900 p-8
+            transition-all duration-300 hover:scale-105">
+
+  <!-- Nome do Plano -->
+  <h3 class="mb-2 text-xl font-semibold text-white">
+    Nome do Plano
+  </h3>
+
+  <!-- Preco -->
+  <div class="mb-6">
+    <span class="text-5xl font-bold text-white">R$99</span>
+    <span class="text-slate-400">/mes</span>
+  </div>
+
+  <!-- Features -->
+  <ul class="mb-8 space-y-3">
+    <li class="flex items-center gap-2 text-slate-300">
+      <CheckIcon class="h-5 w-5 text-green-400" />
+      Feature 1
+    </li>
+    ...
+  </ul>
+
+  <!-- Botao -->
+  <button class="w-full bg-gradient-to-r from-blue-500 to-purple-600
+                 text-white py-3 rounded-lg font-semibold">
+    Assinar
+  </button>
+</div>
+
+ESTRUTURA (Plano Popular/Destaque):
+<div class="relative rounded-2xl border-2 border-purple-500
+            bg-gradient-to-br from-purple-900/20 to-blue-900/20 p-8
+            shadow-lg shadow-purple-500/20
+            transition-all duration-300 hover:scale-105">
+
+  <!-- Badge Popular -->
+  <div class="absolute -top-4 left-1/2 -translate-x-1/2
+              bg-gradient-to-r from-purple-500 to-blue-500
+              px-4 py-1 rounded-full text-sm font-semibold text-white">
+    MAIS POPULAR
+  </div>
+
+  ... (resto igual)
+</div>
+
+--------------------------------------------------------------------------------
+CARD DE ESTATISTICA (Dashboard)
+--------------------------------------------------------------------------------
+ESTRUTURA:
+<div class="bg-slate-900/50 border border-slate-800 rounded-lg p-6">
+
+  <!-- Header -->
+  <div class="flex items-center justify-between mb-4">
+    <span class="text-slate-400 text-sm">Label</span>
+    <IconComponent class="h-5 w-5 text-slate-500" />
+  </div>
+
+  <!-- Valor -->
+  <div class="text-3xl font-bold text-white mb-2">
+    1.234
+  </div>
+
+  <!-- Variacao -->
+  <div class="flex items-center gap-1 text-sm text-green-400">
+    <ArrowUpIcon class="h-4 w-4" />
+    +12.5%
+  </div>
+
+  <!-- Barra de Progresso (opcional) -->
+  <div class="mt-4 h-2 rounded-full bg-slate-800">
+    <div class="h-full rounded-full bg-gradient-to-r from-purple-500 to-blue-500"
+         style="width: 75%">
+    </div>
+  </div>
+</div>
+
+================================================================================
+                    10. COMPONENTES - MODAIS
+================================================================================
+
+--------------------------------------------------------------------------------
+ESTRUTURA DO MODAL
+--------------------------------------------------------------------------------
+
+<!-- Backdrop -->
+<div class="fixed inset-0 z-50 bg-slate-950/80
+            backdrop-blur-sm modal-backdrop-enter">
+
+  <!-- Container Centralizado -->
+  <div class="fixed inset-0 z-50 flex items-center justify-center p-4">
+
+    <!-- Conteudo do Modal -->
+    <div class="relative w-full max-w-lg max-h-[calc(100vh-3rem)]
+                overflow-y-auto modal-scrollbar
+                bg-slate-900 border border-slate-700
+                rounded-2xl shadow-2xl shadow-black/50
+                p-6 sm:p-8 modal-content-enter">
+
+      <!-- Botao Fechar -->
+      <button class="absolute top-4 right-4 text-slate-400
+                     hover:text-white transition-colors">
+        <XIcon class="h-6 w-6" />
+      </button>
+
+      <!-- Titulo -->
+      <h2 class="text-2xl font-bold text-white mb-6">
+        Titulo do Modal
+      </h2>
+
+      <!-- Conteudo -->
+      <div class="space-y-4">
+        ...
+      </div>
+
+    </div>
+  </div>
+</div>
+
+--------------------------------------------------------------------------------
+SCROLLBAR CUSTOMIZADA DO MODAL
+--------------------------------------------------------------------------------
+.modal-scrollbar::-webkit-scrollbar {
+  width: 8px;
+}
+
+.modal-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.modal-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.4);
+  border-radius: 4px;
+}
+
+.modal-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.6);
+}
+
+--------------------------------------------------------------------------------
+VARIANTES DE TAMANHO
+--------------------------------------------------------------------------------
+PEQUENO:   max-w-sm   (384px)
+MEDIO:     max-w-md   (448px)
+PADRAO:    max-w-lg   (512px)
+GRANDE:    max-w-xl   (576px)
+EXTRA:     max-w-2xl  (672px)
+
+================================================================================
+                    11. COMPONENTES - AVATARES
+================================================================================
+
+--------------------------------------------------------------------------------
+AVATAR PADRAO
+--------------------------------------------------------------------------------
+CLASSES:
+  h-10 w-10
+  rounded-full
+  bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500
+  flex items-center justify-center
+  text-white font-bold text-sm
+  ring-2 ring-purple-500/30
+
+CSS EQUIVALENTE:
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(to bottom right, #3b82f6, #a855f7, #ec4899);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 700;
+  box-shadow: 0 0 0 2px rgba(168, 85, 247, 0.3);
+
+--------------------------------------------------------------------------------
+TAMANHOS
+--------------------------------------------------------------------------------
+EXTRA PEQUENO (xs):
+  h-6 w-6 text-xs
+
+PEQUENO (sm):
+  h-8 w-8 text-xs
+
+MEDIO (md) - Padrao:
+  h-10 w-10 text-sm
+
+GRANDE (lg):
+  h-12 w-12 text-base
+
+EXTRA GRANDE (xl):
+  h-16 w-16 text-lg
+
+GIGANTE (2xl):
+  h-20 w-20 text-xl
+
+--------------------------------------------------------------------------------
+AVATAR COM IMAGEM
+--------------------------------------------------------------------------------
+<div class="h-10 w-10 rounded-full overflow-hidden
+            ring-2 ring-purple-500/30">
+  <img src="..." alt="..." class="w-full h-full object-cover" />
+</div>
+
+--------------------------------------------------------------------------------
+AVATAR COM STATUS
+--------------------------------------------------------------------------------
+<div class="relative">
+  <div class="h-10 w-10 rounded-full bg-gradient-to-br
+              from-blue-500 via-purple-500 to-pink-500
+              flex items-center justify-center text-white font-bold">
+    JD
+  </div>
+  <!-- Status Indicator -->
+  <div class="absolute bottom-0 right-0 h-3 w-3
+              rounded-full bg-green-500
+              border-2 border-slate-900">
+  </div>
+</div>
+
+================================================================================
+                    12. NAVBAR (CABECALHO)
+================================================================================
+
+--------------------------------------------------------------------------------
+ESTRUTURA DA NAVBAR
+--------------------------------------------------------------------------------
+<header class="fixed top-0 z-50 w-full
+               bg-black/95 backdrop-blur-sm
+               border-b border-slate-800">
+
+  <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+    <div class="flex h-16 items-center justify-between">
+
+      <!-- Logo -->
+      <a href="/" class="flex items-center gap-2">
+        <span class="bg-gradient-to-r from-blue-400 to-purple-400
+                     bg-clip-text text-xl font-bold text-transparent">
+          MyEasyAI
+        </span>
+      </a>
+
+      <!-- Links de Navegacao (Desktop) -->
+      <nav class="hidden md:flex items-center gap-8">
+        <a href="#features"
+           class="text-slate-300 hover:text-blue-400
+                  transition-colors duration-200">
+          Recursos
+        </a>
+        <a href="#pricing"
+           class="text-slate-300 hover:text-blue-400
+                  transition-colors duration-200">
+          Precos
+        </a>
+        ...
+      </nav>
+
+      <!-- Acoes (Direita) -->
+      <div class="flex items-center gap-4">
+
+        <!-- Botao Login -->
+        <button class="text-slate-300 hover:text-white
+                       transition-colors duration-200">
+          Entrar
+        </button>
+
+        <!-- Botao Cadastro -->
+        <button class="bg-gradient-to-r from-blue-500 to-purple-600
+                       text-white px-4 py-2 rounded-lg font-medium
+                       hover:from-blue-600 hover:to-purple-700
+                       transition-all duration-200">
+          Cadastrar
+        </button>
+
+        <!-- Avatar (se logado) -->
+        <div class="h-9 w-9 rounded-full
+                    bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500
+                    flex items-center justify-center text-white font-bold text-sm
+                    ring-2 ring-purple-500/30 cursor-pointer">
+          JD
+        </div>
+
+      </div>
+
+      <!-- Menu Mobile (Hamburguer) -->
+      <button class="md:hidden text-slate-300">
+        <MenuIcon class="h-6 w-6" />
+      </button>
+
+    </div>
+  </div>
+</header>
+
+--------------------------------------------------------------------------------
+ESTILOS DA NAVBAR
+--------------------------------------------------------------------------------
+FUNDO:
+  background: rgba(0, 0, 0, 0.95);
+  backdrop-filter: blur(4px);
+  border-bottom: 1px solid #1e293b;
+
+ALTURA:
+  height: 64px (h-16)
+
+LOGO GRADIENTE:
+  background: linear-gradient(to right, #60a5fa, #c084fc);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+
+LINK DE NAVEGACAO:
+  color: #cbd5e1;
+  transition: color 200ms;
+
+  &:hover {
+    color: #60a5fa;
+  }
+
+================================================================================
+                    13. LANDING PAGE - HERO
+================================================================================
+
+--------------------------------------------------------------------------------
+ESTRUTURA DO HERO
+--------------------------------------------------------------------------------
+<section class="relative min-h-screen flex items-center justify-center
+                px-4 pt-24 pb-20 sm:px-6 lg:px-8
+                bg-gradient-to-b from-transparent via-slate-900/20 to-transparent">
+
+  <div class="mx-auto max-w-7xl text-center">
+
+    <!-- Badge/Tag -->
+    <div class="mb-6 inline-flex items-center gap-2
+                rounded-full border border-slate-700
+                bg-slate-800/50 px-4 py-2 text-sm text-slate-300">
+      <SparkleIcon class="h-4 w-4 text-purple-400" />
+      Novidade: Recursos de IA
+    </div>
+
+    <!-- Titulo Principal -->
+    <h1 class="mb-6 text-5xl font-bold leading-tight
+               text-slate-100 md:text-6xl lg:text-7xl">
+      Transforme sua ideia em
+      <span class="bg-gradient-to-r from-blue-400 to-purple-400
+                   bg-clip-text text-transparent">
+        realidade
+      </span>
+    </h1>
+
+    <!-- Subtitulo -->
+    <p class="mx-auto mb-10 max-w-2xl text-xl text-slate-400 leading-relaxed">
+      Crie sites profissionais em minutos usando inteligencia artificial.
+      Sem codigo, sem complicacao.
+    </p>
+
+    <!-- Botoes CTA -->
+    <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
+
+      <!-- CTA Primario -->
+      <button class="w-full sm:w-auto bg-gradient-to-r from-blue-500 to-purple-600
+                     text-white px-8 py-4 rounded-lg font-semibold text-lg
+                     hover:from-blue-600 hover:to-purple-700
+                     hover:scale-105 hover:shadow-lg hover:shadow-purple-500/25
+                     transition-all duration-300">
+        Comecar Gratis
+      </button>
+
+      <!-- CTA Secundario -->
+      <button class="w-full sm:w-auto border border-slate-700
+                     text-slate-300 px-8 py-4 rounded-lg font-semibold text-lg
+                     hover:bg-slate-800 hover:border-slate-600
+                     transition-all duration-200">
+        Ver Demo
+      </button>
+
+    </div>
+
+    <!-- Indicadores/Stats -->
+    <div class="mt-12 flex flex-wrap justify-center gap-8 text-slate-400">
+      <div class="flex items-center gap-2">
+        <CheckIcon class="h-5 w-5 text-green-400" />
+        <span>+10.000 usuarios</span>
+      </div>
+      <div class="flex items-center gap-2">
+        <CheckIcon class="h-5 w-5 text-green-400" />
+        <span>4.9/5 avaliacao</span>
+      </div>
+      <div class="flex items-center gap-2">
+        <CheckIcon class="h-5 w-5 text-green-400" />
+        <span>Suporte 24/7</span>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+--------------------------------------------------------------------------------
+ESTILOS DO HERO
+--------------------------------------------------------------------------------
+FUNDO GRADIENTE:
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    rgba(15, 23, 42, 0.2),
+    transparent
+  );
+
+TITULO GRADIENTE:
+  .text-gradient {
+    background: linear-gradient(to right, #60a5fa, #c084fc);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+================================================================================
+                    14. LANDING PAGE - FEATURES
+================================================================================
+
+--------------------------------------------------------------------------------
+ESTRUTURA DA SECAO DE FEATURES
+--------------------------------------------------------------------------------
+<section class="py-20 px-4 sm:px-6 lg:px-8
+                bg-gradient-to-b from-slate-900/30 via-slate-800/40 to-slate-900/30">
+
+  <div class="mx-auto max-w-7xl">
+
+    <!-- Cabecalho da Secao -->
+    <div class="text-center mb-16">
+      <h2 class="text-3xl font-bold text-white mb-4 md:text-4xl">
+        Recursos Poderosos
+      </h2>
+      <p class="text-slate-400 text-lg max-w-2xl mx-auto">
+        Tudo que voce precisa para criar sites incriveis
+      </p>
+    </div>
+
+    <!-- Grid de Features -->
+    <div class="grid gap-8 md:grid-cols-2 lg:grid-cols-4">
+
+      <!-- Feature Card 1 -->
+      <div class="group rounded-xl border border-slate-700 bg-slate-800 p-6
+                  transition-all duration-300 hover:border-blue-500/50">
+        <div class="mb-4 flex h-12 w-12 items-center justify-center rounded-lg
+                    bg-gradient-to-r from-blue-500 to-cyan-400
+                    transition-transform group-hover:scale-110">
+          <ZapIcon class="h-6 w-6 text-white" />
+        </div>
+        <h3 class="mb-2 text-xl font-semibold text-blue-400">
+          Super Rapido
+        </h3>
+        <p class="text-slate-400">
+          Sites gerados em segundos com IA avancada
+        </p>
+      </div>
+
+      <!-- Feature Card 2 -->
+      <div class="group rounded-xl border border-slate-700 bg-slate-800 p-6
+                  transition-all duration-300 hover:border-purple-500/50">
+        <div class="mb-4 flex h-12 w-12 items-center justify-center rounded-lg
+                    bg-gradient-to-r from-purple-500 to-pink-400
+                    transition-transform group-hover:scale-110">
+          <PaletteIcon class="h-6 w-6 text-white" />
+        </div>
+        <h3 class="mb-2 text-xl font-semibold text-purple-400">
+          Design Profissional
+        </h3>
+        <p class="text-slate-400">
+          Templates modernos e personalizaveis
+        </p>
+      </div>
+
+      <!-- Feature Card 3 -->
+      <div class="group rounded-xl border border-slate-700 bg-slate-800 p-6
+                  transition-all duration-300 hover:border-cyan-500/50">
+        <div class="mb-4 flex h-12 w-12 items-center justify-center rounded-lg
+                    bg-gradient-to-r from-cyan-500 to-blue-400
+                    transition-transform group-hover:scale-110">
+          <CodeIcon class="h-6 w-6 text-white" />
+        </div>
+        <h3 class="mb-2 text-xl font-semibold text-cyan-400">
+          Sem Codigo
+        </h3>
+        <p class="text-slate-400">
+          Interface intuitiva, sem conhecimento tecnico
+        </p>
+      </div>
+
+      <!-- Feature Card 4 -->
+      <div class="group rounded-xl border border-slate-700 bg-slate-800 p-6
+                  transition-all duration-300 hover:border-green-500/50">
+        <div class="mb-4 flex h-12 w-12 items-center justify-center rounded-lg
+                    bg-gradient-to-r from-green-500 to-emerald-400
+                    transition-transform group-hover:scale-110">
+          <RocketIcon class="h-6 w-6 text-white" />
+        </div>
+        <h3 class="mb-2 text-xl font-semibold text-green-400">
+          Deploy Instantaneo
+        </h3>
+        <p class="text-slate-400">
+          Publique seu site com um clique
+        </p>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+================================================================================
+                    15. LANDING PAGE - PACOTES/PRECOS
+================================================================================
+
+--------------------------------------------------------------------------------
+ESTRUTURA DA SECAO DE PRECOS
+--------------------------------------------------------------------------------
+<section class="py-20 px-4 sm:px-6 lg:px-8
+                bg-gradient-to-b from-slate-900/30 via-slate-800/40 to-slate-900/30">
+
+  <div class="mx-auto max-w-7xl">
+
+    <!-- Cabecalho -->
+    <div class="text-center mb-16">
+      <h2 class="text-3xl font-bold text-white mb-4 md:text-4xl">
+        Escolha seu Plano
+      </h2>
+      <p class="text-slate-400 text-lg">
+        Comece gratis, escale quando precisar
+      </p>
+    </div>
+
+    <!-- Grid de Planos -->
+    <div class="grid gap-8 md:grid-cols-2 lg:grid-cols-4">
+
+      <!-- Plano Free -->
+      <div class="rounded-2xl border border-slate-800 bg-slate-900 p-8
+                  transition-all duration-300 hover:scale-105">
+        <h3 class="text-xl font-semibold text-white mb-2">Gratis</h3>
+        <div class="mb-6">
+          <span class="text-5xl font-bold text-white">R$0</span>
+          <span class="text-slate-400">/mes</span>
+        </div>
+        <ul class="space-y-3 mb-8">
+          <li class="flex items-center gap-2 text-slate-300">
+            <CheckIcon class="h-5 w-5 text-green-400" />
+            1 site
+          </li>
+          <li class="flex items-center gap-2 text-slate-300">
+            <CheckIcon class="h-5 w-5 text-green-400" />
+            Templates basicos
+          </li>
+          <li class="flex items-center gap-2 text-slate-500">
+            <XIcon class="h-5 w-5" />
+            Dominio personalizado
+          </li>
+        </ul>
+        <button class="w-full border border-slate-700 text-slate-300
+                       py-3 rounded-lg font-semibold
+                       hover:bg-slate-800 transition-colors">
+          Comecar Gratis
+        </button>
+      </div>
+
+      <!-- Plano Pro (Popular) -->
+      <div class="relative rounded-2xl border-2 border-purple-500
+                  bg-gradient-to-br from-purple-900/20 to-blue-900/20 p-8
+                  shadow-lg shadow-purple-500/20
+                  transition-all duration-300 hover:scale-105">
+
+        <!-- Badge Popular -->
+        <div class="absolute -top-4 left-1/2 -translate-x-1/2
+                    bg-gradient-to-r from-purple-500 to-blue-500
+                    px-4 py-1 rounded-full text-sm font-semibold text-white">
+          MAIS POPULAR
+        </div>
+
+        <h3 class="text-xl font-semibold text-white mb-2">Pro</h3>
+        <div class="mb-6">
+          <span class="text-5xl font-bold text-white">R$49</span>
+          <span class="text-slate-400">/mes</span>
+        </div>
+        <ul class="space-y-3 mb-8">
+          <li class="flex items-center gap-2 text-slate-300">
+            <CheckIcon class="h-5 w-5 text-green-400" />
+            10 sites
+          </li>
+          <li class="flex items-center gap-2 text-slate-300">
+            <CheckIcon class="h-5 w-5 text-green-400" />
+            Todos os templates
+          </li>
+          <li class="flex items-center gap-2 text-slate-300">
+            <CheckIcon class="h-5 w-5 text-green-400" />
+            Dominio personalizado
+          </li>
+          <li class="flex items-center gap-2 text-slate-300">
+            <CheckIcon class="h-5 w-5 text-green-400" />
+            Suporte prioritario
+          </li>
+        </ul>
+        <button class="w-full bg-gradient-to-r from-blue-500 to-purple-600
+                       text-white py-3 rounded-lg font-semibold
+                       hover:from-blue-600 hover:to-purple-700
+                       transition-all duration-200">
+          Assinar Pro
+        </button>
+      </div>
+
+      <!-- Outros planos... -->
+
+    </div>
+  </div>
+</section>
+
+================================================================================
+                    16. LANDING PAGE - FOOTER
+================================================================================
+
+--------------------------------------------------------------------------------
+ESTRUTURA DO FOOTER
+--------------------------------------------------------------------------------
+<footer class="bg-slate-900 border-t border-slate-800 py-16 px-4 sm:px-6 lg:px-8">
+
+  <div class="mx-auto max-w-7xl">
+
+    <div class="grid gap-8 md:grid-cols-4">
+
+      <!-- Coluna 1: Logo e Descricao -->
+      <div class="col-span-1 md:col-span-2">
+        <div class="mb-4">
+          <span class="bg-gradient-to-r from-blue-400 to-purple-400
+                       bg-clip-text text-2xl font-bold text-transparent">
+            MyEasyAI
+          </span>
+        </div>
+        <p class="text-slate-400 mb-6 max-w-md">
+          Transforme suas ideias em sites profissionais usando
+          inteligencia artificial avancada.
+        </p>
+        <!-- Redes Sociais -->
+        <div class="flex gap-4">
+          <a href="#" class="h-10 w-10 rounded-lg bg-black
+                            flex items-center justify-center
+                            hover:bg-slate-800 transition-colors">
+            <TwitterIcon class="h-5 w-5 text-white" />
+          </a>
+          <a href="#" class="h-10 w-10 rounded-lg bg-[#FF0000]
+                            flex items-center justify-center
+                            hover:opacity-80 transition-opacity">
+            <YoutubeIcon class="h-5 w-5 text-white" />
+          </a>
+          <a href="#" class="h-10 w-10 rounded-lg
+                            bg-gradient-to-br from-purple-600 via-pink-600 to-orange-500
+                            flex items-center justify-center
+                            hover:opacity-80 transition-opacity">
+            <InstagramIcon class="h-5 w-5 text-white" />
+          </a>
+        </div>
+      </div>
+
+      <!-- Coluna 2: Links -->
+      <div>
+        <h4 class="text-white font-semibold mb-4">Produto</h4>
+        <ul class="space-y-2">
+          <li>
+            <a href="#" class="text-slate-400 hover:text-white transition-colors">
+              Recursos
+            </a>
+          </li>
+          <li>
+            <a href="#" class="text-slate-400 hover:text-white transition-colors">
+              Precos
+            </a>
+          </li>
+          <li>
+            <a href="#" class="text-slate-400 hover:text-white transition-colors">
+              Templates
+            </a>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Coluna 3: Suporte -->
+      <div>
+        <h4 class="text-white font-semibold mb-4">Suporte</h4>
+        <ul class="space-y-2">
+          <li>
+            <a href="#" class="text-slate-400 hover:text-white transition-colors">
+              Central de Ajuda
+            </a>
+          </li>
+          <li>
+            <a href="#" class="text-slate-400 hover:text-white transition-colors">
+              Contato
+            </a>
+          </li>
+          <li>
+            <a href="#" class="text-slate-400 hover:text-white transition-colors">
+              Termos de Uso
+            </a>
+          </li>
+        </ul>
+      </div>
+
+    </div>
+
+    <!-- Copyright -->
+    <div class="mt-12 pt-8 border-t border-slate-800
+                text-center text-slate-500 text-sm">
+      © 2025 MyEasyAI. Todos os direitos reservados.
+    </div>
+
+  </div>
+</footer>
+
+================================================================================
+                    17. DASHBOARD - HEADER
+================================================================================
+
+--------------------------------------------------------------------------------
+ESTRUTURA DO HEADER DO DASHBOARD
+--------------------------------------------------------------------------------
+<header class="relative z-50 bg-black/50 backdrop-blur-sm
+               border-b border-slate-800">
+
+  <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+    <div class="flex h-16 items-center justify-between">
+
+      <!-- Logo -->
+      <a href="/" class="flex items-center gap-2">
+        <span class="bg-gradient-to-r from-blue-400 to-purple-400
+                     bg-clip-text text-xl font-bold text-transparent">
+          MyEasyAI
+        </span>
+      </a>
+
+      <!-- Navegacao Central (Tabs) -->
+      <nav class="hidden md:flex items-center gap-2">
+        <!-- Tab Ativa -->
+        <button class="px-4 py-2 rounded-lg text-sm font-medium
+                       bg-gradient-to-r from-blue-500 to-purple-600 text-white">
+          Visao Geral
+        </button>
+        <!-- Tabs Inativas -->
+        <button class="px-4 py-2 rounded-lg text-sm font-medium
+                       text-slate-400 hover:text-slate-200
+                       hover:bg-slate-800/50 transition-colors">
+          Produtos
+        </button>
+        <button class="px-4 py-2 rounded-lg text-sm font-medium
+                       text-slate-400 hover:text-slate-200
+                       hover:bg-slate-800/50 transition-colors">
+          Assinatura
+        </button>
+      </nav>
+
+      <!-- Acoes (Direita) -->
+      <div class="flex items-center gap-4">
+
+        <!-- Notificacoes -->
+        <button class="relative p-2 text-slate-400 hover:text-white
+                       transition-colors">
+          <BellIcon class="h-5 w-5" />
+          <!-- Badge de contagem -->
+          <span class="absolute -top-1 -right-1 h-4 w-4
+                       bg-red-500 rounded-full text-xs text-white
+                       flex items-center justify-center">
+            3
+          </span>
+        </button>
+
+        <!-- Avatar com Dropdown -->
+        <div class="relative">
+          <button class="h-9 w-9 rounded-full
+                         bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500
+                         flex items-center justify-center text-white font-bold text-sm
+                         ring-2 ring-purple-500/30
+                         hover:ring-purple-500/50 transition-all">
+            JD
+          </button>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+</header>
+
+================================================================================
+                    18. DASHBOARD - NAVEGACAO
+================================================================================
+
+--------------------------------------------------------------------------------
+TABS DE NAVEGACAO
+--------------------------------------------------------------------------------
+<nav class="flex items-center gap-2 overflow-x-auto">
+
+  <!-- Tab Ativa -->
+  <button class="flex items-center gap-2 px-4 py-2 rounded-lg
+                 text-sm font-medium whitespace-nowrap
+                 bg-gradient-to-r from-blue-500 to-purple-600 text-white
+                 transition-all duration-200">
+    <HomeIcon class="h-4 w-4" />
+    Visao Geral
+  </button>
+
+  <!-- Tab Inativa -->
+  <button class="flex items-center gap-2 px-4 py-2 rounded-lg
+                 text-sm font-medium whitespace-nowrap
+                 text-slate-400 hover:text-slate-200
+                 hover:bg-slate-800/50
+                 transition-all duration-200">
+    <BoxIcon class="h-4 w-4" />
+    Produtos
+  </button>
+
+  <!-- Tab Inativa -->
+  <button class="flex items-center gap-2 px-4 py-2 rounded-lg
+                 text-sm font-medium whitespace-nowrap
+                 text-slate-400 hover:text-slate-200
+                 hover:bg-slate-800/50
+                 transition-all duration-200">
+    <CreditCardIcon class="h-4 w-4" />
+    Assinatura
+  </button>
+
+  <!-- Tab Inativa -->
+  <button class="flex items-center gap-2 px-4 py-2 rounded-lg
+                 text-sm font-medium whitespace-nowrap
+                 text-slate-400 hover:text-slate-200
+                 hover:bg-slate-800/50
+                 transition-all duration-200">
+    <ChartIcon class="h-4 w-4" />
+    Uso
+  </button>
+
+  <!-- Tab Inativa -->
+  <button class="flex items-center gap-2 px-4 py-2 rounded-lg
+                 text-sm font-medium whitespace-nowrap
+                 text-slate-400 hover:text-slate-200
+                 hover:bg-slate-800/50
+                 transition-all duration-200">
+    <UserIcon class="h-4 w-4" />
+    Perfil
+  </button>
+
+  <!-- Tab Inativa -->
+  <button class="flex items-center gap-2 px-4 py-2 rounded-lg
+                 text-sm font-medium whitespace-nowrap
+                 text-slate-400 hover:text-slate-200
+                 hover:bg-slate-800/50
+                 transition-all duration-200">
+    <SettingsIcon class="h-4 w-4" />
+    Configuracoes
+  </button>
+
+</nav>
+
+================================================================================
+                    19. DASHBOARD - CARDS DE ESTATISTICAS
+================================================================================
+
+--------------------------------------------------------------------------------
+GRID DE STATS
+--------------------------------------------------------------------------------
+<div class="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+
+  <!-- Stat Card 1 -->
+  <div class="bg-slate-900/50 border border-slate-800 rounded-lg p-6">
+    <div class="flex items-center justify-between mb-4">
+      <span class="text-slate-400 text-sm">Sites Criados</span>
+      <GlobeIcon class="h-5 w-5 text-blue-400" />
+    </div>
+    <div class="text-3xl font-bold text-white mb-2">
+      12
+    </div>
+    <div class="flex items-center gap-1 text-sm text-green-400">
+      <ArrowUpIcon class="h-4 w-4" />
+      +3 este mes
+    </div>
+  </div>
+
+  <!-- Stat Card 2 -->
+  <div class="bg-slate-900/50 border border-slate-800 rounded-lg p-6">
+    <div class="flex items-center justify-between mb-4">
+      <span class="text-slate-400 text-sm">Visitantes</span>
+      <UsersIcon class="h-5 w-5 text-purple-400" />
+    </div>
+    <div class="text-3xl font-bold text-white mb-2">
+      8.432
+    </div>
+    <div class="flex items-center gap-1 text-sm text-green-400">
+      <ArrowUpIcon class="h-4 w-4" />
+      +12.5%
+    </div>
+  </div>
+
+  <!-- Stat Card 3 com Barra de Progresso -->
+  <div class="bg-slate-900/50 border border-slate-800 rounded-lg p-6">
+    <div class="flex items-center justify-between mb-4">
+      <span class="text-slate-400 text-sm">Uso de IA</span>
+      <SparkleIcon class="h-5 w-5 text-cyan-400" />
+    </div>
+    <div class="text-3xl font-bold text-white mb-2">
+      7.500 / 10.000
+    </div>
+    <div class="text-sm text-slate-500 mb-3">
+      tokens usados
+    </div>
+    <!-- Barra de Progresso -->
+    <div class="h-2 rounded-full bg-slate-800">
+      <div class="h-full rounded-full bg-gradient-to-r from-purple-500 to-blue-500"
+           style="width: 75%">
+      </div>
+    </div>
+  </div>
+
+  <!-- Stat Card 4 -->
+  <div class="bg-slate-900/50 border border-slate-800 rounded-lg p-6">
+    <div class="flex items-center justify-between mb-4">
+      <span class="text-slate-400 text-sm">Plano Atual</span>
+      <CrownIcon class="h-5 w-5 text-yellow-400" />
+    </div>
+    <div class="text-3xl font-bold text-white mb-2">
+      Pro
+    </div>
+    <div class="text-sm text-slate-500">
+      Renova em 15 dias
+    </div>
+  </div>
+
+</div>
+
+================================================================================
+                    20. DASHBOARD - DROPDOWN DO USUARIO
+================================================================================
+
+--------------------------------------------------------------------------------
+ESTRUTURA DO DROPDOWN
+--------------------------------------------------------------------------------
+<div class="absolute right-0 mt-2 w-64
+            animate-in fade-in slide-in-from-top-2 duration-200
+            bg-slate-800/95 backdrop-blur-xl
+            border border-slate-700
+            rounded-xl shadow-2xl shadow-black/50
+            overflow-hidden">
+
+  <!-- Secao do Perfil -->
+  <div class="border-b border-slate-700 p-4">
+    <div class="flex items-center gap-3">
+      <div class="h-12 w-12 rounded-full
+                  bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500
+                  flex items-center justify-center text-white font-bold">
+        JD
+      </div>
+      <div>
+        <p class="font-semibold text-white">John Doe</p>
+        <p class="text-sm text-slate-400">john@email.com</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Menu Items -->
+  <div class="py-2">
+
+    <a href="/dashboard/profile"
+       class="flex items-center gap-3 px-4 py-3
+              text-slate-300 hover:bg-slate-700 transition-colors">
+      <UserIcon class="h-5 w-5" />
+      Meu Perfil
+    </a>
+
+    <a href="/dashboard/settings"
+       class="flex items-center gap-3 px-4 py-3
+              text-slate-300 hover:bg-slate-700 transition-colors">
+      <SettingsIcon class="h-5 w-5" />
+      Configuracoes
+    </a>
+
+    <a href="/dashboard/subscription"
+       class="flex items-center gap-3 px-4 py-3
+              text-slate-300 hover:bg-slate-700 transition-colors">
+      <CreditCardIcon class="h-5 w-5" />
+      Assinatura
+    </a>
+
+  </div>
+
+  <!-- Divider -->
+  <div class="border-t border-slate-700"></div>
+
+  <!-- Logout -->
+  <div class="py-2">
+    <button class="flex items-center gap-3 px-4 py-3 w-full
+                   text-red-400 hover:bg-red-500/10 transition-colors">
+      <LogoutIcon class="h-5 w-5" />
+      Sair
+    </button>
+  </div>
+
+</div>
+
+================================================================================
+                    21. EFEITOS ESPECIAIS
+================================================================================
+
+--------------------------------------------------------------------------------
+GLOW EFFECTS (BRILHO)
+--------------------------------------------------------------------------------
+/* Glow Azul */
+.glow-blue {
+  box-shadow: 0 0 20px rgba(59, 130, 246, 0.4);
+}
+
+/* Glow Roxo */
+.glow-purple {
+  box-shadow: 0 0 20px rgba(147, 51, 234, 0.4);
+}
+
+/* Glow Combinado (Azul + Roxo) */
+.glow-primary {
+  box-shadow:
+    0 0 20px rgba(59, 130, 246, 0.4),
+    0 0 40px rgba(147, 51, 234, 0.2);
+}
+
+/* Glow Intenso (Hover) */
+.glow-intense {
+  box-shadow:
+    0 0 35px rgba(59, 130, 246, 0.7),
+    0 0 15px rgba(147, 51, 234, 0.4);
+}
+
+--------------------------------------------------------------------------------
+GLASSMORPHISM (VIDRO)
+--------------------------------------------------------------------------------
+/* Vidro Leve */
+.glass-light {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(4px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Vidro Escuro */
+.glass-dark {
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Navbar Glass */
+.navbar-glass {
+  background: rgba(0, 0, 0, 0.95);
+  backdrop-filter: blur(4px);
+}
+
+/* Modal Glass */
+.modal-glass {
+  background: rgba(30, 41, 59, 0.95);
+  backdrop-filter: blur(16px);
+}
+
+--------------------------------------------------------------------------------
+GRADIENTE DE TEXTO
+--------------------------------------------------------------------------------
+.text-gradient {
+  background: linear-gradient(to right, #60a5fa, #c084fc);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.text-gradient-vibrant {
+  background: linear-gradient(135deg, #3b82f6, #8b5cf6, #ec4899);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+--------------------------------------------------------------------------------
+OVERLAY GRADIENTE
+--------------------------------------------------------------------------------
+/* Overlay para Cards */
+.card-overlay {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    to bottom right,
+    rgba(59, 130, 246, 0.1),
+    rgba(147, 51, 234, 0.1)
+  );
+  pointer-events: none;
+}
+
+/* Overlay para Hero */
+.hero-overlay {
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    rgba(0, 0, 0, 0.5)
+  );
+}
+
+--------------------------------------------------------------------------------
+PULSE ANIMATION PARA BOTAO CTA
+--------------------------------------------------------------------------------
+.btn-pulse {
+  animation: pulse-subtle 2s ease-in-out infinite;
+  box-shadow: 0 0 20px rgba(59, 130, 246, 0.4);
+}
+
+.btn-pulse:hover {
+  animation: none;
+  box-shadow:
+    0 0 35px rgba(59, 130, 246, 0.7),
+    0 0 15px rgba(147, 51, 234, 0.4);
+}
+
+================================================================================
+                    22. RESPONSIVIDADE
+================================================================================
+
+--------------------------------------------------------------------------------
+BREAKPOINTS
+--------------------------------------------------------------------------------
+--breakpoint-sm:   640px   (Celulares grandes)
+--breakpoint-md:   768px   (Tablets)
+--breakpoint-lg:   1024px  (Desktops pequenos)
+--breakpoint-xl:   1280px  (Desktops)
+--breakpoint-2xl:  1536px  (Monitores grandes)
+
+--------------------------------------------------------------------------------
+PADROES RESPONSIVOS COMUNS
+--------------------------------------------------------------------------------
+
+/* Padding de Pagina */
+.page-padding {
+  padding-left: 1rem;    /* Mobile: 16px */
+  padding-right: 1rem;
+}
+@media (min-width: 640px) {
+  .page-padding {
+    padding-left: 1.5rem;  /* sm: 24px */
+    padding-right: 1.5rem;
+  }
+}
+@media (min-width: 1024px) {
+  .page-padding {
+    padding-left: 2rem;    /* lg: 32px */
+    padding-right: 2rem;
+  }
+}
+
+/* Grid Responsivo */
+.responsive-grid {
+  display: grid;
+  gap: 2rem;
+  grid-template-columns: 1fr;  /* Mobile: 1 coluna */
+}
+@media (min-width: 768px) {
+  .responsive-grid {
+    grid-template-columns: repeat(2, 1fr);  /* md: 2 colunas */
+  }
+}
+@media (min-width: 1024px) {
+  .responsive-grid {
+    grid-template-columns: repeat(3, 1fr);  /* lg: 3 colunas */
+  }
+}
+@media (min-width: 1280px) {
+  .responsive-grid {
+    grid-template-columns: repeat(4, 1fr);  /* xl: 4 colunas */
+  }
+}
+
+/* Texto Responsivo */
+.responsive-heading {
+  font-size: 2.25rem;   /* Mobile: 36px */
+  line-height: 1.2;
+}
+@media (min-width: 768px) {
+  .responsive-heading {
+    font-size: 3rem;     /* md: 48px */
+  }
+}
+@media (min-width: 1024px) {
+  .responsive-heading {
+    font-size: 3.75rem;  /* lg: 60px */
+  }
+}
+
+/* Flex Direction */
+.responsive-flex {
+  display: flex;
+  flex-direction: column;  /* Mobile: vertical */
+  gap: 1rem;
+}
+@media (min-width: 640px) {
+  .responsive-flex {
+    flex-direction: row;   /* sm+: horizontal */
+  }
+}
+
+/* Esconder/Mostrar */
+.hide-mobile {
+  display: none;
+}
+@media (min-width: 768px) {
+  .hide-mobile {
+    display: block;
+  }
+}
+
+.hide-desktop {
+  display: block;
+}
+@media (min-width: 768px) {
+  .hide-desktop {
+    display: none;
+  }
+}
+
+================================================================================
+                    23. PROMPT PARA REPLICAR O DESIGN
+================================================================================
+
+Use o seguinte prompt para replicar o design em outro projeto:
+
+--------------------------------------------------------------------------------
+PROMPT PARA GERACAO DE DESIGN SIMILAR
+--------------------------------------------------------------------------------
+
+Crie um design moderno de aplicacao web com as seguintes caracteristicas:
+
+TEMA GERAL:
+- Modo escuro (dark mode) como padrao
+- Fundo principal preto (#000000)
+- Superficies em tons de slate/cinza escuro (#1e293b, #0f172a)
+- Acentos em gradiente azul-para-roxo (#3b82f6 -> #9333ea)
+
+CORES:
+- Primary: Azul #3b82f6
+- Secondary: Roxo #a855f7
+- Sucesso: Verde #10b981
+- Erro: Vermelho #ef4444
+- Texto Principal: #f1f5f9
+- Texto Secundario: #94a3b8
+- Bordas: #334155
+
+TIPOGRAFIA:
+- Fonte: Inter (Google Fonts)
+- Titulos: Bold (700), tamanhos 3xl-7xl
+- Texto: Regular (400) e Medium (500)
+
+COMPONENTES:
+- Botoes com gradiente azul-roxo, rounded-lg, hover com scale
+- Cards com fundo semi-transparente, borda slate, rounded-xl
+- Inputs com fundo slate-900, borda slate-800, focus em azul
+- Modais com backdrop blur e animacao de entrada
+
+EFEITOS ESPECIAIS:
+- Glassmorphism (backdrop-blur) na navbar e modais
+- Glow effects nos botoes importantes (box-shadow colorido)
+- Gradientes de texto para titulos destacados
+- Animacoes suaves de 200-300ms
+- Hover com scale (1.05) nos cards e botoes
+
+RESPONSIVIDADE:
+- Mobile-first
+- Breakpoints: 640px, 768px, 1024px, 1280px
+- Grid adaptativo: 1 -> 2 -> 3 -> 4 colunas
+
+NAVBAR:
+- Fixa no topo com backdrop-blur
+- Logo com gradiente de texto azul-roxo
+- Links em slate-300 com hover em azul
+- Avatar circular com gradiente e ring roxo
+
+HERO:
+- Titulo grande com parte em gradiente de texto
+- Subtitulo em slate-400
+- Dois botoes: primario (gradiente) e secundario (outline)
+- Indicadores/stats com icones verdes
+
+CARDS DE FEATURE:
+- Grid de 4 colunas
+- Icone em container com gradiente
+- Titulo colorido (azul, roxo, ciano, verde)
+- Descricao em slate-400
+- Hover com borda colorida
+
+FOOTER:
+- Fundo slate-900 com borda top
+- Grid de 4 colunas
+- Icones de redes sociais coloridos
+- Links em slate-400
+
+--------------------------------------------------------------------------------
+FIM DO PROMPT
+--------------------------------------------------------------------------------
+
+================================================================================
+                         FIM DO DOCUMENTO
+================================================================================
+
+Este documento contem todas as especificacoes visuais necessarias para
+replicar o design do MyEasyAI em qualquer outro projeto.
+
+Tecnologias recomendadas para replicacao:
+- React/Next.js
+- Tailwind CSS
+- Lucide Icons ou React Icons
+- Google Fonts (Inter)
+
+================================================================================

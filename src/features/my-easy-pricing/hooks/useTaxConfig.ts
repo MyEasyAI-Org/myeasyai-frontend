@@ -4,7 +4,7 @@
 
 import { useState, useCallback } from 'react';
 import { toast } from 'sonner';
-import { pricingService } from '../services/PricingService';
+import { pricingServiceV2 } from '../services/PricingServiceV2';
 import type {
   TaxConfig,
   TaxItem,
@@ -77,8 +77,8 @@ export function useTaxConfig(): UseTaxConfigReturn {
     try {
       // Load both config and items in parallel
       const [configResult, itemsResult] = await Promise.all([
-        pricingService.getTaxConfig(storeId),
-        pricingService.getTaxItems(storeId),
+        pricingServiceV2.getTaxConfig(storeId),
+        pricingServiceV2.getTaxItems(storeId),
       ]);
 
       if (configResult.error) {
@@ -112,7 +112,7 @@ export function useTaxConfig(): UseTaxConfigReturn {
     regime: TaxRegime
   ): Promise<boolean> => {
     try {
-      const { data, error: updateError } = await pricingService.upsertTaxConfig(
+      const { data, error: updateError } = await pricingServiceV2.upsertTaxConfig(
         storeId,
         regime
       );
@@ -141,7 +141,7 @@ export function useTaxConfig(): UseTaxConfigReturn {
     setIsLoading(true);
 
     try {
-      const { data: newItem, error: createError } = await pricingService.createTaxItem(
+      const { data: newItem, error: createError } = await pricingServiceV2.createTaxItem(
         storeId,
         {
           name: data.name,
@@ -174,7 +174,7 @@ export function useTaxConfig(): UseTaxConfigReturn {
     data: Partial<TaxItemFormData>
   ): Promise<boolean> => {
     try {
-      const { data: updatedItem, error: updateError } = await pricingService.updateTaxItem(
+      const { data: updatedItem, error: updateError } = await pricingServiceV2.updateTaxItem(
         itemId,
         data
       );
@@ -197,7 +197,7 @@ export function useTaxConfig(): UseTaxConfigReturn {
   // ---------------------------------------------------------------------------
   const deleteTaxItem = useCallback(async (itemId: string): Promise<boolean> => {
     try {
-      const { success, error: deleteError } = await pricingService.deleteTaxItem(itemId);
+      const { success, error: deleteError } = await pricingServiceV2.deleteTaxItem(itemId);
 
       if (deleteError || !success) {
         toast.error('Erro ao remover taxa');
