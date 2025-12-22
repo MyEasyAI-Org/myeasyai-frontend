@@ -30,7 +30,10 @@
       "Bash(npx wrangler d1 migrations apply:*)",
       "Bash(curl:*)",
       "Bash(npx wrangler deploy)",
-      "Bash(npx wrangler:*)"
+      "Bash(npx wrangler:*)",
+      "Bash(tasklist:*)",
+      "Bash(findstr:*)",
+      "Bash(taskkill:*)"
     ],
     "deny": [],
     "ask": []
