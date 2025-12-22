@@ -32,11 +32,11 @@
     <meta name="msapplication-TileImage" content="/bone-logo-192.png" />
     
     <title>MyEasyAI</title>
-    <script type="module" crossorigin src="/assets/index-D7q2oXrB.js"></script>
-    <link rel="modulepreload" crossorigin href="/assets/react-ClZwdvRs.js">
-    <link rel="modulepreload" crossorigin href="/assets/lucide-icons-C8zBUUL0.js">
-    <link rel="modulepreload" crossorigin href="/assets/supabase-D_IVvZoV.js">
-    <link rel="stylesheet" crossorigin href="/assets/index-CUuZBTXh.css">
+    <script type="module" crossorigin src="/assets/index-BqYw6ney.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/react-Bce9NwRC.js">
+    <link rel="modulepreload" crossorigin href="/assets/lucide-icons-DJhZpFU3.js">
+    <link rel="modulepreload" crossorigin href="/assets/supabase-B8tjygzV.js">
+    <link rel="stylesheet" crossorigin href="/assets/index-D4X__OPv.css">
   </head>
   <body>
     <div id="root"></div>
