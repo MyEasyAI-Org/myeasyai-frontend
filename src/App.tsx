@@ -278,6 +278,11 @@ function AppContent() {
     navigate(ROUTES.MY_EASY_PRICING);
   };
 
+  const goToSubscription = () => {
+    navigate(ROUTES.DASHBOARD);
+    // TODO: Add subscription tab navigation when available
+  };
+
   const handleOnboardingComplete = () => {
     onboardingModal.close();
     setNeedsOnboarding(false);
@@ -741,7 +746,6 @@ function AppContent() {
                 onGoToBusinessGuru={goToBusinessGuru}
                 onGoToMyEasyPricing={goToMyEasyPricing}
                 onGoToMyEasyCRM={goToMyEasyCRM}
-                onGoToMyEasyPricing={goToMyEasyPricing}
                 initialTab={dashboardInitialTab}
                 onLoadingComplete={() => {
                   console.log('Dashboard loaded successfully!');
@@ -807,21 +811,14 @@ function AppContent() {
       />
 
       <Route
-<<<<<<< HEAD
-        path="/pricing"
-=======
         path={ROUTES.MY_EASY_PRICING}
->>>>>>> 4da9a4a23d7969c3d283d2981522f1cfea49747f
         element={
           <ProtectedRoute
             user={user}
             needsOnboarding={needsOnboarding}
             onOpenOnboarding={() => onboardingModal.open()}
             isLoading={loading}
-<<<<<<< HEAD
             isCheckingAuth={isCheckingAuth}
-=======
->>>>>>> 4da9a4a23d7969c3d283d2981522f1cfea49747f
           >
             <MyEasyPricing onBackToDashboard={goToDashboard} />
           </ProtectedRoute>

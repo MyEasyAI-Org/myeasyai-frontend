@@ -1,11 +1,7 @@
 import { useState } from 'react';
 import { toast } from 'sonner';
-<<<<<<< HEAD
 import { authService } from '../services/AuthServiceV2';
-=======
-import { authService } from '../services/AuthService';
 import { translateAuthError, validateFormFields } from '../utils/authErrors';
->>>>>>> 4da9a4a23d7969c3d283d2981522f1cfea49747f
 import { DSButton, DSInput } from './design-system';
 import { Modal } from './Modal';
 // CAPTCHA temporariamente desabilitado para testes E2E
@@ -54,23 +50,14 @@ export function LoginModal({
     // }
 
     try {
-<<<<<<< HEAD
       const result = await authService.signInWithPassword(email, password);
       if (!result.success) {
-        toast.error('Erro ao fazer login', {
-          description: result.error || 'Falha na autenticação',
-=======
-      const { error } = await authService.signInWithEmail(email, password);
-      if (error) {
-        const translatedError = translateAuthError(error);
+        const translatedError = translateAuthError(result.error);
         toast.error(translatedError.title, {
           description: translatedError.description,
->>>>>>> 4da9a4a23d7969c3d283d2981522f1cfea49747f
         });
         return;
       }
-      console.log(`✅ Login via ${result.source}`);
-      onClose();
       // O modal será fechado automaticamente pelo listener de auth no App.tsx
     } catch (error) {
       const translatedError = translateAuthError(error);
@@ -96,57 +83,41 @@ export function LoginModal({
       if (provider === 'google') setIsGoogleLoading(true);
       if (provider === 'facebook') setIsFacebookLoading(true);
 
-      if (provider === 'google') {
-        // AuthServiceV2 - tenta Cloudflare primeiro, fallback para Supabase
-        const result = await authService.signInWithGoogle();
-        if (!result.success && result.error) {
-          toast.error('Erro ao fazer login com Google', {
-            description: result.error,
+      let result;
+      switch (provider) {
+        case 'google':
+          result = await authService.signInWithGoogle();
+          break;
+        case 'facebook':
+          toast.warning('Login com Facebook indisponível', {
+            description: 'Use Google para fazer login.',
           });
-<<<<<<< HEAD
-          setIsGoogleLoading(false);
-        }
-        // Redirect acontece automaticamente
-        return;
-      }
-
-      if (provider === 'facebook') {
-        // Facebook ainda usa Supabase diretamente (fallback)
-        toast.warning('Login com Facebook', {
-          description: 'Usando autenticação via Supabase',
-        });
-        // Por enquanto, Facebook não está implementado no Cloudflare
-        setIsFacebookLoading(false);
-        return;
-      }
-
-      if (provider === 'apple') {
-        toast.warning('Login com Apple indisponível', {
-          description: 'Use Google para fazer login.',
-        });
-=======
+          if (provider === 'facebook') setIsFacebookLoading(false);
+          return;
+        case 'apple':
+          toast.warning('Login com Apple indisponível', {
+            description: 'Use Google para fazer login.',
+          });
           return;
       }
 
-      if (result.error) {
+      if (!result.success) {
         const translatedError = translateAuthError(result.error);
         toast.error(translatedError.title, {
           description: translatedError.description,
         });
         // Desativar loading em caso de erro
-        if (provider === 'google') setIsGoogleLoading(false);
-        if (provider === 'facebook') setIsFacebookLoading(false);
->>>>>>> 4da9a4a23d7969c3d283d2981522f1cfea49747f
+        setIsGoogleLoading(false);
         return;
       }
+      // O modal será fechado automaticamente pelo listener de auth no App.tsx
     } catch (error) {
       const translatedError = translateAuthError(error);
       toast.error(translatedError.title, {
         description: translatedError.description,
       });
       // Desativar loading em caso de erro
-      if (provider === 'google') setIsGoogleLoading(false);
-      if (provider === 'facebook') setIsFacebookLoading(false);
+      setIsGoogleLoading(false);
     }
   };
   return (

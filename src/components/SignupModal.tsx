@@ -1,12 +1,8 @@
 import { useState } from 'react';
 import { toast } from 'sonner';
 import type { SubscriptionPlan } from '../constants/plans';
-<<<<<<< HEAD
 import { authService } from '../services/AuthServiceV2';
-=======
-import { authService } from '../services/AuthService';
 import { translateAuthError, validateFormFields } from '../utils/authErrors';
->>>>>>> 4da9a4a23d7969c3d283d2981522f1cfea49747f
 import { DSButton, DSInput } from './design-system';
 import { Modal } from './Modal';
 // CAPTCHA temporariamente desabilitado para testes E2E
@@ -77,35 +73,22 @@ export function SignupModal({
     // }
 
     try {
-<<<<<<< HEAD
       const result = await authService.signUp(email, password, fullName);
       if (!result.success) {
-        toast.error('Erro ao criar conta', {
-          description: result.error || 'Falha ao criar conta',
-=======
-      const { error } = await authService.signUpWithEmail(
-        email,
-        password,
-        fullName,
-        preferredName
-      );
-      if (error) {
-        const translatedError = translateAuthError(error);
+        const translatedError = translateAuthError(result.error);
         toast.error(translatedError.title, {
           description: translatedError.description,
->>>>>>> 4da9a4a23d7969c3d283d2981522f1cfea49747f
         });
         return;
       }
-
-      console.log(`✅ Signup via ${result.source}`);
 
       // Se há um plano selecionado, salvar para vincular depois do login
       if (selectedPlan) {
         localStorage.setItem('selectedPlan', selectedPlan);
       }
 
-      onClose();
+      // Removido: alert de confirmação de email
+      // Com email confirmation desabilitado, o usuário é autenticado imediatamente
       // O modal será fechado automaticamente pelo listener de auth no App.tsx
     } catch (error) {
       const translatedError = translateAuthError(error);
@@ -131,86 +114,57 @@ export function SignupModal({
       if (provider === 'google') setIsGoogleLoading(true);
       if (provider === 'facebook') setIsFacebookLoading(true);
 
-<<<<<<< HEAD
-=======
       let result;
       switch (provider) {
         case 'google':
           result = await authService.signInWithGoogle();
           break;
         case 'facebook':
-          result = await authService.signInWithFacebook();
-          break;
+          toast.warning('Cadastro com Facebook indisponível', {
+            description: 'Use Google para se cadastrar.',
+          });
+          if (provider === 'facebook') setIsFacebookLoading(false);
+          return;
         case 'apple':
           toast.warning('Cadastro com Apple indisponível', {
-            description: 'Use Google ou Facebook para se cadastrar.',
+            description: 'Use Google para se cadastrar.',
           });
           return;
       }
 
-      if (result.error) {
+      if (!result.success) {
         const translatedError = translateAuthError(result.error);
         toast.error(translatedError.title, {
           description: translatedError.description,
         });
         // Desativar loading em caso de erro
-        if (provider === 'google') setIsGoogleLoading(false);
-        if (provider === 'facebook') setIsFacebookLoading(false);
+        setIsGoogleLoading(false);
         return;
       }
 
->>>>>>> 4da9a4a23d7969c3d283d2981522f1cfea49747f
       // Se há um plano selecionado, salvar para vincular depois do login
       if (selectedPlan) {
         localStorage.setItem('selectedPlan', selectedPlan);
       }
 
-      if (provider === 'google') {
-        // AuthServiceV2 - tenta Cloudflare primeiro, fallback para Supabase
-        const result = await authService.signInWithGoogle();
-        if (!result.success && result.error) {
-          toast.error('Erro ao cadastrar com Google', {
-            description: result.error,
-          });
-          setIsGoogleLoading(false);
-        }
-        // Redirect acontece automaticamente
-        return;
-      }
-
-      if (provider === 'facebook') {
-        toast.warning('Cadastro com Facebook', {
-          description: 'Usando autenticação via Supabase',
-        });
-        setIsFacebookLoading(false);
-        return;
-      }
-
-      if (provider === 'apple') {
-        toast.warning('Cadastro com Apple indisponível', {
-          description: 'Use Google para se cadastrar.',
-        });
-        return;
-      }
+      // O modal será fechado automaticamente pelo listener de auth no App.tsx
     } catch (error) {
       const translatedError = translateAuthError(error);
       toast.error(translatedError.title, {
         description: translatedError.description,
       });
       // Desativar loading em caso de erro
-      if (provider === 'google') setIsGoogleLoading(false);
-      if (provider === 'facebook') setIsFacebookLoading(false);
+      setIsGoogleLoading(false);
     }
   };
   const getModalTitle = () => {
     if (selectedPlan) {
-      const planNames: Record<string, string> = {
-        personal: 'Plano Personal',
-        basic: 'Plano Basic',
-        pro: 'Plano Pro',
-        enterprise: 'Plano Enterprise',
+      const planNames: Record<SubscriptionPlan, string> = {
+        individual: 'Plano Individual',
+        plus: 'Plano Plus',
+        premium: 'Plano Premium',
       };
-      return `Cadastre-se no ${planNames[selectedPlan] || 'Plano'}`;
+      return `Cadastre-se no ${planNames[selectedPlan]}`;
     }
     return 'Chega mais!';
   };
