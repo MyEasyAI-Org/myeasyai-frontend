@@ -37,7 +37,7 @@ export function useTasks(initialFilters?: TaskFilters): UseTasksReturn {
       setTasks(data);
       setTotalCount(data.length);
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Erro ao carregar tarefas';
+      const message = err instanceof Error ? err.message : 'Failed to load tasks';
       setError(message);
       console.error('Error fetching tasks:', err);
     } finally {

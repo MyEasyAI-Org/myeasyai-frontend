@@ -62,7 +62,7 @@ export const DealService = {
 
     if (error) {
       console.error('Error fetching deals:', error);
-      throw new Error('Erro ao buscar deals');
+      throw new Error('Failed to fetch deals');
     }
 
     return data || [];
@@ -87,7 +87,7 @@ export const DealService = {
         return null;
       }
       console.error('Error fetching deal:', error);
-      throw new Error('Erro ao buscar deal');
+      throw new Error('Failed to fetch deal');
     }
 
     return data;
@@ -100,7 +100,7 @@ export const DealService = {
     const { data: user } = await supabase.auth.getUser();
 
     if (!user.user) {
-      throw new Error('Usuário não autenticado');
+      throw new Error('[DealService] User not authenticated');
     }
 
     const stage = data.stage || 'lead';
@@ -134,7 +134,7 @@ export const DealService = {
 
     if (error) {
       console.error('Error creating deal:', error);
-      throw new Error('Erro ao criar deal');
+      throw new Error('Failed to create deal');
     }
 
     return deal;
@@ -167,7 +167,7 @@ export const DealService = {
 
     if (error) {
       console.error('Error updating deal:', error);
-      throw new Error('Erro ao atualizar deal');
+      throw new Error('Failed to update deal');
     }
 
     return deal;
@@ -200,7 +200,7 @@ export const DealService = {
 
     if (error) {
       console.error('Error deleting deal:', error);
-      throw new Error('Erro ao deletar deal');
+      throw new Error('Failed to delete deal');
     }
   },
 
@@ -220,7 +220,7 @@ export const DealService = {
 
     if (error) {
       console.error('Error fetching pipeline:', error);
-      throw new Error('Erro ao buscar pipeline');
+      throw new Error('Failed to fetch pipeline');
     }
 
     // Organizar deals por estágio
@@ -262,7 +262,7 @@ export const DealService = {
 
     if (error) {
       console.error('Error fetching deals by contact:', error);
-      throw new Error('Erro ao buscar deals do contato');
+      throw new Error('Failed to fetch deals by contact');
     }
 
     return data || [];
@@ -283,7 +283,7 @@ export const DealService = {
 
     if (error) {
       console.error('Error fetching deals by company:', error);
-      throw new Error('Erro ao buscar deals da empresa');
+      throw new Error('Failed to fetch deals by company');
     }
 
     return data || [];
@@ -351,7 +351,7 @@ export const DealService = {
 
     if (error) {
       console.error('Error counting deals:', error);
-      throw new Error('Erro ao contar deals');
+      throw new Error('Failed to count deals');
     }
 
     return count || 0;

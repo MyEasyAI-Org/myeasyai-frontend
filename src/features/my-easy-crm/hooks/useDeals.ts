@@ -36,7 +36,7 @@ export function useDeals(initialFilters?: DealFilters): UseDealsReturn {
       setDeals(data);
       setTotalCount(data.length);
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Erro ao carregar deals';
+      const message = err instanceof Error ? err.message : 'Failed to load deals';
       setError(message);
       console.error('Error fetching deals:', err);
     } finally {
@@ -113,7 +113,7 @@ export function usePipeline(): UsePipelineReturn {
       const data = await DealService.getPipeline();
       setPipeline(data);
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Erro ao carregar pipeline';
+      const message = err instanceof Error ? err.message : 'Failed to load pipeline';
       setError(message);
       console.error('Error fetching pipeline:', err);
     } finally {
@@ -192,7 +192,7 @@ export function useDeal(id: string | null): UseDealReturn {
       const data = await DealService.getById(id);
       setDeal(data);
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Erro ao carregar deal';
+      const message = err instanceof Error ? err.message : 'Failed to load deal';
       setError(message);
       console.error('Error fetching deal:', err);
     } finally {
@@ -205,14 +205,14 @@ export function useDeal(id: string | null): UseDealReturn {
   }, [fetchDeal]);
 
   const updateDeal = useCallback(async (data: Partial<DealFormData>): Promise<Deal> => {
-    if (!id) throw new Error('ID do deal não informado');
+    if (!id) throw new Error('Deal ID not provided');
     const updated = await DealService.update(id, data);
     setDeal(updated);
     return updated;
   }, [id]);
 
   const moveDealToStage = useCallback(async (stage: DealStage, lostReason?: string): Promise<Deal> => {
-    if (!id) throw new Error('ID do deal não informado');
+    if (!id) throw new Error('Deal ID not provided');
     const updated = await DealService.moveToStage(id, stage, lostReason);
     setDeal(updated);
     return updated;

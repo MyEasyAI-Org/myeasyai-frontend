@@ -83,7 +83,7 @@ export function MyEasyCRM({
   // Delete confirmation
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [deleteType, setDeleteType] = useState<'contact' | 'company' | 'deal' | 'task' | 'activity'>('contact');
-  const [deleteTarget, setDeleteTarget] = useState<any>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Contact | Company | Deal | Task | Activity | null>(null);
 
   // Lost reason modal
   const [lostReasonModalOpen, setLostReasonModalOpen] = useState(false);

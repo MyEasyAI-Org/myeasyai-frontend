@@ -36,8 +36,13 @@ export function ActivityForm({
   const [description, setDescription] = useState('');
   const [incoming, setIncoming] = useState(false);
 
-  const typeInfo = ACTIVITY_TYPES[type];
-  const Icon = IconMap[typeInfo?.icon] || FileText;
+  const typeInfo = ACTIVITY_TYPES[type] || {
+    label: 'Atividade',
+    icon: 'FileText',
+    color: 'text-gray-600',
+    bgColor: 'bg-gray-100',
+  };
+  const Icon = IconMap[typeInfo.icon] || FileText;
 
   useEffect(() => {
     if (isOpen) {
@@ -53,7 +58,7 @@ export function ActivityForm({
       description,
       contact_id: contactId,
       deal_id: dealId,
-      incoming: type === 'call' || type === 'email' ? incoming : undefined,
+      incoming: ['call', 'email', 'call_made', 'call_received', 'email_sent', 'email_received'].includes(type) ? incoming : undefined,
     });
     onClose();
   };
@@ -108,7 +113,7 @@ export function ActivityForm({
           <form onSubmit={handleSubmit}>
             <div className="px-6 py-4 space-y-4">
               {/* Direction (for calls and emails) */}
-              {(type === 'call' || type === 'email') && (
+              {['call', 'email', 'call_made', 'call_received', 'email_sent', 'email_received'].includes(type) && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Direção

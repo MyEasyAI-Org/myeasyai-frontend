@@ -57,7 +57,7 @@ export const TaskService = {
 
     if (error) {
       console.error('Error fetching tasks:', error);
-      throw new Error('Erro ao buscar tarefas');
+      throw new Error('Failed to fetch tasks');
     }
 
     return data || [];
@@ -82,7 +82,7 @@ export const TaskService = {
         return null;
       }
       console.error('Error fetching task:', error);
-      throw new Error('Erro ao buscar tarefa');
+      throw new Error('Failed to fetch task');
     }
 
     return data;
@@ -95,7 +95,7 @@ export const TaskService = {
     const { data: user } = await supabase.auth.getUser();
 
     if (!user.user) {
-      throw new Error('Usuário não autenticado');
+      throw new Error('[TaskService] User not authenticated');
     }
 
     const { data: task, error } = await supabase
@@ -115,7 +115,7 @@ export const TaskService = {
 
     if (error) {
       console.error('Error creating task:', error);
-      throw new Error('Erro ao criar tarefa');
+      throw new Error('Failed to create task');
     }
 
     return task;
@@ -138,7 +138,7 @@ export const TaskService = {
 
     if (error) {
       console.error('Error updating task:', error);
-      throw new Error('Erro ao atualizar tarefa');
+      throw new Error('Failed to update task');
     }
 
     return task;
@@ -164,7 +164,7 @@ export const TaskService = {
 
     if (error) {
       console.error('Error completing task:', error);
-      throw new Error('Erro ao concluir tarefa');
+      throw new Error('Failed to complete task');
     }
 
     return task;
@@ -190,7 +190,7 @@ export const TaskService = {
 
     if (error) {
       console.error('Error uncompleting task:', error);
-      throw new Error('Erro ao reabrir tarefa');
+      throw new Error('Failed to reopen task');
     }
 
     return task;
@@ -207,7 +207,7 @@ export const TaskService = {
 
     if (error) {
       console.error('Error deleting task:', error);
-      throw new Error('Erro ao deletar tarefa');
+      throw new Error('Failed to delete task');
     }
   },
 
@@ -237,7 +237,7 @@ export const TaskService = {
 
     if (error) {
       console.error('Error fetching overdue tasks:', error);
-      throw new Error('Erro ao buscar tarefas atrasadas');
+      throw new Error('Failed to fetch overdue tasks');
     }
 
     return data || [];
@@ -267,7 +267,7 @@ export const TaskService = {
 
     if (error) {
       console.error('Error fetching today tasks:', error);
-      throw new Error('Erro ao buscar tarefas de hoje');
+      throw new Error('Failed to fetch today tasks');
     }
 
     return data || [];
@@ -297,7 +297,7 @@ export const TaskService = {
 
     if (error) {
       console.error('Error fetching this week tasks:', error);
-      throw new Error('Erro ao buscar tarefas da semana');
+      throw new Error('Failed to fetch this week tasks');
     }
 
     return data || [];
@@ -328,7 +328,7 @@ export const TaskService = {
 
     if (error) {
       console.error('Error counting pending tasks:', error);
-      throw new Error('Erro ao contar tarefas pendentes');
+      throw new Error('Failed to count pending tasks');
     }
 
     return count || 0;
@@ -348,7 +348,7 @@ export const TaskService = {
 
     if (error) {
       console.error('Error counting overdue tasks:', error);
-      throw new Error('Erro ao contar tarefas atrasadas');
+      throw new Error('Failed to count overdue tasks');
     }
 
     return count || 0;

@@ -32,7 +32,7 @@ export function useActivities(limit = 50): UseActivitiesReturn {
       const data = await ActivityService.getAll(limit);
       setActivities(data);
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Erro ao carregar atividades';
+      const message = err instanceof Error ? err.message : 'Failed to load activities';
       setError(message);
       console.error('Error fetching activities:', err);
     } finally {
@@ -115,23 +115,29 @@ export function useActivities(limit = 50): UseActivitiesReturn {
 export function useContactActivities(contactId: string | null, limit = 20): {
   activities: Activity[];
   isLoading: boolean;
+  error: string | null;
   refresh: () => Promise<void>;
 } {
   const [activities, setActivities] = useState<Activity[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchActivities = useCallback(async () => {
     if (!contactId) {
       setActivities([]);
       setIsLoading(false);
+      setError(null);
       return;
     }
 
     setIsLoading(true);
+    setError(null);
     try {
       const data = await ActivityService.getByContact(contactId, limit);
       setActivities(data);
     } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to load contact activities';
+      setError(message);
       console.error('Error fetching contact activities:', err);
     } finally {
       setIsLoading(false);
@@ -145,6 +151,7 @@ export function useContactActivities(contactId: string | null, limit = 20): {
   return {
     activities,
     isLoading,
+    error,
     refresh: fetchActivities,
   };
 }
@@ -153,23 +160,29 @@ export function useContactActivities(contactId: string | null, limit = 20): {
 export function useDealActivities(dealId: string | null, limit = 20): {
   activities: Activity[];
   isLoading: boolean;
+  error: string | null;
   refresh: () => Promise<void>;
 } {
   const [activities, setActivities] = useState<Activity[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchActivities = useCallback(async () => {
     if (!dealId) {
       setActivities([]);
       setIsLoading(false);
+      setError(null);
       return;
     }
 
     setIsLoading(true);
+    setError(null);
     try {
       const data = await ActivityService.getByDeal(dealId, limit);
       setActivities(data);
     } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to load deal activities';
+      setError(message);
       console.error('Error fetching deal activities:', err);
     } finally {
       setIsLoading(false);
@@ -183,6 +196,7 @@ export function useDealActivities(dealId: string | null, limit = 20): {
   return {
     activities,
     isLoading,
+    error,
     refresh: fetchActivities,
   };
 }
@@ -191,17 +205,22 @@ export function useDealActivities(dealId: string | null, limit = 20): {
 export function useRecentActivities(limit = 10): {
   activities: Activity[];
   isLoading: boolean;
+  error: string | null;
   refresh: () => Promise<void>;
 } {
   const [activities, setActivities] = useState<Activity[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchActivities = useCallback(async () => {
     setIsLoading(true);
+    setError(null);
     try {
       const data = await ActivityService.getRecent(limit);
       setActivities(data);
     } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to load recent activities';
+      setError(message);
       console.error('Error fetching recent activities:', err);
     } finally {
       setIsLoading(false);
@@ -215,6 +234,7 @@ export function useRecentActivities(limit = 10): {
   return {
     activities,
     isLoading,
+    error,
     refresh: fetchActivities,
   };
 }

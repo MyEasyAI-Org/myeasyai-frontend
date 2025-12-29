@@ -25,7 +25,7 @@ export const CompanyService = {
 
     if (error) {
       console.error('Error fetching companies:', error);
-      throw new Error('Erro ao buscar empresas');
+      throw new Error('Failed to fetch companies');
     }
 
     return data || [];
@@ -46,7 +46,7 @@ export const CompanyService = {
         return null;
       }
       console.error('Error fetching company:', error);
-      throw new Error('Erro ao buscar empresa');
+      throw new Error('Failed to fetch company');
     }
 
     return data;
@@ -66,7 +66,7 @@ export const CompanyService = {
       if (companyError.code === 'PGRST116') {
         return null;
       }
-      throw new Error('Erro ao buscar empresa');
+      throw new Error('Failed to fetch company');
     }
 
     // Contar contatos
@@ -95,7 +95,7 @@ export const CompanyService = {
     const { data: user } = await supabase.auth.getUser();
 
     if (!user.user) {
-      throw new Error('Usuário não autenticado');
+      throw new Error('[CompanyService] User not authenticated');
     }
 
     const { data: company, error } = await supabase
@@ -109,7 +109,7 @@ export const CompanyService = {
 
     if (error) {
       console.error('Error creating company:', error);
-      throw new Error('Erro ao criar empresa');
+      throw new Error('Failed to create company');
     }
 
     return company;
@@ -131,7 +131,7 @@ export const CompanyService = {
 
     if (error) {
       console.error('Error updating company:', error);
-      throw new Error('Erro ao atualizar empresa');
+      throw new Error('Failed to update company');
     }
 
     return company;
@@ -148,7 +148,7 @@ export const CompanyService = {
 
     if (error) {
       console.error('Error deleting company:', error);
-      throw new Error('Erro ao deletar empresa');
+      throw new Error('Failed to delete company');
     }
   },
 
@@ -162,7 +162,7 @@ export const CompanyService = {
 
     if (error) {
       console.error('Error counting companies:', error);
-      throw new Error('Erro ao contar empresas');
+      throw new Error('Failed to count companies');
     }
 
     return count || 0;
@@ -179,7 +179,7 @@ export const CompanyService = {
 
     if (error) {
       console.error('Error fetching companies for select:', error);
-      throw new Error('Erro ao buscar empresas');
+      throw new Error('Failed to fetch companies');
     }
 
     return data || [];
@@ -197,7 +197,7 @@ export const CompanyService = {
 
     if (error) {
       console.error('Error fetching companies by industry:', error);
-      throw new Error('Erro ao buscar empresas por indústria');
+      throw new Error('Failed to fetch companies by industry');
     }
 
     return data || [];

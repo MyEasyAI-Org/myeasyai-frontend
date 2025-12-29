@@ -48,7 +48,10 @@ export function DealForm({
         stage: deal.stage,
         probability: deal.probability || 0,
         expected_close_date: deal.expected_close_date
-          ? new Date(deal.expected_close_date).toISOString().split('T')[0]
+          ? (() => {
+              const date = new Date(deal.expected_close_date);
+              return Number.isNaN(date.getTime()) ? '' : date.toISOString().split('T')[0];
+            })()
           : '',
         contact_id: deal.contact_id || '',
         company_id: deal.company_id || '',
@@ -138,10 +141,13 @@ export function DealForm({
                   <input
                     type="number"
                     required
-                    min="0"
+                    min="0.01"
                     step="0.01"
                     value={formData.value}
-                    onChange={(e) => setFormData({ ...formData, value: parseFloat(e.target.value) || 0 })}
+                    onChange={(e) => {
+                      const value = parseFloat(e.target.value);
+                      setFormData({ ...formData, value: Number.isNaN(value) || value < 0 ? 0 : value });
+                    }}
                     className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-gray-900"
                     placeholder="0,00"
                   />

@@ -35,7 +35,7 @@ export function useContacts(initialFilters?: ContactFilters): UseContactsReturn 
       setContacts(data);
       setTotalCount(data.length);
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Erro ao carregar contatos';
+      const message = err instanceof Error ? err.message : 'Failed to load contacts';
       setError(message);
       console.error('Error fetching contacts:', err);
     } finally {
@@ -108,7 +108,7 @@ export function useContact(id: string | null): UseContactReturn {
       const data = await ContactService.getById(id);
       setContact(data);
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Erro ao carregar contato';
+      const message = err instanceof Error ? err.message : 'Failed to load contact';
       setError(message);
       console.error('Error fetching contact:', err);
     } finally {
@@ -121,7 +121,7 @@ export function useContact(id: string | null): UseContactReturn {
   }, [fetchContact]);
 
   const updateContact = useCallback(async (data: Partial<ContactFormData>): Promise<Contact> => {
-    if (!id) throw new Error('ID do contato não informado');
+    if (!id) throw new Error('Contact ID not provided');
     const updated = await ContactService.update(id, data);
     setContact(updated);
     return updated;

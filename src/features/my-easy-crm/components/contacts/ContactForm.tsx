@@ -66,7 +66,8 @@ export function ContactForm({
 
   const handleAddTag = () => {
     const tag = tagInput.trim();
-    if (tag && !formData.tags?.includes(tag)) {
+    // Validar: não vazio, mínimo 2 caracteres, não duplicado
+    if (tag && tag.length >= 2 && !formData.tags?.includes(tag)) {
       setFormData((prev) => ({
         ...prev,
         tags: [...(prev.tags || []), tag],

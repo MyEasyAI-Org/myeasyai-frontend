@@ -24,7 +24,7 @@ export const ActivityService = {
 
     if (error) {
       console.error('Error fetching activities:', error);
-      throw new Error('Erro ao buscar atividades');
+      throw new Error('Failed to fetch activities');
     }
 
     return data || [];
@@ -49,7 +49,7 @@ export const ActivityService = {
         return null;
       }
       console.error('Error fetching activity:', error);
-      throw new Error('Erro ao buscar atividade');
+      throw new Error('Failed to fetch activity');
     }
 
     return data;
@@ -62,7 +62,7 @@ export const ActivityService = {
     const { data: user } = await supabase.auth.getUser();
 
     if (!user.user) {
-      throw new Error('Usuário não autenticado');
+      throw new Error('[ActivityService] User not authenticated');
     }
 
     const { data: activity, error } = await supabase
@@ -80,7 +80,7 @@ export const ActivityService = {
 
     if (error) {
       console.error('Error creating activity:', error);
-      throw new Error('Erro ao criar atividade');
+      throw new Error('Failed to create activity');
     }
 
     return activity;
@@ -97,7 +97,7 @@ export const ActivityService = {
 
     if (error) {
       console.error('Error deleting activity:', error);
-      throw new Error('Erro ao deletar atividade');
+      throw new Error('Failed to delete activity');
     }
   },
 
@@ -117,7 +117,7 @@ export const ActivityService = {
 
     if (error) {
       console.error('Error fetching activities by contact:', error);
-      throw new Error('Erro ao buscar atividades do contato');
+      throw new Error('Failed to fetch contact activities');
     }
 
     return data || [];
@@ -139,7 +139,7 @@ export const ActivityService = {
 
     if (error) {
       console.error('Error fetching activities by deal:', error);
-      throw new Error('Erro ao buscar atividades do deal');
+      throw new Error('Failed to fetch deal activities');
     }
 
     return data || [];
@@ -162,7 +162,7 @@ export const ActivityService = {
 
     if (error) {
       console.error('Error fetching activities by type:', error);
-      throw new Error('Erro ao buscar atividades por tipo');
+      throw new Error('Failed to fetch activities by type');
     }
 
     return data || [];
@@ -253,7 +253,7 @@ export const ActivityService = {
 
     if (error) {
       console.error('Error counting activities:', error);
-      throw new Error('Erro ao contar atividades');
+      throw new Error('Failed to count activities');
     }
 
     return count || 0;
@@ -269,7 +269,7 @@ export const ActivityService = {
 
     if (error) {
       console.error('Error fetching activity stats:', error);
-      throw new Error('Erro ao buscar estatísticas');
+      throw new Error('Failed to fetch activity statistics');
     }
 
     const stats: Record<string, number> = {};

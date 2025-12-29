@@ -34,7 +34,7 @@ export function useCompanies(): UseCompaniesReturn {
       setCompanies(data);
       setTotalCount(data.length);
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Erro ao carregar empresas';
+      const message = err instanceof Error ? err.message : 'Failed to load companies';
       setError(message);
       console.error('Error fetching companies:', err);
     } finally {
@@ -110,7 +110,7 @@ export function useCompany(id: string | null): UseCompanyReturn {
       const data = await CompanyService.getByIdWithStats(id);
       setCompany(data);
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Erro ao carregar empresa';
+      const message = err instanceof Error ? err.message : 'Failed to load company';
       setError(message);
       console.error('Error fetching company:', err);
     } finally {
@@ -123,7 +123,7 @@ export function useCompany(id: string | null): UseCompanyReturn {
   }, [fetchCompany]);
 
   const updateCompany = useCallback(async (data: Partial<CompanyFormData>): Promise<Company> => {
-    if (!id) throw new Error('ID da empresa não informado');
+    if (!id) throw new Error('Company ID not provided');
     const updated = await CompanyService.update(id, data);
     setCompany((prev) => prev ? { ...prev, ...updated } : null);
     return updated;
@@ -142,24 +142,41 @@ export function useCompany(id: string | null): UseCompanyReturn {
 export function useCompaniesSelect(): {
   options: { id: string; name: string }[];
   isLoading: boolean;
+  error: string | null;
 } {
   const [options, setOptions] = useState<{ id: string; name: string }[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    let isMounted = true;
+
     const fetchOptions = async () => {
       try {
         const data = await CompanyService.getForSelect();
-        setOptions(data);
+        if (isMounted) {
+          setOptions(data);
+          setError(null);
+        }
       } catch (err) {
-        console.error('Error fetching companies for select:', err);
+        if (isMounted) {
+          const message = err instanceof Error ? err.message : 'Failed to load companies';
+          setError(message);
+          console.error('Error fetching companies for select:', err);
+        }
       } finally {
-        setIsLoading(false);
+        if (isMounted) {
+          setIsLoading(false);
+        }
       }
     };
 
     fetchOptions();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
-  return { options, isLoading };
+  return { options, isLoading, error };
 }

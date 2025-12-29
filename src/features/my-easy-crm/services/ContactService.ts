@@ -48,7 +48,7 @@ export const ContactService = {
 
     if (error) {
       console.error('Error fetching contacts:', error);
-      throw new Error('Erro ao buscar contatos');
+      throw new Error('Failed to fetch contacts');
     }
 
     return data || [];
@@ -72,7 +72,7 @@ export const ContactService = {
         return null;
       }
       console.error('Error fetching contact:', error);
-      throw new Error('Erro ao buscar contato');
+      throw new Error('Failed to fetch contact');
     }
 
     return data;
@@ -85,7 +85,7 @@ export const ContactService = {
     const { data: user } = await supabase.auth.getUser();
 
     if (!user.user) {
-      throw new Error('Usuário não autenticado');
+      throw new Error('[ContactService] User not authenticated');
     }
 
     const { data: contact, error } = await supabase
@@ -103,7 +103,7 @@ export const ContactService = {
 
     if (error) {
       console.error('Error creating contact:', error);
-      throw new Error('Erro ao criar contato');
+      throw new Error('Failed to create contact');
     }
 
     return contact;
@@ -128,7 +128,7 @@ export const ContactService = {
 
     if (error) {
       console.error('Error updating contact:', error);
-      throw new Error('Erro ao atualizar contato');
+      throw new Error('Failed to update contact');
     }
 
     return contact;
@@ -145,7 +145,7 @@ export const ContactService = {
 
     if (error) {
       console.error('Error deleting contact:', error);
-      throw new Error('Erro ao deletar contato');
+      throw new Error('Failed to delete contact');
     }
   },
 
@@ -159,7 +159,7 @@ export const ContactService = {
 
     if (error) {
       console.error('Error counting contacts:', error);
-      throw new Error('Erro ao contar contatos');
+      throw new Error('Failed to count contacts');
     }
 
     return count || 0;
@@ -177,7 +177,7 @@ export const ContactService = {
 
     if (error) {
       console.error('Error fetching contacts by company:', error);
-      throw new Error('Erro ao buscar contatos da empresa');
+      throw new Error('Failed to fetch contacts by company');
     }
 
     return data || [];
@@ -198,7 +198,7 @@ export const ContactService = {
 
     if (error) {
       console.error('Error fetching recent contacts:', error);
-      throw new Error('Erro ao buscar contatos recentes');
+      throw new Error('Failed to fetch recent contacts');
     }
 
     return data || [];
@@ -210,7 +210,7 @@ export const ContactService = {
   async addTags(id: string, tags: string[]): Promise<Contact> {
     const contact = await this.getById(id);
     if (!contact) {
-      throw new Error('Contato não encontrado');
+      throw new Error('Contact not found');
     }
 
     const uniqueTags = [...new Set([...contact.tags, ...tags])];
@@ -223,7 +223,7 @@ export const ContactService = {
   async removeTags(id: string, tagsToRemove: string[]): Promise<Contact> {
     const contact = await this.getById(id);
     if (!contact) {
-      throw new Error('Contato não encontrado');
+      throw new Error('Contact not found');
     }
 
     const filteredTags = contact.tags.filter(tag => !tagsToRemove.includes(tag));

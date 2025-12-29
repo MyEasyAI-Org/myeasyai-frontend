@@ -246,19 +246,24 @@ export function ContactDetail({
             ) : (
               <div className="space-y-4">
                 {activities.map((activity) => {
-                  const typeInfo = ACTIVITY_TYPES[activity.type];
+                  const typeInfo = ACTIVITY_TYPES[activity.type] || {
+                    label: activity.type,
+                    icon: 'FileText',
+                    color: 'text-gray-600',
+                    bgColor: 'bg-gray-100',
+                  };
 
                   return (
                     <div key={activity.id} className="flex gap-4">
                       <div
-                        className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${typeInfo?.bgColor || 'bg-gray-100'}`}
+                        className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${typeInfo.bgColor}`}
                       >
-                        <MessageSquare className={`w-5 h-5 ${typeInfo?.color || 'text-gray-600'}`} />
+                        <MessageSquare className={`w-5 h-5 ${typeInfo.color}`} />
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-start justify-between gap-2">
                           <p className="font-medium text-gray-900">
-                            {typeInfo?.label || activity.type}
+                            {typeInfo.label}
                           </p>
                           <span className="text-sm text-gray-500 whitespace-nowrap">
                             {formatDateTime(activity.created_at)}
