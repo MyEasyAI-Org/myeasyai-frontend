@@ -35,6 +35,8 @@ export type UseDashboardNavigationOptions = {
   onGoToMyEasyCRM?: () => void;
   /** Callback function to navigate to MyEasyContent feature */
   onGoToMyEasyContent?: () => void;
+  /** Callback function to navigate to MyEasyFitness feature */
+  onGoToMyEasyFitness?: () => void;
   /** Initial active tab (default: 'overview') */
   initialTab?: DashboardTab;
 };
@@ -88,6 +90,7 @@ export function useDashboardNavigation(
     onGoToMyEasyPricing,
     onGoToMyEasyCRM,
     onGoToMyEasyContent,
+    onGoToMyEasyFitness,
     initialTab = DEFAULT_INITIAL_TAB,
   } = options;
 
@@ -200,6 +203,22 @@ export function useDashboardNavigation(
   }, [onGoToMyEasyContent, navigate]);
 
   /**
+   * Navigate to MyEasyFitness feature
+   * @description
+   * Attempts to use the provided callback. If not available, uses React Router
+   * to navigate to the MyEasyFitness route.
+   *
+   * @returns {void}
+   */
+  const goToFitness = useCallback(() => {
+    if (onGoToMyEasyFitness) {
+      onGoToMyEasyFitness();
+    } else {
+      navigate(ROUTES.MY_EASY_FITNESS);
+    }
+  }, [onGoToMyEasyFitness, navigate]);
+
+  /**
    * Navigate to a feature based on product name
    * @description
    * Smart routing that analyzes the product name and navigates to the appropriate feature:
@@ -208,6 +227,7 @@ export function useDashboardNavigation(
    * - Names containing "pricing" or "preco" → MyEasyPricing
    * - Names containing "crm" → MyEasyCRM
    * - Names containing "content" → MyEasyContent
+   * - Names containing "fitness" → MyEasyFitness
    * - Other names → Home
    *
    * @param {string} productName - Name of the product to access
@@ -227,11 +247,13 @@ export function useDashboardNavigation(
         goToCRM();
       } else if (name.includes('content')) {
         goToContent();
+      } else if (name.includes('fitness')) {
+        goToFitness();
       } else {
         goToHome();
       }
     },
-    [goToWebsite, goToGuru, goToPricing, goToCRM, goToContent, goToHome],
+    [goToWebsite, goToGuru, goToPricing, goToCRM, goToContent, goToFitness, goToHome],
   );
 
   // ============================================================================
@@ -248,5 +270,6 @@ export function useDashboardNavigation(
     goToPricing,
     goToCRM,
     goToContent,
+    goToFitness,
   };
 }

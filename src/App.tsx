@@ -29,6 +29,7 @@ import { BusinessGuru } from './features/business-guru/BusinessGuru';
 import { MyEasyContent } from './features/my-easy-content';
 import { MyEasyCRM } from './features/my-easy-crm';
 import { MyEasyPricing } from './features/my-easy-pricing/MyEasyPricing';
+import { MyEasyFitness } from './features/my-easy-fitness';
 import { MyEasyWebsite } from './features/my-easy-website/MyEasyWebsite';
 import { useInactivityTimeout } from './hooks/useInactivityTimeout';
 import { useModalState } from './hooks/useModalState';
@@ -281,6 +282,10 @@ function AppContent() {
 
   const goToMyEasyContent = () => {
     navigate(ROUTES.MY_EASY_CONTENT);
+  };
+
+  const goToMyEasyFitness = () => {
+    navigate(ROUTES.MY_EASY_FITNESS);
   };
 
   const goToSubscription = () => {
@@ -751,6 +756,8 @@ function AppContent() {
                 onGoToBusinessGuru={goToBusinessGuru}
                 onGoToMyEasyPricing={goToMyEasyPricing}
                 onGoToMyEasyCRM={goToMyEasyCRM}
+                onGoToMyEasyContent={goToMyEasyContent}
+                onGoToMyEasyFitness={goToMyEasyFitness}
                 initialTab={dashboardInitialTab}
                 onLoadingComplete={() => {
                   console.log('Dashboard loaded successfully!');
@@ -841,6 +848,21 @@ function AppContent() {
             isCheckingAuth={isCheckingAuth}
           >
             <MyEasyContent onBackToDashboard={goToDashboard} />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path={ROUTES.MY_EASY_FITNESS}
+        element={
+          <ProtectedRoute
+            user={user}
+            needsOnboarding={needsOnboarding}
+            onOpenOnboarding={() => onboardingModal.open()}
+            isLoading={loading}
+            isCheckingAuth={isCheckingAuth}
+          >
+            <MyEasyFitness onBackToDashboard={goToDashboard} />
           </ProtectedRoute>
         }
       />

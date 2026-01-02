@@ -23,6 +23,7 @@ type DashboardProps = {
   onGoToMyEasyPricing?: () => void;
   onGoToMyEasyCRM?: () => void;
   onGoToMyEasyContent?: () => void;
+  onGoToMyEasyFitness?: () => void;
   onLoadingComplete?: () => void;
   initialTab?: 'overview' | 'subscription' | 'products' | 'usage' | 'settings' | 'profile';
 };
@@ -34,6 +35,7 @@ export function Dashboard({
   onGoToMyEasyPricing,
   onGoToMyEasyCRM,
   onGoToMyEasyContent,
+  onGoToMyEasyFitness,
   onLoadingComplete,
   initialTab,
 }: DashboardProps = {}) {
@@ -56,7 +58,7 @@ export function Dashboard({
   } = useUserData();
 
   // Dashboard navigation hook (manages tabs and feature navigation)
-  const { activeTab, setActiveTab, navigateToProduct, goToCRM, goToContent } =
+  const { activeTab, setActiveTab, navigateToProduct, goToCRM, goToContent, goToFitness } =
     useDashboardNavigation({
       onGoHome,
       onGoToMyEasyWebsite,
@@ -64,6 +66,7 @@ export function Dashboard({
       onGoToMyEasyPricing,
       onGoToMyEasyCRM,
       onGoToMyEasyContent,
+      onGoToMyEasyFitness,
     });
 
   // Local UI state
@@ -154,6 +157,7 @@ export function Dashboard({
             onAccessProduct={navigateToProduct}
             onGoToCRM={goToCRM}
             onGoToMyEasyContent={goToContent}
+            onGoToMyEasyFitness={goToFitness}
             accountCreatedAt={cadastralInfo.created_at}
           />
         )}
