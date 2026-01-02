@@ -16,6 +16,7 @@ type ButtonProps = {
   onClick?: () => void;
   target?: '_blank' | '_self';
   disabled?: boolean;
+  className?: string;
 };
 
 export function Button({
@@ -25,6 +26,7 @@ export function Button({
   onClick,
   target = '_self',
   disabled = false,
+  className: customClassName = '',
 }: ButtonProps) {
   const base =
     'inline-flex items-center justify-center rounded-lg px-6 py-3 font-semibold transition-all duration-300 cursor-pointer';
@@ -43,7 +45,7 @@ export function Button({
       'inline-flex items-center justify-center px-3 py-1.5 text-sm rounded-md text-slate-300 hover:text-white hover:bg-slate-800 transition-colors h-8 animate-pulse-subtle border border-blue-400/50 shadow-[0_0_20px_rgba(59,130,246,0.4)] hover:shadow-[0_0_35px_rgba(59,130,246,0.7),0_0_15px_rgba(147,51,234,0.4)] hover:border-blue-400/80',
   };
 
-  const className = `${base} ${variants[variant]}`;
+  const className = `${base} ${variants[variant]} ${customClassName}`.trim();
 
   if (href) {
     return (

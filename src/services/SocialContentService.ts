@@ -97,26 +97,27 @@ REDE SOCIAL: ${networkConfig.name}
 TEMA DO POST: ${params.topic}
 ${params.objective ? `OBJETIVO: ${params.objective}` : ''}
 
-TAREFA: Crie um post COMPLETO e ENVOLVENTE para o feed do ${networkConfig.name}.
+TAREFA: Crie um post COMPLETO e ENVOLVENTE para o feed do ${networkConfig.name} sobre o tema "${params.topic}".
 
 REQUISITOS:
 1. Use o tom de voz ${toneDesc}
 2. Comece com um GANCHO poderoso que prenda a atenção
-3. Desenvolva o conteúdo de forma envolvente
+3. Desenvolva o conteúdo de forma envolvente sobre o tema "${params.topic}"
 4. Termine com uma CHAMADA PARA AÇÃO clara
 5. Use emojis de forma estratégica (não exagere)
 6. Respeite o limite de caracteres
 7. Seja ORIGINAL e AUTÊNTICO - evite clichês
+8. O conteúdo DEVE ser relevante e útil sobre "${params.topic}"
 
-${params.includeHashtags ? 'INCLUA: Uma seção de hashtags relevantes ao final (5-10 hashtags)' : ''}
-${params.includeImageDescription ? 'INCLUA: Uma descrição de imagem ideal para acompanhar o post (após as hashtags)' : ''}
+${params.includeHashtags ? 'INCLUA: Uma seção com 10-15 hashtags relevantes ao tema e ao nicho (misture hashtags populares e de nicho)' : ''}
+${params.includeImageDescription ? 'INCLUA: Uma descrição detalhada de imagem ideal para acompanhar o post (após as hashtags)' : ''}
 
 FORMATO DE SAÍDA:
 POST:
-[conteúdo do post]
+[conteúdo completo do post sobre "${params.topic}" - mínimo 200 caracteres]
 
-${params.includeHashtags ? 'HASHTAGS:\n[hashtags separadas por espaço]' : ''}
-${params.includeImageDescription ? 'IMAGEM:\n[descrição da imagem ideal]' : ''}
+${params.includeHashtags ? 'HASHTAGS:\n[10-15 hashtags separadas por espaço, começando com #]' : ''}
+${params.includeImageDescription ? 'IMAGEM:\n[descrição detalhada da imagem ideal]' : ''}
 
 Seja criativo e gere um post que realmente engaje o público!`;
 
@@ -151,23 +152,23 @@ CONTEXTO:
 TEMA: ${params.topic}
 ${params.objective ? `OBJETIVO: ${params.objective}` : ''}
 
-TAREFA: Crie uma LEGENDA envolvente e cativante.
+TAREFA: Crie uma LEGENDA envolvente e cativante sobre "${params.topic}".
 
 REQUISITOS:
 1. Seja CONCISO mas IMPACTANTE
 2. Use o tom ${params.tone}
-3. Comece com algo que prenda a atenção
+3. Comece com algo que prenda a atenção relacionado a "${params.topic}"
 4. Inclua emojis estratégicos
 5. Termine com pergunta ou CTA para gerar engajamento
-6. Máximo 300 caracteres para a legenda principal
+6. O conteúdo DEVE falar sobre "${params.topic}" de forma relevante
 
-${params.includeHashtags ? 'INCLUA: 8-15 hashtags relevantes' : ''}
+${params.includeHashtags ? 'INCLUA: 10-15 hashtags relevantes ao tema (misture populares e de nicho)' : ''}
 
 FORMATO:
 LEGENDA:
-[texto da legenda]
+[texto da legenda sobre "${params.topic}"]
 
-${params.includeHashtags ? 'HASHTAGS:\n[hashtags]' : ''}`;
+${params.includeHashtags ? 'HASHTAGS:\n[10-15 hashtags começando com #]' : ''}`;
 
     const response = await geminiClient.call(prompt, 0.85);
     return this.parseContentResponse(response, params.includeHashtags, false);
@@ -197,15 +198,16 @@ CONTEXTO:
 TEMA: ${params.topic}
 ${params.objective ? `OBJETIVO: ${params.objective}` : ''}
 
-TAREFA: Crie um roteiro de SEQUÊNCIA DE STORIES (4-6 stories).
+TAREFA: Crie um roteiro de SEQUÊNCIA DE STORIES (4-6 stories) sobre "${params.topic}".
 
 REQUISITOS:
 1. Cada story deve ter texto curto (máximo 100 caracteres)
-2. Primeira story: GANCHO que gere curiosidade
-3. Stories do meio: desenvolva a narrativa
+2. Primeira story: GANCHO que gere curiosidade sobre "${params.topic}"
+3. Stories do meio: desenvolva a narrativa sobre o tema
 4. Última story: CTA forte (arraste para cima, responda, etc)
 5. Indique elementos visuais (stickers, enquetes, perguntas)
 6. Use o tom ${params.tone}
+7. Todo o conteúdo deve ser relevante para "${params.topic}"
 
 FORMATO:
 STORY 1:
@@ -251,20 +253,21 @@ CONTEXTO:
 TEMA: ${params.topic}
 ${params.objective ? `OBJETIVO: ${params.objective}` : ''}
 
-TAREFA: Crie um ROTEIRO COMPLETO para um Reel/TikTok de 30-60 segundos.
+TAREFA: Crie um ROTEIRO COMPLETO para um Reel/TikTok de 30-60 segundos sobre "${params.topic}".
 
 ESTRUTURA OBRIGATÓRIA:
-1. GANCHO (0-3s): Frase ou ação que prende IMEDIATAMENTE
-2. DESENVOLVIMENTO (3-25s): Conteúdo principal
+1. GANCHO (0-3s): Frase ou ação que prende IMEDIATAMENTE relacionado a "${params.topic}"
+2. DESENVOLVIMENTO (3-25s): Conteúdo principal sobre o tema
 3. CLÍMAX (25-35s): Ponto alto do vídeo
 4. CTA (35-60s): Chamada para ação
 
 REQUISITOS:
-1. Gancho PODEROSO nos primeiros 3 segundos
+1. Gancho PODEROSO nos primeiros 3 segundos sobre "${params.topic}"
 2. Ritmo dinâmico, sem enrolação
 3. Tom ${params.tone}
 4. Indique: falas, texto na tela, ações, transições
 5. Sugira áudio/música se relevante
+6. Todo o conteúdo deve ser sobre "${params.topic}"
 
 ${params.includeHashtags ? 'INCLUA: 10-15 hashtags populares da plataforma' : ''}
 

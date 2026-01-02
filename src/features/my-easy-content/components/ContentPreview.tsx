@@ -301,143 +301,149 @@ export function ContentPreview({
   };
 
   return (
-    <div className="flex-1 bg-slate-900/30 flex flex-col">
+    <div className="flex-1 bg-slate-900/30 flex flex-col h-[45vh] md:h-full">
       {/* Header with Tabs */}
-      <div className="border-b border-slate-800 p-4">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <FileText className="h-5 w-5 text-orange-400" />
-            <h2 className="text-lg font-semibold text-white">
+      <div className="border-b border-slate-800 p-2.5 sm:p-3 md:p-4">
+        <div className="flex items-center justify-between mb-2 sm:mb-3 md:mb-4 gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <FileText className="h-4 w-4 sm:h-5 sm:w-5 text-orange-400" />
+            <h2 className="text-sm sm:text-base md:text-lg font-semibold text-white">
               Conteudo Gerado
             </h2>
           </div>
           {contentData.calendar.length > 0 && (
-            <div className="flex gap-2">
+            <div className="flex gap-1 sm:gap-2">
               <button
                 onClick={() => onExportCalendar('csv')}
-                className="flex items-center gap-1 px-3 py-1 text-xs rounded-lg border border-slate-600 text-slate-300 hover:bg-slate-700"
+                className="flex items-center gap-1 px-2 sm:px-3 py-1 text-[10px] sm:text-xs rounded-lg border border-slate-600 text-slate-300 hover:bg-slate-700"
               >
-                <Download className="h-3 w-3" />
-                CSV
+                <Download className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                <span className="hidden sm:inline">CSV</span>
               </button>
               <button
                 onClick={() => onExportCalendar('json')}
-                className="flex items-center gap-1 px-3 py-1 text-xs rounded-lg border border-slate-600 text-slate-300 hover:bg-slate-700"
+                className="flex items-center gap-1 px-2 sm:px-3 py-1 text-[10px] sm:text-xs rounded-lg border border-slate-600 text-slate-300 hover:bg-slate-700"
               >
-                <Download className="h-3 w-3" />
-                JSON
+                <Download className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                <span className="hidden sm:inline">JSON</span>
               </button>
             </div>
           )}
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-2">
+        <div className="flex gap-1 sm:gap-2 overflow-x-auto pb-1">
           <button
             onClick={() => setActiveTab('content')}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+            className={`px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 rounded-lg text-[10px] sm:text-xs md:text-sm font-medium transition-colors whitespace-nowrap ${
               activeTab === 'content'
                 ? 'bg-orange-600 text-white'
                 : 'bg-slate-800 text-slate-400 hover:text-white'
             }`}
           >
-            <div className="flex items-center gap-2">
-              <FileText className="h-4 w-4" />
-              <span>Conteudos ({contentData.generatedContents.length})</span>
+            <div className="flex items-center gap-1 sm:gap-2">
+              <FileText className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">Conteudos</span>
+              <span className="sm:hidden">({contentData.generatedContents.length})</span>
+              <span className="hidden sm:inline">({contentData.generatedContents.length})</span>
             </div>
           </button>
           <button
             onClick={() => setActiveTab('calendar')}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+            className={`px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 rounded-lg text-[10px] sm:text-xs md:text-sm font-medium transition-colors whitespace-nowrap ${
               activeTab === 'calendar'
                 ? 'bg-orange-600 text-white'
                 : 'bg-slate-800 text-slate-400 hover:text-white'
             }`}
           >
-            <div className="flex items-center gap-2">
-              <Calendar className="h-4 w-4" />
-              <span>Calendario ({contentData.calendar.length})</span>
+            <div className="flex items-center gap-1 sm:gap-2">
+              <Calendar className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">Calendario</span>
+              <span className="sm:hidden">({contentData.calendar.length})</span>
+              <span className="hidden sm:inline">({contentData.calendar.length})</span>
             </div>
           </button>
           <button
             onClick={() => setActiveTab('library')}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+            className={`px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 rounded-lg text-[10px] sm:text-xs md:text-sm font-medium transition-colors whitespace-nowrap ${
               activeTab === 'library'
                 ? 'bg-orange-600 text-white'
                 : 'bg-slate-800 text-slate-400 hover:text-white'
             }`}
           >
-            <div className="flex items-center gap-2">
-              <BookmarkPlus className="h-4 w-4" />
-              <span>Biblioteca ({contentData.savedContents.length})</span>
+            <div className="flex items-center gap-1 sm:gap-2">
+              <BookmarkPlus className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">Biblioteca</span>
+              <span className="sm:hidden">({contentData.savedContents.length})</span>
+              <span className="hidden sm:inline">({contentData.savedContents.length})</span>
             </div>
           </button>
         </div>
       </div>
 
       {/* Content Area */}
-      <div className="flex-1 overflow-y-auto p-6">
+      <div className="flex-1 overflow-y-auto p-2.5 sm:p-4 md:p-6">
         {isGenerating ? (
-          <div className="flex flex-col items-center justify-center h-full">
+          <div className="flex flex-col items-center justify-center h-full p-4">
             <div className="relative">
-              <Sparkles className="h-16 w-16 text-orange-400 animate-pulse" />
+              <Sparkles className="h-10 w-10 sm:h-12 sm:w-12 md:h-16 md:w-16 text-orange-400 animate-pulse" />
               <div className="absolute inset-0 animate-spin">
-                <div className="h-16 w-16 border-t-2 border-orange-400 rounded-full" />
+                <div className="h-10 w-10 sm:h-12 sm:w-12 md:h-16 md:w-16 border-t-2 border-orange-400 rounded-full" />
               </div>
             </div>
-            <p className="mt-4 text-lg font-semibold text-white">
+            <p className="mt-3 sm:mt-4 text-sm sm:text-base md:text-lg font-semibold text-white text-center">
               Gerando seu conteudo...
             </p>
-            <p className="mt-2 text-sm text-slate-400">
+            <p className="mt-1.5 sm:mt-2 text-xs sm:text-sm text-slate-400 text-center">
               Isso pode levar alguns segundos
             </p>
           </div>
         ) : activeTab === 'content' ? (
           contentData.generatedContents.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full text-center">
-              <FileText className="h-16 w-16 text-slate-600 mb-4" />
-              <h3 className="text-xl font-semibold text-white mb-2">
+            <div className="flex flex-col items-center justify-center h-full text-center p-4">
+              <FileText className="h-10 w-10 sm:h-12 sm:w-12 md:h-16 md:w-16 text-slate-600 mb-2 sm:mb-3 md:mb-4" />
+              <h3 className="text-base sm:text-lg md:text-xl font-semibold text-white mb-1.5 sm:mb-2">
                 Nenhum conteudo gerado ainda
               </h3>
-              <p className="text-slate-400 max-w-md">
+              <p className="text-xs sm:text-sm md:text-base text-slate-400 max-w-xs sm:max-w-md">
                 Converse com o assistente no painel ao lado para gerar posts,
                 legendas, roteiros e muito mais!
               </p>
             </div>
           ) : (
-            <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2">
+            <div className="grid gap-3 sm:gap-4 md:gap-6 grid-cols-1 lg:grid-cols-2">
               {contentData.generatedContents.map(renderContentCard)}
             </div>
           )
         ) : activeTab === 'calendar' ? (
           contentData.calendar.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full text-center">
-              <Calendar className="h-16 w-16 text-slate-600 mb-4" />
-              <h3 className="text-xl font-semibold text-white mb-2">
+            <div className="flex flex-col items-center justify-center h-full text-center p-4">
+              <Calendar className="h-10 w-10 sm:h-12 sm:w-12 md:h-16 md:w-16 text-slate-600 mb-2 sm:mb-3 md:mb-4" />
+              <h3 className="text-base sm:text-lg md:text-xl font-semibold text-white mb-1.5 sm:mb-2">
                 Calendario vazio
               </h3>
-              <p className="text-slate-400 max-w-md">
+              <p className="text-xs sm:text-sm md:text-base text-slate-400 max-w-xs sm:max-w-md">
                 Solicite ao assistente para criar um calendario editorial mensal
                 para suas redes sociais.
               </p>
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-2 sm:space-y-3">
               {contentData.calendar.map(renderCalendarEntry)}
             </div>
           )
         ) : contentData.savedContents.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-center">
-            <BookmarkPlus className="h-16 w-16 text-slate-600 mb-4" />
-            <h3 className="text-xl font-semibold text-white mb-2">
+          <div className="flex flex-col items-center justify-center h-full text-center p-4">
+            <BookmarkPlus className="h-10 w-10 sm:h-12 sm:w-12 md:h-16 md:w-16 text-slate-600 mb-2 sm:mb-3 md:mb-4" />
+            <h3 className="text-base sm:text-lg md:text-xl font-semibold text-white mb-1.5 sm:mb-2">
               Biblioteca vazia
             </h3>
-            <p className="text-slate-400 max-w-md">
+            <p className="text-xs sm:text-sm md:text-base text-slate-400 max-w-xs sm:max-w-md">
               Salve seus conteudos favoritos para consultar depois.
             </p>
           </div>
         ) : (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-2 sm:gap-3 md:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
             {contentData.savedContents.map(renderLibraryItem)}
           </div>
         )}

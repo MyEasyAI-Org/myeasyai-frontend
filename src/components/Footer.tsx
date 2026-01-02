@@ -16,66 +16,68 @@ export function Footer() {
   return (
     <footer
       id="contato"
-      className="border-t border-slate-800 bg-slate-900 px-4 py-12 sm:px-6 lg:px-8"
+      className="border-t border-slate-800 bg-slate-900 px-4 py-8 sm:py-10 md:py-12 sm:px-6 lg:px-8"
     >
       <div className="mx-auto max-w-7xl">
-        <div className="grid gap-8 md:grid-cols-4">
-          <div className="md:col-span-2">
-            <div className="mb-4 flex items-center space-x-2">
+        <div className="grid gap-6 sm:gap-8 grid-cols-2 md:grid-cols-4">
+          {/* Logo and Social - Full width on mobile, 2 cols on md+ */}
+          <div className="col-span-2">
+            <div className="mb-3 sm:mb-4 flex items-center space-x-2">
               <img
                 src="/bone-logo.png"
                 alt="MyEasyAI Logo"
-                className="h-8 w-8 object-contain"
+                className="h-7 w-7 sm:h-8 sm:w-8 object-contain"
               />
-              <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-xl font-bold text-transparent">
+              <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-lg sm:text-xl font-bold text-transparent">
                 MyEasyAI
               </span>
             </div>
-            <p className="mb-4 max-w-md text-slate-400">
+            <p className="mb-3 sm:mb-4 max-w-md text-xs sm:text-sm md:text-base text-slate-400">
               Transformando a forma como você interage com inteligência
               artificial. Crie assistentes virtuais personalizados para suas
               necessidades.
             </p>
 
-            <h3 className="mb-4 text-lg font-bold text-white">
+            <h3 className="mb-3 sm:mb-4 text-sm sm:text-base md:text-lg font-bold text-white">
               Vem com a gente nas redes também :)
             </h3>
 
-            <div className="flex space-x-4">
+            <div className="flex space-x-2 sm:space-x-3 md:space-x-4">
               <a
                 href="https://x.com"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="group flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg bg-black transition-all hover:bg-slate-900"
+                className="group flex h-10 w-10 sm:h-11 sm:w-11 cursor-pointer items-center justify-center rounded-lg bg-black transition-all hover:bg-slate-900 active:scale-95"
               >
-                <XIcon className="h-5 w-5 text-white" />
+                <XIcon className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
               </a>
               <a
                 href="https://www.youtube.com/@MyEasyAI"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="group flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg bg-[#FF0000] transition-all hover:bg-[#CC0000]"
+                className="group flex h-10 w-10 sm:h-11 sm:w-11 cursor-pointer items-center justify-center rounded-lg bg-[#FF0000] transition-all hover:bg-[#CC0000] active:scale-95"
               >
-                <Youtube className="h-5 w-5 text-white" />
+                <Youtube className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
               </a>
               <a
                 href="https://www.instagram.com/myeasyai"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="group flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg bg-gradient-to-br from-purple-600 via-pink-600 to-orange-500 transition-all hover:from-purple-700 hover:via-pink-700 hover:to-orange-600"
+                className="group flex h-10 w-10 sm:h-11 sm:w-11 cursor-pointer items-center justify-center rounded-lg bg-gradient-to-br from-purple-600 via-pink-600 to-orange-500 transition-all hover:from-purple-700 hover:via-pink-700 hover:to-orange-600 active:scale-95"
               >
-                <Instagram className="h-5 w-5 text-white" />
+                <Instagram className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
               </a>
             </div>
           </div>
 
+          {/* Produto Links */}
           <div>
-            <h3 className="mb-4 font-semibold text-slate-200">Produto</h3>
-            <ul className="space-y-2">
+            <h3 className="mb-2 sm:mb-3 md:mb-4 text-sm sm:text-base font-semibold text-slate-200">Produto</h3>
+            <ul className="space-y-1 sm:space-y-2">
               <li>
                 <a
                   href="#features"
-                  className="text-slate-400 transition-colors hover:text-blue-400"
+                  className="block py-1 sm:py-1.5 text-xs sm:text-sm md:text-base text-slate-400 transition-colors hover:text-blue-400 active:text-blue-300"
                 >
                   Features
                 </a>
@@ -83,7 +85,7 @@ export function Footer() {
               <li>
                 <a
                   href="#preview"
-                  className="text-slate-400 transition-colors hover:text-blue-400"
+                  className="block py-1 sm:py-1.5 text-xs sm:text-sm md:text-base text-slate-400 transition-colors hover:text-blue-400 active:text-blue-300"
                 >
                   Preview
                 </a>
@@ -91,15 +93,15 @@ export function Footer() {
               <li>
                 <a
                   href="#cursos"
-                  className="text-slate-400 transition-colors hover:text-blue-400"
+                  className="block py-1 sm:py-1.5 text-xs sm:text-sm md:text-base text-slate-400 transition-colors hover:text-blue-400 active:text-blue-300"
                 >
                   Cursos
                 </a>
               </li>
               <li>
                 <a
-                  href="#"
-                  className="text-slate-400 transition-colors hover:text-blue-400"
+                  href="#packages"
+                  className="block py-1 sm:py-1.5 text-xs sm:text-sm md:text-base text-slate-400 transition-colors hover:text-blue-400 active:text-blue-300"
                 >
                   Preços
                 </a>
@@ -107,13 +109,14 @@ export function Footer() {
             </ul>
           </div>
 
+          {/* Suporte Links */}
           <div>
-            <h3 className="mb-4 font-semibold text-slate-200">Suporte</h3>
-            <ul className="space-y-2">
+            <h3 className="mb-2 sm:mb-3 md:mb-4 text-sm sm:text-base font-semibold text-slate-200">Suporte</h3>
+            <ul className="space-y-1 sm:space-y-2">
               <li>
                 <a
-                  href="#"
-                  className="text-slate-400 transition-colors hover:text-blue-400"
+                  href="#contato"
+                  className="block py-1 sm:py-1.5 text-xs sm:text-sm md:text-base text-slate-400 transition-colors hover:text-blue-400 active:text-blue-300"
                 >
                   Contato
                 </a>
@@ -121,7 +124,7 @@ export function Footer() {
               <li>
                 <a
                   href="#"
-                  className="text-slate-400 transition-colors hover:text-blue-400"
+                  className="block py-1 sm:py-1.5 text-xs sm:text-sm md:text-base text-slate-400 transition-colors hover:text-blue-400 active:text-blue-300"
                 >
                   Documentação
                 </a>
@@ -129,7 +132,7 @@ export function Footer() {
               <li>
                 <a
                   href="#"
-                  className="text-slate-400 transition-colors hover:text-blue-400"
+                  className="block py-1 sm:py-1.5 text-xs sm:text-sm md:text-base text-slate-400 transition-colors hover:text-blue-400 active:text-blue-300"
                 >
                   FAQ
                 </a>
@@ -137,16 +140,16 @@ export function Footer() {
               <li>
                 <a
                   href="#"
-                  className="text-slate-400 transition-colors hover:text-blue-400"
+                  className="block py-1 sm:py-1.5 text-xs sm:text-sm md:text-base text-slate-400 transition-colors hover:text-blue-400 active:text-blue-300"
                 >
-                  Política de Privacidade
+                  Privacidade
                 </a>
               </li>
             </ul>
           </div>
         </div>
 
-        <div className="mt-8 border-t border-slate-800 pt-8 text-center text-slate-400">
+        <div className="mt-6 sm:mt-8 border-t border-slate-800 pt-4 sm:pt-6 md:pt-8 text-center text-xs sm:text-sm md:text-base text-slate-400">
           <p>© 2025 MyEasyAI. Todos os direitos reservados.</p>
         </div>
       </div>

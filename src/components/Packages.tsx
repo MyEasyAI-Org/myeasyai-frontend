@@ -42,71 +42,72 @@ export function Packages({ user }: PackagesProps) {
   };
 
   return (
-    <section id="packages" className="bg-gradient-to-b from-slate-900/30 via-slate-800/40 to-slate-900/30 px-4 py-20 sm:px-6 lg:px-8">
+    <section id="packages" className="bg-gradient-to-b from-slate-900/30 via-slate-800/40 to-slate-900/30 px-4 py-12 sm:py-16 md:py-20 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-7xl">
-        <div className="mb-16 text-center">
-          <h2 className="mb-4 text-4xl font-bold text-white md:text-5xl">
+        <div className="mb-10 sm:mb-12 md:mb-16 text-center">
+          <h2 className="mb-4 text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-white">
             Quanto custa ter um{' '}
             <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
               assistente de IA próprio?
             </span>
           </h2>
-          <p className="mx-auto max-w-2xl text-lg text-slate-400">
+          <p className="mx-auto max-w-2xl text-base sm:text-lg text-slate-400">
             Planos para cada fase do seu negócio — do pequeno empreendedor à
             empresa com milhares de atendimentos diários
           </p>
         </div>
 
-        <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3 max-w-5xl mx-auto">
+        <div className="grid gap-4 sm:gap-6 md:gap-8 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 max-w-5xl mx-auto">
           {PLANS.map((plan) => (
             <div
               key={plan.value}
-              className={`relative rounded-2xl border p-8 transition-all hover:scale-105 ${
+              className={`relative rounded-xl sm:rounded-2xl border p-4 sm:p-6 md:p-8 transition-all hover:scale-[1.01] sm:hover:scale-[1.02] active:scale-[0.99] ${
                 plan.popular
                   ? 'border-purple-500 bg-gradient-to-br from-purple-900/20 to-blue-900/20 shadow-lg shadow-purple-500/20'
                   : 'border-slate-800 bg-slate-900/50'
               }`}
             >
               {plan.popular && (
-                <div className="absolute -top-4 left-1/2 -translate-x-1/2 transform">
-                  <span className="rounded-full bg-gradient-to-r from-purple-500 to-pink-500 px-4 py-1 text-xs font-semibold text-white shadow-lg">
+                <div className="absolute -top-2.5 sm:-top-3 md:-top-4 left-1/2 -translate-x-1/2 transform">
+                  <span className="rounded-full bg-gradient-to-r from-purple-500 to-pink-500 px-2.5 sm:px-3 md:px-4 py-0.5 sm:py-1 text-[10px] sm:text-xs font-semibold text-white shadow-lg whitespace-nowrap">
                     MAIS POPULAR
                   </span>
                 </div>
               )}
 
               <div className="text-center">
-                <h3 className="text-2xl font-bold text-white">{plan.name}</h3>
-                <div className="mt-6">
+                <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-white">{plan.name}</h3>
+                <div className="mt-3 sm:mt-4 md:mt-6">
                   <span
                     className={`font-bold text-white ${
-                      plan.price === 'Customizado' ? 'text-3xl' : 'text-5xl'
+                      plan.price === 'Customizado' ? 'text-xl sm:text-2xl md:text-3xl' : 'text-3xl sm:text-4xl md:text-5xl'
                     }`}
                   >
                     {plan.price}
                   </span>
                   {plan.price !== 'Customizado' && (
-                    <span className="text-slate-400">/mês</span>
+                    <span className="text-sm sm:text-base text-slate-400">/mês</span>
                   )}
                 </div>
-                <p className="mt-3 text-sm text-slate-400">
+                <p className="mt-1.5 sm:mt-2 md:mt-3 text-xs sm:text-sm text-slate-400">
                   {plan.tokens} tokens
                 </p>
               </div>
 
-              <ul className="mt-8 space-y-4">
+              <ul className="mt-4 sm:mt-6 md:mt-8 space-y-2 sm:space-y-3 md:space-y-4">
                 {plan.features.map((feature, index) => (
                   <li key={index} className="flex items-start">
-                    <Check className="mr-3 h-5 w-5 flex-shrink-0 text-green-400" />
-                    <span className="text-sm text-slate-300">{feature}</span>
+                    <Check className="mr-1.5 sm:mr-2 md:mr-3 h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0 text-green-400" />
+                    <span className="text-xs sm:text-sm text-slate-300">{feature}</span>
                   </li>
                 ))}
               </ul>
 
-              <div className="mt-8 flex justify-center">
+              <div className="mt-4 sm:mt-6 md:mt-8">
                 <Button
                   variant={plan.popular ? 'primary' : 'secondary'}
                   onClick={() => handleSelectPlan(plan.value)}
+                  className="w-full"
                 >
                   Obter agora!
                 </Button>
@@ -116,11 +117,11 @@ export function Packages({ user }: PackagesProps) {
         </div>
 
         {/* Informações adicionais */}
-        <div className="mt-16 text-center">
-          <p className="text-slate-400">
+        <div className="mt-10 sm:mt-16 text-center">
+          <p className="text-sm sm:text-base text-slate-400">
             Todos os planos incluem acesso à plataforma e atualizações gratuitas
           </p>
-          <p className="mt-2 text-sm text-slate-500">
+          <p className="mt-2 text-xs sm:text-sm text-slate-500">
             Cancele a qualquer momento, sem taxas ocultas
           </p>
         </div>

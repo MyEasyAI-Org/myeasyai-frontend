@@ -452,12 +452,12 @@ export function ChatPanel({
   messagesEndRef,
 }: ChatPanelProps) {
   return (
-    <div className="w-[30%] border-r border-slate-800 bg-slate-900/50 flex flex-col">
+    <div className="w-full md:w-[40%] lg:w-[30%] border-b md:border-b-0 md:border-r border-slate-800 bg-slate-900/50 flex flex-col h-[55vh] md:h-full">
       {/* Chat Header */}
-      <div className="border-b border-slate-800 p-4 flex items-center justify-between">
-        <div className="flex items-center space-x-3">
-          <MessageSquare className="h-5 w-5 text-purple-400" />
-          <h2 className="text-lg font-semibold text-white">
+      <div className="border-b border-slate-800 p-2.5 sm:p-3 md:p-4 flex items-center justify-between">
+        <div className="flex items-center space-x-2 sm:space-x-3">
+          <MessageSquare className="h-4 w-4 sm:h-5 sm:w-5 text-purple-400" />
+          <h2 className="text-sm sm:text-base md:text-lg font-semibold text-white">
             Assistente de Criação
           </h2>
         </div>
@@ -467,36 +467,36 @@ export function ChatPanel({
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div className="flex-1 overflow-y-auto p-2.5 sm:p-3 md:p-4 space-y-3 sm:space-y-4">
         {conversation.messages.map((message: any, index: number) => (
           <div
             key={index}
             className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
           >
             <div
-              className={`max-w-[85%] rounded-lg p-4 ${
+              className={`max-w-[90%] sm:max-w-[85%] rounded-lg p-2.5 sm:p-3 md:p-4 ${
                 message.role === 'user'
                   ? 'bg-gradient-to-r from-purple-500 to-blue-600 text-white'
                   : 'bg-slate-800 text-slate-100 border border-slate-700'
               }`}
             >
               {message.role === 'assistant' && (
-                <div className="flex items-center space-x-2 mb-2">
-                  <Sparkles className="h-4 w-4 text-purple-400" />
-                  <span className="text-xs font-semibold text-purple-400">
+                <div className="flex items-center space-x-1.5 sm:space-x-2 mb-1.5 sm:mb-2">
+                  <Sparkles className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-purple-400" />
+                  <span className="text-[10px] sm:text-xs font-semibold text-purple-400">
                     AI Assistant
                   </span>
                 </div>
               )}
               <p
-                className="text-sm leading-relaxed"
+                className="text-xs sm:text-sm leading-relaxed"
                 style={{ whiteSpace: 'pre-wrap' }}
               >
                 {message.content}
               </p>
 
               {message.options && (
-                <div className="mt-4 grid grid-cols-2 gap-2">
+                <div className="mt-2.5 sm:mt-3 md:mt-4 grid grid-cols-2 gap-1.5 sm:gap-2">
                   {message.options.map((option: any, idx: number) => {
                     // Suporta tanto componentes quanto strings de ícones
                     const Icon = typeof option.icon === 'string'
@@ -538,14 +538,14 @@ export function ChatPanel({
                             askSectionQuestions({ services: true, gallery: true });
                           }
                         }}
-                        className={`flex items-center space-x-2 rounded-lg border p-3 text-left transition-colors ${
+                        className={`flex items-center space-x-1.5 sm:space-x-2 rounded-lg border p-2 sm:p-2.5 md:p-3 text-left transition-colors ${
                           isSelected
                             ? 'border-purple-500 bg-purple-500/20 text-purple-300'
                             : 'border-slate-600 bg-slate-700 hover:border-purple-500 hover:bg-slate-600 text-slate-300'
                         }`}
                       >
-                        {Icon && <Icon className="h-4 w-4" />}
-                        <span className="text-xs font-medium">
+                        {Icon && <Icon className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />}
+                        <span className="text-[10px] sm:text-xs font-medium">
                           {option.label}
                         </span>
                       </button>
@@ -1119,14 +1119,14 @@ export function ChatPanel({
 
       {/* Botões de Ação - Acima do Input */}
       {(conversation.conversationHistory.length > 0 || showSummary) && (
-        <div className="border-t border-slate-800 px-4 pt-3 pb-2 space-y-2">
+        <div className="border-t border-slate-800 px-2.5 sm:px-3 md:px-4 pt-2 sm:pt-3 pb-1.5 sm:pb-2 space-y-1.5 sm:space-y-2">
           {conversation.conversationHistory.length > 0 && (
             <button
               onClick={goBack}
-              className="w-full flex items-center justify-center gap-2 rounded-lg border-2 border-purple-500/30 bg-purple-500/10 px-4 py-3 text-purple-300 hover:bg-purple-500/20 hover:border-purple-500/50 transition-all group"
+              className="w-full flex items-center justify-center gap-1.5 sm:gap-2 rounded-lg border-2 border-purple-500/30 bg-purple-500/10 px-3 sm:px-4 py-2 sm:py-2.5 md:py-3 text-purple-300 hover:bg-purple-500/20 hover:border-purple-500/50 transition-all group"
             >
-              <ArrowLeft className="h-4 w-4 group-hover:translate-x-[-4px] transition-transform" />
-              <span className="text-sm font-semibold">
+              <ArrowLeft className="h-3.5 w-3.5 sm:h-4 sm:w-4 group-hover:translate-x-[-4px] transition-transform" />
+              <span className="text-xs sm:text-sm font-semibold">
                 Voltar à pergunta anterior
               </span>
             </button>
@@ -1138,24 +1138,24 @@ export function ChatPanel({
                 // NÃO esconder o resumo, apenas gerar o site
                 handleGenerateSite();
               }}
-              className="w-full flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-green-500 to-emerald-600 px-4 py-3 text-white font-bold hover:from-green-600 hover:to-emerald-700 transition-all shadow-lg shadow-green-500/50"
+              className="w-full flex items-center justify-center gap-1.5 sm:gap-2 rounded-lg bg-gradient-to-r from-green-500 to-emerald-600 px-3 sm:px-4 py-2 sm:py-2.5 md:py-3 text-white font-bold hover:from-green-600 hover:to-emerald-700 transition-all shadow-lg shadow-green-500/50"
             >
-              <Check className="h-5 w-5" />
-              <span>Confirmar e Gerar Site</span>
+              <Check className="h-4 w-4 sm:h-5 sm:w-5" />
+              <span className="text-xs sm:text-sm">Confirmar e Gerar Site</span>
             </button>
           )}
         </div>
       )}
 
       {/* Input */}
-      <div className="border-t border-slate-800 p-4">
+      <div className="border-t border-slate-800 p-2.5 sm:p-3 md:p-4">
         {conversation.currentStep === 8 ? (
           // Input especial para telefone com dropdown de país
-          <div className="space-y-2">
-            <p className="text-xs text-slate-400 text-center">
+          <div className="space-y-1.5 sm:space-y-2">
+            <p className="text-[10px] sm:text-xs text-slate-400 text-center">
               💡 Selecione o país e digite o telefone
             </p>
-            <div className="flex space-x-2">
+            <div className="flex space-x-1.5 sm:space-x-2">
               {/* Dropdown de País */}
               <div className="relative">
                 <button
@@ -1164,17 +1164,17 @@ export function ChatPanel({
                     e.stopPropagation();
                     setShowCountryDropdown(!showCountryDropdown);
                   }}
-                  className="flex items-center gap-2 px-3 py-3 rounded-lg border border-slate-700 bg-slate-800/60 hover:bg-slate-700/60 transition-colors"
+                  className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-2 sm:py-2.5 md:py-3 rounded-lg border border-slate-700 bg-slate-800/60 hover:bg-slate-700/60 transition-colors"
                 >
                   <FlagIcon
                     countryCode={addressManagement.selectedCountry.code}
-                    className="w-6 h-4"
+                    className="w-5 h-3.5 sm:w-6 sm:h-4"
                   />
-                  <span className="text-slate-100 text-sm font-semibold">
+                  <span className="text-slate-100 text-xs sm:text-sm font-semibold hidden sm:inline">
                     {addressManagement.selectedCountry.dial}
                   </span>
                   <svg
-                    className={`w-4 h-4 text-slate-400 transition-transform ${showCountryDropdown ? 'rotate-180' : ''}`}
+                    className={`w-3 h-3 sm:w-4 sm:h-4 text-slate-400 transition-transform ${showCountryDropdown ? 'rotate-180' : ''}`}
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -1190,13 +1190,13 @@ export function ChatPanel({
 
                 {/* Dropdown Menu */}
                 {showCountryDropdown && (
-                  <div className="absolute bottom-full left-0 mb-2 w-80 max-h-96 overflow-y-auto bg-slate-800 border border-slate-700 rounded-lg shadow-2xl z-50">
-                    <div className="p-2 border-b border-slate-700 bg-slate-900">
-                      <p className="text-xs font-semibold text-purple-300">
+                  <div className="absolute bottom-full left-0 mb-2 w-64 sm:w-80 max-h-60 sm:max-h-96 overflow-y-auto bg-slate-800 border border-slate-700 rounded-lg shadow-2xl z-50">
+                    <div className="p-1.5 sm:p-2 border-b border-slate-700 bg-slate-900">
+                      <p className="text-[10px] sm:text-xs font-semibold text-purple-300">
                         🌍 Selecione o país
                       </p>
                     </div>
-                    <div className="p-2 space-y-1">
+                    <div className="p-1.5 sm:p-2 space-y-0.5 sm:space-y-1">
                       {addressManagement.getAllCountries().map((country: any) => (
                         <button
                           key={country.code}
@@ -1206,7 +1206,7 @@ export function ChatPanel({
                             setShowCountryDropdown(false);
                             setInputMessage('');
                           }}
-                          className={`w-full flex items-center gap-3 p-2 rounded-lg text-left transition-all hover:bg-purple-500/20 ${
+                          className={`w-full flex items-center gap-2 sm:gap-3 p-1.5 sm:p-2 rounded-lg text-left transition-all hover:bg-purple-500/20 ${
                             addressManagement.selectedCountry.code === country.code
                               ? 'bg-purple-500/30 border border-purple-500'
                               : 'hover:bg-slate-700'
@@ -1214,16 +1214,16 @@ export function ChatPanel({
                         >
                           <FlagIcon
                             countryCode={country.code}
-                            className="w-6 h-4 flex-shrink-0"
+                            className="w-5 h-3.5 sm:w-6 sm:h-4 flex-shrink-0"
                           />
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-white truncate">
+                            <p className="text-xs sm:text-sm font-medium text-white truncate">
                               {country.name}
                             </p>
-                            <p className="text-xs text-slate-400">{country.dial}</p>
+                            <p className="text-[10px] sm:text-xs text-slate-400">{country.dial}</p>
                           </div>
                           {addressManagement.selectedCountry.code === country.code && (
-                            <Check className="h-4 w-4 text-purple-400" />
+                            <Check className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-purple-400" />
                           )}
                         </button>
                       ))}
@@ -1244,21 +1244,21 @@ export function ChatPanel({
                 }}
                 onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
                 placeholder={`Ex: ${addressManagement.selectedCountry.phoneFormat.replace(/#/g, '9')}`}
-                className="flex-1 rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-white placeholder-slate-500 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                className="flex-1 rounded-lg border border-slate-700 bg-slate-800 px-2.5 sm:px-3 md:px-4 py-1.5 sm:py-2 text-xs sm:text-sm text-white placeholder-slate-500 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
               />
 
               <button
                 onClick={handleSendMessage}
                 disabled={!inputMessage.trim() || isGenerating}
-                className="rounded-lg bg-purple-600 p-2 text-white hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="rounded-lg bg-purple-600 p-1.5 sm:p-2 text-white hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <Send className="h-5 w-5" />
+                <Send className="h-4 w-4 sm:h-5 sm:w-5" />
               </button>
             </div>
           </div>
         ) : (
           // Input padrão para outros steps
-          <div className="flex space-x-2">
+          <div className="flex space-x-1.5 sm:space-x-2">
             <input
               type="text"
               value={inputMessage}
@@ -1271,7 +1271,7 @@ export function ChatPanel({
                 conversation.currentStep === 5 ||
                 isGenerating
               }
-              className="flex-1 rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-white placeholder-slate-500 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50"
+              className="flex-1 rounded-lg border border-slate-700 bg-slate-800 px-2.5 sm:px-3 md:px-4 py-1.5 sm:py-2 text-xs sm:text-sm text-white placeholder-slate-500 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50"
             />
             <button
               onClick={handleSendMessage}
@@ -1282,9 +1282,9 @@ export function ChatPanel({
                 conversation.currentStep === 5 ||
                 isGenerating
               }
-              className="rounded-lg bg-purple-600 p-2 text-white hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="rounded-lg bg-purple-600 p-1.5 sm:p-2 text-white hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <Send className="h-5 w-5" />
+              <Send className="h-4 w-4 sm:h-5 sm:w-5" />
             </button>
           </div>
         )}

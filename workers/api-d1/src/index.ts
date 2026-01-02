@@ -47,6 +47,7 @@ app.use('*', async (c, next) => {
       const allowedOrigins = [
         c.env.CORS_ORIGIN,
         'http://localhost:5173',
+        'http://localhost:5174',
         'http://localhost:3000',
         'https://myeasyai.com',
         'https://www.myeasyai.com',
