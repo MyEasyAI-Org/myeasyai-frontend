@@ -412,34 +412,35 @@ export function MyEasyContent({ onBackToDashboard }: MyEasyContentProps) {
     <div className="min-h-screen bg-gradient-to-br from-black-main to-orange-900/20">
       {/* Header */}
       <header className="border-b border-slate-800 bg-black-main/50 backdrop-blur-sm">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="flex h-16 items-center justify-between">
-            <div className="flex items-center space-x-4">
+        <div className="mx-auto max-w-7xl px-3 sm:px-4 md:px-6 lg:px-8">
+          <div className="flex h-14 sm:h-16 items-center justify-between gap-2">
+            <div className="flex items-center space-x-2 sm:space-x-4 min-w-0">
               <img
                 src="/bone-logo.png"
                 alt="MyEasyAI Logo"
-                className="h-12 w-12 object-contain"
+                className="h-8 w-8 sm:h-10 sm:w-10 md:h-12 md:w-12 object-contain flex-shrink-0"
               />
-              <div>
-                <span className="bg-gradient-to-r from-orange-400 to-pink-400 bg-clip-text text-xl font-bold text-transparent">
+              <div className="min-w-0">
+                <span className="bg-gradient-to-r from-orange-400 to-pink-400 bg-clip-text text-base sm:text-lg md:text-xl font-bold text-transparent">
                   MyEasyContent
                 </span>
-                <p className="text-xs text-slate-400">
-                  Criador de Conteudo para Redes Sociais
+                <p className="text-[10px] sm:text-xs text-slate-400 truncate">
+                  Criador de Conteudo
                 </p>
               </div>
             </div>
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-1 sm:space-x-2 flex-shrink-0">
               <button
                 onClick={() =>
                   onBackToDashboard
                     ? onBackToDashboard()
                     : (window.location.href = '/')
                 }
-                className="flex items-center space-x-2 text-slate-300 hover:text-white transition-colors"
+                className="flex items-center space-x-1 sm:space-x-2 text-slate-300 hover:text-white transition-colors px-1 sm:px-2 py-1"
               >
-                <ArrowLeft className="h-5 w-5" />
-                <span>Voltar ao Dashboard</span>
+                <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5" />
+                <span className="hidden md:inline text-sm">Voltar ao Dashboard</span>
+                <span className="hidden sm:inline md:hidden text-sm">Voltar</span>
               </button>
             </div>
           </div>
@@ -447,7 +448,7 @@ export function MyEasyContent({ onBackToDashboard }: MyEasyContentProps) {
       </header>
 
       {/* Main Content */}
-      <div className="flex h-[calc(100vh-4rem)]">
+      <div className="flex flex-col md:flex-row h-[calc(100vh-3.5rem)] sm:h-[calc(100vh-4rem)]">
         <ContentChatPanel
           messages={messages}
           currentStep={currentStep}

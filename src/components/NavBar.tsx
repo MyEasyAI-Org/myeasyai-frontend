@@ -1,5 +1,5 @@
 import type { User } from '@supabase/supabase-js';
-import { Home, LogOut } from 'lucide-react';
+import { Home, LogOut, Menu, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { useModalState } from '../hooks/useModalState';
 import { useNotifications } from '../hooks/useNotifications';
@@ -36,8 +36,10 @@ export default function NavBar({
   const notificationModal = useModalState({ disableScrollLock: true });
   const [selectedNotification, setSelectedNotification] =
     useState<Notification | null>(null);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const notificationRef = useRef<HTMLDivElement>(null);
+  const mobileMenuRef = useRef<HTMLDivElement>(null);
 
   // Notifications hook
   const { getUnreadCount, getLatest, markAsRead, markAllAsRead } =
@@ -58,16 +60,22 @@ export default function NavBar({
       ) {
         notificationModal.close();
       }
+      if (
+        mobileMenuRef.current &&
+        !mobileMenuRef.current.contains(event.target as Node)
+      ) {
+        setIsMobileMenuOpen(false);
+      }
     };
 
-    if (dropdownModal.isOpen || notificationModal.isOpen) {
+    if (dropdownModal.isOpen || notificationModal.isOpen || isMobileMenuOpen) {
       document.addEventListener('mousedown', handleClickOutside);
     }
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [dropdownModal.isOpen, notificationModal.isOpen, dropdownModal, notificationModal]);
+  }, [dropdownModal.isOpen, notificationModal.isOpen, dropdownModal, notificationModal, isMobileMenuOpen]);
 
   // Check if avatar URL is a real photo or just a Google default placeholder
   const isRealAvatar = (url: string | null | undefined): boolean => {
@@ -118,6 +126,7 @@ export default function NavBar({
     targetId: string,
   ) => {
     e.preventDefault();
+    setIsMobileMenuOpen(false);
     const element = document.getElementById(targetId);
     if (element) {
       element.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -145,17 +154,31 @@ export default function NavBar({
     <nav className="fixed top-0 z-50 w-full border-b border-slate-800 bg-black-main/95 backdrop-blur-sm">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between">
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-2 sm:space-x-4">
+            {/* Mobile menu button */}
+            <button
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className="rounded-lg p-2 text-slate-300 hover:bg-slate-800 hover:text-white md:hidden"
+              aria-label="Menu"
+            >
+              {isMobileMenuOpen ? (
+                <X className="h-6 w-6" />
+              ) : (
+                <Menu className="h-6 w-6" />
+              )}
+            </button>
+
+            {/* Logo */}
             <button
               onClick={onLogoClick}
-              className="flex items-center gap-3 cursor-pointer"
+              className="flex items-center gap-2 sm:gap-3 cursor-pointer"
             >
               <img
                 src="/bone-logo.png"
                 alt="MyEasyAI Logo"
-                className="h-12 w-12 object-contain"
+                className="h-10 w-10 sm:h-12 sm:w-12 object-contain"
               />
-              <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-xl font-bold text-transparent">
+              <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-lg sm:text-xl font-bold text-transparent">
                 MyEasyAI
               </span>
             </button>
@@ -199,10 +222,10 @@ export default function NavBar({
             </a>
           </div>
 
-          <div className="flex space-x-2 sm:space-x-3">
+          <div className="flex items-center space-x-2 sm:space-x-3">
             {user ? (
               // Logged in user - show notification bell and dropdown menu
-              <div className="flex items-center space-x-3">
+              <div className="flex items-center space-x-2 sm:space-x-3">
                 {/* Notification Bell */}
                 <div className="relative" ref={notificationRef}>
                   <NotificationBell
@@ -224,12 +247,12 @@ export default function NavBar({
                 <div className="relative" ref={dropdownRef}>
                   <button
                     onClick={() => dropdownModal.toggle()}
-                    className="flex items-center space-x-3 rounded-lg border border-slate-700 bg-slate-700/30 px-3 py-2 transition-all hover:border-slate-600 hover:bg-slate-600/40 hover:shadow-lg hover:shadow-purple-500/20 cursor-pointer"
+                    className="flex items-center space-x-2 sm:space-x-3 rounded-lg border border-slate-700 bg-slate-700/30 px-2 sm:px-3 py-1.5 sm:py-2 transition-all hover:border-slate-600 hover:bg-slate-600/40 hover:shadow-lg hover:shadow-purple-500/20 cursor-pointer"
                   >
-                    <div className="h-9 w-9 flex-shrink-0 overflow-hidden rounded-full ring-2 ring-purple-500/30">
+                    <div className="h-8 w-8 sm:h-9 sm:w-9 flex-shrink-0 overflow-hidden rounded-full ring-2 ring-purple-500/30">
                       {getAvatarContent()}
                     </div>
-                    <span className="text-sm font-medium text-slate-200">
+                    <span className="hidden sm:inline text-sm font-medium text-slate-200">
                       Olá,{' '}
                       {userName === 'Usuário' ? (
                         <span className="loading-dots">
@@ -244,17 +267,17 @@ export default function NavBar({
                   </button>
 
                   {dropdownModal.isOpen && (
-                    <div className="absolute right-0 mt-2 w-64 origin-top-right animate-in fade-in slide-in-from-top-2 duration-200 rounded-xl border border-slate-700 bg-slate-800/99 backdrop-blur-xl shadow-2xl shadow-black/50">
-                      <div className="p-4 border-b border-slate-700">
-                        <div className="flex items-center space-x-3">
-                          <div className="h-12 w-12 flex-shrink-0 overflow-hidden rounded-full ring-2 ring-purple-500/40">
+                    <div className="absolute right-0 mt-2 w-56 sm:w-64 origin-top-right animate-in fade-in slide-in-from-top-2 duration-200 rounded-xl border border-slate-700 bg-slate-800/99 backdrop-blur-xl shadow-2xl shadow-black/50">
+                      <div className="p-3 sm:p-4 border-b border-slate-700">
+                        <div className="flex items-center space-x-2 sm:space-x-3">
+                          <div className="h-10 w-10 sm:h-12 sm:w-12 flex-shrink-0 overflow-hidden rounded-full ring-2 ring-purple-500/40">
                             {getAvatarContent()}
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-semibold text-white truncate">
                               {userName}
                             </p>
-                            <p className="text-xs text-slate-400 truncate">
+                            <p className="text-xs text-slate-400 truncate max-w-[150px] sm:max-w-none">
                               {user?.email}
                             </p>
                           </div>
@@ -314,6 +337,52 @@ export default function NavBar({
           </div>
         </div>
       </div>
+
+      {/* Mobile Menu Dropdown */}
+      {isMobileMenuOpen && (
+        <div
+          ref={mobileMenuRef}
+          className="absolute left-0 right-0 top-16 border-b border-slate-800 bg-black-main/98 backdrop-blur-sm md:hidden animate-in fade-in slide-in-from-top-2 duration-200"
+        >
+          <div className="flex flex-col px-4 py-3 space-y-1">
+            <a
+              href="#features"
+              onClick={(e) => handleSmoothScroll(e, 'features')}
+              className="py-3 px-4 text-slate-300 hover:text-blue-400 hover:bg-slate-800/50 rounded-lg transition-colors cursor-pointer"
+            >
+              Features
+            </a>
+            <a
+              href="#preview"
+              onClick={(e) => handleSmoothScroll(e, 'preview')}
+              className="py-3 px-4 text-slate-300 hover:text-blue-400 hover:bg-slate-800/50 rounded-lg transition-colors cursor-pointer"
+            >
+              Preview
+            </a>
+            <a
+              href="#packages"
+              onClick={(e) => handleSmoothScroll(e, 'packages')}
+              className="py-3 px-4 text-slate-300 hover:text-blue-400 hover:bg-slate-800/50 rounded-lg transition-colors cursor-pointer"
+            >
+              Pacotes
+            </a>
+            <a
+              href="#cursos"
+              onClick={(e) => handleSmoothScroll(e, 'cursos')}
+              className="py-3 px-4 text-slate-300 hover:text-blue-400 hover:bg-slate-800/50 rounded-lg transition-colors cursor-pointer"
+            >
+              Cursos
+            </a>
+            <a
+              href="#contato"
+              onClick={(e) => handleSmoothScroll(e, 'contato')}
+              className="py-3 px-4 text-slate-300 hover:text-blue-400 hover:bg-slate-800/50 rounded-lg transition-colors cursor-pointer"
+            >
+              Contato
+            </a>
+          </div>
+        </div>
+      )}
 
       {/* Notification Details Modal */}
       <NotificationDetailModal

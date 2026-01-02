@@ -300,39 +300,39 @@ export function MyEasyWebsite({ onBackToDashboard, onGoToSubscription }: MyEasyW
     <div className="min-h-screen bg-gradient-to-br from-black-main to-blue-main">
       {/* Header */}
       <header className="border-b border-slate-800 bg-black-main/50 backdrop-blur-sm">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="flex h-16 items-center justify-between">
-            <div className="flex items-center space-x-4">
+        <div className="mx-auto max-w-7xl px-3 sm:px-4 md:px-6 lg:px-8">
+          <div className="flex h-14 sm:h-16 items-center justify-between gap-2">
+            <div className="flex items-center space-x-2 sm:space-x-4 min-w-0">
               <img
                 src="/bone-logo.png"
                 alt="MyEasyAI Logo"
-                className="h-12 w-12 object-contain"
+                className="h-8 w-8 sm:h-10 sm:w-10 md:h-12 md:w-12 object-contain flex-shrink-0"
               />
-              <div>
-                <span className="bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-xl font-bold text-transparent">
+              <div className="min-w-0">
+                <span className="bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-base sm:text-lg md:text-xl font-bold text-transparent">
                   MyEasyWebsite
                 </span>
-                <p className="text-xs text-slate-400">
-                  Criador de Sites Inteligente com IA
+                <p className="text-[10px] sm:text-xs text-slate-400 truncate">
+                  Criador de Sites com IA
                 </p>
               </div>
             </div>
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-1 sm:space-x-2 flex-shrink-0">
               {generatedSite && (
                 <>
                   <button
                     onClick={() => window.open(sitePreviewUrl, '_blank')}
-                    className="flex items-center space-x-2 rounded-lg border border-blue-600 bg-blue-600/10 px-4 py-2 text-blue-400 hover:bg-blue-600/20 transition-colors"
+                    className="flex items-center space-x-1 sm:space-x-2 rounded-lg border border-blue-600 bg-blue-600/10 px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 text-blue-400 hover:bg-blue-600/20 transition-colors"
                   >
-                    <Eye className="h-4 w-4" />
-                    <span>Abrir Site</span>
+                    <Eye className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                    <span className="hidden sm:inline text-sm">Abrir Site</span>
                   </button>
                   <button
                     onClick={handlePublishSite}
-                    className="flex items-center space-x-2 rounded-lg bg-gradient-to-r from-orange-500 to-amber-600 px-4 py-2 text-white hover:from-orange-600 hover:to-amber-700 transition-colors shadow-lg shadow-orange-500/50"
+                    className="flex items-center space-x-1 sm:space-x-2 rounded-lg bg-gradient-to-r from-orange-500 to-amber-600 px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 text-white hover:from-orange-600 hover:to-amber-700 transition-colors shadow-lg shadow-orange-500/50"
                   >
-                    <Cloud className="h-4 w-4" />
-                    <span>Publicar Site</span>
+                    <Cloud className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                    <span className="hidden sm:inline text-sm">Publicar</span>
                   </button>
                 </>
               )}
@@ -342,10 +342,11 @@ export function MyEasyWebsite({ onBackToDashboard, onGoToSubscription }: MyEasyW
                     ? onBackToDashboard()
                     : (window.location.href = '/')
                 }
-                className="flex items-center space-x-2 text-slate-300 hover:text-white transition-colors"
+                className="flex items-center space-x-1 sm:space-x-2 text-slate-300 hover:text-white transition-colors px-1 sm:px-2 py-1"
               >
-                <ArrowLeft className="h-5 w-5" />
-                <span>Voltar ao Dashboard</span>
+                <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5" />
+                <span className="hidden md:inline text-sm">Voltar ao Dashboard</span>
+                <span className="hidden sm:inline md:hidden text-sm">Voltar</span>
               </button>
             </div>
           </div>
@@ -353,20 +354,20 @@ export function MyEasyWebsite({ onBackToDashboard, onGoToSubscription }: MyEasyW
       </header>
 
       {/* Main Content */}
-      <div className="flex h-[calc(100vh-4rem)]">
+      <div className="flex flex-col md:flex-row h-[calc(100vh-3.5rem)] sm:h-[calc(100vh-4rem)]">
         {/* Loading inicial - enquanto carrega os dados do usuário */}
         {userSite.isLoading && showExistingSitePanel && (
           <div className="w-full flex items-center justify-center">
-            <div className="flex flex-col items-center gap-4">
-              <Loader2 className="h-12 w-12 text-orange-400 animate-spin" />
-              <p className="text-slate-400 text-lg">Carregando seus sites...</p>
+            <div className="flex flex-col items-center gap-3 sm:gap-4 px-4">
+              <Loader2 className="h-10 w-10 sm:h-12 sm:w-12 text-orange-400 animate-spin" />
+              <p className="text-slate-400 text-base sm:text-lg text-center">Carregando seus sites...</p>
             </div>
           </div>
         )}
 
         {/* Painel de projeto existente - mostra lista de sites ou cria novo */}
         {!userSite.isLoading && showExistingSitePanel && (userSite.hasExistingSite || userSite.allUserSites.length > 0) && (
-          <div className="w-full flex items-start justify-center overflow-auto py-6">
+          <div className="w-full flex items-start justify-center overflow-auto py-4 sm:py-6 px-2 sm:px-4">
             <ExistingSitePanel
               sites={userSite.allUserSites}
               currentSite={userSite.userSite}

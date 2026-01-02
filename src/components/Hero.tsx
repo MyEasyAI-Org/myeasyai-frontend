@@ -95,7 +95,7 @@ function YouTubePlayer() {
           onClick={handleClick}
           className="absolute inset-0 z-10 flex cursor-pointer items-center justify-center bg-black/20"
         >
-          <div className="rounded-full bg-black/70 px-6 py-3 text-sm font-medium text-white shadow-lg backdrop-blur-sm transition-transform hover:scale-105">
+          <div className="rounded-full bg-black/70 px-4 py-2 sm:px-6 sm:py-3 text-xs sm:text-sm font-medium text-white shadow-lg backdrop-blur-sm transition-transform hover:scale-105 active:scale-95">
             Clique para ativar o som
           </div>
         </div>
@@ -125,31 +125,31 @@ export function Hero({
   };
 
   return (
-    <section className="bg-gradient-to-b from-transparent via-slate-900/20 to-transparent px-4 pt-24 pb-20 sm:px-6 lg:px-8">
+    <section className="bg-gradient-to-b from-transparent via-slate-900/20 to-transparent px-4 pt-20 pb-12 sm:pt-24 sm:pb-20 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-7xl">
-        <div className="mb-16 text-center">
+        <div className="mb-10 sm:mb-16 text-center">
 {user ? (
-            <div className="mb-8 inline-flex items-center rounded-full bg-slate-800 px-4 py-2">
+            <div className="mb-6 sm:mb-8 inline-flex items-center rounded-full bg-slate-800 px-3 py-1.5 sm:px-4 sm:py-2">
               <FaStar
-                className="mr-2 h-4 w-4 text-purple-400"
+                className="mr-2 h-3 w-3 sm:h-4 sm:w-4 text-purple-400"
                 aria-hidden="true"
               />
-              <span className="text-sm text-slate-300">Sua IA, do seu jeito</span>
+              <span className="text-xs sm:text-sm text-slate-300">Sua IA, do seu jeito</span>
             </div>
           ) : (
             <button
               onClick={onOpenSignup}
-              className="mb-8 inline-flex items-center rounded-full bg-slate-800 px-4 py-2 transition-all hover:scale-105 hover:bg-slate-700 cursor-pointer"
+              className="mb-6 sm:mb-8 inline-flex items-center rounded-full bg-slate-800 px-3 py-1.5 sm:px-4 sm:py-2 transition-all hover:scale-105 hover:bg-slate-700 cursor-pointer"
             >
               <FaStar
-                className="mr-2 h-4 w-4 text-purple-400"
+                className="mr-2 h-3 w-3 sm:h-4 sm:w-4 text-purple-400"
                 aria-hidden="true"
               />
-              <span className="text-sm text-slate-300">Sua IA, do seu jeito</span>
+              <span className="text-xs sm:text-sm text-slate-300">Sua IA, do seu jeito</span>
             </button>
           )}
 
-          <h1 className="mb-6 text-5xl font-bold leading-tight md:text-7xl">
+          <h1 className="mb-4 sm:mb-6 text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-bold leading-tight">
             <span className="text-gradient">
               Construa e treine
             </span>
@@ -157,30 +157,30 @@ export function Hero({
             <span className="text-slate-100">assistentes virtuais</span>
           </h1>
 
-          <p className="mx-auto mb-10 max-w-2xl text-xl leading-relaxed text-slate-400">
+          <p className="mx-auto mb-8 sm:mb-10 max-w-2xl text-base sm:text-lg md:text-xl leading-relaxed text-slate-400">
             Crie assistentes de IA que atendem seus clientes automaticamente.
             Perfeito para chat de suporte, FAQ automático, agendamentos e muito
             mais — sem precisar programar.
           </p>
 
-          <div className="flex flex-col justify-center gap-4 sm:flex-row">
+          <div className="flex flex-col justify-center gap-3 sm:gap-4 sm:flex-row px-4 sm:px-0">
             {user ? (
               // Usuário logado - mostrar botão para Dashboard
               <>
-                <Button variant="primary" onClick={onDashboardClick}>
+                <Button variant="primary" onClick={onDashboardClick} className="w-full sm:w-auto">
                   Acessar Dashboard
                 </Button>
-                <Button variant="outline" href="#features">
+                <Button variant="outline" href="#features" className="w-full sm:w-auto">
                   Saiba mais
                 </Button>
               </>
             ) : (
               // Usuário não logado - mostrar botão para cadastro
               <>
-                <Button variant="primary" onClick={onOpenSignup}>
+                <Button variant="primary" onClick={onOpenSignup} className="w-full sm:w-auto">
                   Quero experimentar
                 </Button>
-                <Button variant="outline" href="#features">
+                <Button variant="outline" href="#features" className="w-full sm:w-auto">
                   Saiba mais
                 </Button>
               </>
@@ -189,8 +189,8 @@ export function Hero({
         </div>
 
         <div className="relative mx-auto max-w-4xl">
-          <div className="relative rounded-2xl border border-slate-700 bg-gradient-to-br from-slate-800 to-slate-900 p-2 shadow-2xl">
-            <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-blue-500/10 to-purple-600/10" />
+          <div className="relative rounded-xl sm:rounded-2xl border border-slate-700 bg-gradient-to-br from-slate-800 to-slate-900 p-1.5 sm:p-2 shadow-2xl">
+            <div className="absolute inset-0 rounded-xl sm:rounded-2xl bg-gradient-to-br from-blue-500/10 to-purple-600/10" />
             <div className="relative">
               <YouTubePlayer />
             </div>
