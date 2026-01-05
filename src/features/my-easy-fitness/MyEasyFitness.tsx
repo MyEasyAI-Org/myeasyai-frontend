@@ -1,55 +1,113 @@
-import { ArrowLeft, Construction, Dumbbell } from 'lucide-react';
+/**
+ * MyEasyFitness
+ *
+ * Main component for the fitness assistant module.
+ * Uses clean architecture with separated concerns:
+ * - hooks/ for state management
+ * - utils/ for business logic
+ * - components/ for UI
+ * - types/ for type definitions
+ * - constants/ for configuration
+ */
+
+import { ArrowLeft } from 'lucide-react';
+import { FitnessChatPanel } from './components/FitnessChatPanel';
+import { FitnessVisualizationPanel } from './components/FitnessVisualizationPanel';
+import { useFitnessData } from './hooks/useFitnessData';
+import { useAnamneseFlow } from './hooks/useAnamneseFlow';
 
 type MyEasyFitnessProps = {
   onBackToDashboard: () => void;
 };
 
 export function MyEasyFitness({ onBackToDashboard }: MyEasyFitnessProps) {
+  // Data state management
+  const {
+    anamnese,
+    treinos,
+    dieta,
+    updateAnamnese,
+    addTreino,
+    updateDieta,
+    setTreinos,
+  } = useFitnessData();
+
+  // Conversation flow management
+  const {
+    messages,
+    inputMessage,
+    isGenerating,
+    setInputMessage,
+    handleSendMessage,
+  } = useAnamneseFlow({
+    anamnese,
+    treinos,
+    dieta,
+    onUpdateAnamnese: updateAnamnese,
+    onAddTreino: addTreino,
+    onUpdateDieta: updateDieta,
+  });
+
+  const handleBack = () => {
+    if (onBackToDashboard) {
+      onBackToDashboard();
+    } else {
+      window.location.href = '/';
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
+    <div className="h-screen overflow-hidden bg-gradient-to-br from-black-main to-blue-main text-white flex flex-col">
       {/* Header */}
-      <header className="border-b border-slate-800 bg-slate-900/50 backdrop-blur-sm">
-        <div className="mx-auto max-w-7xl px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <button
-                onClick={onBackToDashboard}
-                className="flex items-center space-x-2 text-slate-400 hover:text-white transition-colors"
-              >
-                <ArrowLeft className="h-5 w-5" />
-                <span>Voltar</span>
-              </button>
-              <div className="h-6 w-px bg-slate-700" />
-              <div className="flex items-center space-x-2">
-                <div className="rounded-lg bg-lime-500/20 p-2">
-                  <Dumbbell className="h-5 w-5 text-lime-400" />
-                </div>
-                <h1 className="text-xl font-bold text-white">MyEasyFitness</h1>
+      <header className="flex-shrink-0 border-b border-slate-800 bg-black-main/50 backdrop-blur-sm">
+        <div className="mx-auto max-w-[1920px] px-4 sm:px-6 lg:px-8">
+          <div className="flex h-16 items-center justify-between">
+            <div className="flex items-center space-x-3 sm:space-x-4">
+              <img
+                src="/bone-logo.png"
+                alt="MyEasyAI Logo"
+                className="h-10 w-10 sm:h-12 sm:w-12 object-contain"
+              />
+              <div>
+                <span className="bg-gradient-to-r from-lime-400 to-green-500 bg-clip-text text-lg sm:text-xl font-bold text-transparent">
+                  MyEasyFitness
+                </span>
+                <p className="text-xs text-slate-400 hidden sm:block">
+                  Seu assistente de treinos e saude
+                </p>
               </div>
             </div>
+            <button
+              onClick={handleBack}
+              className="flex items-center space-x-2 text-slate-300 hover:text-white transition-colors"
+            >
+              <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5" />
+              <span className="hidden sm:inline">Voltar ao Dashboard</span>
+            </button>
           </div>
         </div>
       </header>
 
-      {/* Content - Em Construção */}
-      <main className="flex flex-1 items-center justify-center px-4 py-24">
-        <div className="text-center">
-          <div className="mx-auto mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-lime-500/20">
-            <Construction className="h-12 w-12 text-lime-400" />
-          </div>
-          <h2 className="text-3xl font-bold text-white">Em Construção</h2>
-          <p className="mt-4 max-w-md text-lg text-slate-400">
-            O MyEasyFitness está sendo desenvolvido para ajudar você com treinos,
-            dietas, calorias, suplementos, mobilidade e esportes.
-          </p>
-          <p className="mt-2 text-slate-500">Em breve disponível!</p>
-          <button
-            onClick={onBackToDashboard}
-            className="mt-8 rounded-lg bg-lime-600 px-6 py-3 text-sm font-semibold text-white hover:bg-lime-500 transition-colors"
-          >
-            Voltar ao Dashboard
-          </button>
-        </div>
+      {/* Main Content - Two Panels */}
+      <main className="flex-1 flex overflow-hidden min-h-0">
+        {/* Left Panel - Chat */}
+        <FitnessChatPanel
+          messages={messages}
+          inputMessage={inputMessage}
+          setInputMessage={setInputMessage}
+          isGenerating={isGenerating}
+          onSendMessage={handleSendMessage}
+        />
+
+        {/* Right Panel - Dashboard with Tabs */}
+        <FitnessVisualizationPanel
+          anamnese={anamnese}
+          treinos={treinos}
+          dieta={dieta}
+          onUpdateAnamnese={updateAnamnese}
+          onUpdateTreinos={setTreinos}
+          onUpdateDieta={updateDieta}
+        />
       </main>
     </div>
   );
