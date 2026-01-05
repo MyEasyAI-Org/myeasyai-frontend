@@ -100,6 +100,7 @@ export function DashboardHeader({
                   profile={profile}
                   onNavigateToProfile={onNavigateToProfile}
                   onNavigateToSettings={onNavigateToSettings}
+                  onGoToHome={onGoHome}
                   onLogout={onLogout}
                   onClose={dropdownModal.close}
                 />
