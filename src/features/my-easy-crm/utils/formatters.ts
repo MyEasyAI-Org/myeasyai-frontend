@@ -200,3 +200,58 @@ export function daysUntil(date: string | Date): number {
   const diffMs = d.getTime() - now.getTime();
   return Math.ceil(diffMs / (1000 * 60 * 60 * 24));
 }
+
+// =============================================
+// Input Masks - Funções para aplicar durante digitação
+// =============================================
+
+/**
+ * Aplica máscara de telefone brasileiro durante digitação
+ * Suporta fixo (10 dígitos) e celular (11 dígitos)
+ * Formato: (11) 99999-9999 ou (11) 9999-9999
+ */
+export function maskPhone(value: string): string {
+  // Remove tudo que não é dígito
+  const digits = value.replace(/\D/g, '');
+
+  // Limita a 11 dígitos (celular)
+  const limited = digits.slice(0, 11);
+
+  // Aplica a máscara progressivamente
+  if (limited.length === 0) return '';
+  if (limited.length <= 2) return `(${limited}`;
+  if (limited.length <= 6) return `(${limited.slice(0, 2)}) ${limited.slice(2)}`;
+  if (limited.length <= 10) {
+    // Telefone fixo: (11) 9999-9999
+    return `(${limited.slice(0, 2)}) ${limited.slice(2, 6)}-${limited.slice(6)}`;
+  }
+  // Celular: (11) 99999-9999
+  return `(${limited.slice(0, 2)}) ${limited.slice(2, 7)}-${limited.slice(7)}`;
+}
+
+/**
+ * Aplica máscara de CNPJ durante digitação
+ * Formato: 00.000.000/0000-00
+ */
+export function maskCNPJ(value: string): string {
+  // Remove tudo que não é dígito
+  const digits = value.replace(/\D/g, '');
+
+  // Limita a 14 dígitos
+  const limited = digits.slice(0, 14);
+
+  // Aplica a máscara progressivamente
+  if (limited.length === 0) return '';
+  if (limited.length <= 2) return limited;
+  if (limited.length <= 5) return `${limited.slice(0, 2)}.${limited.slice(2)}`;
+  if (limited.length <= 8) return `${limited.slice(0, 2)}.${limited.slice(2, 5)}.${limited.slice(5)}`;
+  if (limited.length <= 12) return `${limited.slice(0, 2)}.${limited.slice(2, 5)}.${limited.slice(5, 8)}/${limited.slice(8)}`;
+  return `${limited.slice(0, 2)}.${limited.slice(2, 5)}.${limited.slice(5, 8)}/${limited.slice(8, 12)}-${limited.slice(12)}`;
+}
+
+/**
+ * Remove máscara e retorna apenas dígitos
+ */
+export function unmask(value: string): string {
+  return value.replace(/\D/g, '');
+}

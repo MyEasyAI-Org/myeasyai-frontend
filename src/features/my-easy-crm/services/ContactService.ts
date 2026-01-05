@@ -1,150 +1,193 @@
 // =============================================
 // MyEasyCRM - Contact Service
+// Using Cloudflare D1 via d1Client
 // =============================================
 
-import { supabase } from '../../../lib/api-clients/supabase-client';
+import { d1Client, type D1CrmContact } from '../../../lib/api-clients/d1-client';
+import { authService } from '../../../services/AuthServiceV2';
 import type { Contact, ContactFormData, ContactFilters } from '../types';
 
-const TABLE_NAME = 'crm_contacts';
+/**
+ * Gets the current authenticated user ID.
+ * Works with both Cloudflare and Supabase auth sources.
+ */
+async function getCurrentUserId(): Promise<string> {
+  await authService.waitForInit();
+  const authUser = authService.getUser();
+
+  if (authUser?.uuid) {
+    return authUser.uuid;
+  }
+
+  throw new Error('[ContactService] User not authenticated');
+}
+
+/** Helper to convert null to undefined */
+function nullToUndefined<T>(value: T | null): T | undefined {
+  return value === null ? undefined : value;
+}
+
+/**
+ * Converts D1 contact to frontend Contact type
+ */
+function mapD1ToContact(d1Contact: D1CrmContact): Contact {
+  return {
+    id: d1Contact.id,
+    user_id: d1Contact.user_id,
+    company_id: nullToUndefined(d1Contact.company_id),
+    name: d1Contact.name,
+    email: nullToUndefined(d1Contact.email),
+    phone: nullToUndefined(d1Contact.phone),
+    mobile: nullToUndefined(d1Contact.mobile),
+    position: nullToUndefined(d1Contact.position),
+    role: nullToUndefined(d1Contact.role),
+    tags: d1Contact.tags ? JSON.parse(d1Contact.tags) : [],
+    notes: nullToUndefined(d1Contact.notes),
+    source: nullToUndefined(d1Contact.source) as Contact['source'],
+    lead_source: nullToUndefined(d1Contact.lead_source) as Contact['lead_source'],
+    birth_date: nullToUndefined(d1Contact.birth_date),
+    address: nullToUndefined(d1Contact.address),
+    linkedin: nullToUndefined(d1Contact.linkedin),
+    instagram: nullToUndefined(d1Contact.instagram),
+    created_at: d1Contact.created_at ?? new Date().toISOString(),
+    updated_at: d1Contact.updated_at ?? new Date().toISOString(),
+    company: undefined, // Company relation handled separately if needed
+  };
+}
 
 export const ContactService = {
   /**
    * Busca todos os contatos do usuário
    */
   async getAll(filters?: ContactFilters): Promise<Contact[]> {
-    let query = supabase
-      .from(TABLE_NAME)
-      .select(`
-        *,
-        company:crm_companies(id, name, industry)
-      `)
-      .order('created_at', { ascending: false });
+    const userId = await getCurrentUserId();
+    const result = await d1Client.getCrmContacts(userId, {
+      search: filters?.search,
+      company_id: filters?.company_id,
+    });
 
-    if (filters?.search) {
-      query = query.or(`name.ilike.%${filters.search}%,email.ilike.%${filters.search}%`);
-    }
-
-    if (filters?.company_id) {
-      query = query.eq('company_id', filters.company_id);
-    }
-
-    if (filters?.tags && filters.tags.length > 0) {
-      query = query.contains('tags', filters.tags);
-    }
-
-    if (filters?.lead_source) {
-      query = query.eq('lead_source', filters.lead_source);
-    }
-
-    if (filters?.created_after) {
-      query = query.gte('created_at', filters.created_after);
-    }
-
-    if (filters?.created_before) {
-      query = query.lte('created_at', filters.created_before);
-    }
-
-    const { data, error } = await query;
-
-    if (error) {
-      console.error('Error fetching contacts:', error);
+    if (result.error) {
+      console.error('Error fetching contacts:', result.error);
       throw new Error('Failed to fetch contacts');
     }
 
-    return data || [];
+    let contacts = (result.data || []).map(mapD1ToContact);
+
+    // Apply additional filters client-side
+    if (filters?.tags && filters.tags.length > 0) {
+      const filterTags = filters.tags;
+      contacts = contacts.filter((c) =>
+        filterTags.some((tag) => c.tags.includes(tag))
+      );
+    }
+
+    if (filters?.lead_source) {
+      contacts = contacts.filter((c) => c.lead_source === filters.lead_source);
+    }
+
+    if (filters?.created_after) {
+      const createdAfter = filters.created_after;
+      contacts = contacts.filter((c) => c.created_at >= createdAfter);
+    }
+
+    if (filters?.created_before) {
+      const createdBefore = filters.created_before;
+      contacts = contacts.filter((c) => c.created_at <= createdBefore);
+    }
+
+    return contacts;
   },
 
   /**
    * Busca um contato por ID
    */
   async getById(id: string): Promise<Contact | null> {
-    const { data, error } = await supabase
-      .from(TABLE_NAME)
-      .select(`
-        *,
-        company:crm_companies(id, name, industry, size, website)
-      `)
-      .eq('id', id)
-      .single();
+    const result = await d1Client.getCrmContactById(id);
 
-    if (error) {
-      if (error.code === 'PGRST116') {
+    if (result.error) {
+      if (result.error.includes('not found')) {
         return null;
       }
-      console.error('Error fetching contact:', error);
+      console.error('Error fetching contact:', result.error);
       throw new Error('Failed to fetch contact');
     }
 
-    return data;
+    return result.data ? mapD1ToContact(result.data) : null;
   },
 
   /**
    * Cria um novo contato
    */
   async create(data: ContactFormData): Promise<Contact> {
-    const { data: user } = await supabase.auth.getUser();
+    const userId = await getCurrentUserId();
 
-    if (!user.user) {
-      throw new Error('[ContactService] User not authenticated');
-    }
+    const result = await d1Client.createCrmContact({
+      user_id: userId,
+      name: data.name,
+      company_id: data.company_id,
+      email: data.email,
+      phone: data.phone,
+      mobile: data.mobile,
+      position: data.position,
+      role: data.role,
+      tags: data.tags,
+      notes: data.notes,
+      source: data.source,
+      lead_source: data.lead_source,
+      birth_date: data.birth_date,
+      address: data.address,
+      linkedin: data.linkedin,
+      instagram: data.instagram,
+    });
 
-    const { data: contact, error } = await supabase
-      .from(TABLE_NAME)
-      .insert({
-        ...data,
-        user_id: user.user.id,
-        tags: data.tags || [],
-      })
-      .select(`
-        *,
-        company:crm_companies(id, name, industry)
-      `)
-      .single();
-
-    if (error) {
-      console.error('Error creating contact:', error);
+    if (result.error || !result.data) {
+      console.error('Error creating contact:', result.error);
       throw new Error('Failed to create contact');
     }
 
-    return contact;
+    return mapD1ToContact(result.data);
   },
 
   /**
    * Atualiza um contato existente
    */
   async update(id: string, data: Partial<ContactFormData>): Promise<Contact> {
-    const { data: contact, error } = await supabase
-      .from(TABLE_NAME)
-      .update({
-        ...data,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', id)
-      .select(`
-        *,
-        company:crm_companies(id, name, industry)
-      `)
-      .single();
+    // Build update object explicitly to avoid type conflicts
+    const updates: Parameters<typeof d1Client.updateCrmContact>[1] = {};
+    if (data.name !== undefined) updates.name = data.name;
+    if (data.email !== undefined) updates.email = data.email;
+    if (data.phone !== undefined) updates.phone = data.phone;
+    if (data.mobile !== undefined) updates.mobile = data.mobile;
+    if (data.company_id !== undefined) updates.company_id = data.company_id;
+    if (data.position !== undefined) updates.position = data.position;
+    if (data.role !== undefined) updates.role = data.role;
+    if (data.tags !== undefined) updates.tags = data.tags;
+    if (data.notes !== undefined) updates.notes = data.notes;
+    if (data.source !== undefined) updates.source = data.source;
+    if (data.lead_source !== undefined) updates.lead_source = data.lead_source;
+    if (data.birth_date !== undefined) updates.birth_date = data.birth_date;
+    if (data.address !== undefined) updates.address = data.address;
+    if (data.linkedin !== undefined) updates.linkedin = data.linkedin;
+    if (data.instagram !== undefined) updates.instagram = data.instagram;
 
-    if (error) {
-      console.error('Error updating contact:', error);
+    const result = await d1Client.updateCrmContact(id, updates);
+
+    if (result.error || !result.data) {
+      console.error('Error updating contact:', result.error);
       throw new Error('Failed to update contact');
     }
 
-    return contact;
+    return mapD1ToContact(result.data);
   },
 
   /**
    * Deleta um contato
    */
   async delete(id: string): Promise<void> {
-    const { error } = await supabase
-      .from(TABLE_NAME)
-      .delete()
-      .eq('id', id);
+    const result = await d1Client.deleteCrmContact(id);
 
-    if (error) {
-      console.error('Error deleting contact:', error);
+    if (result.error) {
+      console.error('Error deleting contact:', result.error);
       throw new Error('Failed to delete contact');
     }
   },
@@ -153,55 +196,44 @@ export const ContactService = {
    * Conta total de contatos
    */
   async count(): Promise<number> {
-    const { count, error } = await supabase
-      .from(TABLE_NAME)
-      .select('*', { count: 'exact', head: true });
+    const userId = await getCurrentUserId();
+    const result = await d1Client.countCrmContacts(userId);
 
-    if (error) {
-      console.error('Error counting contacts:', error);
+    if (result.error) {
+      console.error('Error counting contacts:', result.error);
       throw new Error('Failed to count contacts');
     }
 
-    return count || 0;
+    return result.data?.count || 0;
   },
 
   /**
    * Busca contatos por empresa
    */
   async getByCompany(companyId: string): Promise<Contact[]> {
-    const { data, error } = await supabase
-      .from(TABLE_NAME)
-      .select('*')
-      .eq('company_id', companyId)
-      .order('name');
+    const result = await d1Client.getCrmContactsByCompany(companyId);
 
-    if (error) {
-      console.error('Error fetching contacts by company:', error);
+    if (result.error) {
+      console.error('Error fetching contacts by company:', result.error);
       throw new Error('Failed to fetch contacts by company');
     }
 
-    return data || [];
+    return (result.data || []).map(mapD1ToContact);
   },
 
   /**
    * Busca contatos criados recentemente
    */
   async getRecent(limit = 5): Promise<Contact[]> {
-    const { data, error } = await supabase
-      .from(TABLE_NAME)
-      .select(`
-        *,
-        company:crm_companies(id, name)
-      `)
-      .order('created_at', { ascending: false })
-      .limit(limit);
+    const userId = await getCurrentUserId();
+    const result = await d1Client.getRecentCrmContacts(userId, limit);
 
-    if (error) {
-      console.error('Error fetching recent contacts:', error);
+    if (result.error) {
+      console.error('Error fetching recent contacts:', result.error);
       throw new Error('Failed to fetch recent contacts');
     }
 
-    return data || [];
+    return (result.data || []).map(mapD1ToContact);
   },
 
   /**
@@ -226,7 +258,7 @@ export const ContactService = {
       throw new Error('Contact not found');
     }
 
-    const filteredTags = contact.tags.filter(tag => !tagsToRemove.includes(tag));
+    const filteredTags = contact.tags.filter((tag) => !tagsToRemove.includes(tag));
     return this.update(id, { tags: filteredTags });
   },
 };

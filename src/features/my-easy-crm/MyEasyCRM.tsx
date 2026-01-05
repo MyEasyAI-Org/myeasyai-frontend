@@ -544,6 +544,7 @@ export function MyEasyCRM({
         userEmail={userEmail}
         onLogout={onLogout}
         onSettings={onBackToMain}
+        onBackToDashboard={onBackToMain}
       >
         {renderView()}
       </CRMLayout>

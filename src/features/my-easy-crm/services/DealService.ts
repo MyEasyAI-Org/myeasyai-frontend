@@ -1,176 +1,181 @@
 // =============================================
 // MyEasyCRM - Deal Service
+// Using Cloudflare D1 via d1Client
 // =============================================
 
-import { supabase } from '../../../lib/api-clients/supabase-client';
+import { d1Client, type D1CrmDeal } from '../../../lib/api-clients/d1-client';
+import { authService } from '../../../services/AuthServiceV2';
 import type { Deal, DealFormData, DealFilters, DealStage, Pipeline, PipelineColumn } from '../types';
-import { DEAL_STAGES, OPEN_DEAL_STAGES } from '../constants';
+import { DEAL_STAGES } from '../constants';
 
-const TABLE_NAME = 'crm_deals';
+/**
+ * Gets the current authenticated user ID.
+ * Works with both Cloudflare and Supabase auth sources.
+ */
+async function getCurrentUserId(): Promise<string> {
+  await authService.waitForInit();
+  const authUser = authService.getUser();
+
+  if (authUser?.uuid) {
+    return authUser.uuid;
+  }
+
+  throw new Error('[DealService] User not authenticated');
+}
+
+/** Helper to convert null to undefined */
+function nullToUndefined<T>(value: T | null): T | undefined {
+  return value === null ? undefined : value;
+}
+
+/**
+ * Converts D1 deal to frontend Deal type
+ */
+function mapD1ToDeal(d1Deal: D1CrmDeal): Deal {
+  return {
+    id: d1Deal.id,
+    user_id: d1Deal.user_id,
+    contact_id: d1Deal.contact_id ?? '',
+    company_id: nullToUndefined(d1Deal.company_id),
+    title: d1Deal.title,
+    value: d1Deal.value,
+    stage: d1Deal.stage as DealStage,
+    probability: d1Deal.probability,
+    expected_close_date: nullToUndefined(d1Deal.expected_close_date),
+    actual_close_date: nullToUndefined(d1Deal.actual_close_date),
+    lost_reason: nullToUndefined(d1Deal.lost_reason),
+    source: nullToUndefined(d1Deal.source) as Deal['source'],
+    notes: nullToUndefined(d1Deal.notes),
+    products: d1Deal.products ? JSON.parse(d1Deal.products) : [],
+    created_at: d1Deal.created_at ?? new Date().toISOString(),
+    updated_at: d1Deal.updated_at ?? new Date().toISOString(),
+    contact: undefined, // Contact relation handled separately if needed
+    company: undefined, // Company relation handled separately if needed
+  };
+}
 
 export const DealService = {
   /**
    * Busca todos os deals do usuário
    */
   async getAll(filters?: DealFilters): Promise<Deal[]> {
-    let query = supabase
-      .from(TABLE_NAME)
-      .select(`
-        *,
-        contact:crm_contacts(id, name, email, phone),
-        company:crm_companies(id, name)
-      `)
-      .order('created_at', { ascending: false });
+    const userId = await getCurrentUserId();
 
-    if (filters?.search) {
-      query = query.ilike('title', `%${filters.search}%`);
-    }
-
+    // Get stage filter
+    let stageFilter: string | undefined;
     if (filters?.stage) {
-      if (Array.isArray(filters.stage)) {
-        query = query.in('stage', filters.stage);
-      } else {
-        query = query.eq('stage', filters.stage);
-      }
+      stageFilter = Array.isArray(filters.stage) ? filters.stage[0] : filters.stage;
     }
 
-    if (filters?.contact_id) {
-      query = query.eq('contact_id', filters.contact_id);
-    }
+    const result = await d1Client.getCrmDeals(userId, {
+      stage: stageFilter,
+      contact_id: filters?.contact_id,
+      company_id: filters?.company_id,
+    });
 
-    if (filters?.company_id) {
-      query = query.eq('company_id', filters.company_id);
-    }
-
-    if (filters?.min_value !== undefined) {
-      query = query.gte('value', filters.min_value);
-    }
-
-    if (filters?.max_value !== undefined) {
-      query = query.lte('value', filters.max_value);
-    }
-
-    if (filters?.expected_close_after) {
-      query = query.gte('expected_close_date', filters.expected_close_after);
-    }
-
-    if (filters?.expected_close_before) {
-      query = query.lte('expected_close_date', filters.expected_close_before);
-    }
-
-    const { data, error } = await query;
-
-    if (error) {
-      console.error('Error fetching deals:', error);
+    if (result.error) {
+      console.error('Error fetching deals:', result.error);
       throw new Error('Failed to fetch deals');
     }
 
-    return data || [];
+    let deals = (result.data || []).map(mapD1ToDeal);
+
+    // Apply additional filters client-side
+    if (filters?.search) {
+      const searchLower = filters.search.toLowerCase();
+      deals = deals.filter((d) => d.title.toLowerCase().includes(searchLower));
+    }
+
+    if (filters?.stage && Array.isArray(filters.stage) && filters.stage.length > 1) {
+      deals = deals.filter((d) => (filters.stage as DealStage[]).includes(d.stage));
+    }
+
+    if (filters?.min_value !== undefined) {
+      const minValue = filters.min_value;
+      deals = deals.filter((d) => d.value >= minValue);
+    }
+
+    if (filters?.max_value !== undefined) {
+      const maxValue = filters.max_value;
+      deals = deals.filter((d) => d.value <= maxValue);
+    }
+
+    if (filters?.expected_close_after) {
+      const closeAfter = filters.expected_close_after;
+      deals = deals.filter(
+        (d) => d.expected_close_date && d.expected_close_date >= closeAfter
+      );
+    }
+
+    if (filters?.expected_close_before) {
+      const closeBefore = filters.expected_close_before;
+      deals = deals.filter(
+        (d) => d.expected_close_date && d.expected_close_date <= closeBefore
+      );
+    }
+
+    return deals;
   },
 
   /**
    * Busca um deal por ID
    */
   async getById(id: string): Promise<Deal | null> {
-    const { data, error } = await supabase
-      .from(TABLE_NAME)
-      .select(`
-        *,
-        contact:crm_contacts(id, name, email, phone, mobile, position),
-        company:crm_companies(id, name, industry, website)
-      `)
-      .eq('id', id)
-      .single();
+    const result = await d1Client.getCrmDealById(id);
 
-    if (error) {
-      if (error.code === 'PGRST116') {
+    if (result.error) {
+      if (result.error.includes('not found')) {
         return null;
       }
-      console.error('Error fetching deal:', error);
+      console.error('Error fetching deal:', result.error);
       throw new Error('Failed to fetch deal');
     }
 
-    return data;
+    return result.data ? mapD1ToDeal(result.data) : null;
   },
 
   /**
    * Cria um novo deal
    */
   async create(data: DealFormData): Promise<Deal> {
-    const { data: user } = await supabase.auth.getUser();
-
-    if (!user.user) {
-      throw new Error('[DealService] User not authenticated');
-    }
+    const userId = await getCurrentUserId();
 
     const stage = data.stage || 'lead';
     const probability = data.probability ?? DEAL_STAGES[stage].probability;
 
-    // Build insert data, excluding undefined values
-    const insertData: Record<string, unknown> = {
-      user_id: user.user.id,
+    const result = await d1Client.createCrmDeal({
+      user_id: userId,
       title: data.title,
       value: data.value,
       stage,
       probability,
-    };
+      contact_id: data.contact_id,
+      company_id: data.company_id,
+      expected_close_date: data.expected_close_date,
+      source: data.source,
+      notes: data.notes,
+    });
 
-    // Only add optional fields if they have values
-    if (data.contact_id) insertData.contact_id = data.contact_id;
-    if (data.company_id) insertData.company_id = data.company_id;
-    if (data.expected_close_date) insertData.expected_close_date = data.expected_close_date;
-    if (data.source) insertData.source = data.source;
-    if (data.notes) insertData.notes = data.notes;
-
-    const { data: deal, error } = await supabase
-      .from(TABLE_NAME)
-      .insert(insertData)
-      .select(`
-        *,
-        contact:crm_contacts(id, name, email),
-        company:crm_companies(id, name)
-      `)
-      .single();
-
-    if (error) {
-      console.error('Error creating deal:', error);
+    if (result.error || !result.data) {
+      console.error('Error creating deal:', result.error);
       throw new Error('Failed to create deal');
     }
 
-    return deal;
+    return mapD1ToDeal(result.data);
   },
 
   /**
    * Atualiza um deal existente
    */
   async update(id: string, data: Partial<DealFormData>): Promise<Deal> {
-    const updateData: Record<string, unknown> = {
-      ...data,
-      updated_at: new Date().toISOString(),
-    };
+    const result = await d1Client.updateCrmDeal(id, data as Partial<D1CrmDeal>);
 
-    // Se mudou o estágio para fechado, registra a data
-    if (data.stage === 'closed_won' || data.stage === 'closed_lost') {
-      updateData.actual_close_date = new Date().toISOString().split('T')[0];
-    }
-
-    const { data: deal, error } = await supabase
-      .from(TABLE_NAME)
-      .update(updateData)
-      .eq('id', id)
-      .select(`
-        *,
-        contact:crm_contacts(id, name, email),
-        company:crm_companies(id, name)
-      `)
-      .single();
-
-    if (error) {
-      console.error('Error updating deal:', error);
+    if (result.error || !result.data) {
+      console.error('Error updating deal:', result.error);
       throw new Error('Failed to update deal');
     }
 
-    return deal;
+    return mapD1ToDeal(result.data);
   },
 
   /**
@@ -193,13 +198,10 @@ export const DealService = {
    * Deleta um deal
    */
   async delete(id: string): Promise<void> {
-    const { error } = await supabase
-      .from(TABLE_NAME)
-      .delete()
-      .eq('id', id);
+    const result = await d1Client.deleteCrmDeal(id);
 
-    if (error) {
-      console.error('Error deleting deal:', error);
+    if (result.error) {
+      console.error('Error deleting deal:', result.error);
       throw new Error('Failed to delete deal');
     }
   },
@@ -208,42 +210,27 @@ export const DealService = {
    * Busca deals para o Pipeline (Kanban)
    */
   async getPipeline(): Promise<Pipeline> {
-    const { data: deals, error } = await supabase
-      .from(TABLE_NAME)
-      .select(`
-        *,
-        contact:crm_contacts(id, name, email),
-        company:crm_companies(id, name)
-      `)
-      .in('stage', OPEN_DEAL_STAGES)
-      .order('created_at', { ascending: true });
+    const userId = await getCurrentUserId();
+    const result = await d1Client.getCrmPipeline(userId);
 
-    if (error) {
-      console.error('Error fetching pipeline:', error);
+    if (result.error || !result.data) {
+      console.error('Error fetching pipeline:', result.error);
       throw new Error('Failed to fetch pipeline');
     }
 
-    // Organizar deals por estágio
-    const columns: PipelineColumn[] = OPEN_DEAL_STAGES.map((stage) => {
-      const stageDeals = (deals || []).filter((d) => d.stage === stage);
-      const totalValue = stageDeals.reduce((sum, d) => sum + (d.value || 0), 0);
-
-      return {
-        id: stage,
-        title: DEAL_STAGES[stage].label,
-        deals: stageDeals,
-        total_value: totalValue,
-        count: stageDeals.length,
-      };
-    });
-
-    const totalValue = columns.reduce((sum, col) => sum + col.total_value, 0);
-    const totalDeals = columns.reduce((sum, col) => sum + col.count, 0);
+    // Map the columns with proper labels
+    const columns: PipelineColumn[] = result.data.columns.map((col) => ({
+      id: col.id as DealStage,
+      title: DEAL_STAGES[col.id as DealStage]?.label || col.id,
+      deals: col.deals.map(mapD1ToDeal),
+      total_value: col.total_value,
+      count: col.count,
+    }));
 
     return {
       columns,
-      total_value: totalValue,
-      total_deals: totalDeals,
+      total_value: result.data.total_value,
+      total_deals: result.data.total_deals,
     };
   },
 
@@ -251,42 +238,30 @@ export const DealService = {
    * Busca deals por contato
    */
   async getByContact(contactId: string): Promise<Deal[]> {
-    const { data, error } = await supabase
-      .from(TABLE_NAME)
-      .select(`
-        *,
-        company:crm_companies(id, name)
-      `)
-      .eq('contact_id', contactId)
-      .order('created_at', { ascending: false });
+    const userId = await getCurrentUserId();
+    const result = await d1Client.getCrmDeals(userId, { contact_id: contactId });
 
-    if (error) {
-      console.error('Error fetching deals by contact:', error);
+    if (result.error) {
+      console.error('Error fetching deals by contact:', result.error);
       throw new Error('Failed to fetch deals by contact');
     }
 
-    return data || [];
+    return (result.data || []).map(mapD1ToDeal);
   },
 
   /**
    * Busca deals por empresa
    */
   async getByCompany(companyId: string): Promise<Deal[]> {
-    const { data, error } = await supabase
-      .from(TABLE_NAME)
-      .select(`
-        *,
-        contact:crm_contacts(id, name, email)
-      `)
-      .eq('company_id', companyId)
-      .order('created_at', { ascending: false });
+    const userId = await getCurrentUserId();
+    const result = await d1Client.getCrmDeals(userId, { company_id: companyId });
 
-    if (error) {
-      console.error('Error fetching deals by company:', error);
+    if (result.error) {
+      console.error('Error fetching deals by company:', result.error);
       throw new Error('Failed to fetch deals by company');
     }
 
-    return data || [];
+    return (result.data || []).map(mapD1ToDeal);
   },
 
   /**
@@ -300,60 +275,29 @@ export const DealService = {
     lost_this_month: number;
     revenue_this_month: number;
   }> {
-    const startOfMonth = new Date();
-    startOfMonth.setDate(1);
-    startOfMonth.setHours(0, 0, 0, 0);
-    const startOfMonthStr = startOfMonth.toISOString().split('T')[0];
+    const userId = await getCurrentUserId();
+    const result = await d1Client.getCrmMetrics(userId);
 
-    // Deals abertos
-    const { data: openDeals } = await supabase
-      .from(TABLE_NAME)
-      .select('value, probability')
-      .in('stage', OPEN_DEAL_STAGES);
+    if (result.error || !result.data) {
+      console.error('Error fetching metrics:', result.error);
+      throw new Error('Failed to fetch metrics');
+    }
 
-    // Deals fechados este mês - usando updated_at como fallback
-    // (actual_close_date pode não existir em todas as instalações)
-    const { data: closedDeals } = await supabase
-      .from(TABLE_NAME)
-      .select('value, stage, updated_at')
-      .in('stage', ['closed_won', 'closed_lost'])
-      .gte('updated_at', startOfMonthStr);
-
-    const totalValue = (openDeals || []).reduce((sum, d) => sum + (d.value || 0), 0);
-    const weightedValue = (openDeals || []).reduce(
-      (sum, d) => sum + ((d.value || 0) * (d.probability || 0)) / 100,
-      0
-    );
-
-    const wonThisMonth = (closedDeals || []).filter((d) => d.stage === 'closed_won').length;
-    const lostThisMonth = (closedDeals || []).filter((d) => d.stage === 'closed_lost').length;
-    const revenueThisMonth = (closedDeals || [])
-      .filter((d) => d.stage === 'closed_won')
-      .reduce((sum, d) => sum + (d.value || 0), 0);
-
-    return {
-      total_value: totalValue,
-      weighted_value: weightedValue,
-      open_deals: (openDeals || []).length,
-      won_this_month: wonThisMonth,
-      lost_this_month: lostThisMonth,
-      revenue_this_month: revenueThisMonth,
-    };
+    return result.data;
   },
 
   /**
    * Conta total de deals
    */
   async count(): Promise<number> {
-    const { count, error } = await supabase
-      .from(TABLE_NAME)
-      .select('*', { count: 'exact', head: true });
+    const userId = await getCurrentUserId();
+    const result = await d1Client.countCrmDeals(userId);
 
-    if (error) {
-      console.error('Error counting deals:', error);
+    if (result.error) {
+      console.error('Error counting deals:', result.error);
       throw new Error('Failed to count deals');
     }
 
-    return count || 0;
+    return result.data?.count || 0;
   },
 };

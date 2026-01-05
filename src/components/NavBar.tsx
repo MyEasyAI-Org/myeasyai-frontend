@@ -3,7 +3,7 @@ import { Home, LogOut } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { useModalState } from '../hooks/useModalState';
 import { useNotifications } from '../hooks/useNotifications';
-import type { Notification } from '../types/notification';
+import type { Notification } from '../types/Notification';
 import { Button } from './Button';
 import NotificationBell from './NotificationBell';
 import NotificationDetailModal from './NotificationDetailModal';

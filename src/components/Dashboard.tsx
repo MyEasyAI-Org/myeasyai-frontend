@@ -3,7 +3,7 @@ import { useDashboardNavigation } from '../hooks/useDashboardNavigation';
 import { useNotifications } from '../hooks/useNotifications';
 import { useUserData } from '../hooks/useUserData';
 import { authService } from '../services/AuthServiceV2';
-import type { Notification } from '../types/notification';
+import type { Notification } from '../types/Notification';
 import { Footer } from './Footer';
 import NotificationDetailModal from './NotificationDetailModal';
 import { DashboardHeader } from './dashboard/DashboardHeader';
@@ -67,6 +67,7 @@ export function Dashboard({
       onGoToMyEasyCRM,
       onGoToMyEasyContent,
       onGoToMyEasyFitness,
+      initialTab,
     });
 
   // Local UI state

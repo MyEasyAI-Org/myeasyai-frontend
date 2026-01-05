@@ -1,102 +1,114 @@
 // =============================================
 // MyEasyCRM - Activity Service
+// Using Cloudflare D1 via d1Client
 // =============================================
 
-import { supabase } from '../../../lib/api-clients/supabase-client';
+import { d1Client, type D1CrmActivity } from '../../../lib/api-clients/d1-client';
+import { authService } from '../../../services/AuthServiceV2';
 import type { Activity, ActivityFormData, ActivityType } from '../types';
 
-const TABLE_NAME = 'crm_activities';
+/**
+ * Gets the current authenticated user ID.
+ * Works with both Cloudflare and Supabase auth sources.
+ */
+async function getCurrentUserId(): Promise<string> {
+  await authService.waitForInit();
+  const authUser = authService.getUser();
+
+  if (authUser?.uuid) {
+    return authUser.uuid;
+  }
+
+  throw new Error('[ActivityService] User not authenticated');
+}
+
+/** Helper to convert null to undefined */
+function nullToUndefined<T>(value: T | null): T | undefined {
+  return value === null ? undefined : value;
+}
+
+/**
+ * Converts D1 activity to frontend Activity type
+ */
+function mapD1ToActivity(d1Activity: D1CrmActivity): Activity {
+  return {
+    id: d1Activity.id,
+    user_id: d1Activity.user_id,
+    contact_id: nullToUndefined(d1Activity.contact_id),
+    deal_id: nullToUndefined(d1Activity.deal_id),
+    type: d1Activity.type as ActivityType,
+    description: d1Activity.description,
+    metadata: d1Activity.metadata ? JSON.parse(d1Activity.metadata) : undefined,
+    created_at: d1Activity.created_at ?? new Date().toISOString(),
+    contact: undefined, // Contact relation handled separately if needed
+    deal: undefined, // Deal relation handled separately if needed
+  };
+}
 
 export const ActivityService = {
   /**
    * Busca todas as atividades do usuário
    */
   async getAll(limit = 50): Promise<Activity[]> {
-    const { data, error } = await supabase
-      .from(TABLE_NAME)
-      .select(`
-        *,
-        contact:crm_contacts(id, name, email),
-        deal:crm_deals(id, title, value, stage)
-      `)
-      .order('created_at', { ascending: false })
-      .limit(limit);
+    const userId = await getCurrentUserId();
+    const result = await d1Client.getCrmActivities(userId, { limit });
 
-    if (error) {
-      console.error('Error fetching activities:', error);
+    if (result.error) {
+      console.error('Error fetching activities:', result.error);
       throw new Error('Failed to fetch activities');
     }
 
-    return data || [];
+    return (result.data || []).map(mapD1ToActivity);
   },
 
   /**
    * Busca uma atividade por ID
    */
   async getById(id: string): Promise<Activity | null> {
-    const { data, error } = await supabase
-      .from(TABLE_NAME)
-      .select(`
-        *,
-        contact:crm_contacts(id, name, email),
-        deal:crm_deals(id, title, value, stage)
-      `)
-      .eq('id', id)
-      .single();
+    const result = await d1Client.getCrmActivityById(id);
 
-    if (error) {
-      if (error.code === 'PGRST116') {
+    if (result.error) {
+      if (result.error.includes('not found')) {
         return null;
       }
-      console.error('Error fetching activity:', error);
+      console.error('Error fetching activity:', result.error);
       throw new Error('Failed to fetch activity');
     }
 
-    return data;
+    return result.data ? mapD1ToActivity(result.data) : null;
   },
 
   /**
    * Cria uma nova atividade
    */
   async create(data: ActivityFormData): Promise<Activity> {
-    const { data: user } = await supabase.auth.getUser();
+    const userId = await getCurrentUserId();
 
-    if (!user.user) {
-      throw new Error('[ActivityService] User not authenticated');
-    }
+    const result = await d1Client.createCrmActivity({
+      user_id: userId,
+      type: data.type,
+      description: data.description,
+      contact_id: data.contact_id,
+      deal_id: data.deal_id,
+      metadata: data.metadata ? JSON.stringify(data.metadata) : undefined,
+    });
 
-    const { data: activity, error } = await supabase
-      .from(TABLE_NAME)
-      .insert({
-        ...data,
-        user_id: user.user.id,
-      })
-      .select(`
-        *,
-        contact:crm_contacts(id, name, email),
-        deal:crm_deals(id, title, value, stage)
-      `)
-      .single();
-
-    if (error) {
-      console.error('Error creating activity:', error);
+    if (result.error || !result.data) {
+      console.error('Error creating activity:', result.error);
       throw new Error('Failed to create activity');
     }
 
-    return activity;
+    return mapD1ToActivity(result.data);
   },
 
   /**
    * Deleta uma atividade
    */
   async delete(id: string): Promise<void> {
-    const { error } = await supabase
-      .from(TABLE_NAME)
-      .delete()
-      .eq('id', id);
+    const result = await d1Client.deleteCrmActivity(id);
 
-    if (error) {
-      console.error('Error deleting activity:', error);
+    if (result.error) {
+      console.error('Error deleting activity:', result.error);
       throw new Error('Failed to delete activity');
     }
   },
@@ -105,67 +117,43 @@ export const ActivityService = {
    * Busca atividades por contato
    */
   async getByContact(contactId: string, limit = 20): Promise<Activity[]> {
-    const { data, error } = await supabase
-      .from(TABLE_NAME)
-      .select(`
-        *,
-        deal:crm_deals(id, title, value, stage)
-      `)
-      .eq('contact_id', contactId)
-      .order('created_at', { ascending: false })
-      .limit(limit);
+    const result = await d1Client.getCrmActivitiesByContact(contactId, limit);
 
-    if (error) {
-      console.error('Error fetching activities by contact:', error);
+    if (result.error) {
+      console.error('Error fetching activities by contact:', result.error);
       throw new Error('Failed to fetch contact activities');
     }
 
-    return data || [];
+    return (result.data || []).map(mapD1ToActivity);
   },
 
   /**
    * Busca atividades por deal
    */
   async getByDeal(dealId: string, limit = 20): Promise<Activity[]> {
-    const { data, error } = await supabase
-      .from(TABLE_NAME)
-      .select(`
-        *,
-        contact:crm_contacts(id, name, email)
-      `)
-      .eq('deal_id', dealId)
-      .order('created_at', { ascending: false })
-      .limit(limit);
+    const result = await d1Client.getCrmActivitiesByDeal(dealId, limit);
 
-    if (error) {
-      console.error('Error fetching activities by deal:', error);
+    if (result.error) {
+      console.error('Error fetching activities by deal:', result.error);
       throw new Error('Failed to fetch deal activities');
     }
 
-    return data || [];
+    return (result.data || []).map(mapD1ToActivity);
   },
 
   /**
    * Busca atividades por tipo
    */
   async getByType(type: ActivityType, limit = 20): Promise<Activity[]> {
-    const { data, error } = await supabase
-      .from(TABLE_NAME)
-      .select(`
-        *,
-        contact:crm_contacts(id, name, email),
-        deal:crm_deals(id, title, value, stage)
-      `)
-      .eq('type', type)
-      .order('created_at', { ascending: false })
-      .limit(limit);
+    const userId = await getCurrentUserId();
+    const result = await d1Client.getCrmActivities(userId, { type, limit });
 
-    if (error) {
-      console.error('Error fetching activities by type:', error);
+    if (result.error) {
+      console.error('Error fetching activities by type:', result.error);
       throw new Error('Failed to fetch activities by type');
     }
 
-    return data || [];
+    return (result.data || []).map(mapD1ToActivity);
   },
 
   /**
@@ -245,38 +233,29 @@ export const ActivityService = {
    * Conta atividades por período
    */
   async countByPeriod(startDate: string, endDate: string): Promise<number> {
-    const { count, error } = await supabase
-      .from(TABLE_NAME)
-      .select('*', { count: 'exact', head: true })
-      .gte('created_at', startDate)
-      .lte('created_at', endDate);
+    const userId = await getCurrentUserId();
+    const result = await d1Client.countCrmActivities(userId, startDate, endDate);
 
-    if (error) {
-      console.error('Error counting activities:', error);
+    if (result.error) {
+      console.error('Error counting activities:', result.error);
       throw new Error('Failed to count activities');
     }
 
-    return count || 0;
+    return result.data?.count || 0;
   },
 
   /**
    * Busca estatísticas de atividades
    */
   async getStats(): Promise<Record<ActivityType, number>> {
-    const { data, error } = await supabase
-      .from(TABLE_NAME)
-      .select('type');
+    const userId = await getCurrentUserId();
+    const result = await d1Client.getCrmActivityStats(userId);
 
-    if (error) {
-      console.error('Error fetching activity stats:', error);
+    if (result.error) {
+      console.error('Error fetching activity stats:', result.error);
       throw new Error('Failed to fetch activity statistics');
     }
 
-    const stats: Record<string, number> = {};
-    (data || []).forEach((activity) => {
-      stats[activity.type] = (stats[activity.type] || 0) + 1;
-    });
-
-    return stats as Record<ActivityType, number>;
+    return (result.data || {}) as Record<ActivityType, number>;
   },
 };

@@ -8,6 +8,7 @@ import type { Contact, ContactFormData } from '../../types';
 import { LEAD_SOURCES_LIST } from '../../constants';
 import type { LeadSource } from '../../types';
 import { useCompaniesSelect } from '../../hooks';
+import { maskPhone } from '../../utils/formatters';
 
 interface ContactFormProps {
   contact?: Contact | null;
@@ -149,9 +150,10 @@ export function ContactForm({
                 <input
                   type="tel"
                   value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  onChange={(e) => setFormData({ ...formData, phone: maskPhone(e.target.value) })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-gray-900"
                   placeholder="(11) 99999-9999"
+                  maxLength={15}
                 />
               </div>
 

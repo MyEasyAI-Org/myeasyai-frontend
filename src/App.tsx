@@ -260,6 +260,18 @@ function AppContent() {
     }
   };
 
+  // Navega para o Dashboard na aba "Meus Produtos"
+  // Usado quando o usuário volta de um módulo (CRM, MyEasyWebsite, etc.)
+  const goToDashboardProducts = () => {
+    if (needsOnboarding) {
+      onboardingModal.open();
+    } else {
+      setDashboardKey(Date.now());
+      setDashboardInitialTab('products');
+      navigate(ROUTES.DASHBOARD);
+    }
+  };
+
   const goToHome = () => {
     navigate(ROUTES.HOME);
   };
@@ -780,7 +792,7 @@ function AppContent() {
             isCheckingAuth={isCheckingAuth}
           >
             <MyEasyWebsite
-              onBackToDashboard={goToDashboard}
+              onBackToDashboard={goToDashboardProducts}
               onGoToSubscription={goToSubscription}
             />
           </ProtectedRoute>
@@ -797,7 +809,7 @@ function AppContent() {
             isLoading={loading}
             isCheckingAuth={isCheckingAuth}
           >
-            <BusinessGuru onBackToDashboard={goToDashboard} />
+            <BusinessGuru onBackToDashboard={goToDashboardProducts} />
           </ProtectedRoute>
         }
       />
@@ -816,7 +828,7 @@ function AppContent() {
               userName={userName}
               userEmail={user?.email}
               onLogout={handleLogout}
-              onBackToMain={goToDashboard}
+              onBackToMain={goToDashboardProducts}
             />
           </ProtectedRoute>
         }
@@ -832,7 +844,7 @@ function AppContent() {
             isLoading={loading}
             isCheckingAuth={isCheckingAuth}
           >
-            <MyEasyPricing onBackToDashboard={goToDashboard} />
+            <MyEasyPricing onBackToDashboard={goToDashboardProducts} />
           </ProtectedRoute>
         }
       />
@@ -847,7 +859,7 @@ function AppContent() {
             isLoading={loading}
             isCheckingAuth={isCheckingAuth}
           >
-            <MyEasyContent onBackToDashboard={goToDashboard} />
+            <MyEasyContent onBackToDashboard={goToDashboardProducts} />
           </ProtectedRoute>
         }
       />

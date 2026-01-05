@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
-import type { Notification } from '../types/notification';
-import { mockNotifications } from '../types/notification';
+import type { Notification } from '../types/Notification';
+import { mockNotifications } from '../types/Notification';
 
 /**
  * Custom hook for managing user notifications

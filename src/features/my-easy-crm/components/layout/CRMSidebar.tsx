@@ -14,6 +14,7 @@ import {
   ChevronRight,
   Plus,
   Search,
+  ArrowLeft,
 } from 'lucide-react';
 import type { CRMView } from '../../types';
 
@@ -23,6 +24,7 @@ interface CRMSidebarProps {
   onQuickAction?: (action: 'contact' | 'company' | 'deal' | 'task') => void;
   collapsed?: boolean;
   onCollapsedChange?: (collapsed: boolean) => void;
+  onBackToDashboard?: () => void;
 }
 
 interface NavItem {
@@ -47,6 +49,7 @@ export function CRMSidebar({
   onQuickAction,
   collapsed = false,
   onCollapsedChange,
+  onBackToDashboard,
 }: CRMSidebarProps) {
   const [searchOpen, setSearchOpen] = useState(false);
 
@@ -184,7 +187,17 @@ export function CRMSidebar({
 
       {/* Footer */}
       {!collapsed && (
-        <div className="p-4 border-t border-gray-200">
+        <div className="p-4 border-t border-gray-200 space-y-3">
+          {onBackToDashboard && (
+            <button
+              type="button"
+              onClick={onBackToDashboard}
+              className="w-full flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Voltar ao Dashboard
+            </button>
+          )}
           <div className="text-xs text-gray-500 text-center">
             MyEasyCRM v1.0
           </div>
