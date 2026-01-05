@@ -1,4 +1,4 @@
-import { LogOut, Settings, User as UserIcon } from 'lucide-react';
+import { Home, LogOut, Settings, User as UserIcon } from 'lucide-react';
 import { useEffect } from 'react';
 import type { UserProfile } from '../../hooks/useUserData';
 import { Avatar } from './Avatar';
@@ -7,6 +7,7 @@ type UserDropdownProps = {
   profile: UserProfile;
   onNavigateToProfile: () => void;
   onNavigateToSettings: () => void;
+  onGoToHome?: () => void;
   onLogout: () => void;
   onClose: () => void;
 };
@@ -15,6 +16,7 @@ export function UserDropdown({
   profile,
   onNavigateToProfile,
   onNavigateToSettings,
+  onGoToHome,
   onLogout,
   onClose,
 }: UserDropdownProps) {
@@ -77,6 +79,19 @@ export function UserDropdown({
           <Settings className="h-4 w-4" />
           <span className="text-sm">Configurações</span>
         </button>
+        {onGoToHome && (
+          <button
+            type="button"
+            onClick={() => {
+              onClose();
+              onGoToHome();
+            }}
+            className="flex w-full items-center space-x-3 rounded-lg px-3 py-2.5 text-left text-slate-200 transition-colors hover:bg-slate-700"
+          >
+            <Home className="h-4 w-4" />
+            <span className="text-sm">Página Inicial</span>
+          </button>
+        )}
       </div>
 
       <div className="border-t border-slate-700 p-2">
