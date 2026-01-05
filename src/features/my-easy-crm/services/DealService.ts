@@ -23,6 +23,11 @@ async function getCurrentUserId(): Promise<string> {
   throw new Error('[DealService] User not authenticated');
 }
 
+/** Helper to convert null to undefined */
+function nullToUndefined<T>(value: T | null): T | undefined {
+  return value === null ? undefined : value;
+}
+
 /**
  * Converts D1 deal to frontend Deal type
  */
@@ -30,22 +35,22 @@ function mapD1ToDeal(d1Deal: D1CrmDeal): Deal {
   return {
     id: d1Deal.id,
     user_id: d1Deal.user_id,
-    contact_id: d1Deal.contact_id,
-    company_id: d1Deal.company_id,
+    contact_id: d1Deal.contact_id ?? '',
+    company_id: nullToUndefined(d1Deal.company_id),
     title: d1Deal.title,
     value: d1Deal.value,
     stage: d1Deal.stage as DealStage,
     probability: d1Deal.probability,
-    expected_close_date: d1Deal.expected_close_date,
-    actual_close_date: d1Deal.actual_close_date,
-    lost_reason: d1Deal.lost_reason,
-    source: d1Deal.source,
-    notes: d1Deal.notes,
-    products: d1Deal.products ? JSON.parse(d1Deal.products) : undefined,
-    created_at: d1Deal.created_at,
-    updated_at: d1Deal.updated_at,
-    contact: d1Deal.contact || undefined,
-    company: d1Deal.company || undefined,
+    expected_close_date: nullToUndefined(d1Deal.expected_close_date),
+    actual_close_date: nullToUndefined(d1Deal.actual_close_date),
+    lost_reason: nullToUndefined(d1Deal.lost_reason),
+    source: nullToUndefined(d1Deal.source) as Deal['source'],
+    notes: nullToUndefined(d1Deal.notes),
+    products: d1Deal.products ? JSON.parse(d1Deal.products) : [],
+    created_at: d1Deal.created_at ?? new Date().toISOString(),
+    updated_at: d1Deal.updated_at ?? new Date().toISOString(),
+    contact: undefined, // Contact relation handled separately if needed
+    company: undefined, // Company relation handled separately if needed
   };
 }
 

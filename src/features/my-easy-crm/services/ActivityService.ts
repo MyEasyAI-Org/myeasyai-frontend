@@ -22,6 +22,11 @@ async function getCurrentUserId(): Promise<string> {
   throw new Error('[ActivityService] User not authenticated');
 }
 
+/** Helper to convert null to undefined */
+function nullToUndefined<T>(value: T | null): T | undefined {
+  return value === null ? undefined : value;
+}
+
 /**
  * Converts D1 activity to frontend Activity type
  */
@@ -29,14 +34,14 @@ function mapD1ToActivity(d1Activity: D1CrmActivity): Activity {
   return {
     id: d1Activity.id,
     user_id: d1Activity.user_id,
-    contact_id: d1Activity.contact_id,
-    deal_id: d1Activity.deal_id,
+    contact_id: nullToUndefined(d1Activity.contact_id),
+    deal_id: nullToUndefined(d1Activity.deal_id),
     type: d1Activity.type as ActivityType,
     description: d1Activity.description,
     metadata: d1Activity.metadata ? JSON.parse(d1Activity.metadata) : undefined,
-    created_at: d1Activity.created_at,
-    contact: d1Activity.contact || undefined,
-    deal: d1Activity.deal || undefined,
+    created_at: d1Activity.created_at ?? new Date().toISOString(),
+    contact: undefined, // Contact relation handled separately if needed
+    deal: undefined, // Deal relation handled separately if needed
   };
 }
 

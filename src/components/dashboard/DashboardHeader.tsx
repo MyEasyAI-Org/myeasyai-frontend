@@ -1,7 +1,7 @@
 import { useRef } from 'react';
 import type { UserProfile } from '../../hooks/useUserData';
 import { useModalState } from '../../hooks/useModalState';
-import type { Notification } from '../../types/notification';
+import type { Notification } from '../../types/Notification';
 import { Avatar } from './Avatar';
 import NotificationBell from '../NotificationBell';
 import NotificationDropdown from '../NotificationDropdown';

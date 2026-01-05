@@ -16,6 +16,7 @@ type ButtonProps = {
   onClick?: () => void;
   target?: '_blank' | '_self';
   disabled?: boolean;
+  className?: string;
 };
 
 export function Button({

@@ -1035,7 +1035,7 @@ export class D1Client {
    */
   async updateCrmContact(
     id: string,
-    updates: Partial<D1CrmContact> & { tags?: string[] }
+    updates: Omit<Partial<D1CrmContact>, 'tags'> & { tags?: string[] }
   ): Promise<D1ApiResponse<D1CrmContact>> {
     return this.fetch<D1CrmContact>(`/crm/contacts/${id}`, {
       method: 'PATCH',

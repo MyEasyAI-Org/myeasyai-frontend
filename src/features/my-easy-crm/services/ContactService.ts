@@ -22,6 +22,11 @@ async function getCurrentUserId(): Promise<string> {
   throw new Error('[ContactService] User not authenticated');
 }
 
+/** Helper to convert null to undefined */
+function nullToUndefined<T>(value: T | null): T | undefined {
+  return value === null ? undefined : value;
+}
+
 /**
  * Converts D1 contact to frontend Contact type
  */
@@ -29,24 +34,24 @@ function mapD1ToContact(d1Contact: D1CrmContact): Contact {
   return {
     id: d1Contact.id,
     user_id: d1Contact.user_id,
-    company_id: d1Contact.company_id,
+    company_id: nullToUndefined(d1Contact.company_id),
     name: d1Contact.name,
-    email: d1Contact.email,
-    phone: d1Contact.phone,
-    mobile: d1Contact.mobile,
-    position: d1Contact.position,
-    role: d1Contact.role,
+    email: nullToUndefined(d1Contact.email),
+    phone: nullToUndefined(d1Contact.phone),
+    mobile: nullToUndefined(d1Contact.mobile),
+    position: nullToUndefined(d1Contact.position),
+    role: nullToUndefined(d1Contact.role),
     tags: d1Contact.tags ? JSON.parse(d1Contact.tags) : [],
-    notes: d1Contact.notes,
-    source: d1Contact.source,
-    lead_source: d1Contact.lead_source,
-    birth_date: d1Contact.birth_date,
-    address: d1Contact.address,
-    linkedin: d1Contact.linkedin,
-    instagram: d1Contact.instagram,
-    created_at: d1Contact.created_at,
-    updated_at: d1Contact.updated_at,
-    company: d1Contact.company || undefined,
+    notes: nullToUndefined(d1Contact.notes),
+    source: nullToUndefined(d1Contact.source) as Contact['source'],
+    lead_source: nullToUndefined(d1Contact.lead_source) as Contact['lead_source'],
+    birth_date: nullToUndefined(d1Contact.birth_date),
+    address: nullToUndefined(d1Contact.address),
+    linkedin: nullToUndefined(d1Contact.linkedin),
+    instagram: nullToUndefined(d1Contact.instagram),
+    created_at: d1Contact.created_at ?? new Date().toISOString(),
+    updated_at: d1Contact.updated_at ?? new Date().toISOString(),
+    company: undefined, // Company relation handled separately if needed
   };
 }
 
@@ -147,10 +152,25 @@ export const ContactService = {
    * Atualiza um contato existente
    */
   async update(id: string, data: Partial<ContactFormData>): Promise<Contact> {
-    const result = await d1Client.updateCrmContact(id, {
-      ...data,
-      tags: data.tags,
-    });
+    // Build update object explicitly to avoid type conflicts
+    const updates: Parameters<typeof d1Client.updateCrmContact>[1] = {};
+    if (data.name !== undefined) updates.name = data.name;
+    if (data.email !== undefined) updates.email = data.email;
+    if (data.phone !== undefined) updates.phone = data.phone;
+    if (data.mobile !== undefined) updates.mobile = data.mobile;
+    if (data.company_id !== undefined) updates.company_id = data.company_id;
+    if (data.position !== undefined) updates.position = data.position;
+    if (data.role !== undefined) updates.role = data.role;
+    if (data.tags !== undefined) updates.tags = data.tags;
+    if (data.notes !== undefined) updates.notes = data.notes;
+    if (data.source !== undefined) updates.source = data.source;
+    if (data.lead_source !== undefined) updates.lead_source = data.lead_source;
+    if (data.birth_date !== undefined) updates.birth_date = data.birth_date;
+    if (data.address !== undefined) updates.address = data.address;
+    if (data.linkedin !== undefined) updates.linkedin = data.linkedin;
+    if (data.instagram !== undefined) updates.instagram = data.instagram;
+
+    const result = await d1Client.updateCrmContact(id, updates);
 
     if (result.error || !result.data) {
       console.error('Error updating contact:', result.error);

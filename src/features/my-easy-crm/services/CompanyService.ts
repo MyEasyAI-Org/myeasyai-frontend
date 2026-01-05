@@ -22,6 +22,11 @@ async function getCurrentUserId(): Promise<string> {
   throw new Error('[CompanyService] User not authenticated');
 }
 
+/** Helper to convert null to undefined */
+function nullToUndefined<T>(value: T | null): T | undefined {
+  return value === null ? undefined : value;
+}
+
 /**
  * Converts D1 company to frontend Company type
  */
@@ -30,22 +35,22 @@ function mapD1ToCompany(d1Company: D1CrmCompany): Company {
     id: d1Company.id,
     user_id: d1Company.user_id,
     name: d1Company.name,
-    cnpj: d1Company.cnpj,
-    industry: d1Company.industry,
-    segment: d1Company.segment,
-    size: d1Company.size,
-    website: d1Company.website,
-    address: d1Company.address,
-    city: d1Company.city,
-    state: d1Company.state,
-    phone: d1Company.phone,
-    email: d1Company.email,
-    linkedin: d1Company.linkedin,
-    instagram: d1Company.instagram,
-    facebook: d1Company.facebook,
-    notes: d1Company.notes,
-    created_at: d1Company.created_at,
-    updated_at: d1Company.updated_at,
+    cnpj: nullToUndefined(d1Company.cnpj),
+    industry: nullToUndefined(d1Company.industry) as Company['industry'],
+    segment: nullToUndefined(d1Company.segment) as Company['segment'],
+    size: nullToUndefined(d1Company.size) as Company['size'],
+    website: nullToUndefined(d1Company.website),
+    address: nullToUndefined(d1Company.address),
+    city: nullToUndefined(d1Company.city),
+    state: nullToUndefined(d1Company.state),
+    phone: nullToUndefined(d1Company.phone),
+    email: nullToUndefined(d1Company.email),
+    linkedin: nullToUndefined(d1Company.linkedin),
+    instagram: nullToUndefined(d1Company.instagram),
+    facebook: nullToUndefined(d1Company.facebook),
+    notes: nullToUndefined(d1Company.notes),
+    created_at: d1Company.created_at ?? new Date().toISOString(),
+    updated_at: d1Company.updated_at ?? new Date().toISOString(),
   };
 }
 

@@ -22,6 +22,11 @@ async function getCurrentUserId(): Promise<string> {
   throw new Error('[TaskService] User not authenticated');
 }
 
+/** Helper to convert null to undefined */
+function nullToUndefined<T>(value: T | null): T | undefined {
+  return value === null ? undefined : value;
+}
+
 /**
  * Converts D1 task to frontend Task type
  */
@@ -29,18 +34,18 @@ function mapD1ToTask(d1Task: D1CrmTask): Task {
   return {
     id: d1Task.id,
     user_id: d1Task.user_id,
-    contact_id: d1Task.contact_id,
-    deal_id: d1Task.deal_id,
+    contact_id: nullToUndefined(d1Task.contact_id),
+    deal_id: nullToUndefined(d1Task.deal_id),
     title: d1Task.title,
-    description: d1Task.description,
+    description: nullToUndefined(d1Task.description),
     due_date: d1Task.due_date,
     type: d1Task.type as Task['type'],
     priority: d1Task.priority as Task['priority'],
     completed: d1Task.completed,
-    completed_at: d1Task.completed_at,
-    created_at: d1Task.created_at,
-    contact: d1Task.contact || undefined,
-    deal: d1Task.deal || undefined,
+    completed_at: nullToUndefined(d1Task.completed_at),
+    created_at: d1Task.created_at ?? new Date().toISOString(),
+    contact: undefined, // Contact relation handled separately if needed
+    deal: undefined, // Deal relation handled separately if needed
   };
 }
 
