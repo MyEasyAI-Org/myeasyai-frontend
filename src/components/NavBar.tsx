@@ -1,5 +1,5 @@
 import type { User } from '@supabase/supabase-js';
-import { Home, LogOut } from 'lucide-react';
+import { Home, LogOut, Settings, User as UserIcon } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { useModalState } from '../hooks/useModalState';
 import { useNotifications } from '../hooks/useNotifications';
@@ -16,6 +16,8 @@ type NavBarProps = {
   userName?: string;
   userAvatarUrl?: string;
   onDashboardClick?: () => void;
+  onProfileClick?: () => void;
+  onSettingsClick?: () => void;
   onLogout?: () => void;
   onLogoClick?: () => void;
   isCheckingAuth?: boolean;
@@ -28,6 +30,8 @@ export default function NavBar({
   userName = 'Usuário',
   userAvatarUrl,
   onDashboardClick,
+  onProfileClick,
+  onSettingsClick,
   onLogout,
   onLogoClick,
   isCheckingAuth = false,
@@ -262,6 +266,26 @@ export default function NavBar({
                       </div>
 
                       <div className="p-2">
+                        <button
+                          onClick={() => {
+                            dropdownModal.close();
+                            onProfileClick?.();
+                          }}
+                          className="flex w-full items-center space-x-3 rounded-lg px-3 py-2.5 text-left text-slate-200 transition-colors hover:bg-slate-700 cursor-pointer"
+                        >
+                          <UserIcon className="h-4 w-4" />
+                          <span className="text-sm">Perfil</span>
+                        </button>
+                        <button
+                          onClick={() => {
+                            dropdownModal.close();
+                            onSettingsClick?.();
+                          }}
+                          className="flex w-full items-center space-x-3 rounded-lg px-3 py-2.5 text-left text-slate-200 transition-colors hover:bg-slate-700 cursor-pointer"
+                        >
+                          <Settings className="h-4 w-4" />
+                          <span className="text-sm">Configurações</span>
+                        </button>
                         <button
                           onClick={() => {
                             dropdownModal.close();

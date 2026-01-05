@@ -272,6 +272,28 @@ function AppContent() {
     }
   };
 
+  // Navega para o Dashboard na aba "Perfil"
+  const goToDashboardProfile = () => {
+    if (needsOnboarding) {
+      onboardingModal.open();
+    } else {
+      setDashboardKey(Date.now());
+      setDashboardInitialTab('profile');
+      navigate(ROUTES.DASHBOARD);
+    }
+  };
+
+  // Navega para o Dashboard na aba "Configurações"
+  const goToDashboardSettings = () => {
+    if (needsOnboarding) {
+      onboardingModal.open();
+    } else {
+      setDashboardKey(Date.now());
+      setDashboardInitialTab('settings');
+      navigate(ROUTES.DASHBOARD);
+    }
+  };
+
   const goToHome = () => {
     navigate(ROUTES.HOME);
   };
@@ -707,6 +729,8 @@ function AppContent() {
               userName={userName}
               userAvatarUrl={userAvatarUrl}
               onDashboardClick={goToDashboard}
+              onProfileClick={goToDashboardProfile}
+              onSettingsClick={goToDashboardSettings}
               onLogout={handleLogout}
               onLogoClick={goToHome}
               isCheckingAuth={isCheckingAuth}
