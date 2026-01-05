@@ -57,7 +57,7 @@ export function Modal({
         {!disableClose && (
           <button
             type="button"
-            className="absolute right-4 top-4 text-slate-400 transition-colors hover:text-slate-100"
+            className="absolute right-4 top-4 text-slate-400 transition-colors hover:text-slate-100 cursor-pointer"
             onClick={onClose}
             aria-label={closeButtonLabel}
           >

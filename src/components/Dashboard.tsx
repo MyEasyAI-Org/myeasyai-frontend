@@ -64,6 +64,7 @@ export function Dashboard({
       onGoToMyEasyPricing,
       onGoToMyEasyCRM,
       onGoToMyEasyContent,
+      initialTab,
     });
 
   // Local UI state

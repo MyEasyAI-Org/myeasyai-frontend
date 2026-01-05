@@ -294,7 +294,7 @@ export function SignupModal({
             type="button"
             onClick={() => handleSocialSignup('google')}
             disabled={isGoogleLoading || isFacebookLoading}
-            className="flex w-full items-center justify-center gap-2 rounded-lg border border-slate-700 bg-slate-800/50 px-4 py-3 text-slate-200 transition-colors hover:border-purple-500 hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex w-full items-center justify-center gap-2 rounded-lg border border-slate-700 bg-slate-800/50 px-4 py-3 text-slate-200 transition-colors hover:border-purple-500 hover:bg-slate-800 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             aria-label="Cadastro via conta Google"
           >
             {isGoogleLoading ? (
@@ -358,7 +358,7 @@ export function SignupModal({
             type="button"
             onClick={() => handleSocialSignup('facebook')}
             disabled={isGoogleLoading || isFacebookLoading}
-            className="flex w-full items-center justify-center gap-2 rounded-lg border border-slate-700 bg-slate-800/50 px-4 py-3 text-slate-200 transition-colors hover:border-purple-500 hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex w-full items-center justify-center gap-2 rounded-lg border border-slate-700 bg-slate-800/50 px-4 py-3 text-slate-200 transition-colors hover:border-purple-500 hover:bg-slate-800 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             aria-label="Cadastro via conta Facebook"
           >
             {isFacebookLoading ? (
@@ -407,7 +407,7 @@ export function SignupModal({
           <button
             type="button"
             onClick={onSwitchToLogin}
-            className="font-medium text-purple-400 transition-colors hover:text-purple-300"
+            className="font-medium text-purple-400 transition-colors hover:text-purple-300 cursor-pointer"
           >
             Entre por aqui
           </button>

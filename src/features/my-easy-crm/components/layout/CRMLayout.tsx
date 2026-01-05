@@ -16,6 +16,7 @@ interface CRMLayoutProps {
   userEmail?: string;
   onLogout?: () => void;
   onSettings?: () => void;
+  onBackToDashboard?: () => void;
 }
 
 export function CRMLayout({
@@ -27,6 +28,7 @@ export function CRMLayout({
   userEmail,
   onLogout,
   onSettings,
+  onBackToDashboard,
 }: CRMLayoutProps) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -49,6 +51,7 @@ export function CRMLayout({
           onQuickAction={onQuickAction}
           collapsed={sidebarCollapsed}
           onCollapsedChange={setSidebarCollapsed}
+          onBackToDashboard={onBackToDashboard}
         />
       </div>
 
@@ -70,6 +73,7 @@ export function CRMLayout({
             setMobileMenuOpen(false);
           }}
           collapsed={false}
+          onBackToDashboard={onBackToDashboard}
         />
       </div>
 
