@@ -7,6 +7,7 @@ import { X, Loader2 } from 'lucide-react';
 import type { Company, CompanyFormData } from '../../types';
 import { INDUSTRY_TYPES_LIST } from '../../constants';
 import type { IndustryType } from '../../types';
+import { maskCNPJ } from '../../utils/formatters';
 
 interface CompanyFormProps {
   company?: Company | null;
@@ -110,9 +111,10 @@ export function CompanyForm({
                 <input
                   type="text"
                   value={formData.cnpj}
-                  onChange={(e) => setFormData({ ...formData, cnpj: e.target.value })}
+                  onChange={(e) => setFormData({ ...formData, cnpj: maskCNPJ(e.target.value) })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-gray-900"
                   placeholder="00.000.000/0000-00"
+                  maxLength={18}
                 />
               </div>
 

@@ -11,10 +11,13 @@ export type Plan = {
   value: SubscriptionPlan;
   price: string;
   priceNumeric: number; // Preço numérico para comparação (em centavos)
+  installmentPrice: string; // Preço da parcela (12x)
+  fullPrice: string; // Preço à vista anual
   tokens: string;
   features: string[];
   limits: PlanLimits;
   popular?: boolean;
+  recommended?: boolean; // Para destacar como recomendado
 };
 
 export const PLANS: Plan[] = [
@@ -23,6 +26,8 @@ export const PLANS: Plan[] = [
     value: 'individual',
     price: 'R$ 29',
     priceNumeric: 2900,
+    installmentPrice: 'R$ 29,70',
+    fullPrice: 'R$ 297,00',
     tokens: '1.000',
     features: [
       'Acesso básico à plataforma',
@@ -42,6 +47,8 @@ export const PLANS: Plan[] = [
     value: 'plus',
     price: 'R$ 49',
     priceNumeric: 4900,
+    installmentPrice: 'R$ 49,70',
+    fullPrice: 'R$ 497,00',
     tokens: '10.000',
     features: [
       'Tudo do plano Individual',
@@ -57,12 +64,15 @@ export const PLANS: Plan[] = [
       maxApiCalls: 1000,
     },
     popular: true,
+    recommended: true,
   },
   {
     name: 'Premium',
     value: 'premium',
     price: 'R$ 149',
     priceNumeric: 14900,
+    installmentPrice: 'R$ 99,70',
+    fullPrice: 'R$ 997,00',
     tokens: '50.000',
     features: [
       'Tudo do plano Plus',

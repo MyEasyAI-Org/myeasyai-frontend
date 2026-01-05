@@ -1,90 +1,125 @@
 // =============================================
 // MyEasyCRM - Company Service
+// Using Cloudflare D1 via d1Client
 // =============================================
 
-import { supabase } from '../../../lib/api-clients/supabase-client';
+import { d1Client, type D1CrmCompany } from '../../../lib/api-clients/d1-client';
+import { authService } from '../../../services/AuthServiceV2';
 import type { Company, CompanyFormData } from '../types';
 
-const TABLE_NAME = 'crm_companies';
+/**
+ * Gets the current authenticated user ID.
+ * Works with both Cloudflare and Supabase auth sources.
+ */
+async function getCurrentUserId(): Promise<string> {
+  await authService.waitForInit();
+  const authUser = authService.getUser();
+
+  if (authUser?.uuid) {
+    return authUser.uuid;
+  }
+
+  throw new Error('[CompanyService] User not authenticated');
+}
+
+/**
+ * Converts D1 company to frontend Company type
+ */
+function mapD1ToCompany(d1Company: D1CrmCompany): Company {
+  return {
+    id: d1Company.id,
+    user_id: d1Company.user_id,
+    name: d1Company.name,
+    cnpj: d1Company.cnpj,
+    industry: d1Company.industry,
+    segment: d1Company.segment,
+    size: d1Company.size,
+    website: d1Company.website,
+    address: d1Company.address,
+    city: d1Company.city,
+    state: d1Company.state,
+    phone: d1Company.phone,
+    email: d1Company.email,
+    linkedin: d1Company.linkedin,
+    instagram: d1Company.instagram,
+    facebook: d1Company.facebook,
+    notes: d1Company.notes,
+    created_at: d1Company.created_at,
+    updated_at: d1Company.updated_at,
+  };
+}
 
 export const CompanyService = {
   /**
    * Busca todas as empresas do usuário
    */
   async getAll(search?: string): Promise<Company[]> {
-    let query = supabase
-      .from(TABLE_NAME)
-      .select('*')
-      .order('name');
+    const userId = await getCurrentUserId();
+    const result = await d1Client.getCrmCompanies(userId);
 
-    if (search) {
-      query = query.or(`name.ilike.%${search}%,cnpj.ilike.%${search}%`);
-    }
-
-    const { data, error } = await query;
-
-    if (error) {
-      console.error('Error fetching companies:', error);
+    if (result.error) {
+      console.error('Error fetching companies:', result.error);
       throw new Error('Failed to fetch companies');
     }
 
-    return data || [];
+    let companies = (result.data || []).map(mapD1ToCompany);
+
+    // Filter by search if provided
+    if (search) {
+      const searchLower = search.toLowerCase();
+      companies = companies.filter(
+        (c) =>
+          c.name.toLowerCase().includes(searchLower) ||
+          c.cnpj?.toLowerCase().includes(searchLower)
+      );
+    }
+
+    // Sort by name
+    companies.sort((a, b) => a.name.localeCompare(b.name));
+
+    return companies;
   },
 
   /**
    * Busca uma empresa por ID
    */
   async getById(id: string): Promise<Company | null> {
-    const { data, error } = await supabase
-      .from(TABLE_NAME)
-      .select('*')
-      .eq('id', id)
-      .single();
+    const result = await d1Client.getCrmCompanyById(id);
 
-    if (error) {
-      if (error.code === 'PGRST116') {
+    if (result.error) {
+      if (result.error.includes('not found')) {
         return null;
       }
-      console.error('Error fetching company:', error);
+      console.error('Error fetching company:', result.error);
       throw new Error('Failed to fetch company');
     }
 
-    return data;
+    return result.data ? mapD1ToCompany(result.data) : null;
   },
 
   /**
    * Busca uma empresa com estatísticas (contatos e deals)
    */
   async getByIdWithStats(id: string): Promise<Company & { contacts_count: number; deals_count: number } | null> {
-    const { data: company, error: companyError } = await supabase
-      .from(TABLE_NAME)
-      .select('*')
-      .eq('id', id)
-      .single();
+    const company = await this.getById(id);
 
-    if (companyError) {
-      if (companyError.code === 'PGRST116') {
-        return null;
-      }
-      throw new Error('Failed to fetch company');
+    if (!company) {
+      return null;
     }
 
-    // Contar contatos
-    const { count: contactsCount } = await supabase
-      .from('crm_contacts')
-      .select('*', { count: 'exact', head: true })
-      .eq('company_id', id);
+    // Get contacts count
+    const contactsResult = await d1Client.getCrmContactsByCompany(id);
+    const contactsCount = contactsResult.data?.length || 0;
 
-    // Contar deals
-    const { count: dealsCount } = await supabase
-      .from('crm_deals')
-      .select('*', { count: 'exact', head: true })
-      .eq('company_id', id);
+    // Get deals count (we need userId for this)
+    const userId = await getCurrentUserId();
+    const dealsResult = await d1Client.getCrmDeals(userId, { company_id: id });
+    const dealsCount = dealsResult.data?.length || 0;
 
     return {
       ...company,
-      contacts_count: contactsCount || 0,
-      deals_count: dealsCount || 0,
+      contacts_count: contactsCount,
+      deals_count: dealsCount,
     };
   },
 
@@ -92,62 +127,57 @@ export const CompanyService = {
    * Cria uma nova empresa
    */
   async create(data: CompanyFormData): Promise<Company> {
-    const { data: user } = await supabase.auth.getUser();
+    const userId = await getCurrentUserId();
 
-    if (!user.user) {
-      throw new Error('[CompanyService] User not authenticated');
-    }
+    const result = await d1Client.createCrmCompany({
+      user_id: userId,
+      name: data.name,
+      cnpj: data.cnpj,
+      industry: data.industry,
+      segment: data.segment,
+      size: data.size,
+      website: data.website,
+      address: data.address,
+      city: data.city,
+      state: data.state,
+      phone: data.phone,
+      email: data.email,
+      linkedin: data.linkedin,
+      instagram: data.instagram,
+      facebook: data.facebook,
+      notes: data.notes,
+    });
 
-    const { data: company, error } = await supabase
-      .from(TABLE_NAME)
-      .insert({
-        ...data,
-        user_id: user.user.id,
-      })
-      .select()
-      .single();
-
-    if (error) {
-      console.error('Error creating company:', error);
+    if (result.error || !result.data) {
+      console.error('Error creating company:', result.error);
       throw new Error('Failed to create company');
     }
 
-    return company;
+    return mapD1ToCompany(result.data);
   },
 
   /**
    * Atualiza uma empresa existente
    */
   async update(id: string, data: Partial<CompanyFormData>): Promise<Company> {
-    const { data: company, error } = await supabase
-      .from(TABLE_NAME)
-      .update({
-        ...data,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', id)
-      .select()
-      .single();
+    const result = await d1Client.updateCrmCompany(id, data);
 
-    if (error) {
-      console.error('Error updating company:', error);
+    if (result.error || !result.data) {
+      console.error('Error updating company:', result.error);
       throw new Error('Failed to update company');
     }
 
-    return company;
+    return mapD1ToCompany(result.data);
   },
 
   /**
    * Deleta uma empresa
    */
   async delete(id: string): Promise<void> {
-    const { error } = await supabase
-      .from(TABLE_NAME)
-      .delete()
-      .eq('id', id);
+    const result = await d1Client.deleteCrmCompany(id);
 
-    if (error) {
-      console.error('Error deleting company:', error);
+    if (result.error) {
+      console.error('Error deleting company:', result.error);
       throw new Error('Failed to delete company');
     }
   },
@@ -156,50 +186,30 @@ export const CompanyService = {
    * Conta total de empresas
    */
   async count(): Promise<number> {
-    const { count, error } = await supabase
-      .from(TABLE_NAME)
-      .select('*', { count: 'exact', head: true });
+    const userId = await getCurrentUserId();
+    const result = await d1Client.countCrmCompanies(userId);
 
-    if (error) {
-      console.error('Error counting companies:', error);
+    if (result.error) {
+      console.error('Error counting companies:', result.error);
       throw new Error('Failed to count companies');
     }
 
-    return count || 0;
+    return result.data?.count || 0;
   },
 
   /**
    * Busca empresas para select/dropdown
    */
   async getForSelect(): Promise<{ id: string; name: string }[]> {
-    const { data, error } = await supabase
-      .from(TABLE_NAME)
-      .select('id, name')
-      .order('name');
-
-    if (error) {
-      console.error('Error fetching companies for select:', error);
-      throw new Error('Failed to fetch companies');
-    }
-
-    return data || [];
+    const companies = await this.getAll();
+    return companies.map((c) => ({ id: c.id, name: c.name }));
   },
 
   /**
    * Busca empresas por indústria
    */
   async getByIndustry(industry: string): Promise<Company[]> {
-    const { data, error } = await supabase
-      .from(TABLE_NAME)
-      .select('*')
-      .eq('industry', industry)
-      .order('name');
-
-    if (error) {
-      console.error('Error fetching companies by industry:', error);
-      throw new Error('Failed to fetch companies by industry');
-    }
-
-    return data || [];
+    const companies = await this.getAll();
+    return companies.filter((c) => c.industry === industry);
   },
 };
