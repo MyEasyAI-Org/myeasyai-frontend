@@ -13,6 +13,7 @@ import { healthRoutes } from './routes/health';
 import { authRoutes } from './routes/auth';
 import { syncRoutes } from './routes/sync';
 import { pricingRoutes } from './routes/pricing';
+import { crmRoutes } from './routes/crm';
 import { runAutoSync } from './scheduled/autoSync';
 
 // Tipagem do ambiente Cloudflare
@@ -89,6 +90,7 @@ app.route('/products', productsRoutes);
 app.route('/sites', sitesRoutes);
 app.route('/sync', syncRoutes);
 app.route('/pricing', pricingRoutes);
+app.route('/crm', crmRoutes);
 
 // Root endpoint
 app.get('/', (c) => {
@@ -104,6 +106,7 @@ app.get('/', (c) => {
       sites: '/sites',
       sync: '/sync',
       pricing: '/pricing',
+      crm: '/crm',
     },
   });
 });

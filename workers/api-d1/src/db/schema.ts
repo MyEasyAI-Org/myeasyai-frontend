@@ -212,3 +212,133 @@ export type PricingTaxConfig = typeof pricingTaxConfig.$inferSelect;
 export type NewPricingTaxConfig = typeof pricingTaxConfig.$inferInsert;
 export type PricingTaxItem = typeof pricingTaxItems.$inferSelect;
 export type NewPricingTaxItem = typeof pricingTaxItems.$inferInsert;
+
+// =============================================================================
+// CRM Tables (MyEasyCRM)
+// =============================================================================
+
+/**
+ * Tabela de empresas do CRM
+ */
+export const crmCompanies = sqliteTable('crm_companies', {
+  id: text('id').primaryKey(),
+  user_id: text('user_id')
+    .notNull()
+    .references(() => users.uuid, { onDelete: 'cascade' }),
+  name: text('name').notNull(),
+  cnpj: text('cnpj'),
+  industry: text('industry'),
+  segment: text('segment'),
+  size: text('size'),
+  website: text('website'),
+  address: text('address'),
+  city: text('city'),
+  state: text('state'),
+  phone: text('phone'),
+  email: text('email'),
+  linkedin: text('linkedin'),
+  instagram: text('instagram'),
+  facebook: text('facebook'),
+  notes: text('notes'),
+  created_at: text('created_at').default(sql`(datetime('now'))`),
+  updated_at: text('updated_at').default(sql`(datetime('now'))`),
+});
+
+/**
+ * Tabela de contatos do CRM
+ */
+export const crmContacts = sqliteTable('crm_contacts', {
+  id: text('id').primaryKey(),
+  user_id: text('user_id')
+    .notNull()
+    .references(() => users.uuid, { onDelete: 'cascade' }),
+  company_id: text('company_id').references(() => crmCompanies.id, { onDelete: 'set null' }),
+  name: text('name').notNull(),
+  email: text('email'),
+  phone: text('phone'),
+  mobile: text('mobile'),
+  position: text('position'),
+  role: text('role'),
+  tags: text('tags'), // JSON array as text
+  notes: text('notes'),
+  source: text('source'),
+  lead_source: text('lead_source'),
+  birth_date: text('birth_date'),
+  address: text('address'),
+  linkedin: text('linkedin'),
+  instagram: text('instagram'),
+  created_at: text('created_at').default(sql`(datetime('now'))`),
+  updated_at: text('updated_at').default(sql`(datetime('now'))`),
+});
+
+/**
+ * Tabela de deals/oportunidades do CRM
+ */
+export const crmDeals = sqliteTable('crm_deals', {
+  id: text('id').primaryKey(),
+  user_id: text('user_id')
+    .notNull()
+    .references(() => users.uuid, { onDelete: 'cascade' }),
+  contact_id: text('contact_id').references(() => crmContacts.id, { onDelete: 'set null' }),
+  company_id: text('company_id').references(() => crmCompanies.id, { onDelete: 'set null' }),
+  title: text('title').notNull(),
+  value: integer('value').notNull().default(0), // stored as cents
+  stage: text('stage').notNull().default('lead'),
+  probability: integer('probability').notNull().default(0),
+  expected_close_date: text('expected_close_date'),
+  actual_close_date: text('actual_close_date'),
+  lost_reason: text('lost_reason'),
+  source: text('source'),
+  notes: text('notes'),
+  products: text('products'), // JSON array as text
+  created_at: text('created_at').default(sql`(datetime('now'))`),
+  updated_at: text('updated_at').default(sql`(datetime('now'))`),
+});
+
+/**
+ * Tabela de tarefas do CRM
+ */
+export const crmTasks = sqliteTable('crm_tasks', {
+  id: text('id').primaryKey(),
+  user_id: text('user_id')
+    .notNull()
+    .references(() => users.uuid, { onDelete: 'cascade' }),
+  contact_id: text('contact_id').references(() => crmContacts.id, { onDelete: 'set null' }),
+  deal_id: text('deal_id').references(() => crmDeals.id, { onDelete: 'set null' }),
+  title: text('title').notNull(),
+  description: text('description'),
+  due_date: text('due_date').notNull(),
+  type: text('type').notNull().default('other'),
+  priority: text('priority').notNull().default('medium'),
+  completed: integer('completed', { mode: 'boolean' }).notNull().default(false),
+  completed_at: text('completed_at'),
+  created_at: text('created_at').default(sql`(datetime('now'))`),
+});
+
+/**
+ * Tabela de atividades do CRM
+ */
+export const crmActivities = sqliteTable('crm_activities', {
+  id: text('id').primaryKey(),
+  user_id: text('user_id')
+    .notNull()
+    .references(() => users.uuid, { onDelete: 'cascade' }),
+  contact_id: text('contact_id').references(() => crmContacts.id, { onDelete: 'set null' }),
+  deal_id: text('deal_id').references(() => crmDeals.id, { onDelete: 'set null' }),
+  type: text('type').notNull(),
+  description: text('description').notNull(),
+  metadata: text('metadata'), // JSON as text
+  created_at: text('created_at').default(sql`(datetime('now'))`),
+});
+
+// CRM types
+export type CrmCompany = typeof crmCompanies.$inferSelect;
+export type NewCrmCompany = typeof crmCompanies.$inferInsert;
+export type CrmContact = typeof crmContacts.$inferSelect;
+export type NewCrmContact = typeof crmContacts.$inferInsert;
+export type CrmDeal = typeof crmDeals.$inferSelect;
+export type NewCrmDeal = typeof crmDeals.$inferInsert;
+export type CrmTask = typeof crmTasks.$inferSelect;
+export type NewCrmTask = typeof crmTasks.$inferInsert;
+export type CrmActivity = typeof crmActivities.$inferSelect;
+export type NewCrmActivity = typeof crmActivities.$inferInsert;

@@ -140,6 +140,126 @@ export interface D1PricingTaxItem {
   updated_at: string | null;
 }
 
+// =============================================================================
+// CRM Types
+// =============================================================================
+
+export interface D1CrmCompany {
+  id: string;
+  user_id: string;
+  name: string;
+  cnpj: string | null;
+  industry: string | null;
+  segment: string | null;
+  size: string | null;
+  website: string | null;
+  address: string | null;
+  city: string | null;
+  state: string | null;
+  phone: string | null;
+  email: string | null;
+  linkedin: string | null;
+  instagram: string | null;
+  facebook: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string | null;
+}
+
+export interface D1CrmContact {
+  id: string;
+  user_id: string;
+  company_id: string | null;
+  name: string;
+  email: string | null;
+  phone: string | null;
+  mobile: string | null;
+  position: string | null;
+  role: string | null;
+  tags: string | null; // JSON array as string
+  notes: string | null;
+  source: string | null;
+  lead_source: string | null;
+  birth_date: string | null;
+  address: string | null;
+  linkedin: string | null;
+  instagram: string | null;
+  created_at: string;
+  updated_at: string | null;
+  company?: { id: string; name: string; industry?: string | null } | null;
+}
+
+export interface D1CrmDeal {
+  id: string;
+  user_id: string;
+  contact_id: string | null;
+  company_id: string | null;
+  title: string;
+  value: number;
+  stage: string;
+  probability: number;
+  expected_close_date: string | null;
+  actual_close_date: string | null;
+  lost_reason: string | null;
+  source: string | null;
+  notes: string | null;
+  products: string | null; // JSON array as string
+  created_at: string;
+  updated_at: string | null;
+  contact?: { id: string; name: string; email?: string | null; phone?: string | null } | null;
+  company?: { id: string; name: string } | null;
+}
+
+export interface D1CrmTask {
+  id: string;
+  user_id: string;
+  contact_id: string | null;
+  deal_id: string | null;
+  title: string;
+  description: string | null;
+  due_date: string;
+  type: string;
+  priority: string;
+  completed: boolean;
+  completed_at: string | null;
+  created_at: string;
+  contact?: { id: string; name: string; email?: string | null } | null;
+  deal?: { id: string; title: string; value?: number; stage?: string } | null;
+}
+
+export interface D1CrmActivity {
+  id: string;
+  user_id: string;
+  contact_id: string | null;
+  deal_id: string | null;
+  type: string;
+  description: string;
+  metadata: string | null; // JSON as string
+  created_at: string;
+  contact?: { id: string; name: string; email?: string | null } | null;
+  deal?: { id: string; title: string; value?: number; stage?: string } | null;
+}
+
+export interface D1CrmPipeline {
+  columns: Array<{
+    id: string;
+    deals: D1CrmDeal[];
+    total_value: number;
+    count: number;
+  }>;
+  total_value: number;
+  total_deals: number;
+}
+
+export interface D1CrmMetrics {
+  total_value: number;
+  weighted_value: number;
+  open_deals: number;
+  won_this_month: number;
+  lost_this_month: number;
+  revenue_this_month: number;
+}
+
 /**
  * Cliente HTTP para a API D1 (Cloudflare Worker)
  */
@@ -786,6 +906,459 @@ export class D1Client {
    */
   async deletePricingTaxItem(itemId: string): Promise<D1ApiResponse<{ success: boolean }>> {
     return this.fetch(`/pricing/tax-items/${itemId}`, { method: 'DELETE' });
+  }
+
+  // ==================== CRM ====================
+
+  // --- Companies ---
+
+  /**
+   * Lista empresas do usuário
+   */
+  async getCrmCompanies(userId: string): Promise<D1ApiResponse<D1CrmCompany[]>> {
+    return this.fetch<D1CrmCompany[]>(`/crm/companies/user/${userId}`);
+  }
+
+  /**
+   * Busca empresa por ID
+   */
+  async getCrmCompanyById(id: string): Promise<D1ApiResponse<D1CrmCompany>> {
+    return this.fetch<D1CrmCompany>(`/crm/companies/${id}`);
+  }
+
+  /**
+   * Cria nova empresa
+   */
+  async createCrmCompany(company: {
+    user_id: string;
+    name: string;
+    cnpj?: string;
+    industry?: string;
+    segment?: string;
+    size?: string;
+    website?: string;
+    address?: string;
+    city?: string;
+    state?: string;
+    phone?: string;
+    email?: string;
+    linkedin?: string;
+    instagram?: string;
+    facebook?: string;
+    notes?: string;
+  }): Promise<D1ApiResponse<D1CrmCompany>> {
+    return this.fetch<D1CrmCompany>('/crm/companies', {
+      method: 'POST',
+      body: JSON.stringify(company),
+    });
+  }
+
+  /**
+   * Atualiza empresa
+   */
+  async updateCrmCompany(
+    id: string,
+    updates: Partial<D1CrmCompany>
+  ): Promise<D1ApiResponse<D1CrmCompany>> {
+    return this.fetch<D1CrmCompany>(`/crm/companies/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(updates),
+    });
+  }
+
+  /**
+   * Deleta empresa
+   */
+  async deleteCrmCompany(id: string): Promise<D1ApiResponse<{ success: boolean }>> {
+    return this.fetch(`/crm/companies/${id}`, { method: 'DELETE' });
+  }
+
+  /**
+   * Conta empresas do usuário
+   */
+  async countCrmCompanies(userId: string): Promise<D1ApiResponse<{ count: number }>> {
+    return this.fetch(`/crm/companies/count/user/${userId}`);
+  }
+
+  // --- Contacts ---
+
+  /**
+   * Lista contatos do usuário
+   */
+  async getCrmContacts(
+    userId: string,
+    filters?: { search?: string; company_id?: string }
+  ): Promise<D1ApiResponse<D1CrmContact[]>> {
+    const params = new URLSearchParams();
+    if (filters?.search) params.append('search', filters.search);
+    if (filters?.company_id) params.append('company_id', filters.company_id);
+    const query = params.toString() ? `?${params.toString()}` : '';
+    return this.fetch<D1CrmContact[]>(`/crm/contacts/user/${userId}${query}`);
+  }
+
+  /**
+   * Busca contato por ID
+   */
+  async getCrmContactById(id: string): Promise<D1ApiResponse<D1CrmContact>> {
+    return this.fetch<D1CrmContact>(`/crm/contacts/${id}`);
+  }
+
+  /**
+   * Cria novo contato
+   */
+  async createCrmContact(contact: {
+    user_id: string;
+    name: string;
+    company_id?: string;
+    email?: string;
+    phone?: string;
+    mobile?: string;
+    position?: string;
+    role?: string;
+    tags?: string[];
+    notes?: string;
+    source?: string;
+    lead_source?: string;
+    birth_date?: string;
+    address?: string;
+    linkedin?: string;
+    instagram?: string;
+  }): Promise<D1ApiResponse<D1CrmContact>> {
+    return this.fetch<D1CrmContact>('/crm/contacts', {
+      method: 'POST',
+      body: JSON.stringify(contact),
+    });
+  }
+
+  /**
+   * Atualiza contato
+   */
+  async updateCrmContact(
+    id: string,
+    updates: Partial<D1CrmContact> & { tags?: string[] }
+  ): Promise<D1ApiResponse<D1CrmContact>> {
+    return this.fetch<D1CrmContact>(`/crm/contacts/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(updates),
+    });
+  }
+
+  /**
+   * Deleta contato
+   */
+  async deleteCrmContact(id: string): Promise<D1ApiResponse<{ success: boolean }>> {
+    return this.fetch(`/crm/contacts/${id}`, { method: 'DELETE' });
+  }
+
+  /**
+   * Busca contatos por empresa
+   */
+  async getCrmContactsByCompany(companyId: string): Promise<D1ApiResponse<D1CrmContact[]>> {
+    return this.fetch<D1CrmContact[]>(`/crm/contacts/company/${companyId}`);
+  }
+
+  /**
+   * Conta contatos do usuário
+   */
+  async countCrmContacts(userId: string): Promise<D1ApiResponse<{ count: number }>> {
+    return this.fetch(`/crm/contacts/count/user/${userId}`);
+  }
+
+  /**
+   * Contatos recentes do usuário
+   */
+  async getRecentCrmContacts(userId: string, limit = 5): Promise<D1ApiResponse<D1CrmContact[]>> {
+    return this.fetch<D1CrmContact[]>(`/crm/contacts/recent/user/${userId}?limit=${limit}`);
+  }
+
+  // --- Deals ---
+
+  /**
+   * Lista deals do usuário
+   */
+  async getCrmDeals(
+    userId: string,
+    filters?: { stage?: string; contact_id?: string; company_id?: string }
+  ): Promise<D1ApiResponse<D1CrmDeal[]>> {
+    const params = new URLSearchParams();
+    if (filters?.stage) params.append('stage', filters.stage);
+    if (filters?.contact_id) params.append('contact_id', filters.contact_id);
+    if (filters?.company_id) params.append('company_id', filters.company_id);
+    const query = params.toString() ? `?${params.toString()}` : '';
+    return this.fetch<D1CrmDeal[]>(`/crm/deals/user/${userId}${query}`);
+  }
+
+  /**
+   * Busca deal por ID
+   */
+  async getCrmDealById(id: string): Promise<D1ApiResponse<D1CrmDeal>> {
+    return this.fetch<D1CrmDeal>(`/crm/deals/${id}`);
+  }
+
+  /**
+   * Cria novo deal
+   */
+  async createCrmDeal(deal: {
+    user_id: string;
+    title: string;
+    contact_id?: string;
+    company_id?: string;
+    value?: number;
+    stage?: string;
+    probability?: number;
+    expected_close_date?: string;
+    source?: string;
+    notes?: string;
+  }): Promise<D1ApiResponse<D1CrmDeal>> {
+    return this.fetch<D1CrmDeal>('/crm/deals', {
+      method: 'POST',
+      body: JSON.stringify(deal),
+    });
+  }
+
+  /**
+   * Atualiza deal
+   */
+  async updateCrmDeal(
+    id: string,
+    updates: Partial<D1CrmDeal>
+  ): Promise<D1ApiResponse<D1CrmDeal>> {
+    return this.fetch<D1CrmDeal>(`/crm/deals/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(updates),
+    });
+  }
+
+  /**
+   * Deleta deal
+   */
+  async deleteCrmDeal(id: string): Promise<D1ApiResponse<{ success: boolean }>> {
+    return this.fetch(`/crm/deals/${id}`, { method: 'DELETE' });
+  }
+
+  /**
+   * Busca pipeline (Kanban)
+   */
+  async getCrmPipeline(userId: string): Promise<D1ApiResponse<D1CrmPipeline>> {
+    return this.fetch<D1CrmPipeline>(`/crm/deals/pipeline/user/${userId}`);
+  }
+
+  /**
+   * Métricas do pipeline
+   */
+  async getCrmMetrics(userId: string): Promise<D1ApiResponse<D1CrmMetrics>> {
+    return this.fetch<D1CrmMetrics>(`/crm/deals/metrics/user/${userId}`);
+  }
+
+  /**
+   * Conta deals do usuário
+   */
+  async countCrmDeals(userId: string): Promise<D1ApiResponse<{ count: number }>> {
+    return this.fetch(`/crm/deals/count/user/${userId}`);
+  }
+
+  // --- Tasks ---
+
+  /**
+   * Lista tarefas do usuário
+   */
+  async getCrmTasks(
+    userId: string,
+    filters?: {
+      completed?: boolean;
+      type?: string;
+      priority?: string;
+      contact_id?: string;
+      deal_id?: string;
+    }
+  ): Promise<D1ApiResponse<D1CrmTask[]>> {
+    const params = new URLSearchParams();
+    if (filters?.completed !== undefined) params.append('completed', String(filters.completed));
+    if (filters?.type) params.append('type', filters.type);
+    if (filters?.priority) params.append('priority', filters.priority);
+    if (filters?.contact_id) params.append('contact_id', filters.contact_id);
+    if (filters?.deal_id) params.append('deal_id', filters.deal_id);
+    const query = params.toString() ? `?${params.toString()}` : '';
+    return this.fetch<D1CrmTask[]>(`/crm/tasks/user/${userId}${query}`);
+  }
+
+  /**
+   * Busca tarefa por ID
+   */
+  async getCrmTaskById(id: string): Promise<D1ApiResponse<D1CrmTask>> {
+    return this.fetch<D1CrmTask>(`/crm/tasks/${id}`);
+  }
+
+  /**
+   * Cria nova tarefa
+   */
+  async createCrmTask(task: {
+    user_id: string;
+    title: string;
+    due_date: string;
+    contact_id?: string;
+    deal_id?: string;
+    description?: string;
+    type?: string;
+    priority?: string;
+  }): Promise<D1ApiResponse<D1CrmTask>> {
+    return this.fetch<D1CrmTask>('/crm/tasks', {
+      method: 'POST',
+      body: JSON.stringify(task),
+    });
+  }
+
+  /**
+   * Atualiza tarefa
+   */
+  async updateCrmTask(
+    id: string,
+    updates: Partial<D1CrmTask>
+  ): Promise<D1ApiResponse<D1CrmTask>> {
+    return this.fetch<D1CrmTask>(`/crm/tasks/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(updates),
+    });
+  }
+
+  /**
+   * Marca tarefa como concluída
+   */
+  async completeCrmTask(id: string): Promise<D1ApiResponse<D1CrmTask>> {
+    return this.fetch<D1CrmTask>(`/crm/tasks/${id}/complete`, { method: 'PATCH' });
+  }
+
+  /**
+   * Marca tarefa como não concluída
+   */
+  async uncompleteCrmTask(id: string): Promise<D1ApiResponse<D1CrmTask>> {
+    return this.fetch<D1CrmTask>(`/crm/tasks/${id}/uncomplete`, { method: 'PATCH' });
+  }
+
+  /**
+   * Deleta tarefa
+   */
+  async deleteCrmTask(id: string): Promise<D1ApiResponse<{ success: boolean }>> {
+    return this.fetch(`/crm/tasks/${id}`, { method: 'DELETE' });
+  }
+
+  /**
+   * Tarefas atrasadas
+   */
+  async getOverdueCrmTasks(userId: string): Promise<D1ApiResponse<D1CrmTask[]>> {
+    return this.fetch<D1CrmTask[]>(`/crm/tasks/overdue/user/${userId}`);
+  }
+
+  /**
+   * Tarefas de hoje
+   */
+  async getTodayCrmTasks(userId: string): Promise<D1ApiResponse<D1CrmTask[]>> {
+    return this.fetch<D1CrmTask[]>(`/crm/tasks/today/user/${userId}`);
+  }
+
+  /**
+   * Conta tarefas pendentes
+   */
+  async countPendingCrmTasks(userId: string): Promise<D1ApiResponse<{ count: number }>> {
+    return this.fetch(`/crm/tasks/count/pending/user/${userId}`);
+  }
+
+  /**
+   * Conta tarefas atrasadas
+   */
+  async countOverdueCrmTasks(userId: string): Promise<D1ApiResponse<{ count: number }>> {
+    return this.fetch(`/crm/tasks/count/overdue/user/${userId}`);
+  }
+
+  // --- Activities ---
+
+  /**
+   * Lista atividades do usuário
+   */
+  async getCrmActivities(
+    userId: string,
+    filters?: { limit?: number; type?: string; contact_id?: string; deal_id?: string }
+  ): Promise<D1ApiResponse<D1CrmActivity[]>> {
+    const params = new URLSearchParams();
+    if (filters?.limit) params.append('limit', String(filters.limit));
+    if (filters?.type) params.append('type', filters.type);
+    if (filters?.contact_id) params.append('contact_id', filters.contact_id);
+    if (filters?.deal_id) params.append('deal_id', filters.deal_id);
+    const query = params.toString() ? `?${params.toString()}` : '';
+    return this.fetch<D1CrmActivity[]>(`/crm/activities/user/${userId}${query}`);
+  }
+
+  /**
+   * Busca atividade por ID
+   */
+  async getCrmActivityById(id: string): Promise<D1ApiResponse<D1CrmActivity>> {
+    return this.fetch<D1CrmActivity>(`/crm/activities/${id}`);
+  }
+
+  /**
+   * Cria nova atividade
+   */
+  async createCrmActivity(activity: {
+    user_id: string;
+    type: string;
+    description: string;
+    contact_id?: string;
+    deal_id?: string;
+    metadata?: string;
+  }): Promise<D1ApiResponse<D1CrmActivity>> {
+    return this.fetch<D1CrmActivity>('/crm/activities', {
+      method: 'POST',
+      body: JSON.stringify(activity),
+    });
+  }
+
+  /**
+   * Deleta atividade
+   */
+  async deleteCrmActivity(id: string): Promise<D1ApiResponse<{ success: boolean }>> {
+    return this.fetch(`/crm/activities/${id}`, { method: 'DELETE' });
+  }
+
+  /**
+   * Atividades por contato
+   */
+  async getCrmActivitiesByContact(
+    contactId: string,
+    limit = 20
+  ): Promise<D1ApiResponse<D1CrmActivity[]>> {
+    return this.fetch<D1CrmActivity[]>(`/crm/activities/contact/${contactId}?limit=${limit}`);
+  }
+
+  /**
+   * Atividades por deal
+   */
+  async getCrmActivitiesByDeal(
+    dealId: string,
+    limit = 20
+  ): Promise<D1ApiResponse<D1CrmActivity[]>> {
+    return this.fetch<D1CrmActivity[]>(`/crm/activities/deal/${dealId}?limit=${limit}`);
+  }
+
+  /**
+   * Estatísticas de atividades por tipo
+   */
+  async getCrmActivityStats(userId: string): Promise<D1ApiResponse<Record<string, number>>> {
+    return this.fetch(`/crm/activities/stats/user/${userId}`);
+  }
+
+  /**
+   * Conta atividades por período
+   */
+  async countCrmActivities(
+    userId: string,
+    startDate?: string,
+    endDate?: string
+  ): Promise<D1ApiResponse<{ count: number }>> {
+    const params = new URLSearchParams();
+    if (startDate) params.append('start_date', startDate);
+    if (endDate) params.append('end_date', endDate);
+    const query = params.toString() ? `?${params.toString()}` : '';
+    return this.fetch(`/crm/activities/count/user/${userId}${query}`);
   }
 
   // ==================== HEALTH ====================
