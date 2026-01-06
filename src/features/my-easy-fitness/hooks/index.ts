@@ -5,4 +5,4 @@
  */
 
 export { useFitnessData } from './useFitnessData';
-export { useAnamneseFlow } from './useAnamneseFlow';
+export { usePersonalInfoFlow } from './useAnamneseFlow';

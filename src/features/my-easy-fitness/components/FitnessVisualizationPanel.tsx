@@ -20,15 +20,15 @@ import {
   Trash2,
 } from 'lucide-react';
 import { useState } from 'react';
-import type { UserAnamnese, Treino, Dieta } from '../types';
+import type { UserPersonalInfo, Treino, Dieta } from '../types';
 
-type TabId = 'visao-geral' | 'anamnese' | 'treinos' | 'dieta';
+type TabId = 'visao-geral' | 'personal-info' | 'treinos' | 'dieta';
 
 type FitnessVisualizationPanelProps = {
-  anamnese: UserAnamnese;
+  personalInfo: UserPersonalInfo;
   treinos: Treino[];
   dieta: Dieta | null;
-  onUpdateAnamnese: (anamnese: UserAnamnese) => void;
+  onUpdatePersonalInfo: (personalInfo: UserPersonalInfo) => void;
   onUpdateTreinos: (treinos: Treino[]) => void;
   onUpdateDieta: (dieta: Dieta | null) => void;
 };
@@ -142,17 +142,17 @@ function EditableField({
 
 // Visão Geral Tab
 function VisaoGeralTab({
-  anamnese,
+  personalInfo,
   treinos,
   dieta,
 }: {
-  anamnese: UserAnamnese;
+  personalInfo: UserPersonalInfo;
   treinos: Treino[];
   dieta: Dieta | null;
 }) {
   const imc =
-    anamnese.peso && anamnese.altura
-      ? (anamnese.peso / Math.pow(anamnese.altura / 100, 2)).toFixed(1)
+    personalInfo.peso && personalInfo.altura
+      ? (personalInfo.peso / Math.pow(personalInfo.altura / 100, 2)).toFixed(1)
       : null;
 
   const getImcStatus = (imc: number) => {
@@ -174,7 +174,7 @@ function VisaoGeralTab({
             <span className="text-sm text-slate-400">Peso</span>
           </div>
           <p className="text-2xl font-bold text-white">
-            {anamnese.peso ? `${anamnese.peso} kg` : '--'}
+            {personalInfo.peso ? `${personalInfo.peso} kg` : '--'}
           </p>
         </div>
 
@@ -186,7 +186,7 @@ function VisaoGeralTab({
             <span className="text-sm text-slate-400">Altura</span>
           </div>
           <p className="text-2xl font-bold text-white">
-            {anamnese.altura ? `${anamnese.altura} cm` : '--'}
+            {personalInfo.altura ? `${personalInfo.altura} cm` : '--'}
           </p>
         </div>
 
@@ -220,13 +220,13 @@ function VisaoGeralTab({
       </div>
 
       {/* Objetivo */}
-      {anamnese.objetivo && (
+      {personalInfo.objetivo && (
         <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700">
           <div className="flex items-center gap-2 mb-2">
             <Target className="h-5 w-5 text-lime-400" />
             <span className="font-medium text-white">Seu Objetivo</span>
           </div>
-          <p className="text-slate-300">{anamnese.objetivo}</p>
+          <p className="text-slate-300">{personalInfo.objetivo}</p>
         </div>
       )}
 
@@ -270,7 +270,7 @@ function VisaoGeralTab({
       </div>
 
       {/* Empty State */}
-      {!anamnese.nome && treinos.length === 0 && !dieta && (
+      {!personalInfo.nome && treinos.length === 0 && !dieta && (
         <div className="flex flex-col items-center justify-center py-12 text-center">
           <div className="p-4 rounded-full bg-lime-500/20 mb-4">
             <LayoutDashboard className="h-10 w-10 text-lime-400" />
@@ -285,30 +285,30 @@ function VisaoGeralTab({
   );
 }
 
-// Anamnese Tab
-function AnamneseTab({
-  anamnese,
+// Personal Info Tab
+function PersonalInfoTab({
+  personalInfo,
   onUpdate,
 }: {
-  anamnese: UserAnamnese;
-  onUpdate: (anamnese: UserAnamnese) => void;
+  personalInfo: UserPersonalInfo;
+  onUpdate: (personalInfo: UserPersonalInfo) => void;
 }) {
   const [newRestricao, setNewRestricao] = useState('');
   const [newLesao, setNewLesao] = useState('');
 
-  const updateField = (field: keyof UserAnamnese, value: string) => {
+  const updateField = (field: keyof UserPersonalInfo, value: string) => {
     if (field === 'idade' || field === 'peso' || field === 'altura') {
-      onUpdate({ ...anamnese, [field]: parseFloat(value) || 0 });
+      onUpdate({ ...personalInfo, [field]: parseFloat(value) || 0 });
     } else {
-      onUpdate({ ...anamnese, [field]: value });
+      onUpdate({ ...personalInfo, [field]: value });
     }
   };
 
   const addRestricao = () => {
     if (newRestricao.trim()) {
       onUpdate({
-        ...anamnese,
-        restricoesMedicas: [...anamnese.restricoesMedicas, newRestricao.trim()],
+        ...personalInfo,
+        restricoesMedicas: [...personalInfo.restricoesMedicas, newRestricao.trim()],
       });
       setNewRestricao('');
     }
@@ -316,16 +316,16 @@ function AnamneseTab({
 
   const removeRestricao = (index: number) => {
     onUpdate({
-      ...anamnese,
-      restricoesMedicas: anamnese.restricoesMedicas.filter((_, i) => i !== index),
+      ...personalInfo,
+      restricoesMedicas: personalInfo.restricoesMedicas.filter((_, i) => i !== index),
     });
   };
 
   const addLesao = () => {
     if (newLesao.trim()) {
       onUpdate({
-        ...anamnese,
-        lesoes: [...anamnese.lesoes, newLesao.trim()],
+        ...personalInfo,
+        lesoes: [...personalInfo.lesoes, newLesao.trim()],
       });
       setNewLesao('');
     }
@@ -333,8 +333,8 @@ function AnamneseTab({
 
   const removeLesao = (index: number) => {
     onUpdate({
-      ...anamnese,
-      lesoes: anamnese.lesoes.filter((_, i) => i !== index),
+      ...personalInfo,
+      lesoes: personalInfo.lesoes.filter((_, i) => i !== index),
     });
   };
 
@@ -349,19 +349,19 @@ function AnamneseTab({
         <div className="space-y-1">
           <EditableField
             label="Nome"
-            value={anamnese.nome}
+            value={personalInfo.nome}
             onSave={(v) => updateField('nome', v)}
           />
           <EditableField
             label="Idade"
-            value={anamnese.idade || ''}
+            value={personalInfo.idade || ''}
             onSave={(v) => updateField('idade', v)}
             type="number"
             suffix=" anos"
           />
           <EditableField
             label="Sexo"
-            value={anamnese.sexo}
+            value={personalInfo.sexo}
             onSave={(v) => updateField('sexo', v)}
             type="select"
             options={[
@@ -371,14 +371,14 @@ function AnamneseTab({
           />
           <EditableField
             label="Peso"
-            value={anamnese.peso || ''}
+            value={personalInfo.peso || ''}
             onSave={(v) => updateField('peso', v)}
             type="number"
             suffix=" kg"
           />
           <EditableField
             label="Altura"
-            value={anamnese.altura || ''}
+            value={personalInfo.altura || ''}
             onSave={(v) => updateField('altura', v)}
             type="number"
             suffix=" cm"
@@ -395,12 +395,12 @@ function AnamneseTab({
         <div className="space-y-1">
           <EditableField
             label="Objetivo"
-            value={anamnese.objetivo}
+            value={personalInfo.objetivo}
             onSave={(v) => updateField('objetivo', v)}
           />
           <EditableField
             label="Nivel de Atividade"
-            value={anamnese.nivelAtividade}
+            value={personalInfo.nivelAtividade}
             onSave={(v) => updateField('nivelAtividade', v)}
             type="select"
             options={[
@@ -423,7 +423,7 @@ function AnamneseTab({
           <div>
             <p className="text-slate-400 text-sm mb-2">Restricoes Medicas</p>
             <div className="flex flex-wrap gap-2 mb-2">
-              {anamnese.restricoesMedicas.map((restricao, idx) => (
+              {personalInfo.restricoesMedicas.map((restricao, idx) => (
                 <span
                   key={idx}
                   className="px-3 py-1 bg-red-500/20 text-red-400 rounded-full text-sm flex items-center gap-1"
@@ -455,7 +455,7 @@ function AnamneseTab({
           <div>
             <p className="text-slate-400 text-sm mb-2">Lesoes</p>
             <div className="flex flex-wrap gap-2 mb-2">
-              {anamnese.lesoes.map((lesao, idx) => (
+              {personalInfo.lesoes.map((lesao, idx) => (
                 <span
                   key={idx}
                   className="px-3 py-1 bg-orange-500/20 text-orange-400 rounded-full text-sm flex items-center gap-1"
@@ -892,10 +892,10 @@ function DietaTab({ dieta, onUpdate }: { dieta: Dieta | null; onUpdate: (dieta: 
 
 // Main Component
 export function FitnessVisualizationPanel({
-  anamnese,
+  personalInfo,
   treinos,
   dieta,
-  onUpdateAnamnese,
+  onUpdatePersonalInfo,
   onUpdateTreinos,
   onUpdateDieta,
 }: FitnessVisualizationPanelProps) {
@@ -903,7 +903,7 @@ export function FitnessVisualizationPanel({
 
   const tabs = [
     { id: 'visao-geral' as TabId, label: 'Visao Geral', icon: LayoutDashboard },
-    { id: 'anamnese' as TabId, label: 'Anamnese', icon: User },
+    { id: 'personal-info' as TabId, label: 'Informações Pessoais', icon: User },
     { id: 'treinos' as TabId, label: 'Treinos', icon: Dumbbell },
     { id: 'dieta' as TabId, label: 'Dieta', icon: Salad },
   ];
@@ -928,9 +928,9 @@ export function FitnessVisualizationPanel({
       {/* Tab Content */}
       <div className="flex-1 min-h-0 overflow-y-auto">
         {activeTab === 'visao-geral' && (
-          <VisaoGeralTab anamnese={anamnese} treinos={treinos} dieta={dieta} />
+          <VisaoGeralTab personalInfo={personalInfo} treinos={treinos} dieta={dieta} />
         )}
-        {activeTab === 'anamnese' && <AnamneseTab anamnese={anamnese} onUpdate={onUpdateAnamnese} />}
+        {activeTab === 'personal-info' && <PersonalInfoTab personalInfo={personalInfo} onUpdate={onUpdatePersonalInfo} />}
         {activeTab === 'treinos' && <TreinosTab treinos={treinos} onUpdate={onUpdateTreinos} />}
         {activeTab === 'dieta' && <DietaTab dieta={dieta} onUpdate={onUpdateDieta} />}
       </div>

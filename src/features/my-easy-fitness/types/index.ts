@@ -15,9 +15,9 @@ export type BiologicalSex = 'masculino' | 'feminino' | '';
 export type ActivityLevel = 'sedentario' | 'leve' | 'moderado' | 'intenso' | '';
 
 /**
- * Anamnese flow steps (grouped questions)
+ * Personal info flow steps (grouped questions)
  */
-export type AnamneseStep =
+export type PersonalInfoStep =
   | 'info_basica' // nome, sexo, idade
   | 'medidas' // peso, altura
   | 'objetivo' // objetivo principal
@@ -26,9 +26,9 @@ export type AnamneseStep =
   | 'complete';
 
 /**
- * User anamnese data
+ * User personal info data
  */
-export interface UserAnamnese {
+export interface UserPersonalInfo {
   nome: string;
   idade: number;
   sexo: BiologicalSex;
@@ -94,10 +94,10 @@ export interface FitnessMessage {
  * Complete fitness data state
  */
 export interface FitnessData {
-  anamnese: UserAnamnese;
+  personalInfo: UserPersonalInfo;
   treinos: Treino[];
   dieta: Dieta | null;
-  anamneseStep: AnamneseStep;
+  personalInfoStep: PersonalInfoStep;
   messages: FitnessMessage[];
 }
 
@@ -112,18 +112,18 @@ export interface ActivityLevelConfig {
 }
 
 /**
- * Anamnese question configuration
+ * Personal info question configuration
  */
-export interface AnamneseQuestionConfig {
-  step: AnamneseStep;
+export interface PersonalInfoQuestionConfig {
+  step: PersonalInfoStep;
   question: string;
   errorMessage: string;
 }
 
 /**
- * Parsed anamnese response result
+ * Parsed personal info response result
  */
-export type AnamneseParseResult = Partial<UserAnamnese> | null;
+export type PersonalInfoParseResult = Partial<UserPersonalInfo> | null;
 
 /**
  * BMI classification

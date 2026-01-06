@@ -7,17 +7,17 @@
 import type {
   ActivityLevel,
   ActivityLevelConfig,
-  AnamneseStep,
+  PersonalInfoStep,
   BiologicalSex,
   Dieta,
   FitnessMessage,
-  UserAnamnese,
+  UserPersonalInfo,
 } from '../types';
 
 /**
- * Default empty anamnese data
+ * Default empty personal info data
  */
-export const DEFAULT_ANAMNESE: UserAnamnese = {
+export const DEFAULT_PERSONAL_INFO: UserPersonalInfo = {
   nome: '',
   idade: 0,
   sexo: '',
@@ -76,9 +76,9 @@ export const getActivityLevelName = (level: ActivityLevel): string => {
 };
 
 /**
- * Anamnese questions (grouped for natural conversation flow)
+ * Personal info questions (grouped for natural conversation flow)
  */
-export const ANAMNESE_QUESTIONS: Record<AnamneseStep, string> = {
+export const PERSONAL_INFO_QUESTIONS: Record<PersonalInfoStep, string> = {
   info_basica:
     'Ola! Sou seu assistente de fitness. Vou te ajudar a criar treinos e dietas personalizados.\n\nPara comecar, me conte: qual seu nome, sexo biologico e idade?\n\n(Ex: "Joao, masculino, 28 anos")',
   medidas:
@@ -93,9 +93,9 @@ export const ANAMNESE_QUESTIONS: Record<AnamneseStep, string> = {
 };
 
 /**
- * Error messages for anamnese validation
+ * Error messages for personal info validation
  */
-export const ANAMNESE_ERROR_MESSAGES: Record<AnamneseStep, string> = {
+export const PERSONAL_INFO_ERROR_MESSAGES: Record<PersonalInfoStep, string> = {
   info_basica:
     'Nao consegui entender. Por favor, informe seu nome, sexo e idade.\n\n(Ex: "Maria, feminino, 25 anos")',
   medidas:
@@ -113,7 +113,7 @@ export const ANAMNESE_ERROR_MESSAGES: Record<AnamneseStep, string> = {
  */
 export const INITIAL_MESSAGE: FitnessMessage = {
   role: 'assistant',
-  content: ANAMNESE_QUESTIONS.info_basica,
+  content: PERSONAL_INFO_QUESTIONS.info_basica,
   timestamp: new Date(),
 };
 

@@ -14,7 +14,7 @@ import { ArrowLeft } from 'lucide-react';
 import { FitnessChatPanel } from './components/FitnessChatPanel';
 import { FitnessVisualizationPanel } from './components/FitnessVisualizationPanel';
 import { useFitnessData } from './hooks/useFitnessData';
-import { useAnamneseFlow } from './hooks/useAnamneseFlow';
+import { usePersonalInfoFlow } from './hooks/useAnamneseFlow';
 
 type MyEasyFitnessProps = {
   onBackToDashboard: () => void;

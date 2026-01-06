@@ -1,20 +1,20 @@
 /**
- * Anamnese Input Parser
+ * Personal Info Input Parser
  *
- * Functions to parse user input during the anamnese flow.
+ * Functions to parse user input during the personal info flow.
  * Handles natural language input and extracts structured data.
  */
 
-import type { AnamneseParseResult, AnamneseStep, UserAnamnese } from '../types';
+import type { PersonalInfoParseResult, PersonalInfoStep, UserPersonalInfo } from '../types';
 import { INJURY_KEYWORDS, NEGATIVE_RESPONSES, SEX_KEYWORDS } from '../constants';
 
 /**
  * Parse basic info (name, sex, age) from user input
  * Example: "Joao, masculino, 28 anos"
  */
-export function parseBasicInfo(input: string): AnamneseParseResult {
+export function parseBasicInfo(input: string): PersonalInfoParseResult {
   const lowerInput = input.toLowerCase().trim();
-  const result: Partial<UserAnamnese> = {};
+  const result: Partial<UserPersonalInfo> = {};
 
   // Extract age (number followed by optional "anos")
   const ageMatch = input.match(/(\d+)\s*(anos?)?/i);
@@ -64,8 +64,8 @@ export function parseBasicInfo(input: string): AnamneseParseResult {
  * Parse measurements (weight, height) from user input
  * Example: "75kg e 175cm" or "75kg, 1.75m"
  */
-export function parseMeasurements(input: string): AnamneseParseResult {
-  const result: Partial<UserAnamnese> = {};
+export function parseMeasurements(input: string): PersonalInfoParseResult {
+  const result: Partial<UserPersonalInfo> = {};
 
   // Extract all numbers
   const numbers = input.match(/[\d.]+/g) || [];
@@ -97,7 +97,7 @@ export function parseMeasurements(input: string): AnamneseParseResult {
 /**
  * Parse objective from user input
  */
-export function parseObjective(input: string): AnamneseParseResult {
+export function parseObjective(input: string): PersonalInfoParseResult {
   const trimmed = input.trim();
   if (trimmed.length > 2) {
     return { objetivo: trimmed };
@@ -109,7 +109,7 @@ export function parseObjective(input: string): AnamneseParseResult {
  * Parse activity level from user input
  * Accepts numbers (1-4) or text descriptions
  */
-export function parseActivityLevel(input: string): AnamneseParseResult {
+export function parseActivityLevel(input: string): PersonalInfoParseResult {
   const lowerInput = input.toLowerCase().trim();
 
   if (lowerInput.includes('sedentario') || lowerInput === '1') {
@@ -136,7 +136,7 @@ export function parseActivityLevel(input: string): AnamneseParseResult {
  * Parse health info (restrictions and injuries) from user input
  * Automatically classifies items as restrictions or injuries based on keywords
  */
-export function parseHealthInfo(input: string): AnamneseParseResult {
+export function parseHealthInfo(input: string): PersonalInfoParseResult {
   const lowerInput = input.toLowerCase().trim();
 
   // Check for negative responses
@@ -147,7 +147,7 @@ export function parseHealthInfo(input: string): AnamneseParseResult {
     };
   }
 
-  const result: Partial<UserAnamnese> = {
+  const result: Partial<UserPersonalInfo> = {
     restricoesMedicas: [],
     lesoes: [],
   };
@@ -179,10 +179,10 @@ export function parseHealthInfo(input: string): AnamneseParseResult {
 /**
  * Main parser function - routes to appropriate parser based on step
  */
-export function parseAnamneseResponse(
-  step: AnamneseStep,
+export function parsePersonalInfoResponse(
+  step: PersonalInfoStep,
   input: string
-): AnamneseParseResult {
+): PersonalInfoParseResult {
   switch (step) {
     case 'info_basica':
       return parseBasicInfo(input);
@@ -200,10 +200,10 @@ export function parseAnamneseResponse(
 }
 
 /**
- * Get the next anamnese step
+ * Get the next personal info step
  */
-export function getNextAnamneseStep(currentStep: AnamneseStep): AnamneseStep {
-  const steps: AnamneseStep[] = [
+export function getNextPersonalInfoStep(currentStep: PersonalInfoStep): PersonalInfoStep {
+  const steps: PersonalInfoStep[] = [
     'info_basica',
     'medidas',
     'objetivo',
@@ -217,8 +217,8 @@ export function getNextAnamneseStep(currentStep: AnamneseStep): AnamneseStep {
 }
 
 /**
- * Check if anamnese is complete
+ * Check if personal info is complete
  */
-export function isAnamneseComplete(step: AnamneseStep): boolean {
+export function isPersonalInfoComplete(step: PersonalInfoStep): boolean {
   return step === 'complete';
 }

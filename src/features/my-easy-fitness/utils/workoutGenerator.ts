@@ -4,7 +4,7 @@
  * Functions to generate personalized workout plans based on user profile.
  */
 
-import type { Exercise, Treino, UserAnamnese } from '../types';
+import type { Exercise, Treino, UserPersonalInfo } from '../types';
 import { INJURY_EXERCISE_ALTERNATIVES, WORKOUT_TEMPLATES } from '../constants';
 
 /**
@@ -94,7 +94,7 @@ function adjustForActivityLevel(
  */
 export function generateWorkout(
   templateKey: keyof typeof WORKOUT_TEMPLATES,
-  anamnese: UserAnamnese
+  personalInfo: UserPersonalInfo
 ): Treino {
   const template = WORKOUT_TEMPLATES[templateKey];
 
@@ -102,8 +102,8 @@ export function generateWorkout(
 
   // Replace exercises that should be avoided due to injuries
   exercicios = exercicios.map((exercise) => {
-    if (shouldAvoidExercise(exercise.nome, anamnese.lesoes)) {
-      const alternative = getAlternativeExercise(exercise, anamnese.lesoes);
+    if (shouldAvoidExercise(exercise.nome, personalInfo.lesoes)) {
+      const alternative = getAlternativeExercise(exercise, personalInfo.lesoes);
       return alternative || exercise;
     }
     return exercise;
@@ -111,11 +111,11 @@ export function generateWorkout(
 
   // Filter out any remaining problematic exercises
   exercicios = exercicios.filter(
-    (e) => !shouldAvoidExercise(e.nome, anamnese.lesoes)
+    (e) => !shouldAvoidExercise(e.nome, personalInfo.lesoes)
   );
 
   // Adjust intensity based on activity level
-  exercicios = adjustForActivityLevel(exercicios, anamnese.nivelAtividade);
+  exercicios = adjustForActivityLevel(exercicios, personalInfo.nivelAtividade);
 
   return {
     id: `treino-${Date.now()}`,
@@ -128,39 +128,39 @@ export function generateWorkout(
 /**
  * Generate default chest/triceps workout
  */
-export function generateChestTricepsWorkout(anamnese: UserAnamnese): Treino {
-  return generateWorkout('peito_triceps', anamnese);
+export function generateChestTricepsWorkout(personalInfo: UserPersonalInfo): Treino {
+  return generateWorkout('peito_triceps', personalInfo);
 }
 
 /**
  * Generate default back/biceps workout
  */
-export function generateBackBicepsWorkout(anamnese: UserAnamnese): Treino {
-  return generateWorkout('costas_biceps', anamnese);
+export function generateBackBicepsWorkout(personalInfo: UserPersonalInfo): Treino {
+  return generateWorkout('costas_biceps', personalInfo);
 }
 
 /**
  * Generate default legs workout
  */
-export function generateLegsWorkout(anamnese: UserAnamnese): Treino {
-  return generateWorkout('pernas', anamnese);
+export function generateLegsWorkout(personalInfo: UserPersonalInfo): Treino {
+  return generateWorkout('pernas', personalInfo);
 }
 
 /**
  * Generate workout response message
  */
 export function generateWorkoutResponseMessage(
-  anamnese: UserAnamnese,
+  personalInfo: UserPersonalInfo,
   treino: Treino
 ): string {
-  let resposta = `Criei uma planilha de treino para voce, ${anamnese.nome}! Confira na aba "Treinos".\n\n`;
+  let resposta = `Criei uma planilha de treino para voce, ${personalInfo.nome}! Confira na aba "Treinos".\n\n`;
 
-  if (anamnese.lesoes.length > 0) {
-    resposta += `Levei em conta suas lesoes (${anamnese.lesoes.join(', ')}) ao montar o treino.\n\n`;
+  if (personalInfo.lesoes.length > 0) {
+    resposta += `Levei em conta suas lesoes (${personalInfo.lesoes.join(', ')}) ao montar o treino.\n\n`;
   }
 
-  if (anamnese.objetivo) {
-    resposta += `Este treino foi pensado para ajudar no seu objetivo de "${anamnese.objetivo}".\n\n`;
+  if (personalInfo.objetivo) {
+    resposta += `Este treino foi pensado para ajudar no seu objetivo de "${personalInfo.objetivo}".\n\n`;
   }
 
   resposta += 'Quer que eu crie treinos para outros grupos musculares?';

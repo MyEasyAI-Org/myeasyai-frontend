@@ -6,8 +6,8 @@
  */
 
 import { useCallback, useState, useEffect, useRef } from 'react';
-import type { Dieta, Exercise, Treino, UserAnamnese } from '../types';
-import { DEFAULT_ANAMNESE } from '../constants';
+import type { Dieta, Exercise, Treino, UserPersonalInfo } from '../types';
+import { DEFAULT_PERSONAL_INFO } from '../constants';
 import { FitnessService } from '../services/FitnessService';
 
 // Debounce delay for auto-save (in ms)
@@ -16,10 +16,10 @@ const AUTO_SAVE_DELAY = 2000;
 /**
  * Hook for managing fitness data state with persistence
  */
-export function useFitnessData(initialAnamnese?: Partial<UserAnamnese>) {
-  const [anamnese, setAnamnese] = useState<UserAnamnese>({
-    ...DEFAULT_ANAMNESE,
-    ...initialAnamnese,
+export function useFitnessData(initialPersonalInfo?: Partial<UserPersonalInfo>) {
+  const [personalInfo, setPersonalInfo] = useState<UserPersonalInfo>({
+    ...DEFAULT_PERSONAL_INFO,
+    ...initialPersonalInfo,
   });
   const [treinos, setTreinos] = useState<Treino[]>([]);
   const [dieta, setDieta] = useState<Dieta | null>(null);
@@ -34,7 +34,7 @@ export function useFitnessData(initialAnamnese?: Partial<UserAnamnese>) {
   const hasLoadedRef = useRef(false);
   // Track pending changes for auto-save
   const pendingChangesRef = useRef<{
-    anamnese?: boolean;
+    personalInfo?: boolean;
     treinos?: boolean;
     dieta?: boolean;
   }>({});
@@ -60,8 +60,8 @@ export function useFitnessData(initialAnamnese?: Partial<UserAnamnese>) {
 
         const data = await FitnessService.loadAllData();
 
-        if (data.anamnese) {
-          setAnamnese(data.anamnese);
+        if (data.personalInfo) {
+          setPersonalInfo(data.personalInfo);
         }
         if (data.treinos.length > 0) {
           setTreinos(data.treinos);
@@ -86,7 +86,7 @@ export function useFitnessData(initialAnamnese?: Partial<UserAnamnese>) {
   // Auto-save function
   const autoSave = useCallback(async () => {
     const changes = pendingChangesRef.current;
-    if (!changes.anamnese && !changes.treinos && !changes.dieta) return;
+    if (!changes.personalInfo && !changes.treinos && !changes.dieta) return;
 
     try {
       setIsSaving(true);
@@ -99,8 +99,8 @@ export function useFitnessData(initialAnamnese?: Partial<UserAnamnese>) {
 
       const promises: Promise<boolean>[] = [];
 
-      if (changes.anamnese) {
-        promises.push(FitnessService.saveProfile(anamnese));
+      if (changes.personalInfo) {
+        promises.push(FitnessService.saveProfile(personalInfo));
       }
       if (changes.treinos) {
         promises.push(FitnessService.replaceTreinos(treinos));
@@ -125,11 +125,11 @@ export function useFitnessData(initialAnamnese?: Partial<UserAnamnese>) {
     } finally {
       setIsSaving(false);
     }
-  }, [anamnese, treinos, dieta]);
+  }, [personalInfo, treinos, dieta]);
 
   // Schedule auto-save when data changes
   const scheduleAutoSave = useCallback(
-    (changeType: 'anamnese' | 'treinos' | 'dieta') => {
+    (changeType: 'personalInfo' | 'treinos' | 'dieta') => {
       // Don't save if we haven't loaded yet
       if (!hasLoadedRef.current) return;
 
@@ -157,18 +157,18 @@ export function useFitnessData(initialAnamnese?: Partial<UserAnamnese>) {
     };
   }, []);
 
-  // Anamnese updates
-  const updateAnamnese = useCallback(
-    (updates: Partial<UserAnamnese>) => {
-      setAnamnese((prev) => ({ ...prev, ...updates }));
-      scheduleAutoSave('anamnese');
+  // Personal info updates
+  const updatePersonalInfo = useCallback(
+    (updates: Partial<UserPersonalInfo>) => {
+      setPersonalInfo((prev) => ({ ...prev, ...updates }));
+      scheduleAutoSave('personalInfo');
     },
     [scheduleAutoSave]
   );
 
-  const resetAnamnese = useCallback(() => {
-    setAnamnese(DEFAULT_ANAMNESE);
-    scheduleAutoSave('anamnese');
+  const resetPersonalInfo = useCallback(() => {
+    setPersonalInfo(DEFAULT_PERSONAL_INFO);
+    scheduleAutoSave('personalInfo');
   }, [scheduleAutoSave]);
 
   // Treino management
@@ -387,7 +387,7 @@ export function useFitnessData(initialAnamnese?: Partial<UserAnamnese>) {
 
   // Reset all data
   const resetAll = useCallback(() => {
-    setAnamnese(DEFAULT_ANAMNESE);
+    setPersonalInfo(DEFAULT_PERSONAL_INFO);
     setTreinos([]);
     setDieta(null);
     // Don't schedule auto-save for reset - this is typically used for logout/cleanup
@@ -402,7 +402,7 @@ export function useFitnessData(initialAnamnese?: Partial<UserAnamnese>) {
 
     // Mark all as changed and save
     pendingChangesRef.current = {
-      anamnese: true,
+      personalInfo: true,
       treinos: true,
       dieta: dieta !== null,
     };
@@ -424,10 +424,10 @@ export function useFitnessData(initialAnamnese?: Partial<UserAnamnese>) {
 
       const data = await FitnessService.loadAllData();
 
-      if (data.anamnese) {
-        setAnamnese(data.anamnese);
+      if (data.personalInfo) {
+        setPersonalInfo(data.personalInfo);
       } else {
-        setAnamnese(DEFAULT_ANAMNESE);
+        setPersonalInfo(DEFAULT_PERSONAL_INFO);
       }
       setTreinos(data.treinos);
       setDieta(data.dieta);
@@ -444,7 +444,7 @@ export function useFitnessData(initialAnamnese?: Partial<UserAnamnese>) {
 
   return {
     // State
-    anamnese,
+    personalInfo,
     treinos,
     dieta,
 
@@ -454,9 +454,9 @@ export function useFitnessData(initialAnamnese?: Partial<UserAnamnese>) {
     lastSavedAt,
     error,
 
-    // Anamnese
-    updateAnamnese,
-    resetAnamnese,
+    // Personal info
+    updatePersonalInfo,
+    resetPersonalInfo,
 
     // Treinos
     setTreinos: setTreinosWithSave,

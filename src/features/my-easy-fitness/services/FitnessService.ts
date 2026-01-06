@@ -12,7 +12,7 @@ import {
   type D1FitnessDieta,
 } from '../../../lib/api-clients/d1-client';
 import { authService } from '../../../services/AuthServiceV2';
-import type { UserAnamnese, Treino, Dieta, Exercise, Refeicao } from '../types';
+import type { UserPersonalInfo, Treino, Dieta, Exercise, Refeicao } from '../types';
 
 /**
  * Gets the current authenticated user's UUID
@@ -29,17 +29,17 @@ async function getCurrentUserUuid(): Promise<string> {
 }
 
 /**
- * Maps D1 profile to frontend UserAnamnese type
+ * Maps D1 profile to frontend UserPersonalInfo type
  */
-function mapD1ToAnamnese(profile: D1FitnessProfile): UserAnamnese {
+function mapD1ToPersonalInfo(profile: D1FitnessProfile): UserPersonalInfo {
   return {
     nome: profile.nome,
     idade: profile.idade,
-    sexo: profile.sexo as UserAnamnese['sexo'],
+    sexo: profile.sexo as UserPersonalInfo['sexo'],
     peso: profile.peso,
     altura: profile.altura,
     objetivo: profile.objetivo,
-    nivelAtividade: profile.nivel_atividade as UserAnamnese['nivelAtividade'],
+    nivelAtividade: profile.nivel_atividade as UserPersonalInfo['nivelAtividade'],
     restricoesMedicas: profile.restricoes_medicas
       ? JSON.parse(profile.restricoes_medicas)
       : [],
@@ -76,12 +76,12 @@ function mapD1ToDieta(dieta: D1FitnessDieta): Dieta {
  * Fitness data service for D1 persistence
  */
 export const FitnessService = {
-  // ==================== PROFILE / ANAMNESE ====================
+  // ==================== PROFILE / PERSONAL INFO ====================
 
   /**
-   * Gets the user's fitness profile (anamnese)
+   * Gets the user's fitness profile (personal info)
    */
-  async getProfile(): Promise<UserAnamnese | null> {
+  async getProfile(): Promise<UserPersonalInfo | null> {
     try {
       const userUuid = await getCurrentUserUuid();
       const result = await d1Client.getFitnessProfile(userUuid);
@@ -95,7 +95,7 @@ export const FitnessService = {
         return null;
       }
 
-      return mapD1ToAnamnese(result.data);
+      return mapD1ToPersonalInfo(result.data);
     } catch (error) {
       console.error('Error in getProfile:', error);
       return null;
@@ -103,23 +103,23 @@ export const FitnessService = {
   },
 
   /**
-   * Saves the user's fitness profile (anamnese)
+   * Saves the user's fitness profile (personal info)
    */
-  async saveProfile(anamnese: UserAnamnese): Promise<boolean> {
+  async saveProfile(personalInfo: UserPersonalInfo): Promise<boolean> {
     try {
       const userUuid = await getCurrentUserUuid();
 
       const result = await d1Client.upsertFitnessProfile({
         user_uuid: userUuid,
-        nome: anamnese.nome,
-        idade: anamnese.idade,
-        sexo: anamnese.sexo,
-        peso: anamnese.peso,
-        altura: anamnese.altura,
-        objetivo: anamnese.objetivo,
-        nivel_atividade: anamnese.nivelAtividade,
-        restricoes_medicas: anamnese.restricoesMedicas,
-        lesoes: anamnese.lesoes,
+        nome: personalInfo.nome,
+        idade: personalInfo.idade,
+        sexo: personalInfo.sexo,
+        peso: personalInfo.peso,
+        altura: personalInfo.altura,
+        objetivo: personalInfo.objetivo,
+        nivel_atividade: personalInfo.nivelAtividade,
+        restricoes_medicas: personalInfo.restricoesMedicas,
+        lesoes: personalInfo.lesoes,
       });
 
       if (result.error) {
@@ -343,21 +343,21 @@ export const FitnessService = {
    * Loads all fitness data for the current user
    */
   async loadAllData(): Promise<{
-    anamnese: UserAnamnese | null;
+    personalInfo: UserPersonalInfo | null;
     treinos: Treino[];
     dieta: Dieta | null;
   }> {
     try {
-      const [anamnese, treinos, dieta] = await Promise.all([
+      const [personalInfo, treinos, dieta] = await Promise.all([
         this.getProfile(),
         this.getTreinos(),
         this.getDieta(),
       ]);
 
-      return { anamnese, treinos, dieta };
+      return { personalInfo, treinos, dieta };
     } catch (error) {
       console.error('Error loading all fitness data:', error);
-      return { anamnese: null, treinos: [], dieta: null };
+      return { personalInfo: null, treinos: [], dieta: null };
     }
   },
 
@@ -365,13 +365,13 @@ export const FitnessService = {
    * Saves all fitness data
    */
   async saveAllData(data: {
-    anamnese: UserAnamnese;
+    personalInfo: UserPersonalInfo;
     treinos: Treino[];
     dieta: Dieta | null;
   }): Promise<boolean> {
     try {
       const results = await Promise.all([
-        this.saveProfile(data.anamnese),
+        this.saveProfile(data.personalInfo),
         this.replaceTreinos(data.treinos),
         data.dieta ? this.saveDieta(data.dieta) : Promise.resolve(true),
       ]);

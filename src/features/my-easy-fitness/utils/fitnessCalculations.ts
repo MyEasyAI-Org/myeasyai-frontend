@@ -4,7 +4,7 @@
  * Utility functions for fitness-related calculations like BMI, calories, and macros.
  */
 
-import type { BiologicalSex, BMIClassification, MacrosResult, UserAnamnese } from '../types';
+import type { BiologicalSex, BMIClassification, MacrosResult, UserPersonalInfo } from '../types';
 import { getActivityFactor } from '../constants';
 
 /**
@@ -114,10 +114,10 @@ export function calculateMacros(
 }
 
 /**
- * Calculate complete macros from anamnese data
+ * Calculate complete macros from personal info data
  */
-export function calculateMacrosFromAnamnese(anamnese: UserAnamnese): MacrosResult | null {
-  const { peso, altura, idade, sexo, nivelAtividade, objetivo } = anamnese;
+export function calculateMacrosFromPersonalInfo(personalInfo: UserPersonalInfo): MacrosResult | null {
+  const { peso, altura, idade, sexo, nivelAtividade, objetivo } = personalInfo;
 
   if (!peso || !altura || !idade) {
     return null;
@@ -150,44 +150,44 @@ export function formatBMI(peso: number, altura: number): string {
  * Generate user context string for AI responses
  */
 export function generateUserContext(
-  anamnese: UserAnamnese,
+  personalInfo: UserPersonalInfo,
   treinosCount: number,
   hasDieta: boolean
 ): string {
   const parts: string[] = [];
 
-  if (anamnese.nome) {
-    parts.push(`Nome: ${anamnese.nome}`);
+  if (personalInfo.nome) {
+    parts.push(`Nome: ${personalInfo.nome}`);
   }
-  if (anamnese.idade) {
-    parts.push(`Idade: ${anamnese.idade} anos`);
+  if (personalInfo.idade) {
+    parts.push(`Idade: ${personalInfo.idade} anos`);
   }
-  if (anamnese.sexo) {
-    parts.push(`Sexo: ${anamnese.sexo}`);
+  if (personalInfo.sexo) {
+    parts.push(`Sexo: ${personalInfo.sexo}`);
   }
-  if (anamnese.peso) {
-    parts.push(`Peso: ${anamnese.peso}kg`);
+  if (personalInfo.peso) {
+    parts.push(`Peso: ${personalInfo.peso}kg`);
   }
-  if (anamnese.altura) {
-    parts.push(`Altura: ${anamnese.altura}cm`);
-    if (anamnese.peso) {
-      const bmi = calculateBMI(anamnese.peso, anamnese.altura);
+  if (personalInfo.altura) {
+    parts.push(`Altura: ${personalInfo.altura}cm`);
+    if (personalInfo.peso) {
+      const bmi = calculateBMI(personalInfo.peso, personalInfo.altura);
       if (bmi) {
         parts.push(`IMC: ${bmi.toFixed(1)}`);
       }
     }
   }
-  if (anamnese.objetivo) {
-    parts.push(`Objetivo: ${anamnese.objetivo}`);
+  if (personalInfo.objetivo) {
+    parts.push(`Objetivo: ${personalInfo.objetivo}`);
   }
-  if (anamnese.nivelAtividade) {
-    parts.push(`Nivel de atividade: ${anamnese.nivelAtividade}`);
+  if (personalInfo.nivelAtividade) {
+    parts.push(`Nivel de atividade: ${personalInfo.nivelAtividade}`);
   }
-  if (anamnese.restricoesMedicas.length > 0) {
-    parts.push(`Restricoes medicas: ${anamnese.restricoesMedicas.join(', ')}`);
+  if (personalInfo.restricoesMedicas.length > 0) {
+    parts.push(`Restricoes medicas: ${personalInfo.restricoesMedicas.join(', ')}`);
   }
-  if (anamnese.lesoes.length > 0) {
-    parts.push(`Lesoes: ${anamnese.lesoes.join(', ')}`);
+  if (personalInfo.lesoes.length > 0) {
+    parts.push(`Lesoes: ${personalInfo.lesoes.join(', ')}`);
   }
   if (treinosCount > 0) {
     parts.push(`Treinos configurados: ${treinosCount}`);

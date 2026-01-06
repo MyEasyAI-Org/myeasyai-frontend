@@ -4,15 +4,15 @@
  * Functions to generate personalized diet plans based on user profile.
  */
 
-import type { Dieta, UserAnamnese } from '../types';
+import type { Dieta, UserPersonalInfo } from '../types';
 import { DEFAULT_DIET_TEMPLATE } from '../constants';
-import { calculateMacrosFromAnamnese } from './fitnessCalculations';
+import { calculateMacrosFromPersonalInfo } from './fitnessCalculations';
 
 /**
  * Generate a diet plan based on user profile
  */
-export function generateDiet(anamnese: UserAnamnese): Dieta {
-  const macros = calculateMacrosFromAnamnese(anamnese);
+export function generateDiet(personalInfo: UserPersonalInfo): Dieta {
+  const macros = calculateMacrosFromPersonalInfo(personalInfo);
 
   if (macros) {
     return {
@@ -38,10 +38,10 @@ export function generateDiet(anamnese: UserAnamnese): Dieta {
  * Generate diet response message
  */
 export function generateDietResponseMessage(
-  anamnese: UserAnamnese,
+  personalInfo: UserPersonalInfo,
   dieta: Dieta
 ): string {
-  let resposta = `Criei um plano alimentar personalizado para voce, ${anamnese.nome}! Confira na aba "Dieta".\n\n`;
+  let resposta = `Criei um plano alimentar personalizado para voce, ${personalInfo.nome}! Confira na aba "Dieta".\n\n`;
 
   resposta += `📊 Seus macros diarios:\n`;
   resposta += `• ${dieta.calorias} kcal\n`;
@@ -49,12 +49,12 @@ export function generateDietResponseMessage(
   resposta += `• ${dieta.carboidratos}g carboidratos\n`;
   resposta += `• ${dieta.gorduras}g gorduras\n\n`;
 
-  if (anamnese.objetivo) {
-    resposta += `Este plano foi ajustado para seu objetivo de "${anamnese.objetivo}".\n\n`;
+  if (personalInfo.objetivo) {
+    resposta += `Este plano foi ajustado para seu objetivo de "${personalInfo.objetivo}".\n\n`;
   }
 
-  if (anamnese.restricoesMedicas.length > 0) {
-    resposta += `⚠️ Lembre-se de suas restricoes: ${anamnese.restricoesMedicas.join(', ')}. Consulte um nutricionista para ajustes especificos.\n\n`;
+  if (personalInfo.restricoesMedicas.length > 0) {
+    resposta += `⚠️ Lembre-se de suas restricoes: ${personalInfo.restricoesMedicas.join(', ')}. Consulte um nutricionista para ajustes especificos.\n\n`;
   }
 
   resposta += 'Voce pode editar os alimentos e horarios diretamente na aba Dieta!';

@@ -1,28 +1,28 @@
 /**
- * useAnamneseFlow Hook
+ * usePersonalInfoFlow Hook
  *
- * Manages the anamnese conversation flow and message handling.
+ * Manages the personal info conversation flow and message handling.
  * Follows Single Responsibility Principle - only handles conversation logic.
  */
 
 import { useCallback, useState } from 'react';
 import type {
-  AnamneseStep,
+  PersonalInfoStep,
   Dieta,
   FitnessMessage,
   Treino,
-  UserAnamnese,
+  UserPersonalInfo,
 } from '../types';
 import {
-  ANAMNESE_ERROR_MESSAGES,
-  ANAMNESE_QUESTIONS,
+  PERSONAL_INFO_ERROR_MESSAGES,
+  PERSONAL_INFO_QUESTIONS,
   getActivityLevelName,
   INITIAL_MESSAGE,
 } from '../constants';
 import {
-  getNextAnamneseStep,
-  isAnamneseComplete,
-  parseAnamneseResponse,
+  getNextPersonalInfoStep,
+  isPersonalInfoComplete,
+  parsePersonalInfoResponse,
 } from '../utils/anamneseParser';
 import {
   calculateBMI,
@@ -40,30 +40,30 @@ import {
   isStatusRequest,
 } from '../utils/dietGenerator';
 
-interface UseAnamneseFlowProps {
-  anamnese: UserAnamnese;
+interface UsePersonalInfoFlowProps {
+  personalInfo: UserPersonalInfo;
   treinos: Treino[];
   dieta: Dieta | null;
-  onUpdateAnamnese: (updates: Partial<UserAnamnese>) => void;
+  onUpdatePersonalInfo: (updates: Partial<UserPersonalInfo>) => void;
   onAddTreino: (treino: Treino) => void;
   onUpdateDieta: (dieta: Dieta) => void;
 }
 
 /**
- * Hook for managing anamnese conversation flow
+ * Hook for managing personal info conversation flow
  */
-export function useAnamneseFlow({
-  anamnese,
+export function usePersonalInfoFlow({
+  personalInfo,
   treinos,
   dieta,
-  onUpdateAnamnese,
+  onUpdatePersonalInfo,
   onAddTreino,
   onUpdateDieta,
-}: UseAnamneseFlowProps) {
+}: UsePersonalInfoFlowProps) {
   const [messages, setMessages] = useState<FitnessMessage[]>([INITIAL_MESSAGE]);
   const [inputMessage, setInputMessage] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
-  const [anamneseStep, setAnamneseStep] = useState<AnamneseStep>('info_basica');
+  const [personalInfoStep, setPersonalInfoStep] = useState<PersonalInfoStep>('info_basica');
 
   /**
    * Add a message to the conversation
@@ -84,13 +84,13 @@ export function useAnamneseFlow({
   }, [addMessage]);
 
   /**
-   * Generate anamnese complete summary
+   * Generate personal info complete summary
    */
-  const generateAnamneseSummary = useCallback(
-    (data: UserAnamnese): string => {
+  const generatePersonalInfoSummary = useCallback(
+    (data: UserPersonalInfo): string => {
       const bmi = calculateBMI(data.peso, data.altura);
 
-      let resposta = `✅ Perfeito, ${data.nome}! Anamnese completa!\n\n`;
+      let resposta = `✅ Perfeito, ${data.nome}! Informações pessoais completas!\n\n`;
       resposta += `📋 **Resumo dos seus dados:**\n`;
       resposta += `• Idade: ${data.idade} anos\n`;
       resposta += `• Sexo: ${data.sexo === 'masculino' ? 'Masculino' : 'Feminino'}\n`;
@@ -112,7 +112,7 @@ export function useAnamneseFlow({
         resposta += `• Lesoes: ${data.lesoes.join(', ')}\n`;
       }
 
-      resposta += `\nVoce pode ver e editar todos esses dados na aba "Anamnese".\n\n`;
+      resposta += `\nVoce pode ver e editar todos esses dados na aba "Informações Pessoais".\n\n`;
       resposta += `Agora posso criar treinos e dietas personalizados para voce! O que gostaria de fazer?\n\n`;
       resposta += `• Diga "treino" para criar uma planilha de treino\n`;
       resposta += `• Diga "dieta" para criar um plano alimentar`;
@@ -123,52 +123,52 @@ export function useAnamneseFlow({
   );
 
   /**
-   * Handle anamnese step response
+   * Handle personal info step response
    */
-  const handleAnamneseStep = useCallback(
+  const handlePersonalInfoStep = useCallback(
     (input: string) => {
-      const result = parseAnamneseResponse(anamneseStep, input);
+      const result = parsePersonalInfoResponse(personalInfoStep, input);
 
       if (result === null) {
         // Invalid response - show error
-        addAssistantMessage(ANAMNESE_ERROR_MESSAGES[anamneseStep]);
+        addAssistantMessage(PERSONAL_INFO_ERROR_MESSAGES[personalInfoStep]);
         return;
       }
 
-      // Update anamnese with parsed data
-      const newAnamnese = { ...anamnese, ...result };
-      onUpdateAnamnese(result);
+      // Update personal info with parsed data
+      const newPersonalInfo = { ...personalInfo, ...result };
+      onUpdatePersonalInfo(result);
 
       // Move to next step
-      const nextStep = getNextAnamneseStep(anamneseStep);
-      setAnamneseStep(nextStep);
+      const nextStep = getNextPersonalInfoStep(personalInfoStep);
+      setPersonalInfoStep(nextStep);
 
-      if (isAnamneseComplete(nextStep)) {
-        // Anamnese complete - show summary
-        addAssistantMessage(generateAnamneseSummary(newAnamnese));
+      if (isPersonalInfoComplete(nextStep)) {
+        // Personal info complete - show summary
+        addAssistantMessage(generatePersonalInfoSummary(newPersonalInfo));
       } else {
         // Send next question with placeholder replacement
-        let nextQuestion = ANAMNESE_QUESTIONS[nextStep];
-        nextQuestion = nextQuestion.replace('{nome}', newAnamnese.nome);
+        let nextQuestion = PERSONAL_INFO_QUESTIONS[nextStep];
+        nextQuestion = nextQuestion.replace('{nome}', newPersonalInfo.nome);
         addAssistantMessage(nextQuestion);
       }
     },
     [
-      anamneseStep,
-      anamnese,
-      onUpdateAnamnese,
+      personalInfoStep,
+      personalInfo,
+      onUpdatePersonalInfo,
       addAssistantMessage,
-      generateAnamneseSummary,
+      generatePersonalInfoSummary,
     ]
   );
 
   /**
-   * Handle post-anamnese conversation
+   * Handle post-personal-info conversation
    */
-  const handlePostAnamneseMessage = useCallback(
+  const handlePostPersonalInfoMessage = useCallback(
     (input: string) => {
       const userContext = generateUserContext(
-        anamnese,
+        personalInfo,
         treinos.length,
         dieta !== null
       );
@@ -176,17 +176,17 @@ export function useAnamneseFlow({
 
       // Check for workout request
       if (isWorkoutRequest(input)) {
-        const treino = generateChestTricepsWorkout(anamnese);
+        const treino = generateChestTricepsWorkout(personalInfo);
         onAddTreino(treino);
-        addAssistantMessage(generateWorkoutResponseMessage(anamnese, treino));
+        addAssistantMessage(generateWorkoutResponseMessage(personalInfo, treino));
         return;
       }
 
       // Check for diet request
       if (isDietRequest(input)) {
-        const newDieta = generateDiet(anamnese);
+        const newDieta = generateDiet(personalInfo);
         onUpdateDieta(newDieta);
-        addAssistantMessage(generateDietResponseMessage(anamnese, newDieta));
+        addAssistantMessage(generateDietResponseMessage(personalInfo, newDieta));
         return;
       }
 
@@ -203,7 +203,7 @@ export function useAnamneseFlow({
       }
 
       // Default help response
-      let resposta = `${anamnese.nome}, posso te ajudar com:\n\n`;
+      let resposta = `${personalInfo.nome}, posso te ajudar com:\n\n`;
       resposta += '• Criar planilhas de treino (diga "quero um treino")\n';
       resposta += '• Montar plano alimentar (diga "monte minha dieta")\n';
       resposta += '• Ver seus dados atuais (diga "meus dados")\n';
@@ -212,7 +212,7 @@ export function useAnamneseFlow({
 
       addAssistantMessage(resposta);
     },
-    [anamnese, treinos, dieta, onAddTreino, onUpdateDieta, addAssistantMessage]
+    [personalInfo, treinos, dieta, onAddTreino, onUpdateDieta, addAssistantMessage]
   );
 
   /**
@@ -235,20 +235,20 @@ export function useAnamneseFlow({
 
     // Simulate async response
     setTimeout(() => {
-      if (!isAnamneseComplete(anamneseStep)) {
-        handleAnamneseStep(currentInput);
+      if (!isPersonalInfoComplete(personalInfoStep)) {
+        handlePersonalInfoStep(currentInput);
       } else {
-        handlePostAnamneseMessage(currentInput);
+        handlePostPersonalInfoMessage(currentInput);
       }
       setIsGenerating(false);
     }, 800);
   }, [
     inputMessage,
     isGenerating,
-    anamneseStep,
+    personalInfoStep,
     addMessage,
-    handleAnamneseStep,
-    handlePostAnamneseMessage,
+    handlePersonalInfoStep,
+    handlePostPersonalInfoMessage,
   ]);
 
   /**
@@ -256,7 +256,7 @@ export function useAnamneseFlow({
    */
   const resetConversation = useCallback(() => {
     setMessages([INITIAL_MESSAGE]);
-    setAnamneseStep('info_basica');
+    setPersonalInfoStep('info_basica');
     setInputMessage('');
   }, []);
 
@@ -265,7 +265,7 @@ export function useAnamneseFlow({
     messages,
     inputMessage,
     isGenerating,
-    anamneseStep,
+    personalInfoStep,
 
     // Actions
     setInputMessage,
@@ -273,6 +273,6 @@ export function useAnamneseFlow({
     resetConversation,
 
     // Helpers
-    isAnamneseComplete: isAnamneseComplete(anamneseStep),
+    isPersonalInfoComplete: isPersonalInfoComplete(personalInfoStep),
   };
 }
