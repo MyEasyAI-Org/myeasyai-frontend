@@ -23,10 +23,10 @@ type MyEasyFitnessProps = {
 export function MyEasyFitness({ onBackToDashboard }: MyEasyFitnessProps) {
   // Data state management
   const {
-    anamnese,
+    personalInfo,
     treinos,
     dieta,
-    updateAnamnese,
+    updatePersonalInfo,
     addTreino,
     updateDieta,
     setTreinos,
@@ -39,11 +39,11 @@ export function MyEasyFitness({ onBackToDashboard }: MyEasyFitnessProps) {
     isGenerating,
     setInputMessage,
     handleSendMessage,
-  } = useAnamneseFlow({
-    anamnese,
+  } = usePersonalInfoFlow({
+    personalInfo,
     treinos,
     dieta,
-    onUpdateAnamnese: updateAnamnese,
+    onUpdatePersonalInfo: updatePersonalInfo,
     onAddTreino: addTreino,
     onUpdateDieta: updateDieta,
   });
@@ -101,10 +101,10 @@ export function MyEasyFitness({ onBackToDashboard }: MyEasyFitnessProps) {
 
         {/* Right Panel - Dashboard with Tabs */}
         <FitnessVisualizationPanel
-          anamnese={anamnese}
+          personalInfo={personalInfo}
           treinos={treinos}
           dieta={dieta}
-          onUpdateAnamnese={updateAnamnese}
+          onUpdatePersonalInfo={updatePersonalInfo}
           onUpdateTreinos={setTreinos}
           onUpdateDieta={updateDieta}
         />

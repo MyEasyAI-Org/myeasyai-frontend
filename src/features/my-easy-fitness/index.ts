@@ -19,8 +19,8 @@ export { MyEasyFitness } from './MyEasyFitness';
 export type {
   BiologicalSex,
   ActivityLevel,
-  AnamneseStep,
-  UserAnamnese,
+  PersonalInfoStep,
+  UserPersonalInfo,
   Exercise,
   Treino,
   Refeicao,
@@ -28,15 +28,15 @@ export type {
   FitnessMessage,
   FitnessData,
   ActivityLevelConfig,
-  AnamneseQuestionConfig,
-  AnamneseParseResult,
+  PersonalInfoQuestionConfig,
+  PersonalInfoParseResult,
   BMIClassification,
   MacrosResult,
 } from './types';
 
 // Hooks - export for potential reuse
 export { useFitnessData } from './hooks/useFitnessData';
-export { useAnamneseFlow } from './hooks/useAnamneseFlow';
+export { usePersonalInfoFlow } from './hooks/useAnamneseFlow';
 
 // Utils - export for potential reuse
 export {
@@ -60,10 +60,10 @@ export { generateDiet, isDietRequest } from './utils/dietGenerator';
 
 // Constants - export for potential customization
 export {
-  DEFAULT_ANAMNESE,
+  DEFAULT_PERSONAL_INFO,
   ACTIVITY_LEVELS,
-  ANAMNESE_QUESTIONS,
-  ANAMNESE_ERROR_MESSAGES,
+  PERSONAL_INFO_QUESTIONS,
+  PERSONAL_INFO_ERROR_MESSAGES,
   INITIAL_MESSAGE,
   WORKOUT_TEMPLATES,
   DEFAULT_DIET_TEMPLATE,
