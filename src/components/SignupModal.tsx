@@ -73,7 +73,7 @@ export function SignupModal({
     // }
 
     try {
-      const result = await authService.signUp(email, password, fullName);
+      const result = await authService.signUp(email, password, fullName, preferredName || undefined);
       if (!result.success) {
         const translatedError = translateAuthError(result.error);
         toast.error(translatedError.title, {

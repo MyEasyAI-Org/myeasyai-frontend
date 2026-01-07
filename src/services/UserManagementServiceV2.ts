@@ -238,6 +238,8 @@ export class UserManagementServiceV2 {
       preferred_name?: string;
       mobile_phone?: string;
       country?: string;
+      state?: string;
+      city?: string;
       postal_code?: string;
       address?: string;
       preferred_language?: string;

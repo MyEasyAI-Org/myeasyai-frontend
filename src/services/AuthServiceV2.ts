@@ -178,6 +178,7 @@ class AuthServiceV2 {
     };
   }
 
+
   /**
    * Sincroniza usuário com D1 (Cloudflare)
    * Garante que o usuário existe no D1 mesmo quando logou via Supabase
@@ -402,19 +403,26 @@ class AuthServiceV2 {
    * Registro com email/senha
    * Cloudflare Primary → Supabase Fallback
    */
-  async signUp(email: string, password: string, name?: string): Promise<AuthResult> {
+  async signUp(email: string, password: string, name?: string, preferredName?: string): Promise<AuthResult> {
     // 1️⃣ TENTAR CLOUDFLARE PRIMEIRO
     try {
       const response = await fetch(`${API_URL}/auth/signup`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password, name }),
+        body: JSON.stringify({ email, password, name, preferred_name: preferredName }),
       });
 
       if (response.ok) {
         const { token, user } = await response.json();
+        // Garantir que preferred_name está no objeto user (pode não vir do Cloudflare)
+        if (preferredName && !user.preferred_name) {
+          user.preferred_name = preferredName;
+        }
+        if (name && !user.name) {
+          user.name = name;
+        }
         this.saveCloudflareSession(token, user);
-        console.log('✅ [AUTH V2] Cloudflare signup successful');
+        console.log('✅ [AUTH V2] Cloudflare signup successful, user:', user);
         return { success: true, user, token, source: 'cloudflare' };
       }
 
@@ -433,7 +441,7 @@ class AuthServiceV2 {
         email,
         password,
         options: {
-          data: { full_name: name, name },
+          data: { full_name: name, name, preferred_name: preferredName },
         },
       });
 
@@ -443,9 +451,12 @@ class AuthServiceV2 {
 
       if (data.user) {
         this.currentUser = this.mapSupabaseUser(data.user);
-        // Adicionar nome ao currentUser se fornecido
+        // Adicionar nome e preferred_name ao currentUser se fornecidos
         if (name) {
           this.currentUser.name = name;
+        }
+        if (preferredName) {
+          this.currentUser.preferred_name = preferredName;
         }
         this.authSource = 'supabase';
         localStorage.setItem(USER_KEY, JSON.stringify(this.currentUser));
