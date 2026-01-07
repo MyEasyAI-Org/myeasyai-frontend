@@ -260,6 +260,61 @@ export interface D1CrmMetrics {
   revenue_this_month: number;
 }
 
+// =============================================================================
+// Content Types (MyEasyContent)
+// =============================================================================
+
+export interface D1ContentBusinessProfile {
+  id: string;
+  user_id: string;
+  name: string;
+  business_niche: string;
+  target_audience: string | null;
+  brand_voice: string;
+  selected_networks: string | null; // JSON array as string
+  preferred_content_types: string | null; // JSON array as string
+  icon: string | null;
+  is_default: boolean;
+  created_at: string;
+  updated_at: string | null;
+}
+
+export interface D1ContentLibraryItem {
+  id: string;
+  user_id: string;
+  profile_id: string;
+  content_type: string;
+  network: string;
+  title: string | null;
+  content: string;
+  hashtags: string | null; // JSON array as string
+  image_description: string | null;
+  best_time: string | null;
+  variations: string | null; // JSON array as string
+  is_favorite: boolean;
+  tags: string | null; // JSON array as string
+  folder: string | null;
+  created_at: string;
+}
+
+export interface D1ContentCalendarEntry {
+  id: string;
+  user_id: string;
+  profile_id: string;
+  library_content_id: string | null;
+  scheduled_date: string;
+  day_of_week: string | null;
+  network: string;
+  content_type: string;
+  title: string;
+  description: string | null;
+  hashtags: string | null; // JSON array as string
+  best_time: string | null;
+  status: string;
+  created_at: string;
+  updated_at: string | null;
+}
+
 /**
  * Cliente HTTP para a API D1 (Cloudflare Worker)
  */
@@ -1359,6 +1414,295 @@ export class D1Client {
     if (endDate) params.append('end_date', endDate);
     const query = params.toString() ? `?${params.toString()}` : '';
     return this.fetch(`/crm/activities/count/user/${userId}${query}`);
+  }
+
+  // ==================== CONTENT BUSINESS PROFILES ====================
+
+  /**
+   * Lista perfis de negócio do usuário
+   */
+  async getContentProfiles(userId: string): Promise<D1ApiResponse<D1ContentBusinessProfile[]>> {
+    return this.fetch<D1ContentBusinessProfile[]>(`/content/profiles/user/${userId}`);
+  }
+
+  /**
+   * Busca perfil por ID
+   */
+  async getContentProfile(id: string): Promise<D1ApiResponse<D1ContentBusinessProfile>> {
+    return this.fetch<D1ContentBusinessProfile>(`/content/profiles/${id}`);
+  }
+
+  /**
+   * Busca perfil padrão do usuário
+   */
+  async getDefaultContentProfile(userId: string): Promise<D1ApiResponse<D1ContentBusinessProfile>> {
+    return this.fetch<D1ContentBusinessProfile>(`/content/profiles/default/user/${userId}`);
+  }
+
+  /**
+   * Cria novo perfil de negócio
+   */
+  async createContentProfile(profile: {
+    user_id: string;
+    name: string;
+    business_niche: string;
+    target_audience?: string;
+    brand_voice?: string;
+    selected_networks?: string[];
+    preferred_content_types?: string[];
+    icon?: string;
+    is_default?: boolean;
+  }): Promise<D1ApiResponse<D1ContentBusinessProfile>> {
+    return this.fetch<D1ContentBusinessProfile>('/content/profiles', {
+      method: 'POST',
+      body: JSON.stringify(profile),
+    });
+  }
+
+  /**
+   * Atualiza perfil de negócio
+   */
+  async updateContentProfile(
+    id: string,
+    updates: Partial<{
+      name: string;
+      business_niche: string;
+      target_audience: string;
+      brand_voice: string;
+      selected_networks: string[];
+      preferred_content_types: string[];
+      icon: string;
+    }>
+  ): Promise<D1ApiResponse<D1ContentBusinessProfile>> {
+    return this.fetch<D1ContentBusinessProfile>(`/content/profiles/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(updates),
+    });
+  }
+
+  /**
+   * Define perfil como padrão
+   */
+  async setDefaultContentProfile(id: string): Promise<D1ApiResponse<D1ContentBusinessProfile>> {
+    return this.fetch<D1ContentBusinessProfile>(`/content/profiles/${id}/set-default`, {
+      method: 'PATCH',
+    });
+  }
+
+  /**
+   * Deleta perfil de negócio
+   */
+  async deleteContentProfile(id: string): Promise<D1ApiResponse<{ success: boolean }>> {
+    return this.fetch(`/content/profiles/${id}`, { method: 'DELETE' });
+  }
+
+  // ==================== CONTENT LIBRARY ====================
+
+  /**
+   * Lista conteúdos da biblioteca por perfil
+   */
+  async getContentLibrary(
+    profileId: string,
+    options?: {
+      is_favorite?: boolean;
+      content_type?: string;
+      network?: string;
+      folder?: string;
+      limit?: number;
+      offset?: number;
+    }
+  ): Promise<D1ApiResponse<D1ContentLibraryItem[]>> {
+    const params = new URLSearchParams();
+    if (options?.is_favorite !== undefined) params.append('is_favorite', String(options.is_favorite));
+    if (options?.content_type) params.append('content_type', options.content_type);
+    if (options?.network) params.append('network', options.network);
+    if (options?.folder) params.append('folder', options.folder);
+    if (options?.limit) params.append('limit', String(options.limit));
+    if (options?.offset) params.append('offset', String(options.offset));
+    const query = params.toString() ? `?${params.toString()}` : '';
+    return this.fetch<D1ContentLibraryItem[]>(`/content/library/profile/${profileId}${query}`);
+  }
+
+  /**
+   * Busca item da biblioteca por ID
+   */
+  async getContentLibraryItem(id: string): Promise<D1ApiResponse<D1ContentLibraryItem>> {
+    return this.fetch<D1ContentLibraryItem>(`/content/library/${id}`);
+  }
+
+  /**
+   * Cria novo item na biblioteca
+   */
+  async createContentLibraryItem(item: {
+    user_id: string;
+    profile_id: string;
+    content_type: string;
+    network: string;
+    content: string;
+    title?: string;
+    hashtags?: string[];
+    image_description?: string;
+    best_time?: string;
+    variations?: string[];
+    tags?: string[];
+    folder?: string;
+  }): Promise<D1ApiResponse<D1ContentLibraryItem>> {
+    return this.fetch<D1ContentLibraryItem>('/content/library', {
+      method: 'POST',
+      body: JSON.stringify(item),
+    });
+  }
+
+  /**
+   * Atualiza item da biblioteca
+   */
+  async updateContentLibraryItem(
+    id: string,
+    updates: Partial<{
+      title: string;
+      content: string;
+      hashtags: string[];
+      image_description: string;
+      best_time: string;
+      variations: string[];
+      tags: string[];
+      folder: string;
+    }>
+  ): Promise<D1ApiResponse<D1ContentLibraryItem>> {
+    return this.fetch<D1ContentLibraryItem>(`/content/library/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(updates),
+    });
+  }
+
+  /**
+   * Alterna favorito do item
+   */
+  async toggleContentLibraryFavorite(id: string): Promise<D1ApiResponse<D1ContentLibraryItem>> {
+    return this.fetch<D1ContentLibraryItem>(`/content/library/${id}/toggle-favorite`, {
+      method: 'PATCH',
+    });
+  }
+
+  /**
+   * Deleta item da biblioteca
+   */
+  async deleteContentLibraryItem(id: string): Promise<D1ApiResponse<{ success: boolean }>> {
+    return this.fetch(`/content/library/${id}`, { method: 'DELETE' });
+  }
+
+  // ==================== CONTENT CALENDAR ====================
+
+  /**
+   * Lista entradas do calendário por perfil
+   */
+  async getContentCalendar(
+    profileId: string,
+    options?: {
+      start_date?: string;
+      end_date?: string;
+      status?: string;
+      network?: string;
+    }
+  ): Promise<D1ApiResponse<D1ContentCalendarEntry[]>> {
+    const params = new URLSearchParams();
+    if (options?.start_date) params.append('start_date', options.start_date);
+    if (options?.end_date) params.append('end_date', options.end_date);
+    if (options?.status) params.append('status', options.status);
+    if (options?.network) params.append('network', options.network);
+    const query = params.toString() ? `?${params.toString()}` : '';
+    return this.fetch<D1ContentCalendarEntry[]>(`/content/calendar/profile/${profileId}${query}`);
+  }
+
+  /**
+   * Busca entrada do calendário por ID
+   */
+  async getContentCalendarEntry(id: string): Promise<D1ApiResponse<D1ContentCalendarEntry>> {
+    return this.fetch<D1ContentCalendarEntry>(`/content/calendar/${id}`);
+  }
+
+  /**
+   * Cria nova entrada no calendário
+   */
+  async createContentCalendarEntry(entry: {
+    user_id: string;
+    profile_id: string;
+    scheduled_date: string;
+    network: string;
+    content_type: string;
+    title: string;
+    library_content_id?: string;
+    day_of_week?: string;
+    description?: string;
+    hashtags?: string[];
+    best_time?: string;
+    status?: string;
+  }): Promise<D1ApiResponse<D1ContentCalendarEntry>> {
+    return this.fetch<D1ContentCalendarEntry>('/content/calendar', {
+      method: 'POST',
+      body: JSON.stringify(entry),
+    });
+  }
+
+  /**
+   * Cria múltiplas entradas no calendário
+   */
+  async createContentCalendarBulk(entries: Array<{
+    user_id: string;
+    profile_id: string;
+    scheduled_date: string;
+    network: string;
+    content_type: string;
+    title: string;
+    library_content_id?: string;
+    day_of_week?: string;
+    description?: string;
+    hashtags?: string[];
+    best_time?: string;
+    status?: string;
+  }>): Promise<D1ApiResponse<{ created: number; entries: D1ContentCalendarEntry[] }>> {
+    return this.fetch('/content/calendar/bulk', {
+      method: 'POST',
+      body: JSON.stringify({ entries }),
+    });
+  }
+
+  /**
+   * Atualiza entrada do calendário
+   */
+  async updateContentCalendarEntry(
+    id: string,
+    updates: Partial<{
+      scheduled_date: string;
+      day_of_week: string;
+      network: string;
+      content_type: string;
+      title: string;
+      description: string;
+      hashtags: string[];
+      best_time: string;
+      status: string;
+      library_content_id: string;
+    }>
+  ): Promise<D1ApiResponse<D1ContentCalendarEntry>> {
+    return this.fetch<D1ContentCalendarEntry>(`/content/calendar/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(updates),
+    });
+  }
+
+  /**
+   * Deleta entrada do calendário
+   */
+  async deleteContentCalendarEntry(id: string): Promise<D1ApiResponse<{ success: boolean }>> {
+    return this.fetch(`/content/calendar/${id}`, { method: 'DELETE' });
+  }
+
+  /**
+   * Deleta todas entradas de um perfil
+   */
+  async clearContentCalendar(profileId: string): Promise<D1ApiResponse<{ deleted: number }>> {
+    return this.fetch(`/content/calendar/profile/${profileId}`, { method: 'DELETE' });
   }
 
   // ==================== HEALTH ====================
