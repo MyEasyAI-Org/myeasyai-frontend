@@ -25,6 +25,9 @@ import type {
 // Layout
 import { CRMLayout } from './components/layout';
 
+// Theme Provider
+import { CRMThemeProvider } from './contexts/ThemeContext';
+
 // Views
 import { CRMDashboard } from './components/dashboard';
 import { ContactList, ContactForm, ContactDetail } from './components/contacts';
@@ -535,7 +538,7 @@ export function MyEasyCRM({
   };
 
   return (
-    <>
+    <CRMThemeProvider>
       <CRMLayout
         currentView={currentView}
         onViewChange={handleViewChange}
@@ -635,7 +638,7 @@ export function MyEasyCRM({
         }}
         isLoading={isSubmitting}
       />
-    </>
+    </CRMThemeProvider>
   );
 }
 

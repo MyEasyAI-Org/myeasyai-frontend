@@ -6,6 +6,7 @@ import { useState, type ReactNode } from 'react';
 import { CRMSidebar } from './CRMSidebar';
 import { CRMHeader } from './CRMHeader';
 import type { CRMView } from '../../types';
+import { useCRMTheme } from '../../contexts/ThemeContext';
 
 interface CRMLayoutProps {
   children: ReactNode;
@@ -32,14 +33,16 @@ export function CRMLayout({
 }: CRMLayoutProps) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { isDark } = useCRMTheme();
 
   return (
-    <div className="flex h-screen bg-gray-50">
+    <div className={`flex h-screen ${isDark ? 'bg-slate-950' : 'bg-gray-50'}`}>
       {/* Mobile Menu Overlay */}
       {mobileMenuOpen && (
         <div
           className="fixed inset-0 bg-black/50 z-40 lg:hidden"
           onClick={() => setMobileMenuOpen(false)}
+          onKeyDown={(e) => e.key === 'Escape' && setMobileMenuOpen(false)}
         />
       )}
 
@@ -89,7 +92,7 @@ export function CRMLayout({
         />
 
         {/* Page Content */}
-        <main className="flex-1 overflow-auto">
+        <main className={`flex-1 overflow-auto ${isDark ? 'bg-slate-950' : 'bg-gray-50'}`}>
           {children}
         </main>
       </div>
