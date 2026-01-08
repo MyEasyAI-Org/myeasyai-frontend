@@ -1,0 +1,8 @@
+Ficha de Anamnese para MyEasyFitness
+
+Info Pessoal
+Histórico Médico
+Perguntas sobre Estilo de Vida
+Perguntas sobre Treino
+
+Conversa com IA chatbot que cria planilhas de treino, cards de dicas, ajuda e informações sobre exercícios
