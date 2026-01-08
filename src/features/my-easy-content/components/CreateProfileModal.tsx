@@ -1,4 +1,17 @@
-import { X, Loader2 } from 'lucide-react';
+import {
+  X,
+  Loader2,
+  Instagram,
+  Facebook,
+  Linkedin,
+  Twitter,
+  Music,
+  Youtube,
+  FileText,
+  MessageSquare,
+  Smartphone,
+  Video,
+} from 'lucide-react';
 import { useState, useEffect } from 'react';
 import type {
   BusinessNiche,
@@ -8,7 +21,6 @@ import type {
   CreateContentProfileInput,
   SocialNetwork,
 } from '../types';
-import { BUSINESS_NICHES, CONTENT_TONES, CONTENT_TYPES, SOCIAL_NETWORKS } from '../constants';
 
 interface CreateProfileModalProps {
   isOpen: boolean;
@@ -19,6 +31,87 @@ interface CreateProfileModalProps {
 }
 
 const PROFILE_ICONS = ['🏪', '🍽️', '🛍️', '💼', '🏥', '💄', '📚', '💻', '💪', '🏠', '🔧', '🎯', '🎨', '🎵', '📱', '✨'];
+
+// Niche options with emojis
+const NICHE_OPTIONS = [
+  { id: 'restaurant', name: 'Restaurante', emoji: '🍽️' },
+  { id: 'retail', name: 'Varejo/Loja', emoji: '🛍️' },
+  { id: 'consulting', name: 'Consultoria', emoji: '💼' },
+  { id: 'health', name: 'Saude', emoji: '🏥' },
+  { id: 'beauty', name: 'Beleza', emoji: '💄' },
+  { id: 'education', name: 'Educacao', emoji: '📚' },
+  { id: 'technology', name: 'Tecnologia', emoji: '💻' },
+  { id: 'fitness', name: 'Fitness', emoji: '💪' },
+  { id: 'real_estate', name: 'Imobiliario', emoji: '🏠' },
+  { id: 'services', name: 'Servicos', emoji: '🔧' },
+  { id: 'other', name: 'Outro', emoji: '📌' },
+];
+
+// Tone options
+const TONE_OPTIONS = [
+  { id: 'professional', name: 'Profissional' },
+  { id: 'casual', name: 'Casual' },
+  { id: 'funny', name: 'Divertido' },
+  { id: 'inspirational', name: 'Inspiracional' },
+  { id: 'educational', name: 'Educativo' },
+  { id: 'promotional', name: 'Promocional' },
+];
+
+// Network icon component
+const NetworkIcon = ({ network, className }: { network: string; className?: string }) => {
+  const props = { className: className || 'w-4 h-4' };
+  switch (network) {
+    case 'instagram':
+      return <Instagram {...props} />;
+    case 'facebook':
+      return <Facebook {...props} />;
+    case 'linkedin':
+      return <Linkedin {...props} />;
+    case 'twitter':
+      return <Twitter {...props} />;
+    case 'tiktok':
+      return <Music {...props} />;
+    case 'youtube':
+      return <Youtube {...props} />;
+    default:
+      return null;
+  }
+};
+
+// Network options
+const NETWORK_OPTIONS = [
+  { id: 'instagram', name: 'Instagram' },
+  { id: 'facebook', name: 'Facebook' },
+  { id: 'linkedin', name: 'LinkedIn' },
+  { id: 'twitter', name: 'Twitter/X' },
+  { id: 'tiktok', name: 'TikTok' },
+  { id: 'youtube', name: 'YouTube' },
+];
+
+// Content type icon component
+const ContentTypeIcon = ({ type, className }: { type: string; className?: string }) => {
+  const props = { className: className || 'w-4 h-4' };
+  switch (type) {
+    case 'feed_post':
+      return <FileText {...props} />;
+    case 'caption':
+      return <MessageSquare {...props} />;
+    case 'story':
+      return <Smartphone {...props} />;
+    case 'reel':
+      return <Video {...props} />;
+    default:
+      return null;
+  }
+};
+
+// Content type options
+const CONTENT_TYPE_OPTIONS = [
+  { id: 'feed_post', name: 'Post Feed' },
+  { id: 'caption', name: 'Legenda' },
+  { id: 'story', name: 'Story' },
+  { id: 'reel', name: 'Reel/TikTok' },
+];
 
 export function CreateProfileModal({
   isOpen,
@@ -185,7 +278,7 @@ export function CreateProfileModal({
               Segmento do Negocio
             </label>
             <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-              {BUSINESS_NICHES.map((niche) => (
+              {NICHE_OPTIONS.map((niche) => (
                 <button
                   key={niche.id}
                   type="button"
@@ -198,7 +291,7 @@ export function CreateProfileModal({
                       : 'bg-slate-800 border-slate-600 text-slate-300 hover:border-slate-500'
                   }`}
                 >
-                  <span className="mr-1">{niche.icon}</span>
+                  <span className="mr-1">{niche.emoji}</span>
                   {niche.name}
                 </button>
               ))}
@@ -224,7 +317,7 @@ export function CreateProfileModal({
           <div>
             <label className="block text-sm font-medium text-slate-300 mb-2">Tom de Voz</label>
             <div className="flex flex-wrap gap-2">
-              {CONTENT_TONES.map((tone) => (
+              {TONE_OPTIONS.map((tone) => (
                 <button
                   key={tone.id}
                   type="button"
@@ -249,18 +342,18 @@ export function CreateProfileModal({
               Redes Sociais *
             </label>
             <div className="grid grid-cols-3 gap-2">
-              {SOCIAL_NETWORKS.map((network) => (
+              {NETWORK_OPTIONS.map((network) => (
                 <button
                   key={network.id}
                   type="button"
                   onClick={() => toggleNetwork(network.id as SocialNetwork)}
-                  className={`flex items-center space-x-2 px-3 py-2.5 text-sm rounded-lg border transition-colors ${
+                  className={`flex items-center justify-center space-x-2 px-3 py-2.5 text-sm rounded-lg border transition-colors ${
                     formData.selected_networks?.includes(network.id as SocialNetwork)
                       ? 'bg-orange-500/20 border-orange-500 text-orange-300'
                       : 'bg-slate-800 border-slate-600 text-slate-300 hover:border-slate-500'
                   }`}
                 >
-                  <span>{network.icon}</span>
+                  <NetworkIcon network={network.id} className="w-4 h-4" />
                   <span>{network.name}</span>
                 </button>
               ))}
@@ -274,21 +367,19 @@ export function CreateProfileModal({
               Tipos de Conteudo Preferidos
             </label>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-              {CONTENT_TYPES.filter((ct) =>
-                ['feed_post', 'caption', 'story', 'reel'].includes(ct.id)
-              ).map((contentType) => (
+              {CONTENT_TYPE_OPTIONS.map((contentType) => (
                 <button
                   key={contentType.id}
                   type="button"
                   onClick={() => toggleContentType(contentType.id as ContentType)}
-                  className={`px-3 py-2 text-sm rounded-lg border transition-colors ${
+                  className={`flex items-center justify-center space-x-1 px-3 py-2 text-sm rounded-lg border transition-colors ${
                     formData.preferred_content_types?.includes(contentType.id as ContentType)
                       ? 'bg-orange-500/20 border-orange-500 text-orange-300'
                       : 'bg-slate-800 border-slate-600 text-slate-300 hover:border-slate-500'
                   }`}
                 >
-                  <span className="mr-1">{contentType.icon}</span>
-                  {contentType.name}
+                  <ContentTypeIcon type={contentType.id} className="w-4 h-4" />
+                  <span>{contentType.name}</span>
                 </button>
               ))}
             </div>
@@ -299,13 +390,15 @@ export function CreateProfileModal({
             <button
               type="button"
               onClick={() => setFormData((prev) => ({ ...prev, is_default: !prev.is_default }))}
-              className={`relative w-11 h-6 rounded-full transition-colors ${
+              className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 focus:ring-offset-slate-900 ${
                 formData.is_default ? 'bg-orange-500' : 'bg-slate-600'
               }`}
+              role="switch"
+              aria-checked={formData.is_default}
             >
               <span
-                className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform ${
-                  formData.is_default ? 'translate-x-6' : 'translate-x-1'
+                className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                  formData.is_default ? 'translate-x-5' : 'translate-x-0'
                 }`}
               />
             </button>
