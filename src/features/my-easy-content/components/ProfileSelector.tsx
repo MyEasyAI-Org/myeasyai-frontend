@@ -1,4 +1,4 @@
-import { ChevronDown, Plus, Store, Settings, Check } from 'lucide-react';
+import { ChevronDown, Plus, Store, Settings, Check, Trash2 } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import type { ContentBusinessProfile } from '../types';
 
@@ -9,6 +9,7 @@ interface ProfileSelectorProps {
   onSelectProfile: (profile: ContentBusinessProfile) => void;
   onCreateProfile: () => void;
   onEditProfile?: (profile: ContentBusinessProfile) => void;
+  onDeleteProfile?: (profile: ContentBusinessProfile) => void;
 }
 
 // Map niche to emoji
@@ -33,6 +34,7 @@ export function ProfileSelector({
   onSelectProfile,
   onCreateProfile,
   onEditProfile,
+  onDeleteProfile,
 }: ProfileSelectorProps) {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -139,14 +141,32 @@ export function ProfileSelector({
                     )}
                     {onEditProfile && (
                       <button
+                        type="button"
                         onClick={(e) => {
                           e.stopPropagation();
                           onEditProfile(profile);
                           setIsOpen(false);
                         }}
                         className="opacity-0 group-hover:opacity-100 p-1 hover:bg-slate-700 rounded transition-opacity"
+                        title="Editar perfil"
                       >
                         <Settings className="w-3.5 h-3.5 text-slate-400" />
+                      </button>
+                    )}
+                    {onDeleteProfile && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (confirm(`Tem certeza que deseja excluir o perfil "${profile.name}"?`)) {
+                            onDeleteProfile(profile);
+                          }
+                          setIsOpen(false);
+                        }}
+                        className="opacity-0 group-hover:opacity-100 p-1 hover:bg-red-900/50 rounded transition-opacity"
+                        title="Excluir perfil"
+                      >
+                        <Trash2 className="w-3.5 h-3.5 text-red-400" />
                       </button>
                     )}
                   </div>

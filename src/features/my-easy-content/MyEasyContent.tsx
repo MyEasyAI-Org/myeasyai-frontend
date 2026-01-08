@@ -20,6 +20,7 @@ import {
 } from './constants';
 import { useContentData } from './hooks/useContentData';
 import { useContentProfiles } from './hooks/useContentProfiles';
+import { useContentLibrary } from './hooks/useContentLibrary';
 import { ContentChatPanel } from './components/ContentChatPanel';
 import { ContentPreview } from './components/ContentPreview';
 import { ProfileSelector } from './components/ProfileSelector';
@@ -48,8 +49,21 @@ export function MyEasyContent({ onBackToDashboard }: MyEasyContentProps) {
     isSaving: isSavingProfile,
     createProfile,
     updateProfile,
+    deleteProfile,
     selectProfile,
   } = useContentProfiles(userUuid);
+
+  // Content library management
+  const {
+    items: libraryItems,
+    isLoading: libraryIsLoading,
+    filters: libraryFilters,
+    saveContent: saveToLibrary,
+    toggleFavorite: toggleLibraryFavorite,
+    deleteItem: deleteLibraryItem,
+    updateFilters: updateLibraryFilters,
+    clearFilters: clearLibraryFilters,
+  } = useContentLibrary(currentProfile?.id || null, userUuid);
 
   // Profile modal state
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
@@ -69,12 +83,79 @@ export function MyEasyContent({ onBackToDashboard }: MyEasyContentProps) {
   const [inputMessage, setInputMessage] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
 
+  // Track if we've already applied the initial profile
+  const [hasAppliedInitialProfile, setHasAppliedInitialProfile] = useState(false);
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Auto-scroll to bottom
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  // Apply initial profile when loaded - skip initial questions
+  useEffect(() => {
+    // Only run once when profile is first loaded
+    if (
+      !hasAppliedInitialProfile &&
+      !isLoadingProfiles &&
+      currentProfile &&
+      currentStep === CONVERSATION_STEPS.NICHE_SELECTION
+    ) {
+      setHasAppliedInitialProfile(true);
+
+      // Apply profile data to content state
+      if (currentProfile.business_niche) {
+        content.updateBusinessNiche(currentProfile.business_niche);
+      }
+      if (currentProfile.target_audience) {
+        content.updateTargetAudience(currentProfile.target_audience);
+      }
+      if (currentProfile.brand_voice) {
+        content.updateBrandVoice(currentProfile.brand_voice);
+      }
+      if (currentProfile.selected_networks && currentProfile.selected_networks.length > 0) {
+        content.setNetworks(currentProfile.selected_networks);
+      }
+      if (currentProfile.preferred_content_types && currentProfile.preferred_content_types.length > 0) {
+        content.setContentTypes(currentProfile.preferred_content_types);
+      }
+
+      // Build profile summary
+      const nicheConfig = BUSINESS_NICHES.find((n) => n.id === currentProfile.business_niche);
+      const toneConfig = CONTENT_TONES.find((t) => t.id === currentProfile.brand_voice);
+      const networkNames = (currentProfile.selected_networks || [])
+        .map((n) => SOCIAL_NETWORKS.find((sn) => sn.id === n)?.name || n)
+        .join(', ');
+
+      // Get content type names if profile has them
+      const contentTypeNames = (currentProfile.preferred_content_types || [])
+        .map((ct) => CONTENT_TYPES.find((c) => c.id === ct)?.name || ct)
+        .join(', ');
+
+      // Always show content type selector so user can choose what to generate
+      setCurrentStep(CONVERSATION_STEPS.CONTENT_TYPE_SELECTION);
+      setMessages([
+        {
+          role: 'assistant',
+          content: `Ola! Estou usando seu perfil **${currentProfile.name}**:\n\n` +
+            `- **Nicho:** ${nicheConfig?.name || currentProfile.business_niche}\n` +
+            `- **Publico:** ${currentProfile.target_audience || 'Nao definido'}\n` +
+            `- **Tom:** ${toneConfig?.name || currentProfile.brand_voice}\n` +
+            `- **Redes:** ${networkNames || 'Nenhuma selecionada'}\n` +
+            (contentTypeNames ? `- **Tipos preferidos:** ${contentTypeNames}\n` : '') +
+            `\nQue tipo de conteudo voce quer criar hoje?`,
+          showContentTypeSelector: true,
+        },
+      ]);
+    }
+  }, [
+    hasAppliedInitialProfile,
+    isLoadingProfiles,
+    currentProfile,
+    currentStep,
+    content,
+  ]);
 
   // Save conversation snapshot for back navigation
   const saveSnapshot = useCallback(() => {
@@ -307,23 +388,19 @@ export function MyEasyContent({ onBackToDashboard }: MyEasyContentProps) {
           // hashtags and best_times are included in feed_post/caption generation
         }
 
-        // Generate AI content - ONE call per network (most valuable content type)
-        // Priority: feed_post > reel > story > caption
-        const priorityOrder: ContentType[] = ['feed_post', 'reel', 'story', 'caption'];
-        const primaryContentType = priorityOrder.find((ct) => aiContentTypes.includes(ct));
-
-        if (primaryContentType) {
-          for (let i = 0; i < content.contentData.selectedNetworks.length; i++) {
-            const network = content.contentData.selectedNetworks[i];
-
+        // Generate AI content - ALL selected content types for ALL networks
+        let callIndex = 0;
+        for (const contentType of aiContentTypes) {
+          for (const network of content.contentData.selectedNetworks) {
             // Add delay between API calls (except first one)
-            if (i > 0) {
-              await delay(2000); // 2 second delay between calls
+            if (callIndex > 0) {
+              await delay(1500); // 1.5 second delay between calls
             }
+            callIndex++;
 
             try {
               const generatedContent = await socialContentService.generateContent({
-                contentType: primaryContentType,
+                contentType,
                 network,
                 topic: content.contentData.currentTopic,
                 businessName: content.contentData.businessName,
@@ -331,13 +408,13 @@ export function MyEasyContent({ onBackToDashboard }: MyEasyContentProps) {
                 audience: content.contentData.targetAudience,
                 tone: content.contentData.brandVoice,
                 objective,
-                includeHashtags: true,
-                includeImageDescription: primaryContentType === 'feed_post',
+                includeHashtags: contentType === 'feed_post' || contentType === 'caption' || contentType === 'reel',
+                includeImageDescription: contentType === 'feed_post',
               });
 
               generatedContents.push(generatedContent);
             } catch (aiError) {
-              console.error('Erro ao gerar conteudo com IA:', aiError);
+              console.error(`Erro ao gerar ${contentType} para ${network}:`, aiError);
             }
           }
         }
@@ -374,12 +451,18 @@ export function MyEasyContent({ onBackToDashboard }: MyEasyContentProps) {
     [content, addMessage],
   );
 
-  // Save content to library
+  // Save content to library (local state + D1)
   const handleSaveContent = useCallback(
-    (generatedContent: GeneratedContent) => {
+    async (generatedContent: GeneratedContent) => {
+      // Save to local state
       content.saveContent(generatedContent);
+
+      // Save to D1 library if profile is selected
+      if (currentProfile?.id) {
+        await saveToLibrary(generatedContent);
+      }
     },
-    [content],
+    [content, currentProfile?.id, saveToLibrary],
   );
 
   // Regenerate content
@@ -443,9 +526,17 @@ export function MyEasyContent({ onBackToDashboard }: MyEasyContentProps) {
     setIsProfileModalOpen(true);
   }, []);
 
+  const handleDeleteProfile = useCallback(
+    async (profile: ContentBusinessProfile) => {
+      await deleteProfile(profile.id);
+    },
+    [deleteProfile]
+  );
+
   const handleSelectProfile = useCallback(
     (profile: ContentBusinessProfile) => {
       selectProfile(profile);
+
       // Apply profile settings to content data
       if (profile.business_niche) {
         content.updateBusinessNiche(profile.business_niche);
@@ -462,6 +553,33 @@ export function MyEasyContent({ onBackToDashboard }: MyEasyContentProps) {
       if (profile.preferred_content_types && profile.preferred_content_types.length > 0) {
         content.setContentTypes(profile.preferred_content_types);
       }
+
+      // Build profile summary for chat restart
+      const nicheConfig = BUSINESS_NICHES.find((n) => n.id === profile.business_niche);
+      const toneConfig = CONTENT_TONES.find((t) => t.id === profile.brand_voice);
+      const networkNames = (profile.selected_networks || [])
+        .map((n) => SOCIAL_NETWORKS.find((sn) => sn.id === n)?.name || n)
+        .join(', ');
+      const contentTypeNames = (profile.preferred_content_types || [])
+        .map((ct) => CONTENT_TYPES.find((c) => c.id === ct)?.name || ct)
+        .join(', ');
+
+      // Reset conversation and always show content type selector
+      setConversationHistory([]);
+      setCurrentStep(CONVERSATION_STEPS.CONTENT_TYPE_SELECTION);
+      setMessages([
+        {
+          role: 'assistant',
+          content: `Trocando para o perfil **${profile.name}**:\n\n` +
+            `- **Nicho:** ${nicheConfig?.name || profile.business_niche}\n` +
+            `- **Publico:** ${profile.target_audience || 'Nao definido'}\n` +
+            `- **Tom:** ${toneConfig?.name || profile.brand_voice}\n` +
+            `- **Redes:** ${networkNames || 'Nenhuma selecionada'}\n` +
+            (contentTypeNames ? `- **Tipos preferidos:** ${contentTypeNames}\n` : '') +
+            `\nQue tipo de conteudo voce quer criar hoje?`,
+          showContentTypeSelector: true,
+        },
+      ]);
     },
     [selectProfile, content]
   );
@@ -512,6 +630,7 @@ export function MyEasyContent({ onBackToDashboard }: MyEasyContentProps) {
                 onSelectProfile={handleSelectProfile}
                 onCreateProfile={handleCreateProfile}
                 onEditProfile={handleEditProfile}
+                onDeleteProfile={handleDeleteProfile}
               />
 
               <button
@@ -559,6 +678,13 @@ export function MyEasyContent({ onBackToDashboard }: MyEasyContentProps) {
           onSaveContent={handleSaveContent}
           onRegenerateContent={handleRegenerateContent}
           onExportCalendar={handleExportCalendar}
+          libraryItems={libraryItems}
+          libraryIsLoading={libraryIsLoading}
+          libraryFilters={libraryFilters}
+          onUpdateLibraryFilters={updateLibraryFilters}
+          onClearLibraryFilters={clearLibraryFilters}
+          onToggleLibraryFavorite={toggleLibraryFavorite}
+          onDeleteLibraryItem={deleteLibraryItem}
         />
       </div>
 
