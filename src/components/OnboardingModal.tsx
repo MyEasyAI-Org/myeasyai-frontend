@@ -3,8 +3,11 @@ import * as flags from 'country-flag-icons/react/3x2';
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { COUNTRIES, getCountryConfig } from '../constants/countries';
+import { BRAZILIAN_STATES } from '../constants/brazilianStates';
+import { getCitiesByState } from '../constants/brazilianCities';
 import { userManagementServiceV2 } from '../services/UserManagementServiceV2';
 import { Modal } from './Modal';
+import { TermsModal } from './TermsModal';
 
 type OnboardingModalProps = {
   isOpen: boolean;
@@ -19,15 +22,8 @@ type FormData = {
   preferred_name?: string;
   mobile_phone?: string;
   country_code?: string;
-  country?: string;
-  postal_code?: string;
-  address?: string;
-  neighborhood?: string;
-  street?: string;
-  number?: string;
-  complement?: string;
-  city?: string;
   state?: string;
+  city?: string;
   preferred_language?: string;
 };
 
@@ -48,22 +44,17 @@ const steps = [
   {
     id: 'personal',
     title: 'Dados Pessoais',
-    description: 'Vamos começar com suas informações básicas',
+    description: 'Vamos comecar com suas informacoes basicas',
   },
   {
     id: 'contact',
     title: 'Contato',
-    description: 'Como podemos entrar em contato com você?',
-  },
-  {
-    id: 'location',
-    title: 'Localização',
-    description: 'Onde você está localizado?',
+    description: 'Como podemos entrar em contato com voce?',
   },
   {
     id: 'preferences',
-    title: 'Preferências',
-    description: 'Personalize sua experiência',
+    title: 'Preferencias',
+    description: 'Personalize sua experiencia',
   },
 ];
 
@@ -79,27 +70,32 @@ export function OnboardingModal({
     name: '',
     preferred_name: '',
     country_code: 'BR',
-    country: 'BR',
+    state: '',
+    city: '',
     preferred_language: 'pt',
   });
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Partial<FormData>>({});
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [showTermsModal, setShowTermsModal] = useState(false);
   const [showCountryDropdown, setShowCountryDropdown] = useState(false);
-  const [showLocationDropdown, setShowLocationDropdown] = useState(false);
+  const [showStateDropdown, setShowStateDropdown] = useState(false);
   const [showLanguageDropdown, setShowLanguageDropdown] = useState(false);
+  const [showCityDropdown, setShowCityDropdown] = useState(false);
   const [countrySearch, setCountrySearch] = useState('');
-  const [locationSearch, setLocationSearch] = useState('');
+  const [stateSearch, setStateSearch] = useState('');
+  const [citySearch, setCitySearch] = useState('');
   const [languageSearch, setLanguageSearch] = useState('');
-  const [isLoadingAddress, setIsLoadingAddress] = useState(false);
   const [isClosingCountryDropdown, setIsClosingCountryDropdown] =
     useState(false);
-  const [isClosingLocationDropdown, setIsClosingLocationDropdown] =
-    useState(false);
+  const [isClosingStateDropdown, setIsClosingStateDropdown] = useState(false);
+  const [isClosingCityDropdown, setIsClosingCityDropdown] = useState(false);
   const [isClosingLanguageDropdown, setIsClosingLanguageDropdown] =
     useState(false);
 
   const countryDropdownRef = useRef<HTMLDivElement>(null);
-  const locationDropdownRef = useRef<HTMLDivElement>(null);
+  const stateDropdownRef = useRef<HTMLDivElement>(null);
+  const cityDropdownRef = useRef<HTMLDivElement>(null);
   const languageDropdownRef = useRef<HTMLDivElement>(null);
 
   // Function to capitalize names
@@ -145,45 +141,6 @@ export function OnboardingModal({
     return formatted;
   };
 
-  // Function to fetch postal code (ViaCEP - Brazil)
-  const fetchBrazilianAddress = async (cep: string) => {
-    const cleanCep = cep.replace(/\D/g, '');
-    if (cleanCep.length !== 8) return;
-
-    setIsLoadingAddress(true);
-    try {
-      const response = await fetch(
-        `https://viacep.com.br/ws/${cleanCep}/json/`,
-      );
-      const data = await response.json();
-
-      if (!data.erro) {
-        setFormData((prev) => ({
-          ...prev,
-          street: data.logradouro || '',
-          neighborhood: data.bairro || '',
-          city: data.localidade || '',
-          state: data.uf || '',
-        }));
-      }
-    } catch (error) {
-      console.error('Erro ao buscar CEP:', error);
-    } finally {
-      setIsLoadingAddress(false);
-    }
-  };
-
-  // Handler for postal code change
-  const handlePostalCodeChange = async (value: string) => {
-    const cleanValue = value.replace(/\D/g, '');
-    setFormData((prev) => ({ ...prev, postal_code: cleanValue }));
-
-    // If Brazil and has 8 digits, fetch address
-    if (formData.country === 'BR' && cleanValue.length === 8) {
-      await fetchBrazilianAddress(cleanValue);
-    }
-  };
-
   // Handler for name change with automatic capitalization
   const handleNameChange = (value: string) => {
     const capitalizedName = capitalizeName(value);
@@ -224,24 +181,27 @@ export function OnboardingModal({
     setCountrySearch('');
   };
 
-  // Handler for country change (location)
-  const handleLocationCountryChange = (countryCode: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      country: countryCode,
-      postal_code: '',
-      street: '',
-      neighborhood: '',
-      city: '',
-      state: '',
-      complement: '',
-    }));
-    setIsClosingLocationDropdown(true);
+  // Handler for state change
+  const handleStateChange = (stateCode: string) => {
+    setFormData((prev) => ({ ...prev, state: stateCode, city: '' })); // Limpar cidade ao mudar estado
+    setIsClosingStateDropdown(true);
     setTimeout(() => {
-      setShowLocationDropdown(false);
-      setIsClosingLocationDropdown(false);
+      setShowStateDropdown(false);
+      setIsClosingStateDropdown(false);
     }, 700);
-    setLocationSearch('');
+    setStateSearch('');
+    setCitySearch('');
+  };
+
+  // Handler for city change
+  const handleCityChange = (city: string) => {
+    setFormData((prev) => ({ ...prev, city }));
+    setIsClosingCityDropdown(true);
+    setTimeout(() => {
+      setShowCityDropdown(false);
+      setIsClosingCityDropdown(false);
+    }, 700);
+    setCitySearch('');
   };
 
   // Filter countries for phone dropdown
@@ -251,17 +211,27 @@ export function OnboardingModal({
       country.dial.includes(countrySearch),
   );
 
-  // Filter countries for location dropdown
-  const filteredLocationCountries = COUNTRIES.filter((country) =>
-    country.name.toLowerCase().includes(locationSearch.toLowerCase()),
+  // Filter states for dropdown
+  const filteredStates = BRAZILIAN_STATES.filter(
+    (state) =>
+      state.name.toLowerCase().includes(stateSearch.toLowerCase()) ||
+      state.code.toLowerCase().includes(stateSearch.toLowerCase()),
+  );
+
+  // Get cities for selected state
+  const availableCities = formData.state ? getCitiesByState(formData.state) : [];
+
+  // Filter cities for dropdown
+  const filteredCities = availableCities.filter((city) =>
+    city.toLowerCase().includes(citySearch.toLowerCase()),
   );
 
   // Available languages
   const languages = [
-    { code: 'pt', name: 'Português', countryFlag: 'BR' },
+    { code: 'pt', name: 'Portugues', countryFlag: 'BR' },
     { code: 'en', name: 'English', countryFlag: 'US' },
-    { code: 'es', name: 'Español', countryFlag: 'ES' },
-    { code: 'fr', name: 'Français', countryFlag: 'FR' },
+    { code: 'es', name: 'Espanol', countryFlag: 'ES' },
+    { code: 'fr', name: 'Francais', countryFlag: 'FR' },
   ];
 
   // Filter languages
@@ -283,49 +253,26 @@ export function OnboardingModal({
   // Validate if can proceed to next step
   const canProceed = (): boolean => {
     switch (currentStep) {
-      case 0: // Personal Data
+      case 0: // Personal Data + Terms
         return !!(
           formData.name &&
           formData.name.trim().split(' ').length >= 2 &&
-          !errors.name
+          !errors.name &&
+          acceptedTerms
         );
       case 1: {
-        // Contact
+        // Contact + Location
         const country = getCountryConfig(formData.country_code || 'BR');
         const numbers = (formData.mobile_phone || '').replace(/\D/g, '');
         return !!(
           country &&
           numbers.length === country.phoneLength &&
-          !errors.mobile_phone
+          !errors.mobile_phone &&
+          formData.state &&
+          formData.city
         );
       }
-      case 2: {
-        // Location
-        const locationCountry = getCountryConfig(formData.country || 'BR');
-        if (!locationCountry) return false;
-
-        // Validate required fields based on country
-        const hasPostalCode = !!formData.postal_code;
-        const hasStreet = !!formData.street;
-        const hasNumber = !!formData.number;
-        const hasCity = !!formData.city;
-        const hasNeighborhood = locationCountry.addressFields.neighborhoodLabel
-          ? !!formData.neighborhood
-          : true;
-        const hasState = locationCountry.addressFields.stateLabel
-          ? !!formData.state
-          : true;
-
-        return (
-          hasPostalCode &&
-          hasStreet &&
-          hasNumber &&
-          hasCity &&
-          hasNeighborhood &&
-          hasState
-        );
-      }
-      case 3: // Preferences
+      case 2: // Preferences
         return !!formData.preferred_language;
       default:
         return true;
@@ -347,18 +294,6 @@ export function OnboardingModal({
   const handleSubmit = async () => {
     if (!canProceed()) return;
 
-    // Build full address by concatenating fields
-    const fullAddress = [
-      formData.street,
-      formData.number,
-      formData.complement,
-      formData.neighborhood,
-      formData.city,
-      formData.state,
-    ]
-      .filter(Boolean)
-      .join(', ');
-
     setLoading(true);
     try {
       const country = getCountryConfig(formData.country_code || 'BR');
@@ -368,20 +303,20 @@ export function OnboardingModal({
 
       // Use UserManagementServiceV2 (D1 Primary + Supabase Fallback)
       const result = await userManagementServiceV2.updateUserProfile(user.email!, {
-        name: formData.name || 'Usuário',
+        name: formData.name || 'Usuario',
         preferred_name: formData.preferred_name || undefined,
         mobile_phone: fullPhoneNumber
           ? String(parseInt(fullPhoneNumber.replace(/\D/g, '')))
           : undefined,
-        country: formData.country,
-        postal_code: formData.postal_code || undefined,
-        address: fullAddress || undefined,
+        country: 'BR', // Assumindo Brasil por enquanto
+        state: formData.state || undefined,
+        city: formData.city || undefined,
         preferred_language: formData.preferred_language || 'pt',
       });
 
       if (!result.success) {
         console.error('Erro ao salvar dados:', result.error);
-        toast.error('Erro ao salvar informações', {
+        toast.error('Erro ao salvar informacoes', {
           description: 'Tente novamente.',
         });
         return;
@@ -401,7 +336,7 @@ export function OnboardingModal({
 
   const renderStepContent = () => {
     switch (currentStep) {
-      case 0: // Personal Data
+      case 0: // Personal Data + Terms
         return (
           <div className="space-y-4">
             <label className="block text-left">
@@ -412,7 +347,7 @@ export function OnboardingModal({
                 type="text"
                 value={formData.name || ''}
                 onChange={(e) => handleNameChange(e.target.value)}
-                placeholder="Ex: João Silva Santos"
+                placeholder="Ex: Joao Silva Santos"
                 className={`w-full rounded-lg border ${errors.name ? 'border-red-500' : 'border-slate-700'} bg-slate-800/60 px-4 py-3 text-slate-100 placeholder-slate-500 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/40`}
               />
               {errors.name && (
@@ -433,20 +368,69 @@ export function OnboardingModal({
                     preferred_name: e.target.value,
                   }))
                 }
-                placeholder="Ex: João, Joãozinho, JJ..."
+                placeholder="Ex: Joao, Joaozinho, JJ..."
                 className="w-full rounded-lg border border-slate-700 bg-slate-800/60 px-4 py-3 text-slate-100 placeholder-slate-500 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/40"
               />
               <span className="text-xs text-slate-500 mt-1">
-                Escreva um nome amigável para usarmos com você 😊
+                Escreva um nome amigavel para usarmos com voce
               </span>
             </label>
+
+            {/* Terms Checkbox */}
+            <div className="pt-4 border-t border-slate-700">
+              <label className="flex items-start gap-3 cursor-pointer group">
+                <div className="relative flex items-center justify-center mt-0.5">
+                  <input
+                    type="checkbox"
+                    checked={acceptedTerms}
+                    onChange={(e) => setAcceptedTerms(e.target.checked)}
+                    className="peer sr-only"
+                  />
+                  <div className="h-5 w-5 rounded border-2 border-slate-600 bg-slate-800 peer-checked:border-purple-500 peer-checked:bg-purple-500 transition-colors">
+                    {acceptedTerms && (
+                      <svg
+                        className="h-full w-full text-white p-0.5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={3}
+                          d="M5 13l4 4L19 7"
+                        />
+                      </svg>
+                    )}
+                  </div>
+                </div>
+                <span className="text-sm text-slate-300">
+                  Li e aceito os{' '}
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setShowTermsModal(true);
+                    }}
+                    className="text-purple-400 hover:text-purple-300 underline font-medium transition-colors"
+                  >
+                    Termos de Uso
+                  </button>
+                </span>
+              </label>
+            </div>
           </div>
         );
 
       case 1: {
-        // Contact
+        // Contact + Location
         const selectedCountry =
           getCountryConfig(formData.country_code || 'BR') || COUNTRIES[0];
+        const selectedState = BRAZILIAN_STATES.find(
+          (s) => s.code === formData.state,
+        );
+
         return (
           <div className="space-y-4">
             <label className="block text-left">
@@ -495,7 +479,7 @@ export function OnboardingModal({
                           type="text"
                           value={countrySearch}
                           onChange={(e) => setCountrySearch(e.target.value)}
-                          placeholder="Buscar país..."
+                          placeholder="Buscar pais..."
                           className="w-full px-3 py-2 rounded-md bg-slate-700 text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
                           onClick={(e) => e.stopPropagation()}
                         />
@@ -543,32 +527,22 @@ export function OnboardingModal({
                 </span>
               )}
             </label>
-          </div>
-        );
-      }
 
-      case 2: {
-        // Location
-        const locationCountry =
-          getCountryConfig(formData.country || 'BR') || COUNTRIES[0];
-        return (
-          <div className="space-y-4">
+            {/* State Dropdown */}
             <label className="block text-left">
               <span className="mb-1 block text-sm font-medium text-slate-300">
-                País *
+                Estado *
               </span>
-              <div className="relative" ref={locationDropdownRef}>
+              <div className="relative" ref={stateDropdownRef}>
                 <button
                   type="button"
-                  onClick={() => setShowLocationDropdown(!showLocationDropdown)}
+                  onClick={() => setShowStateDropdown(!showStateDropdown)}
                   className="w-full flex items-center gap-3 px-4 py-3 rounded-lg border border-slate-700 bg-slate-800/60 hover:bg-slate-700/60 transition-colors text-left"
                 >
-                  <FlagIcon
-                    countryCode={locationCountry.code}
-                    className="w-6 h-4"
-                  />
                   <span className="text-slate-100 flex-1">
-                    {locationCountry.name}
+                    {selectedState
+                      ? `${selectedState.name} (${selectedState.code})`
+                      : 'Selecione seu estado'}
                   </span>
                   <svg
                     className="w-4 h-4 text-slate-400"
@@ -585,38 +559,35 @@ export function OnboardingModal({
                   </svg>
                 </button>
 
-                {showLocationDropdown && (
+                {showStateDropdown && (
                   <div
-                    className={`absolute z-10 mt-1 w-full rounded-lg border border-slate-700 bg-slate-800 shadow-xl transition-opacity duration-700 ${isClosingLocationDropdown ? 'opacity-0' : 'opacity-100'}`}
+                    className={`absolute z-10 mt-1 w-full rounded-lg border border-slate-700 bg-slate-800 shadow-xl transition-opacity duration-700 ${isClosingStateDropdown ? 'opacity-0' : 'opacity-100'}`}
                   >
                     <div className="p-2 border-b border-slate-700">
                       <input
                         type="text"
-                        value={locationSearch}
-                        onChange={(e) => setLocationSearch(e.target.value)}
-                        placeholder="Buscar país..."
+                        value={stateSearch}
+                        onChange={(e) => setStateSearch(e.target.value)}
+                        placeholder="Buscar estado..."
                         className="w-full px-3 py-2 rounded-md bg-slate-700 text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
                         onClick={(e) => e.stopPropagation()}
                       />
                     </div>
                     <div className="max-h-60 overflow-y-auto">
-                      {filteredLocationCountries.map((country) => (
+                      {filteredStates.map((state) => (
                         <button
-                          key={country.code}
+                          key={state.code}
                           type="button"
                           onMouseDown={(e) => {
                             e.preventDefault();
-                            handleLocationCountryChange(country.code);
+                            handleStateChange(state.code);
                           }}
                           className="flex items-center gap-3 w-full px-4 py-2 hover:bg-slate-700 transition-colors text-left"
                         >
-                          <FlagIcon
-                            countryCode={country.code}
-                            className="w-6 h-4 flex-shrink-0"
-                          />
-                          <span className="text-slate-100 truncate">
-                            {country.name}
+                          <span className="text-slate-100 flex-1">
+                            {state.name}
                           </span>
+                          <span className="text-slate-400">{state.code}</span>
                         </button>
                       ))}
                     </div>
@@ -625,147 +596,86 @@ export function OnboardingModal({
               </div>
             </label>
 
+            {/* City Dropdown */}
             <label className="block text-left">
               <span className="mb-1 block text-sm font-medium text-slate-300">
-                {locationCountry.postalCodeLabel} *{' '}
-                {isLoadingAddress && '(Buscando...)'}
+                Cidade *
               </span>
-              <input
-                type="text"
-                value={formData.postal_code || ''}
-                onChange={(e) => handlePostalCodeChange(e.target.value)}
-                placeholder={locationCountry.postalCodePlaceholder}
-                maxLength={locationCountry.postalCodeMaxLength}
-                disabled={isLoadingAddress}
-                className="w-full rounded-lg border border-slate-700 bg-slate-800/60 px-4 py-3 text-slate-100 placeholder-slate-500 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/40 disabled:opacity-50"
-              />
-              {locationCountry.hasAutoComplete && (
-                <span className="text-xs text-slate-500 mt-1">
-                  ✨ Preenchimento automático disponível
-                </span>
-              )}
-            </label>
-
-            <div className="grid grid-cols-2 gap-4">
-              <label className="block text-left">
-                <span className="mb-1 block text-sm font-medium text-slate-300">
-                  {locationCountry.addressFields.line1Label} *
-                </span>
-                <input
-                  type="text"
-                  value={formData.street || ''}
-                  onChange={(e) =>
-                    setFormData((prev) => ({ ...prev, street: e.target.value }))
-                  }
-                  placeholder={`Ex: ${locationCountry.addressFields.line1Label}`}
-                  className="w-full rounded-lg border border-slate-700 bg-slate-800/60 px-4 py-3 text-slate-100 placeholder-slate-500 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/40"
-                />
-              </label>
-
-              <label className="block text-left">
-                <span className="mb-1 block text-sm font-medium text-slate-300">
-                  {locationCountry.addressFields.line2Label || 'Número'} *
-                </span>
-                <input
-                  type="text"
-                  value={formData.number || ''}
-                  onChange={(e) =>
-                    setFormData((prev) => ({ ...prev, number: e.target.value }))
-                  }
-                  placeholder="123"
-                  className="w-full rounded-lg border border-slate-700 bg-slate-800/60 px-4 py-3 text-slate-100 placeholder-slate-500 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/40"
-                />
-              </label>
-            </div>
-
-            <label className="block text-left">
-              <span className="mb-1 block text-sm font-medium text-slate-300">
-                Complemento
-              </span>
-              <input
-                type="text"
-                value={formData.complement || ''}
-                onChange={(e) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    complement: e.target.value,
-                  }))
-                }
-                placeholder="Ex.: Bloco 2 / Apartamento 602"
-                className="w-full rounded-lg border border-slate-700 bg-slate-800/60 px-4 py-3 text-slate-100 placeholder-slate-500 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/40"
-              />
-            </label>
-
-            {locationCountry.addressFields.neighborhoodLabel && (
-              <label className="block text-left">
-                <span className="mb-1 block text-sm font-medium text-slate-300">
-                  {locationCountry.addressFields.neighborhoodLabel} *
-                </span>
-                <input
-                  type="text"
-                  value={formData.neighborhood || ''}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      neighborhood: e.target.value,
-                    }))
-                  }
-                  placeholder={`Ex: ${locationCountry.addressFields.neighborhoodLabel}`}
-                  className="w-full rounded-lg border border-slate-700 bg-slate-800/60 px-4 py-3 text-slate-100 placeholder-slate-500 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/40"
-                />
-              </label>
-            )}
-
-            <div className="grid grid-cols-2 gap-4">
-              <label className="block text-left">
-                <span className="mb-1 block text-sm font-medium text-slate-300">
-                  {locationCountry.addressFields.cityLabel} *
-                </span>
-                <input
-                  type="text"
-                  value={formData.city || ''}
-                  onChange={(e) =>
-                    setFormData((prev) => ({ ...prev, city: e.target.value }))
-                  }
-                  placeholder={`Ex: ${locationCountry.addressFields.cityLabel}`}
-                  className="w-full rounded-lg border border-slate-700 bg-slate-800/60 px-4 py-3 text-slate-100 placeholder-slate-500 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/40"
-                />
-              </label>
-
-              {locationCountry.addressFields.stateLabel && (
-                <label className="block text-left">
-                  <span className="mb-1 block text-sm font-medium text-slate-300">
-                    {locationCountry.addressFields.stateLabel} *
+              <div className="relative" ref={cityDropdownRef}>
+                <button
+                  type="button"
+                  onClick={() => formData.state && setShowCityDropdown(!showCityDropdown)}
+                  disabled={!formData.state}
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg border border-slate-700 bg-slate-800/60 transition-colors text-left ${
+                    formData.state
+                      ? 'hover:bg-slate-700/60 cursor-pointer'
+                      : 'cursor-not-allowed opacity-60'
+                  }`}
+                >
+                  <span className="text-slate-100 flex-1">
+                    {formData.city || (formData.state ? 'Selecione sua cidade' : 'Selecione o estado primeiro')}
                   </span>
-                  <input
-                    type="text"
-                    value={formData.state || ''}
-                    onChange={(e) => {
-                      const maxLength =
-                        locationCountry.addressFields.stateMaxLength;
-                      let value = e.target.value;
-                      if (maxLength) {
-                        value = value
-                          .toUpperCase()
-                          .replace(/[^A-Z]/g, '')
-                          .slice(0, maxLength);
-                      }
-                      setFormData((prev) => ({ ...prev, state: value }));
-                    }}
-                    placeholder={
-                      locationCountry.addressFields.statePlaceholder || 'Estado'
-                    }
-                    maxLength={locationCountry.addressFields.stateMaxLength}
-                    className="w-full rounded-lg border border-slate-700 bg-slate-800/60 px-4 py-3 text-slate-100 placeholder-slate-500 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/40"
-                  />
-                </label>
-              )}
-            </div>
+                  <svg
+                    className="w-4 h-4 text-slate-400"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 9l-7 7-7-7"
+                    />
+                  </svg>
+                </button>
+
+                {showCityDropdown && formData.state && (
+                  <div
+                    className={`absolute z-10 mt-1 w-full rounded-lg border border-slate-700 bg-slate-800 shadow-xl transition-opacity duration-700 ${isClosingCityDropdown ? 'opacity-0' : 'opacity-100'}`}
+                  >
+                    <div className="p-2 border-b border-slate-700">
+                      <input
+                        type="text"
+                        value={citySearch}
+                        onChange={(e) => setCitySearch(e.target.value)}
+                        placeholder="Buscar cidade..."
+                        className="w-full px-3 py-2 rounded-md bg-slate-700 text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                    </div>
+                    <div className="max-h-60 overflow-y-auto">
+                      {filteredCities.length > 0 ? (
+                        filteredCities.map((city) => (
+                          <button
+                            key={city}
+                            type="button"
+                            onMouseDown={(e) => {
+                              e.preventDefault();
+                              handleCityChange(city);
+                            }}
+                            className="flex items-center gap-3 w-full px-4 py-2 hover:bg-slate-700 transition-colors text-left"
+                          >
+                            <span className="text-slate-100 flex-1">
+                              {city}
+                            </span>
+                          </button>
+                        ))
+                      ) : (
+                        <div className="px-4 py-3 text-slate-400 text-sm">
+                          Nenhuma cidade encontrada
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </label>
           </div>
         );
       }
 
-      case 3: {
+      case 2: {
         // Preferences
         const selectedLanguage =
           languages.find((lang) => lang.code === formData.preferred_language) ||
@@ -859,47 +769,46 @@ export function OnboardingModal({
     const loadUserData = async () => {
       if (!isOpen || !user.email) return;
 
+      // Primeiro, preencher com dados do user_metadata (disponível imediatamente após signup)
+      const metadataName = user.user_metadata?.full_name || user.user_metadata?.name || '';
+      const metadataPreferredName = user.user_metadata?.preferred_name || '';
+
       try {
         // Use UserManagementServiceV2 (D1 Primary + Supabase Fallback)
         const result = await userManagementServiceV2.getUserProfile(user.email);
 
         if (!result.success || !result.data) {
-          console.error('Erro ao carregar dados do usuário:', result.error);
+          console.error('Erro ao carregar dados do usuario:', result.error);
           // Use user_metadata data as fallback
           setFormData((prev) => ({
             ...prev,
-            name:
-              user.user_metadata?.full_name || user.user_metadata?.name || '',
-            preferred_name: user.user_metadata?.preferred_name || '',
+            name: metadataName,
+            preferred_name: metadataPreferredName,
           }));
         } else {
           const data = result.data;
-          // Fill form with database data
+          // Fill form with database data, but prefer user_metadata for preferred_name
+          // (pois o banco pode não ter sido atualizado ainda após signup)
           setFormData((prev) => ({
             ...prev,
-            name:
-              data.name ||
-              user.user_metadata?.full_name ||
-              user.user_metadata?.name ||
-              '',
-            preferred_name:
-              data.preferred_name || user.user_metadata?.preferred_name || '',
+            name: metadataName || data.name || '',
+            preferred_name: metadataPreferredName || data.preferred_name || '',
             mobile_phone: data.mobile_phone ? String(data.mobile_phone) : '',
             country_code: data.country_code || 'BR',
-            country: data.country || 'BR',
-            postal_code: data.postal_code ? String(data.postal_code) : '',
-            street: data.street || '',
-            number: data.number || '',
-            complement: data.complement || '',
-            neighborhood: data.neighborhood || '',
-            city: data.city || '',
             state: data.state || '',
+            city: data.city || '',
             preferred_language: data.preferred_language || 'pt',
           }));
           console.log('✅ [ONBOARDING] Dados carregados via UserManagementServiceV2');
         }
       } catch (error) {
         console.error('Erro ao carregar dados:', error);
+        // Em caso de erro, usar dados do user_metadata
+        setFormData((prev) => ({
+          ...prev,
+          name: metadataName,
+          preferred_name: metadataPreferredName,
+        }));
       }
     };
 
@@ -916,10 +825,16 @@ export function OnboardingModal({
         setShowCountryDropdown(false);
       }
       if (
-        locationDropdownRef.current &&
-        !locationDropdownRef.current.contains(event.target as Node)
+        stateDropdownRef.current &&
+        !stateDropdownRef.current.contains(event.target as Node)
       ) {
-        setShowLocationDropdown(false);
+        setShowStateDropdown(false);
+      }
+      if (
+        cityDropdownRef.current &&
+        !cityDropdownRef.current.contains(event.target as Node)
+      ) {
+        setShowCityDropdown(false);
       }
       if (
         languageDropdownRef.current &&
@@ -936,111 +851,119 @@ export function OnboardingModal({
   }, []);
 
   return (
-    <Modal
-      isOpen={isOpen}
-      onClose={onClose}
-      disableClose={disableClose}
-      title="Complete seu perfil"
-      description="Para uma experiência personalizada, precisamos de algumas informações."
-      contentClassName="space-y-6"
-    >
-      {/* Progress Timeline */}
-      <div className="space-y-4">
-        <div className="flex justify-between items-center">
-          <span className="text-sm text-slate-400">
-            Etapa {currentStep + 1} de {steps.length}
-          </span>
-          <span className="text-sm text-slate-400">
-            {Math.round(progressPercentage)}% concluído
-          </span>
-        </div>
+    <>
+      <Modal
+        isOpen={isOpen}
+        onClose={onClose}
+        disableClose={disableClose}
+        title="Complete seu perfil"
+        description="Para uma experiencia personalizada, precisamos de algumas informacoes."
+        contentClassName="space-y-6"
+      >
+        {/* Progress Timeline */}
+        <div className="space-y-4">
+          <div className="flex justify-between items-center">
+            <span className="text-sm text-slate-400">
+              Etapa {currentStep + 1} de {steps.length}
+            </span>
+            <span className="text-sm text-slate-400">
+              {Math.round(progressPercentage)}% concluido
+            </span>
+          </div>
 
-        <div className="w-full bg-slate-700 rounded-full h-2">
-          <div
-            className="bg-gradient-to-r from-purple-500 to-blue-500 h-2 rounded-full transition-all duration-300"
-            style={{ width: `${progressPercentage}%` }}
-          />
-        </div>
-
-        <div className="flex justify-between">
-          {steps.map((step, index) => (
+          <div className="w-full bg-slate-700 rounded-full h-2">
             <div
-              key={step.id}
-              className={`flex flex-col items-center ${
-                index <= currentStep ? 'text-purple-400' : 'text-slate-500'
-              }`}
-            >
+              className="bg-gradient-to-r from-purple-500 to-blue-500 h-2 rounded-full transition-all duration-300"
+              style={{ width: `${progressPercentage}%` }}
+            />
+          </div>
+
+          <div className="flex justify-between">
+            {steps.map((step, index) => (
               <div
-                className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium ${
-                  index < currentStep
-                    ? 'bg-purple-500 text-white'
-                    : index === currentStep
-                      ? 'bg-purple-500 text-white'
-                      : 'bg-slate-700 text-slate-400'
+                key={step.id}
+                className={`flex flex-col items-center ${
+                  index <= currentStep ? 'text-purple-400' : 'text-slate-500'
                 }`}
               >
-                {index < currentStep ? '✓' : index + 1}
+                <div
+                  className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium ${
+                    index < currentStep
+                      ? 'bg-purple-500 text-white'
+                      : index === currentStep
+                        ? 'bg-purple-500 text-white'
+                        : 'bg-slate-700 text-slate-400'
+                  }`}
+                >
+                  {index < currentStep ? '✓' : index + 1}
+                </div>
+                <span className="text-xs mt-1 text-center max-w-16">
+                  {step.title}
+                </span>
               </div>
-              <span className="text-xs mt-1 text-center max-w-16">
-                {step.title}
-              </span>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
-      </div>
 
-      {/* Step Content */}
-      <div className="min-h-[200px]">
-        <h3 className="text-lg font-semibold text-slate-200 mb-2">
-          {steps[currentStep].title}
-        </h3>
-        <p className="text-sm text-slate-400 mb-6">
-          {steps[currentStep].description}
-        </p>
+        {/* Step Content */}
+        <div className="min-h-[200px]">
+          <h3 className="text-lg font-semibold text-slate-200 mb-2">
+            {steps[currentStep].title}
+          </h3>
+          <p className="text-sm text-slate-400 mb-6">
+            {steps[currentStep].description}
+          </p>
 
-        {renderStepContent()}
-      </div>
+          {renderStepContent()}
+        </div>
 
-      {/* Navigation */}
-      <div className="flex justify-between pt-4">
-        <button
-          onClick={prevStep}
-          disabled={currentStep === 0}
-          className={`px-6 py-3 rounded-lg font-semibold transition-colors ${
-            currentStep === 0
-              ? 'bg-slate-700 text-slate-500 cursor-not-allowed'
-              : 'bg-slate-600 text-slate-200 hover:bg-slate-500'
-          }`}
-        >
-          Anterior
-        </button>
-
-        {currentStep === steps.length - 1 ? (
+        {/* Navigation */}
+        <div className="flex justify-between pt-4">
           <button
-            onClick={handleSubmit}
-            disabled={loading || !canProceed()}
+            onClick={prevStep}
+            disabled={currentStep === 0}
             className={`px-6 py-3 rounded-lg font-semibold transition-colors ${
-              loading || !canProceed()
-                ? 'bg-purple-400 text-white cursor-not-allowed opacity-50'
-                : 'bg-gradient-to-r from-purple-500 to-blue-500 text-white hover:from-purple-600 hover:to-blue-600'
+              currentStep === 0
+                ? 'bg-slate-700 text-slate-500 cursor-not-allowed'
+                : 'bg-slate-600 text-slate-200 hover:bg-slate-500'
             }`}
           >
-            {loading ? 'Salvando...' : 'Finalizar'}
+            Anterior
           </button>
-        ) : (
-          <button
-            onClick={nextStep}
-            disabled={!canProceed()}
-            className={`px-6 py-3 rounded-lg font-semibold transition-colors ${
-              !canProceed()
-                ? 'bg-purple-400 text-white cursor-not-allowed opacity-50'
-                : 'bg-gradient-to-r from-purple-500 to-blue-500 text-white hover:from-purple-600 hover:to-blue-600'
-            }`}
-          >
-            Próximo
-          </button>
-        )}
-      </div>
-    </Modal>
+
+          {currentStep === steps.length - 1 ? (
+            <button
+              onClick={handleSubmit}
+              disabled={loading || !canProceed()}
+              className={`px-6 py-3 rounded-lg font-semibold transition-colors ${
+                loading || !canProceed()
+                  ? 'bg-purple-400 text-white cursor-not-allowed opacity-50'
+                  : 'bg-gradient-to-r from-purple-500 to-blue-500 text-white hover:from-purple-600 hover:to-blue-600'
+              }`}
+            >
+              {loading ? 'Salvando...' : 'Finalizar'}
+            </button>
+          ) : (
+            <button
+              onClick={nextStep}
+              disabled={!canProceed()}
+              className={`px-6 py-3 rounded-lg font-semibold transition-colors ${
+                !canProceed()
+                  ? 'bg-purple-400 text-white cursor-not-allowed opacity-50'
+                  : 'bg-gradient-to-r from-purple-500 to-blue-500 text-white hover:from-purple-600 hover:to-blue-600'
+              }`}
+            >
+              Proximo
+            </button>
+          )}
+        </div>
+      </Modal>
+
+      {/* Terms Modal */}
+      <TermsModal
+        isOpen={showTermsModal}
+        onClose={() => setShowTermsModal(false)}
+      />
+    </>
   );
 }

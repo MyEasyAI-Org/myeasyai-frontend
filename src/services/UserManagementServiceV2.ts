@@ -238,6 +238,8 @@ export class UserManagementServiceV2 {
       preferred_name?: string;
       mobile_phone?: string;
       country?: string;
+      state?: string;
+      city?: string;
       postal_code?: string;
       address?: string;
       preferred_language?: string;
@@ -298,18 +300,25 @@ export class UserManagementServiceV2 {
    * D1 primeiro (PRIMARY), fallback para Supabase se falhar
    */
   async getUserProfile(email: string): Promise<OperationResult<D1User | any>> {
+    console.log('🔄 [getUserProfile] Starting for:', email);
+    const startTime = Date.now();
+
     // ========== 1️⃣ TENTAR D1 PRIMEIRO ==========
     if (this.isD1Enabled()) {
       try {
+        console.log('🔄 [D1] Fetching user profile...');
         const result = await d1Client.getUserByEmail(email);
+        console.log('🔄 [D1] Response received in', Date.now() - startTime, 'ms');
         if (!result.error && result.data) {
-          console.log('✅ [D1 PRIMARY] Perfil obtido:', email);
+          console.log('✅ [D1 PRIMARY] Perfil obtido:', email, 'in', Date.now() - startTime, 'ms');
           return { success: true, data: result.data, source: 'd1' };
         }
-        console.warn('⚠️ [D1] Usuário não encontrado, tentando fallback...');
+        console.warn('⚠️ [D1] Usuário não encontrado ou erro:', result.error, '- tentando fallback...');
       } catch (error) {
         console.error('❌ [D1] Erro ao obter perfil:', error);
       }
+    } else {
+      console.log('⚠️ [getUserProfile] D1 not enabled');
     }
 
     // ========== 2️⃣ FALLBACK PARA SUPABASE ==========
