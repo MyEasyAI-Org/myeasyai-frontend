@@ -898,7 +898,7 @@ function AppContent() {
             isLoading={loading}
             isCheckingAuth={isCheckingAuth}
           >
-            <MyEasyFitness onBackToDashboard={goToDashboard} />
+            <MyEasyFitness onBackToDashboard={goToDashboard} userName={userName} />
           </ProtectedRoute>
         }
       />

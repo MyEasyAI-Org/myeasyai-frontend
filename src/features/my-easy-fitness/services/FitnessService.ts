@@ -36,6 +36,8 @@ function mapD1ToPersonalInfo(profile: D1FitnessProfile): UserPersonalInfo {
     nome: profile.nome,
     idade: profile.idade,
     sexo: profile.sexo as UserPersonalInfo['sexo'],
+    genero: ((profile as any).genero ?? '') as UserPersonalInfo['genero'],
+    generoOutro: (profile as any).genero_outro ?? '',
     peso: profile.peso,
     altura: profile.altura,
     objetivo: profile.objetivo,
@@ -44,6 +46,23 @@ function mapD1ToPersonalInfo(profile: D1FitnessProfile): UserPersonalInfo {
       ? JSON.parse(profile.restricoes_medicas)
       : [],
     lesoes: profile.lesoes ? JSON.parse(profile.lesoes) : [],
+    // Training preferences (with defaults for backwards compatibility)
+    diasTreinoSemana: (profile as any).dias_treino_semana ?? 0,
+    tempoTreinoMinutos: (profile as any).tempo_treino_minutos ?? 0,
+    preferenciaTreino: (profile as any).preferencia_treino ?? '',
+    experienciaTreino: ((profile as any).experiencia_treino ?? '') as UserPersonalInfo['experienciaTreino'],
+    // Diet preferences (with defaults for backwards compatibility)
+    restricoesAlimentares: (profile as any).restricoes_alimentares
+      ? JSON.parse((profile as any).restricoes_alimentares)
+      : [],
+    comidasFavoritas: (profile as any).comidas_favoritas
+      ? JSON.parse((profile as any).comidas_favoritas)
+      : [],
+    comidasEvitar: (profile as any).comidas_evitar
+      ? JSON.parse((profile as any).comidas_evitar)
+      : [],
+    numeroRefeicoes: (profile as any).numero_refeicoes ?? 0,
+    horarioTreino: ((profile as any).horario_treino ?? '') as UserPersonalInfo['horarioTreino'],
   };
 }
 

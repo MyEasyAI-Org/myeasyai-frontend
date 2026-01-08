@@ -5,7 +5,7 @@
  * Follows Single Responsibility Principle - only handles conversation logic.
  */
 
-import { useCallback, useState } from 'react';
+import React, { useCallback, useState, useEffect } from 'react';
 import type {
   PersonalInfoStep,
   Dieta,
@@ -29,8 +29,8 @@ import {
   generateUserContext,
 } from '../utils/fitnessCalculations';
 import {
-  generateChestTricepsWorkout,
-  generateWorkoutResponseMessage,
+  generatePersonalizedWorkoutPlan,
+  generatePersonalizedWorkoutResponseMessage,
   isWorkoutRequest,
 } from '../utils/workoutGenerator';
 import {
@@ -46,7 +46,23 @@ interface UsePersonalInfoFlowProps {
   dieta: Dieta | null;
   onUpdatePersonalInfo: (updates: Partial<UserPersonalInfo>) => void;
   onAddTreino: (treino: Treino) => void;
+  onSetTreinos: (treinos: Treino[]) => void;
   onUpdateDieta: (dieta: Dieta) => void;
+  authenticatedUserName?: string;
+}
+
+/**
+ * Get initial message based on whether user name is known
+ */
+function getInitialMessage(userName?: string): FitnessMessage {
+  if (userName) {
+    return {
+      role: 'assistant',
+      content: `Ola, ${userName}! Sou seu assistente de fitness. Vou te ajudar a criar treinos e dietas personalizados.\n\nPara comecar, me conte: qual seu sexo biologico e idade?\n\n(Ex: "masculino, 28 anos")`,
+      timestamp: new Date(),
+    };
+  }
+  return INITIAL_MESSAGE;
 }
 
 /**
@@ -58,12 +74,45 @@ export function usePersonalInfoFlow({
   dieta,
   onUpdatePersonalInfo,
   onAddTreino,
+  onSetTreinos,
   onUpdateDieta,
+  authenticatedUserName,
 }: UsePersonalInfoFlowProps) {
-  const [messages, setMessages] = useState<FitnessMessage[]>([INITIAL_MESSAGE]);
+  // Determine initial step based on whether we have the user name
+  const initialStep: PersonalInfoStep = authenticatedUserName ? 'info_basica_sem_nome' : 'info_basica';
+
+  const [messages, setMessages] = useState<FitnessMessage[]>([getInitialMessage(authenticatedUserName)]);
   const [inputMessage, setInputMessage] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
-  const [personalInfoStep, setPersonalInfoStep] = useState<PersonalInfoStep>('info_basica');
+  const [personalInfoStep, setPersonalInfoStep] = useState<PersonalInfoStep>(initialStep);
+  const [hasSetInitialName, setHasSetInitialName] = useState(false);
+
+  // Track if we're collecting preferences for workout or diet generation
+  const [pendingAction, setPendingAction] = useState<'treino' | 'dieta' | null>(null);
+
+  // Set authenticated user name on mount (only once)
+  useEffect(() => {
+    if (authenticatedUserName && !hasSetInitialName && !personalInfo.nome) {
+      onUpdatePersonalInfo({ nome: authenticatedUserName });
+      setHasSetInitialName(true);
+    }
+  }, [authenticatedUserName, hasSetInitialName, personalInfo.nome, onUpdatePersonalInfo]);
+
+  /**
+   * Check if workout preferences are filled
+   */
+  const hasWorkoutPreferences = useCallback(() => {
+    return personalInfo.diasTreinoSemana > 0;
+  }, [personalInfo.diasTreinoSemana]);
+
+  /**
+   * Check if diet preferences are filled
+   */
+  const hasDietPreferences = useCallback(() => {
+    return personalInfo.numeroRefeicoes > 0 ||
+           (personalInfo.restricoesAlimentares && personalInfo.restricoesAlimentares.length > 0) ||
+           personalInfo.horarioTreino !== '';
+  }, [personalInfo.numeroRefeicoes, personalInfo.restricoesAlimentares, personalInfo.horarioTreino]);
 
   /**
    * Add a message to the conversation
@@ -90,30 +139,31 @@ export function usePersonalInfoFlow({
     (data: UserPersonalInfo): string => {
       const bmi = calculateBMI(data.peso, data.altura);
 
-      let resposta = `✅ Perfeito, ${data.nome}! Informações pessoais completas!\n\n`;
+      let resposta = `✅ Perfeito, ${data.nome}! Informacoes basicas coletadas!\n\n`;
       resposta += `📋 **Resumo dos seus dados:**\n`;
       resposta += `• Idade: ${data.idade} anos\n`;
       resposta += `• Sexo: ${data.sexo === 'masculino' ? 'Masculino' : 'Feminino'}\n`;
       resposta += `• Peso: ${data.peso} kg\n`;
       resposta += `• Altura: ${data.altura} cm\n`;
-
       if (bmi) {
         resposta += `• IMC: ${bmi.toFixed(1)}\n`;
       }
-
       resposta += `• Objetivo: ${data.objetivo}\n`;
       resposta += `• Nivel de atividade: ${getActivityLevelName(data.nivelAtividade)}\n`;
 
-      if (data.restricoesMedicas.length > 0) {
-        resposta += `• Restricoes: ${data.restricoesMedicas.join(', ')}\n`;
+      // Health info
+      if (data.restricoesMedicas.length > 0 || data.lesoes.length > 0) {
+        if (data.restricoesMedicas.length > 0) {
+          resposta += `• Restricoes medicas: ${data.restricoesMedicas.join(', ')}\n`;
+        }
+        if (data.lesoes.length > 0) {
+          resposta += `• Lesoes: ${data.lesoes.join(', ')}\n`;
+        }
       }
 
-      if (data.lesoes.length > 0) {
-        resposta += `• Lesoes: ${data.lesoes.join(', ')}\n`;
-      }
-
-      resposta += `\nVoce pode ver e editar todos esses dados na aba "Informações Pessoais".\n\n`;
-      resposta += `Agora posso criar treinos e dietas personalizados para voce! O que gostaria de fazer?\n\n`;
+      resposta += `\nVoce pode ver e editar esses dados na aba "Informacoes Pessoais".\n\n`;
+      resposta += `Agora posso criar treinos e dietas PERSONALIZADOS para voce!\n`;
+      resposta += `Quando pedir, vou fazer algumas perguntas especificas para personalizar ao maximo.\n\n`;
       resposta += `• Diga "treino" para criar uma planilha de treino\n`;
       resposta += `• Diga "dieta" para criar um plano alimentar`;
 
@@ -163,6 +213,60 @@ export function usePersonalInfoFlow({
   );
 
   /**
+   * Handle workout preferences response and generate workout
+   */
+  const handleWorkoutPreferencesResponse = useCallback(
+    (input: string) => {
+      const result = parsePersonalInfoResponse('treino_preferencias', input);
+
+      if (result === null) {
+        addAssistantMessage(PERSONAL_INFO_ERROR_MESSAGES.treino_preferencias);
+        return;
+      }
+
+      // Update personal info with preferences
+      const updatedInfo = { ...personalInfo, ...result };
+      onUpdatePersonalInfo(result);
+
+      // Now generate the workout
+      const novosTreinos = generatePersonalizedWorkoutPlan(updatedInfo);
+      onSetTreinos(novosTreinos);
+      addAssistantMessage(generatePersonalizedWorkoutResponseMessage(updatedInfo, novosTreinos));
+
+      // Clear pending action
+      setPendingAction(null);
+    },
+    [personalInfo, onUpdatePersonalInfo, onSetTreinos, addAssistantMessage]
+  );
+
+  /**
+   * Handle diet preferences response and generate diet
+   */
+  const handleDietPreferencesResponse = useCallback(
+    (input: string) => {
+      const result = parsePersonalInfoResponse('dieta_preferencias', input);
+
+      if (result === null) {
+        addAssistantMessage(PERSONAL_INFO_ERROR_MESSAGES.dieta_preferencias);
+        return;
+      }
+
+      // Update personal info with preferences
+      const updatedInfo = { ...personalInfo, ...result };
+      onUpdatePersonalInfo(result);
+
+      // Now generate the diet
+      const newDieta = generateDiet(updatedInfo);
+      onUpdateDieta(newDieta);
+      addAssistantMessage(generateDietResponseMessage(updatedInfo, newDieta));
+
+      // Clear pending action
+      setPendingAction(null);
+    },
+    [personalInfo, onUpdatePersonalInfo, onUpdateDieta, addAssistantMessage]
+  );
+
+  /**
    * Handle post-personal-info conversation
    */
   const handlePostPersonalInfoMessage = useCallback(
@@ -176,14 +280,29 @@ export function usePersonalInfoFlow({
 
       // Check for workout request
       if (isWorkoutRequest(input)) {
-        const treino = generateChestTricepsWorkout(personalInfo);
-        onAddTreino(treino);
-        addAssistantMessage(generateWorkoutResponseMessage(personalInfo, treino));
+        // Check if we need to collect preferences first
+        if (!hasWorkoutPreferences()) {
+          setPendingAction('treino');
+          addAssistantMessage(PERSONAL_INFO_QUESTIONS.treino_preferencias);
+          return;
+        }
+
+        // Generate a complete personalized workout plan
+        const novosTreinos = generatePersonalizedWorkoutPlan(personalInfo);
+        onSetTreinos(novosTreinos);
+        addAssistantMessage(generatePersonalizedWorkoutResponseMessage(personalInfo, novosTreinos));
         return;
       }
 
       // Check for diet request
       if (isDietRequest(input)) {
+        // Check if we need to collect preferences first
+        if (!hasDietPreferences()) {
+          setPendingAction('dieta');
+          addAssistantMessage(PERSONAL_INFO_QUESTIONS.dieta_preferencias);
+          return;
+        }
+
         const newDieta = generateDiet(personalInfo);
         onUpdateDieta(newDieta);
         addAssistantMessage(generateDietResponseMessage(personalInfo, newDieta));
@@ -212,7 +331,7 @@ export function usePersonalInfoFlow({
 
       addAssistantMessage(resposta);
     },
-    [personalInfo, treinos, dieta, onAddTreino, onUpdateDieta, addAssistantMessage]
+    [personalInfo, treinos, dieta, onSetTreinos, onUpdateDieta, addAssistantMessage, hasWorkoutPreferences, hasDietPreferences]
   );
 
   /**
@@ -235,7 +354,12 @@ export function usePersonalInfoFlow({
 
     // Simulate async response
     setTimeout(() => {
-      if (!isPersonalInfoComplete(personalInfoStep)) {
+      // Check if we're waiting for preferences response
+      if (pendingAction === 'treino') {
+        handleWorkoutPreferencesResponse(currentInput);
+      } else if (pendingAction === 'dieta') {
+        handleDietPreferencesResponse(currentInput);
+      } else if (!isPersonalInfoComplete(personalInfoStep)) {
         handlePersonalInfoStep(currentInput);
       } else {
         handlePostPersonalInfoMessage(currentInput);
@@ -246,9 +370,12 @@ export function usePersonalInfoFlow({
     inputMessage,
     isGenerating,
     personalInfoStep,
+    pendingAction,
     addMessage,
     handlePersonalInfoStep,
     handlePostPersonalInfoMessage,
+    handleWorkoutPreferencesResponse,
+    handleDietPreferencesResponse,
   ]);
 
   /**
@@ -258,6 +385,7 @@ export function usePersonalInfoFlow({
     setMessages([INITIAL_MESSAGE]);
     setPersonalInfoStep('info_basica');
     setInputMessage('');
+    setPendingAction(null);
   }, []);
 
   return {

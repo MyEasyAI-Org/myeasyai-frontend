@@ -6,20 +6,87 @@
  */
 
 import { useCallback, useState, useEffect, useRef } from 'react';
-import type { Dieta, Exercise, Treino, UserPersonalInfo } from '../types';
+import type { Alimento, Dieta, Exercise, Treino, UserPersonalInfo } from '../types';
 import { DEFAULT_PERSONAL_INFO } from '../constants';
 import { FitnessService } from '../services/FitnessService';
+import { generatePersonalizedWorkoutPlan } from '../utils/workoutGenerator';
+import { generateDiet } from '../utils/dietGenerator';
 
 // Debounce delay for auto-save (in ms)
 const AUTO_SAVE_DELAY = 2000;
 
+// Fields that trigger workout regeneration
+const WORKOUT_TRIGGER_FIELDS: (keyof UserPersonalInfo)[] = [
+  'lesoes',
+  'experienciaTreino',
+  'diasTreinoSemana',
+  'tempoTreinoMinutos',
+  'preferenciaTreino',
+];
+
+// Fields that trigger diet regeneration
+const DIET_TRIGGER_FIELDS: (keyof UserPersonalInfo)[] = [
+  'peso',
+  'altura',
+  'idade',
+  'sexo',
+  'objetivo',
+  'nivelAtividade',
+  'restricoesAlimentares',
+  'comidasFavoritas',
+  'comidasEvitar',
+  'numeroRefeicoes',
+  'horarioTreino',
+];
+
+/**
+ * Check if specific fields changed between two personal info objects
+ */
+function hasFieldsChanged(
+  prev: UserPersonalInfo | null,
+  current: UserPersonalInfo,
+  fields: (keyof UserPersonalInfo)[]
+): boolean {
+  if (!prev) return false;
+
+  for (const field of fields) {
+    const prevValue = prev[field];
+    const currValue = current[field];
+
+    // Handle arrays
+    if (Array.isArray(prevValue) && Array.isArray(currValue)) {
+      if (prevValue.length !== currValue.length) return true;
+      if (!prevValue.every((v, i) => v === currValue[i])) return true;
+    } else if (prevValue !== currValue) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+/**
+ * Check if user has minimum info to generate workouts
+ */
+function canGenerateWorkouts(info: UserPersonalInfo): boolean {
+  return !!(info.diasTreinoSemana && info.diasTreinoSemana > 0);
+}
+
+/**
+ * Check if user has minimum info to generate diet
+ */
+function canGenerateDiet(info: UserPersonalInfo): boolean {
+  return !!(info.peso && info.peso > 0 && info.altura && info.altura > 0 && info.idade && info.idade > 0);
+}
+
 /**
  * Hook for managing fitness data state with persistence
+ * @param userName - Optional user name from profile to auto-populate personalInfo.nome
  */
-export function useFitnessData(initialPersonalInfo?: Partial<UserPersonalInfo>) {
+export function useFitnessData(userName?: string) {
   const [personalInfo, setPersonalInfo] = useState<UserPersonalInfo>({
     ...DEFAULT_PERSONAL_INFO,
-    ...initialPersonalInfo,
+    nome: userName || DEFAULT_PERSONAL_INFO.nome,
   });
   const [treinos, setTreinos] = useState<Treino[]>([]);
   const [dieta, setDieta] = useState<Dieta | null>(null);
@@ -40,6 +107,10 @@ export function useFitnessData(initialPersonalInfo?: Partial<UserPersonalInfo>) 
   }>({});
   // Auto-save timeout ref
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  // Track previous personalInfo for change detection
+  const prevPersonalInfoRef = useRef<UserPersonalInfo | null>(null);
+  // Track if regeneration should be skipped (e.g., during initial load)
+  const skipRegenerationRef = useRef(true);
 
   // Load data from D1 on mount
   useEffect(() => {
@@ -61,7 +132,12 @@ export function useFitnessData(initialPersonalInfo?: Partial<UserPersonalInfo>) 
         const data = await FitnessService.loadAllData();
 
         if (data.personalInfo) {
-          setPersonalInfo(data.personalInfo);
+          // If saved data doesn't have a nome but we have userName from profile, use it
+          const nome = data.personalInfo.nome || userName || DEFAULT_PERSONAL_INFO.nome;
+          setPersonalInfo({ ...data.personalInfo, nome });
+        } else if (userName) {
+          // No saved data, but we have userName - set it
+          setPersonalInfo(prev => ({ ...prev, nome: userName }));
         }
         if (data.treinos.length > 0) {
           setTreinos(data.treinos);
@@ -81,7 +157,45 @@ export function useFitnessData(initialPersonalInfo?: Partial<UserPersonalInfo>) 
     };
 
     loadData();
-  }, []);
+  }, [userName]);
+
+  // Auto-regeneration effect - regenerates workouts/diet when relevant personalInfo fields change
+  useEffect(() => {
+    // Skip regeneration during initial load or if not loaded yet
+    if (!hasLoadedRef.current || skipRegenerationRef.current) {
+      // After first render with loaded data, enable regeneration
+      if (hasLoadedRef.current && skipRegenerationRef.current) {
+        skipRegenerationRef.current = false;
+        prevPersonalInfoRef.current = personalInfo;
+      }
+      return;
+    }
+
+    const prev = prevPersonalInfoRef.current;
+
+    // Check if workout-related fields changed
+    if (hasFieldsChanged(prev, personalInfo, WORKOUT_TRIGGER_FIELDS)) {
+      if (canGenerateWorkouts(personalInfo)) {
+        console.log('Regenerating workouts due to personalInfo change');
+        const newTreinos = generatePersonalizedWorkoutPlan(personalInfo);
+        setTreinos(newTreinos);
+        pendingChangesRef.current.treinos = true;
+      }
+    }
+
+    // Check if diet-related fields changed
+    if (hasFieldsChanged(prev, personalInfo, DIET_TRIGGER_FIELDS)) {
+      if (canGenerateDiet(personalInfo)) {
+        console.log('Regenerating diet due to personalInfo change');
+        const newDieta = generateDiet(personalInfo);
+        setDieta(newDieta);
+        pendingChangesRef.current.dieta = true;
+      }
+    }
+
+    // Update previous ref for next comparison
+    prevPersonalInfoRef.current = personalInfo;
+  }, [personalInfo]);
 
   // Auto-save function
   const autoSave = useCallback(async () => {
@@ -334,12 +448,12 @@ export function useFitnessData(initialPersonalInfo?: Partial<UserPersonalInfo>) 
   );
 
   const updateAlimento = useCallback(
-    (refeicaoIndex: number, alimentoIndex: number, value: string) => {
+    (refeicaoIndex: number, alimentoIndex: number, updates: Partial<Alimento>) => {
       setDieta((prev) => {
         if (!prev) return null;
         const newRefeicoes = [...prev.refeicoes];
         const newAlimentos = [...newRefeicoes[refeicaoIndex].alimentos];
-        newAlimentos[alimentoIndex] = value;
+        newAlimentos[alimentoIndex] = { ...newAlimentos[alimentoIndex], ...updates };
         newRefeicoes[refeicaoIndex] = {
           ...newRefeicoes[refeicaoIndex],
           alimentos: newAlimentos,
@@ -352,7 +466,7 @@ export function useFitnessData(initialPersonalInfo?: Partial<UserPersonalInfo>) 
   );
 
   const addAlimento = useCallback(
-    (refeicaoIndex: number, alimento: string) => {
+    (refeicaoIndex: number, alimento: Alimento) => {
       setDieta((prev) => {
         if (!prev) return null;
         const newRefeicoes = [...prev.refeicoes];

@@ -10,7 +10,7 @@
  * - constants/ for configuration
  */
 
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, AlertTriangle } from 'lucide-react';
 import { FitnessChatPanel } from './components/FitnessChatPanel';
 import { FitnessVisualizationPanel } from './components/FitnessVisualizationPanel';
 import { useFitnessData } from './hooks/useFitnessData';
@@ -18,9 +18,10 @@ import { usePersonalInfoFlow } from './hooks/useAnamneseFlow';
 
 type MyEasyFitnessProps = {
   onBackToDashboard: () => void;
+  userName?: string;
 };
 
-export function MyEasyFitness({ onBackToDashboard }: MyEasyFitnessProps) {
+export function MyEasyFitness({ onBackToDashboard, userName }: MyEasyFitnessProps) {
   // Data state management
   const {
     personalInfo,
@@ -30,7 +31,7 @@ export function MyEasyFitness({ onBackToDashboard }: MyEasyFitnessProps) {
     addTreino,
     updateDieta,
     setTreinos,
-  } = useFitnessData();
+  } = useFitnessData(userName);
 
   // Conversation flow management
   const {
@@ -45,6 +46,7 @@ export function MyEasyFitness({ onBackToDashboard }: MyEasyFitnessProps) {
     dieta,
     onUpdatePersonalInfo: updatePersonalInfo,
     onAddTreino: addTreino,
+    onSetTreinos: setTreinos,
     onUpdateDieta: updateDieta,
   });
 
@@ -87,6 +89,16 @@ export function MyEasyFitness({ onBackToDashboard }: MyEasyFitnessProps) {
           </div>
         </div>
       </header>
+
+      {/* Disclaimer Banner */}
+      <div className="flex-shrink-0 bg-amber-900/30 border-b border-amber-700/50 px-4 py-2">
+        <div className="mx-auto max-w-[1920px] flex items-center justify-center gap-2 text-amber-200 text-xs sm:text-sm">
+          <AlertTriangle className="h-4 w-4 flex-shrink-0" />
+          <span>
+            Este assistente de IA nao substitui o acompanhamento de profissionais de saude, educacao fisica ou nutricao.
+          </span>
+        </div>
+      </div>
 
       {/* Main Content - Two Panels */}
       <main className="flex-1 flex overflow-hidden min-h-0">

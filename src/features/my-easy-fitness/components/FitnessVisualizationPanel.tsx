@@ -20,7 +20,7 @@ import {
   Trash2,
 } from 'lucide-react';
 import { useState } from 'react';
-import type { UserPersonalInfo, Treino, Dieta } from '../types';
+import type { UserPersonalInfo, Treino, Dieta, Alimento } from '../types';
 
 type TabId = 'visao-geral' | 'personal-info' | 'treinos' | 'dieta';
 
@@ -295,9 +295,12 @@ function PersonalInfoTab({
 }) {
   const [newRestricao, setNewRestricao] = useState('');
   const [newLesao, setNewLesao] = useState('');
+  const [newRestricaoAlimentar, setNewRestricaoAlimentar] = useState('');
+  const [newComidaFavorita, setNewComidaFavorita] = useState('');
+  const [newComidaEvitar, setNewComidaEvitar] = useState('');
 
   const updateField = (field: keyof UserPersonalInfo, value: string) => {
-    if (field === 'idade' || field === 'peso' || field === 'altura') {
+    if (field === 'idade' || field === 'peso' || field === 'altura' || field === 'diasTreinoSemana' || field === 'tempoTreinoMinutos' || field === 'numeroRefeicoes') {
       onUpdate({ ...personalInfo, [field]: parseFloat(value) || 0 });
     } else {
       onUpdate({ ...personalInfo, [field]: value });
@@ -338,6 +341,57 @@ function PersonalInfoTab({
     });
   };
 
+  const addRestricaoAlimentar = () => {
+    if (newRestricaoAlimentar.trim()) {
+      onUpdate({
+        ...personalInfo,
+        restricoesAlimentares: [...personalInfo.restricoesAlimentares, newRestricaoAlimentar.trim()],
+      });
+      setNewRestricaoAlimentar('');
+    }
+  };
+
+  const removeRestricaoAlimentar = (index: number) => {
+    onUpdate({
+      ...personalInfo,
+      restricoesAlimentares: personalInfo.restricoesAlimentares.filter((_, i) => i !== index),
+    });
+  };
+
+  const addComidaFavorita = () => {
+    if (newComidaFavorita.trim()) {
+      onUpdate({
+        ...personalInfo,
+        comidasFavoritas: [...personalInfo.comidasFavoritas, newComidaFavorita.trim()],
+      });
+      setNewComidaFavorita('');
+    }
+  };
+
+  const removeComidaFavorita = (index: number) => {
+    onUpdate({
+      ...personalInfo,
+      comidasFavoritas: personalInfo.comidasFavoritas.filter((_, i) => i !== index),
+    });
+  };
+
+  const addComidaEvitar = () => {
+    if (newComidaEvitar.trim()) {
+      onUpdate({
+        ...personalInfo,
+        comidasEvitar: [...personalInfo.comidasEvitar, newComidaEvitar.trim()],
+      });
+      setNewComidaEvitar('');
+    }
+  };
+
+  const removeComidaEvitar = (index: number) => {
+    onUpdate({
+      ...personalInfo,
+      comidasEvitar: personalInfo.comidasEvitar.filter((_, i) => i !== index),
+    });
+  };
+
   return (
     <div className="p-6 space-y-6">
       {/* Dados Pessoais */}
@@ -360,15 +414,37 @@ function PersonalInfoTab({
             suffix=" anos"
           />
           <EditableField
-            label="Sexo"
+            label="Sexo Atribuido no Nascimento"
             value={personalInfo.sexo}
             onSave={(v) => updateField('sexo', v)}
             type="select"
             options={[
               { value: 'masculino', label: 'Masculino' },
               { value: 'feminino', label: 'Feminino' },
+              { value: 'prefiro-nao-declarar', label: 'Prefiro nao declarar' },
             ]}
           />
+          <EditableField
+            label="Genero"
+            value={personalInfo.genero}
+            onSave={(v) => updateField('genero', v)}
+            type="select"
+            options={[
+              { value: 'mulher-cis', label: 'Mulher cis' },
+              { value: 'mulher-trans', label: 'Mulher trans' },
+              { value: 'homem-cis', label: 'Homem cis' },
+              { value: 'homem-trans', label: 'Homem trans' },
+              { value: 'outro', label: 'Outro' },
+              { value: 'prefiro-nao-declarar', label: 'Prefiro nao declarar' },
+            ]}
+          />
+          {personalInfo.genero === 'outro' && (
+            <EditableField
+              label="Especificar genero"
+              value={personalInfo.generoOutro}
+              onSave={(v) => updateField('generoOutro', v)}
+            />
+          )}
           <EditableField
             label="Peso"
             value={personalInfo.peso || ''}
@@ -478,6 +554,179 @@ function PersonalInfoTab({
               />
               <button
                 onClick={addLesao}
+                className="p-1 bg-lime-500/20 text-lime-400 rounded hover:bg-lime-500/30"
+              >
+                <Plus className="h-5 w-5" />
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Preferencias de Treino */}
+      <div className="bg-slate-800/50 rounded-xl p-5 border border-slate-700">
+        <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+          <Dumbbell className="h-5 w-5 text-lime-400" />
+          Preferencias de Treino
+        </h3>
+        <div className="space-y-1">
+          <EditableField
+            label="Modalidade"
+            value={personalInfo.preferenciaTreino}
+            onSave={(v) => updateField('preferenciaTreino', v)}
+            type="select"
+            options={[
+              { value: 'musculacao', label: 'Musculacao' },
+              { value: 'corrida', label: 'Corrida' },
+              { value: 'crossfit', label: 'CrossFit' },
+              { value: 'caminhada', label: 'Caminhada' },
+              { value: 'funcional', label: 'Funcional' },
+              { value: 'calistenia', label: 'Calistenia' },
+            ]}
+          />
+          <EditableField
+            label="Dias por Semana"
+            value={personalInfo.diasTreinoSemana || ''}
+            onSave={(v) => updateField('diasTreinoSemana', v)}
+            type="number"
+            suffix=" dias"
+          />
+          <EditableField
+            label="Tempo por Sessao"
+            value={personalInfo.tempoTreinoMinutos || ''}
+            onSave={(v) => updateField('tempoTreinoMinutos', v)}
+            type="number"
+            suffix=" min"
+          />
+          <EditableField
+            label="Experiencia"
+            value={personalInfo.experienciaTreino}
+            onSave={(v) => updateField('experienciaTreino', v)}
+            type="select"
+            options={[
+              { value: 'iniciante', label: 'Iniciante' },
+              { value: 'intermediario', label: 'Intermediario' },
+              { value: 'avancado', label: 'Avancado' },
+            ]}
+          />
+        </div>
+      </div>
+
+      {/* Preferencias de Dieta */}
+      <div className="bg-slate-800/50 rounded-xl p-5 border border-slate-700">
+        <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+          <Apple className="h-5 w-5 text-lime-400" />
+          Preferencias de Dieta
+        </h3>
+        <div className="space-y-4">
+          <EditableField
+            label="Numero de Refeicoes"
+            value={personalInfo.numeroRefeicoes || ''}
+            onSave={(v) => updateField('numeroRefeicoes', v)}
+            type="number"
+            suffix=" refeicoes/dia"
+          />
+          <EditableField
+            label="Horario de Treino"
+            value={personalInfo.horarioTreino}
+            onSave={(v) => updateField('horarioTreino', v)}
+            type="select"
+            options={[
+              { value: 'manha', label: 'Manha' },
+              { value: 'tarde', label: 'Tarde' },
+              { value: 'noite', label: 'Noite' },
+            ]}
+          />
+          <div>
+            <p className="text-slate-400 text-sm mb-2">Restricoes Alimentares</p>
+            <div className="flex flex-wrap gap-2 mb-2">
+              {personalInfo.restricoesAlimentares.map((restricao, idx) => (
+                <span
+                  key={idx}
+                  className="px-3 py-1 bg-yellow-500/20 text-yellow-400 rounded-full text-sm flex items-center gap-1"
+                >
+                  {restricao}
+                  <button onClick={() => removeRestricaoAlimentar(idx)} className="hover:text-yellow-300">
+                    <X className="h-3 w-3" />
+                  </button>
+                </span>
+              ))}
+            </div>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={newRestricaoAlimentar}
+                onChange={(e) => setNewRestricaoAlimentar(e.target.value)}
+                placeholder="Ex: lactose, gluten, vegetariano..."
+                className="flex-1 bg-slate-700 border border-slate-600 rounded px-3 py-1 text-white text-sm"
+                onKeyPress={(e) => e.key === 'Enter' && addRestricaoAlimentar()}
+              />
+              <button
+                onClick={addRestricaoAlimentar}
+                className="p-1 bg-lime-500/20 text-lime-400 rounded hover:bg-lime-500/30"
+              >
+                <Plus className="h-5 w-5" />
+              </button>
+            </div>
+          </div>
+          <div>
+            <p className="text-slate-400 text-sm mb-2">Comidas Favoritas</p>
+            <div className="flex flex-wrap gap-2 mb-2">
+              {personalInfo.comidasFavoritas.map((comida, idx) => (
+                <span
+                  key={idx}
+                  className="px-3 py-1 bg-green-500/20 text-green-400 rounded-full text-sm flex items-center gap-1"
+                >
+                  {comida}
+                  <button onClick={() => removeComidaFavorita(idx)} className="hover:text-green-300">
+                    <X className="h-3 w-3" />
+                  </button>
+                </span>
+              ))}
+            </div>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={newComidaFavorita}
+                onChange={(e) => setNewComidaFavorita(e.target.value)}
+                placeholder="Adicionar comida favorita..."
+                className="flex-1 bg-slate-700 border border-slate-600 rounded px-3 py-1 text-white text-sm"
+                onKeyPress={(e) => e.key === 'Enter' && addComidaFavorita()}
+              />
+              <button
+                onClick={addComidaFavorita}
+                className="p-1 bg-lime-500/20 text-lime-400 rounded hover:bg-lime-500/30"
+              >
+                <Plus className="h-5 w-5" />
+              </button>
+            </div>
+          </div>
+          <div>
+            <p className="text-slate-400 text-sm mb-2">Comidas a Evitar</p>
+            <div className="flex flex-wrap gap-2 mb-2">
+              {personalInfo.comidasEvitar.map((comida, idx) => (
+                <span
+                  key={idx}
+                  className="px-3 py-1 bg-red-500/20 text-red-400 rounded-full text-sm flex items-center gap-1"
+                >
+                  {comida}
+                  <button onClick={() => removeComidaEvitar(idx)} className="hover:text-red-300">
+                    <X className="h-3 w-3" />
+                  </button>
+                </span>
+              ))}
+            </div>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={newComidaEvitar}
+                onChange={(e) => setNewComidaEvitar(e.target.value)}
+                placeholder="Adicionar comida a evitar..."
+                className="flex-1 bg-slate-700 border border-slate-600 rounded px-3 py-1 text-white text-sm"
+                onKeyPress={(e) => e.key === 'Enter' && addComidaEvitar()}
+              />
+              <button
+                onClick={addComidaEvitar}
                 className="p-1 bg-lime-500/20 text-lime-400 rounded hover:bg-lime-500/30"
               >
                 <Plus className="h-5 w-5" />
@@ -710,11 +959,11 @@ function DietaTab({ dieta, onUpdate }: { dieta: Dieta | null; onUpdate: (dieta: 
     onUpdate({ ...dieta, refeicoes: newRefeicoes });
   };
 
-  const updateAlimento = (refeicaoIndex: number, alimentoIndex: number, value: string) => {
+  const updateAlimento = (refeicaoIndex: number, alimentoIndex: number, updates: Partial<Alimento>) => {
     if (!dieta) return;
     const newRefeicoes = [...dieta.refeicoes];
     const newAlimentos = [...newRefeicoes[refeicaoIndex].alimentos];
-    newAlimentos[alimentoIndex] = value;
+    newAlimentos[alimentoIndex] = { ...newAlimentos[alimentoIndex], ...updates };
     newRefeicoes[refeicaoIndex] = { ...newRefeicoes[refeicaoIndex], alimentos: newAlimentos };
     onUpdate({ ...dieta, refeicoes: newRefeicoes });
   };
@@ -734,7 +983,7 @@ function DietaTab({ dieta, onUpdate }: { dieta: Dieta | null; onUpdate: (dieta: 
     const newRefeicoes = [...dieta.refeicoes];
     newRefeicoes[refeicaoIndex] = {
       ...newRefeicoes[refeicaoIndex],
-      alimentos: [...newRefeicoes[refeicaoIndex].alimentos, 'Novo alimento'],
+      alimentos: [...newRefeicoes[refeicaoIndex].alimentos, { nome: 'Novo alimento', gramas: 100 }],
     };
     onUpdate({ ...dieta, refeicoes: newRefeicoes });
   };
@@ -844,11 +1093,19 @@ function DietaTab({ dieta, onUpdate }: { dieta: Dieta | null; onUpdate: (dieta: 
                     >
                       <input
                         type="text"
-                        value={alimento}
-                        onChange={(e) => updateAlimento(idx, aIdx, e.target.value)}
+                        value={alimento.nome}
+                        onChange={(e) => updateAlimento(idx, aIdx, { nome: e.target.value })}
                         className="bg-transparent outline-none w-auto"
-                        style={{ width: `${alimento.length + 1}ch` }}
+                        style={{ width: `${alimento.nome.length + 1}ch` }}
                       />
+                      <span className="text-slate-500">-</span>
+                      <input
+                        type="number"
+                        value={alimento.gramas}
+                        onChange={(e) => updateAlimento(idx, aIdx, { gramas: parseInt(e.target.value) || 0 })}
+                        className="bg-transparent outline-none w-12 text-lime-400"
+                      />
+                      <span className="text-slate-500">g</span>
                       <button
                         onClick={() => removeAlimento(idx, aIdx)}
                         className="text-slate-500 hover:text-red-400"
