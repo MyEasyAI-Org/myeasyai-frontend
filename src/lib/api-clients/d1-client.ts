@@ -284,24 +284,31 @@ export class D1Client {
   }
 
   /**
-   * Wrapper para fetch com tratamento de erros
+   * Wrapper para fetch com tratamento de erros e timeout
    */
   private async fetch<T>(
     endpoint: string,
-    options: RequestInit = {}
+    options: RequestInit = {},
+    timeoutMs = 5000
   ): Promise<D1ApiResponse<T>> {
     if (!this.enabled) {
       return { error: 'D1 not configured' };
     }
 
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
       const response = await fetch(`${this.baseUrl}${endpoint}`, {
         ...options,
         headers: {
           'Content-Type': 'application/json',
           ...options.headers,
         },
+        signal: controller.signal,
       });
+
+      clearTimeout(timeoutId);
 
       const data = await response.json();
 
@@ -314,6 +321,10 @@ export class D1Client {
 
       return data;
     } catch (error: any) {
+      if (error.name === 'AbortError') {
+        console.error(`❌ [D1 CLIENT] Request timeout (${timeoutMs}ms):`, endpoint);
+        return { error: `Request timeout after ${timeoutMs}ms` };
+      }
       console.error(`❌ [D1 CLIENT] Fetch error:`, error);
       return { error: error.message };
     }

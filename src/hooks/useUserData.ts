@@ -140,10 +140,10 @@ const CACHE_TTL = 5 * 60 * 1000; // 5 minutes in milliseconds
 const TIMEOUTS = {
   /** Session verification timeout (8 seconds) */
   SESSION: 8000,
-  /** User data fetch timeout (6 seconds) */
-  USER_DATA: 6000,
-  /** Products fetch timeout (5 seconds) */
-  PRODUCTS: 5000,
+  /** User data fetch timeout (12 seconds - needs to accommodate D1 timeout + Supabase fallback) */
+  USER_DATA: 12000,
+  /** Products fetch timeout (12 seconds - needs to accommodate D1 timeout + Supabase fallback) */
+  PRODUCTS: 12000,
   /** Profile update timeout (10 seconds) */
   UPDATE: 10000,
 } as const;
@@ -375,31 +375,30 @@ export function useUserData() {
   };
 
   /**
-   * Fetch user data from database with retry and timeout
+   * Fetch user data from database with timeout
    * Uses D1 (Cloudflare) as primary, Supabase as fallback
+   * Note: No retry here since userManagementServiceV2 already handles D1 → Supabase fallback
    */
   const fetchUserData = async (userId: string, email?: string) => {
     updateProgress(40, 'Carregando dados do usuário...');
 
-    const userData = await retryWithBackoff(async () => {
-      // Use userManagementServiceV2 which handles D1 Primary + Supabase Fallback
-      const userEmail = email || profile.email;
-      if (!userEmail || userEmail === 'Carregando...') {
-        throw new Error('Email do usuário não disponível');
-      }
+    // Use userManagementServiceV2 which handles D1 Primary + Supabase Fallback
+    const userEmail = email || profile.email;
+    if (!userEmail || userEmail === 'Carregando...') {
+      throw new Error('Email do usuário não disponível');
+    }
 
-      const result = await withTimeout(
-        userManagementServiceV2.getUserProfile(userEmail),
-        TIMEOUTS.USER_DATA,
-        'Carregamento de dados do usuário',
-      );
+    const result = await withTimeout(
+      userManagementServiceV2.getUserProfile(userEmail),
+      TIMEOUTS.USER_DATA,
+      'Carregamento de dados do usuário',
+    );
 
-      if (!result.success || !result.data) {
-        throw new Error(result.error || 'Dados do usuário não encontrados');
-      }
+    if (!result.success || !result.data) {
+      throw new Error(result.error || 'Dados do usuário não encontrados');
+    }
 
-      return result.data;
-    });
+    const userData = result.data;
 
     // Update profile
     setProfile({
