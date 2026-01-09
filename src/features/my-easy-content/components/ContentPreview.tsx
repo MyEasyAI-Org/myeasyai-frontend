@@ -5,6 +5,7 @@ import {
   Clock,
   Copy,
   Download,
+  Eye,
   Facebook,
   FileText,
   Hash,
@@ -34,6 +35,7 @@ import {
   getNetworkName,
 } from '../utils/contentGenerator';
 import { ContentLibrary } from './ContentLibrary';
+import { SocialNetworkPreview } from './SocialNetworkPreview';
 import type { ContentLibraryItem, ContentLibraryFilters } from '../hooks/useContentLibrary';
 
 type ContentPreviewProps = {
@@ -88,6 +90,7 @@ export function ContentPreview({
   const [activeTab, setActiveTab] = useState<'content' | 'calendar' | 'library'>(
     'content',
   );
+  const [previewContent, setPreviewContent] = useState<GeneratedContent | null>(null);
 
   const handleCopy = async (content: GeneratedContent) => {
     const text = formatContentForDisplay(content);
@@ -218,6 +221,7 @@ export function ContentPreview({
           {/* Actions */}
           <div className="flex gap-2 pt-2 border-t border-slate-700">
             <button
+              type="button"
               onClick={() => handleCopy(content)}
               className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-orange-600 text-white text-sm font-semibold hover:bg-orange-700 transition-colors"
             >
@@ -234,6 +238,15 @@ export function ContentPreview({
               )}
             </button>
             <button
+              type="button"
+              onClick={() => setPreviewContent(content)}
+              className="flex items-center justify-center gap-2 px-3 py-2 rounded-lg border border-slate-600 text-slate-300 text-sm hover:bg-slate-700 transition-colors"
+              title="Ver preview por rede"
+            >
+              <Eye className="h-4 w-4" />
+            </button>
+            <button
+              type="button"
               onClick={() => onSaveContent(content)}
               className="flex items-center justify-center gap-2 px-3 py-2 rounded-lg border border-slate-600 text-slate-300 text-sm hover:bg-slate-700 transition-colors"
             >
@@ -241,6 +254,7 @@ export function ContentPreview({
               <span>Salvar</span>
             </button>
             <button
+              type="button"
               onClick={() => onRegenerateContent(content)}
               className="flex items-center justify-center gap-2 px-3 py-2 rounded-lg border border-slate-600 text-slate-300 text-sm hover:bg-slate-700 transition-colors"
             >
@@ -434,6 +448,15 @@ export function ContentPreview({
           </div>
         )}
       </div>
+
+      {/* Social Network Preview Modal */}
+      {previewContent && (
+        <SocialNetworkPreview
+          content={previewContent}
+          isOpen={!!previewContent}
+          onClose={() => setPreviewContent(null)}
+        />
+      )}
     </div>
   );
 }
