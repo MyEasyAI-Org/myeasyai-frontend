@@ -63,6 +63,7 @@ function mapD1ToPersonalInfo(profile: D1FitnessProfile): UserPersonalInfo {
       : [],
     numeroRefeicoes: (profile as any).numero_refeicoes ?? 0,
     horarioTreino: ((profile as any).horario_treino ?? '') as UserPersonalInfo['horarioTreino'],
+    localTreino: ((profile as any).local_treino ?? '') as UserPersonalInfo['localTreino'],
   };
 }
 

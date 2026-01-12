@@ -166,7 +166,7 @@ export function parseBasicInfoSemNome(input: string): PersonalInfoParseResult {
 
 /**
  * Parse training preferences
- * Example: "4 dias, 1 hora, intermediario, musculacao"
+ * Example: "4 dias, 1h, intermediario, academia, musculacao"
  */
 export function parseTreinoPreferencias(input: string): PersonalInfoParseResult {
   const lowerInput = input.toLowerCase().trim();
@@ -202,9 +202,18 @@ export function parseTreinoPreferencias(input: string): PersonalInfoParseResult 
     result.experienciaTreino = 'avancado';
   }
 
+  // Extract training location (academia or casa)
+  // Check for 'casa' first since 'academia' is also a training modality keyword
+  if (lowerInput.includes('casa') || lowerInput.includes('home')) {
+    result.localTreino = 'casa';
+  } else if (lowerInput.includes('academia') || lowerInput.includes('gym')) {
+    result.localTreino = 'academia';
+  }
+
   // Extract training preference - all modalities
+  // Note: 'academia' is handled separately for localTreino, here we focus on training type
   const treinoKeywords = [
-    'musculacao', 'musculação', 'academia', 'peso',
+    'musculacao', 'musculação', 'peso',
     'corrida', 'correr', 'running',
     'crossfit', 'cross fit',
     'caminhada', 'caminhar', 'walking',
@@ -221,10 +230,15 @@ export function parseTreinoPreferencias(input: string): PersonalInfoParseResult 
       if (['cross fit'].includes(keyword)) normalized = 'crossfit';
       if (['calisthenic', 'peso corporal'].includes(keyword)) normalized = 'calistenia';
       if (['functional'].includes(keyword)) normalized = 'funcional';
-      if (['academia', 'peso'].includes(keyword)) normalized = 'musculacao';
+      if (['peso'].includes(keyword)) normalized = 'musculacao';
       result.preferenciaTreino = normalized;
       break;
     }
+  }
+
+  // Default: if localTreino is casa and no preference specified, default to calistenia
+  if (result.localTreino === 'casa' && !result.preferenciaTreino) {
+    result.preferenciaTreino = 'calistenia';
   }
 
   // Validate: need at least days per week

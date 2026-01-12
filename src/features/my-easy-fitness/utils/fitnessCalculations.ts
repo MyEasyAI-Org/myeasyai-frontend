@@ -148,6 +148,7 @@ export function formatBMI(peso: number, altura: number): string {
 
 /**
  * Generate user context string for AI responses
+ * Includes ALL relevant personal info for transparency
  */
 export function generateUserContext(
   personalInfo: UserPersonalInfo,
@@ -156,6 +157,7 @@ export function generateUserContext(
 ): string {
   const parts: string[] = [];
 
+  // Basic personal info
   if (personalInfo.nome) {
     parts.push(`Nome: ${personalInfo.nome}`);
   }
@@ -164,6 +166,9 @@ export function generateUserContext(
   }
   if (personalInfo.sexo) {
     parts.push(`Sexo: ${personalInfo.sexo}`);
+  }
+  if (personalInfo.genero && personalInfo.genero !== 'prefiro-nao-declarar') {
+    parts.push(`Genero: ${personalInfo.genero}`);
   }
   if (personalInfo.peso) {
     parts.push(`Peso: ${personalInfo.peso}kg`);
@@ -177,18 +182,55 @@ export function generateUserContext(
       }
     }
   }
+
+  // Goals and activity
   if (personalInfo.objetivo) {
     parts.push(`Objetivo: ${personalInfo.objetivo}`);
   }
   if (personalInfo.nivelAtividade) {
     parts.push(`Nivel de atividade: ${personalInfo.nivelAtividade}`);
   }
-  if (personalInfo.restricoesMedicas.length > 0) {
+
+  // Health info
+  if (personalInfo.restricoesMedicas && personalInfo.restricoesMedicas.length > 0) {
     parts.push(`Restricoes medicas: ${personalInfo.restricoesMedicas.join(', ')}`);
   }
-  if (personalInfo.lesoes.length > 0) {
+  if (personalInfo.lesoes && personalInfo.lesoes.length > 0) {
     parts.push(`Lesoes: ${personalInfo.lesoes.join(', ')}`);
   }
+
+  // Training preferences
+  if (personalInfo.preferenciaTreino) {
+    parts.push(`Modalidade: ${personalInfo.preferenciaTreino}`);
+  }
+  if (personalInfo.diasTreinoSemana) {
+    parts.push(`Dias por semana: ${personalInfo.diasTreinoSemana}`);
+  }
+  if (personalInfo.tempoTreinoMinutos) {
+    parts.push(`Tempo por sessao: ${personalInfo.tempoTreinoMinutos}min`);
+  }
+  if (personalInfo.experienciaTreino) {
+    parts.push(`Experiencia: ${personalInfo.experienciaTreino}`);
+  }
+
+  // Diet preferences
+  if (personalInfo.numeroRefeicoes) {
+    parts.push(`Refeicoes/dia: ${personalInfo.numeroRefeicoes}`);
+  }
+  if (personalInfo.horarioTreino) {
+    parts.push(`Horario treino: ${personalInfo.horarioTreino}`);
+  }
+  if (personalInfo.restricoesAlimentares && personalInfo.restricoesAlimentares.length > 0) {
+    parts.push(`Restricoes alimentares: ${personalInfo.restricoesAlimentares.join(', ')}`);
+  }
+  if (personalInfo.comidasFavoritas && personalInfo.comidasFavoritas.length > 0) {
+    parts.push(`Favoritas: ${personalInfo.comidasFavoritas.join(', ')}`);
+  }
+  if (personalInfo.comidasEvitar && personalInfo.comidasEvitar.length > 0) {
+    parts.push(`Evitar: ${personalInfo.comidasEvitar.join(', ')}`);
+  }
+
+  // Current state
   if (treinosCount > 0) {
     parts.push(`Treinos configurados: ${treinosCount}`);
   }
@@ -197,4 +239,73 @@ export function generateUserContext(
   }
 
   return parts.join(' | ');
+}
+
+/**
+ * Get fresh personal info summary for display before generation
+ * Returns a formatted string of the data that will be used
+ */
+export function getPersonalInfoSummaryForGeneration(personalInfo: UserPersonalInfo): string {
+  const lines: string[] = [];
+
+  lines.push('📊 **Dados utilizados para geracao:**');
+
+  // Physical data
+  if (personalInfo.idade || personalInfo.peso || personalInfo.altura) {
+    let physicalLine = '';
+    if (personalInfo.idade) physicalLine += `${personalInfo.idade} anos`;
+    if (personalInfo.sexo) physicalLine += `, ${personalInfo.sexo}`;
+    if (personalInfo.peso) physicalLine += `, ${personalInfo.peso}kg`;
+    if (personalInfo.altura) physicalLine += `, ${personalInfo.altura}cm`;
+    lines.push(`• Dados fisicos: ${physicalLine}`);
+  }
+
+  // Goal
+  if (personalInfo.objetivo) {
+    lines.push(`• Objetivo: ${personalInfo.objetivo}`);
+  }
+
+  // Activity and experience
+  if (personalInfo.nivelAtividade || personalInfo.experienciaTreino) {
+    let activityLine = '';
+    if (personalInfo.nivelAtividade) activityLine += `Atividade: ${personalInfo.nivelAtividade}`;
+    if (personalInfo.experienciaTreino) activityLine += `${activityLine ? ', ' : ''}Experiencia: ${personalInfo.experienciaTreino}`;
+    lines.push(`• ${activityLine}`);
+  }
+
+  // Training preferences
+  if (personalInfo.preferenciaTreino || personalInfo.diasTreinoSemana || personalInfo.tempoTreinoMinutos) {
+    let treinoLine = '';
+    if (personalInfo.preferenciaTreino) treinoLine += `Modalidade: ${personalInfo.preferenciaTreino}`;
+    if (personalInfo.diasTreinoSemana) treinoLine += `${treinoLine ? ', ' : ''}${personalInfo.diasTreinoSemana} dias/sem`;
+    if (personalInfo.tempoTreinoMinutos) treinoLine += `${treinoLine ? ', ' : ''}${personalInfo.tempoTreinoMinutos}min/sessao`;
+    lines.push(`• ${treinoLine}`);
+  }
+
+  // Health restrictions
+  if ((personalInfo.lesoes && personalInfo.lesoes.length > 0) ||
+      (personalInfo.restricoesMedicas && personalInfo.restricoesMedicas.length > 0)) {
+    let healthLine = '';
+    if (personalInfo.lesoes && personalInfo.lesoes.length > 0) {
+      healthLine += `Lesoes: ${personalInfo.lesoes.join(', ')}`;
+    }
+    if (personalInfo.restricoesMedicas && personalInfo.restricoesMedicas.length > 0) {
+      healthLine += `${healthLine ? ', ' : ''}Restricoes: ${personalInfo.restricoesMedicas.join(', ')}`;
+    }
+    lines.push(`• ${healthLine}`);
+  }
+
+  // Diet preferences (for diet generation)
+  if (personalInfo.numeroRefeicoes || personalInfo.horarioTreino ||
+      (personalInfo.restricoesAlimentares && personalInfo.restricoesAlimentares.length > 0)) {
+    let dietLine = '';
+    if (personalInfo.numeroRefeicoes) dietLine += `${personalInfo.numeroRefeicoes} refeicoes/dia`;
+    if (personalInfo.horarioTreino) dietLine += `${dietLine ? ', ' : ''}Treino: ${personalInfo.horarioTreino}`;
+    if (personalInfo.restricoesAlimentares && personalInfo.restricoesAlimentares.length > 0) {
+      dietLine += `${dietLine ? ', ' : ''}Restricoes: ${personalInfo.restricoesAlimentares.join(', ')}`;
+    }
+    if (dietLine) lines.push(`• ${dietLine}`);
+  }
+
+  return lines.join('\n');
 }

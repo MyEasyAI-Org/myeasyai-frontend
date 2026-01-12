@@ -10,11 +10,13 @@
  * - constants/ for configuration
  */
 
-import { ArrowLeft, AlertTriangle } from 'lucide-react';
+import { useState } from 'react';
+import { ArrowLeft } from 'lucide-react';
 import { FitnessChatPanel } from './components/FitnessChatPanel';
 import { FitnessVisualizationPanel } from './components/FitnessVisualizationPanel';
 import { useFitnessData } from './hooks/useFitnessData';
 import { usePersonalInfoFlow } from './hooks/useAnamneseFlow';
+import type { TrainingModality } from './types';
 
 type MyEasyFitnessProps = {
   onBackToDashboard: () => void;
@@ -22,6 +24,9 @@ type MyEasyFitnessProps = {
 };
 
 export function MyEasyFitness({ onBackToDashboard, userName }: MyEasyFitnessProps) {
+  // Selected modality state for the UI
+  const [selectedModality, setSelectedModality] = useState<TrainingModality>('');
+
   // Data state management
   const {
     personalInfo,
@@ -59,9 +64,9 @@ export function MyEasyFitness({ onBackToDashboard, userName }: MyEasyFitnessProp
   };
 
   return (
-    <div className="h-screen overflow-hidden bg-gradient-to-br from-black-main to-blue-main text-white flex flex-col">
+    <div className="h-screen overflow-hidden bg-gradient-to-br from-black-main to-blue-main text-white flex flex-col relative">
       {/* Header */}
-      <header className="flex-shrink-0 border-b border-slate-800 bg-black-main/50 backdrop-blur-sm">
+      <header className="flex-shrink-0 border-b border-slate-800 bg-black-main/50 backdrop-blur-sm relative z-10">
         <div className="mx-auto max-w-[1920px] px-4 sm:px-6 lg:px-8">
           <div className="flex h-16 items-center justify-between">
             <div className="flex items-center space-x-3 sm:space-x-4">
@@ -90,18 +95,8 @@ export function MyEasyFitness({ onBackToDashboard, userName }: MyEasyFitnessProp
         </div>
       </header>
 
-      {/* Disclaimer Banner */}
-      <div className="flex-shrink-0 bg-amber-900/30 border-b border-amber-700/50 px-4 py-2">
-        <div className="mx-auto max-w-[1920px] flex items-center justify-center gap-2 text-amber-200 text-xs sm:text-sm">
-          <AlertTriangle className="h-4 w-4 flex-shrink-0" />
-          <span>
-            Este assistente de IA nao substitui o acompanhamento de profissionais de saude, educacao fisica ou nutricao.
-          </span>
-        </div>
-      </div>
-
       {/* Main Content - Two Panels */}
-      <main className="flex-1 flex overflow-hidden min-h-0">
+      <main className="flex-1 flex overflow-hidden min-h-0 relative z-10">
         {/* Left Panel - Chat */}
         <FitnessChatPanel
           messages={messages}
@@ -116,9 +111,11 @@ export function MyEasyFitness({ onBackToDashboard, userName }: MyEasyFitnessProp
           personalInfo={personalInfo}
           treinos={treinos}
           dieta={dieta}
+          selectedModality={selectedModality}
           onUpdatePersonalInfo={updatePersonalInfo}
           onUpdateTreinos={setTreinos}
           onUpdateDieta={updateDieta}
+          onSelectModality={setSelectedModality}
         />
       </main>
     </div>

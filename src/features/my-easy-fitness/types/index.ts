@@ -58,6 +58,7 @@ export interface UserPersonalInfo {
   tempoTreinoMinutos: number; // tempo disponível por sessão
   preferenciaTreino: string; // ex: "musculação", "funcional", "cardio"
   experienciaTreino: 'iniciante' | 'intermediario' | 'avancado' | '';
+  localTreino: 'academia' | 'casa' | ''; // onde o usuario treina
   // Diet preferences
   restricoesAlimentares: string[]; // ex: "lactose", "gluten", "vegetariano"
   comidasFavoritas: string[]; // comidas que gosta e quer incluir
@@ -85,6 +86,31 @@ export interface Treino {
   nome: string;
   diaSemana: string;
   exercicios: Exercise[];
+}
+
+/**
+ * Workout modification request
+ */
+export interface WorkoutModification {
+  type: 'substituir' | 'adicionar' | 'remover' | 'ajustar';
+  exercicioIndex: number; // index of exercise to modify
+  exercicioNovo?: string; // new exercise name (for substituir/adicionar)
+  motivo?: string; // reason for modification
+  ajustes?: {
+    series?: number;
+    repeticoes?: string;
+    descanso?: string;
+    observacao?: string;
+  };
+}
+
+/**
+ * Suggested alternative exercise
+ */
+export interface ExerciseAlternative {
+  nome: string;
+  motivo: string; // why this is a good alternative
+  categoria: string; // muscle group
 }
 
 /**

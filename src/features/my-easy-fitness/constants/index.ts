@@ -38,6 +38,7 @@ export const DEFAULT_PERSONAL_INFO: UserPersonalInfo = {
   tempoTreinoMinutos: 0,
   preferenciaTreino: '',
   experienciaTreino: '',
+  localTreino: '',
   // Diet preferences
   restricoesAlimentares: [],
   comidasFavoritas: [],
@@ -107,7 +108,7 @@ export const PERSONAL_INFO_QUESTIONS: Record<PersonalInfoStep, string> = {
   atividade:
     'Qual seu nivel de atividade fisica atual?\n\n1. Sedentario (pouco ou nenhum exercicio)\n2. Leve (exercicio 1-3 dias/semana)\n3. Moderado (exercicio 3-5 dias/semana)\n4. Intenso (exercicio 6-7 dias/semana)',
   treino_preferencias:
-    'Agora vamos personalizar seu treino! Me conte:\n\n• Quantos dias por semana pretende treinar? (1-7)\n• Quanto tempo tem disponivel por treino? (ex: 45min, 1h)\n• Qual sua experiencia com treino? (iniciante, intermediario, avancado)\n• Prefere algum tipo de treino? (musculacao, funcional, cardio, misto)\n\n(Ex: "4 dias, 1 hora, intermediario, musculacao")',
+    'Agora vamos personalizar seu treino! Me conte:\n\n• Quantos dias por semana? (1-6)\n• Quanto tempo por sessao? (30min, 45min, 1h, 1h30)\n• Seu nivel: iniciante, intermediario ou avancado\n• Onde treina: academia ou casa\n• Tipo de treino preferido? (musculacao, funcional, corrida, calistenia)\n\n(Ex: "4 dias, 1h, intermediario, academia, musculacao")',
   dieta_preferencias:
     'Excelente! Agora sobre sua alimentacao:\n\n• Tem alguma restricao alimentar? (lactose, gluten, vegetariano, vegano, etc)\n• Alguma comida favorita que quer incluir na dieta?\n• Alguma comida que voce NAO gosta ou quer evitar?\n• Quantas refeicoes prefere fazer por dia? (3-6)\n• Em que horario costuma treinar? (manha, tarde, noite)\n\n(Ex: "intolerante a lactose, gosto de frango e arroz, nao gosto de peixe, 5 refeicoes, treino a noite")',
   saude:
@@ -129,7 +130,7 @@ export const PERSONAL_INFO_ERROR_MESSAGES: Record<PersonalInfoStep, string> = {
   atividade:
     'Por favor, escolha uma opcao de 1 a 4, ou digite o nivel de atividade.',
   treino_preferencias:
-    'Por favor, informe quantos dias pretende treinar, tempo disponivel e sua experiencia.\n\n(Ex: "4 dias, 1 hora, intermediario, musculacao")',
+    'Por favor, informe: dias por semana, tempo, nivel, local (academia/casa) e tipo de treino.\n\n(Ex: "4 dias, 1h, intermediario, academia, musculacao")',
   dieta_preferencias:
     'Por favor, me conte sobre suas preferencias alimentares.\n\n(Ex: "sem lactose, gosto de frango, nao gosto de peixe, 5 refeicoes, treino a noite")',
   saude:
@@ -333,6 +334,94 @@ export const WORKOUT_TEMPLATES = {
         repeticoes: '15-20',
         descanso: '45s',
       },
+    ],
+  },
+  // Push/Pull/Legs Split
+  push_day: {
+    nome: 'Push - Peito/Ombros/Triceps',
+    diaSemana: 'Segunda e Quinta',
+    exercicios: [
+      { nome: 'Supino Reto', series: 4, repeticoes: '8-12', descanso: '90s' },
+      { nome: 'Supino Inclinado', series: 3, repeticoes: '10-12', descanso: '90s' },
+      { nome: 'Desenvolvimento', series: 3, repeticoes: '10-12', descanso: '90s' },
+      { nome: 'Elevacao Lateral', series: 3, repeticoes: '12-15', descanso: '60s' },
+      { nome: 'Triceps Pulley', series: 3, repeticoes: '12-15', descanso: '60s' },
+      { nome: 'Triceps Frances', series: 3, repeticoes: '10-12', descanso: '60s' },
+    ],
+  },
+  pull_day: {
+    nome: 'Pull - Costas/Biceps',
+    diaSemana: 'Terca e Sexta',
+    exercicios: [
+      { nome: 'Puxada Frontal', series: 4, repeticoes: '8-12', descanso: '90s' },
+      { nome: 'Remada Curvada', series: 3, repeticoes: '10-12', descanso: '90s' },
+      { nome: 'Remada Baixa', series: 3, repeticoes: '10-12', descanso: '90s' },
+      { nome: 'Face Pull', series: 3, repeticoes: '15-20', descanso: '60s' },
+      { nome: 'Rosca Direta', series: 3, repeticoes: '10-12', descanso: '60s' },
+      { nome: 'Rosca Martelo', series: 3, repeticoes: '10-12', descanso: '60s' },
+    ],
+  },
+  legs_day: {
+    nome: 'Legs - Pernas Completo',
+    diaSemana: 'Quarta e Sabado',
+    exercicios: [
+      { nome: 'Agachamento', series: 4, repeticoes: '8-12', descanso: '120s' },
+      { nome: 'Leg Press', series: 3, repeticoes: '10-12', descanso: '90s' },
+      { nome: 'Stiff', series: 3, repeticoes: '10-12', descanso: '90s' },
+      { nome: 'Cadeira Extensora', series: 3, repeticoes: '12-15', descanso: '60s' },
+      { nome: 'Cadeira Flexora', series: 3, repeticoes: '12-15', descanso: '60s' },
+      { nome: 'Panturrilha', series: 4, repeticoes: '15-20', descanso: '45s' },
+    ],
+  },
+  // Upper/Lower Split
+  upper_body: {
+    nome: 'Upper Body - Superior',
+    diaSemana: 'Segunda e Quinta',
+    exercicios: [
+      { nome: 'Supino Reto', series: 4, repeticoes: '8-12', descanso: '90s' },
+      { nome: 'Puxada Frontal', series: 4, repeticoes: '8-12', descanso: '90s' },
+      { nome: 'Desenvolvimento', series: 3, repeticoes: '10-12', descanso: '90s' },
+      { nome: 'Remada Baixa', series: 3, repeticoes: '10-12', descanso: '90s' },
+      { nome: 'Rosca Direta', series: 3, repeticoes: '10-12', descanso: '60s' },
+      { nome: 'Triceps Pulley', series: 3, repeticoes: '12-15', descanso: '60s' },
+    ],
+  },
+  lower_body: {
+    nome: 'Lower Body - Inferior',
+    diaSemana: 'Terca e Sexta',
+    exercicios: [
+      { nome: 'Agachamento', series: 4, repeticoes: '8-12', descanso: '120s' },
+      { nome: 'Stiff', series: 3, repeticoes: '10-12', descanso: '90s' },
+      { nome: 'Leg Press', series: 3, repeticoes: '10-12', descanso: '90s' },
+      { nome: 'Cadeira Extensora', series: 3, repeticoes: '12-15', descanso: '60s' },
+      { nome: 'Cadeira Flexora', series: 3, repeticoes: '12-15', descanso: '60s' },
+      { nome: 'Elevacao Pelvica', series: 3, repeticoes: '12-15', descanso: '60s' },
+      { nome: 'Panturrilha', series: 4, repeticoes: '15-20', descanso: '45s' },
+    ],
+  },
+  // Full Body Split
+  full_body_a: {
+    nome: 'Full Body A',
+    diaSemana: 'Segunda e Quinta',
+    exercicios: [
+      { nome: 'Agachamento', series: 3, repeticoes: '8-12', descanso: '120s' },
+      { nome: 'Supino Reto', series: 3, repeticoes: '8-12', descanso: '90s' },
+      { nome: 'Puxada Frontal', series: 3, repeticoes: '8-12', descanso: '90s' },
+      { nome: 'Desenvolvimento', series: 3, repeticoes: '10-12', descanso: '90s' },
+      { nome: 'Rosca Direta', series: 2, repeticoes: '10-12', descanso: '60s' },
+      { nome: 'Triceps Pulley', series: 2, repeticoes: '12-15', descanso: '60s' },
+    ],
+  },
+  full_body_b: {
+    nome: 'Full Body B',
+    diaSemana: 'Terca e Sexta',
+    exercicios: [
+      { nome: 'Stiff', series: 3, repeticoes: '10-12', descanso: '90s' },
+      { nome: 'Supino Inclinado', series: 3, repeticoes: '10-12', descanso: '90s' },
+      { nome: 'Remada Curvada', series: 3, repeticoes: '10-12', descanso: '90s' },
+      { nome: 'Elevacao Lateral', series: 3, repeticoes: '12-15', descanso: '60s' },
+      { nome: 'Leg Press', series: 3, repeticoes: '10-12', descanso: '90s' },
+      { nome: 'Panturrilha', series: 3, repeticoes: '15-20', descanso: '45s' },
     ],
   },
 };
@@ -577,23 +666,53 @@ export const MODALITY_TEMPLATES: Record<TrainingModality, Record<string, { nome:
 
 /**
  * Alternative exercises for injuries
+ * Each injury type has exercises to avoid and suggested alternatives
  */
 export const INJURY_EXERCISE_ALTERNATIVES: Record<string, { avoid: string[]; alternatives: string[] }> = {
+  // Ombro - lesoes no manguito rotador, bursite, tendinite
   ombro: {
-    avoid: ['supino', 'desenvolvimento'],
-    alternatives: ['Peck Deck', 'Crossover'],
+    avoid: ['supino', 'desenvolvimento', 'elevacao lateral', 'mergulho', 'dips', 'crucifixo'],
+    alternatives: ['Peck Deck', 'Crossover Baixo', 'Flexao com apoio', 'Face Pull', 'Elevacao Frontal leve'],
   },
+  // Joelho - lesoes no ligamento, menisco, condromalacia
   joelho: {
-    avoid: ['agachamento', 'leg press', 'extensora'],
-    alternatives: ['Cadeira Flexora', 'Stiff'],
+    avoid: ['agachamento', 'leg press', 'extensora', 'afundo', 'salto', 'pistol', 'hack'],
+    alternatives: ['Cadeira Flexora', 'Stiff', 'Elevacao Pelvica', 'Gluteo no cabo'],
   },
+  // Costas - hernia, protrusao discal
   costas: {
-    avoid: ['remada', 'levantamento'],
-    alternatives: ['Puxada no Pulley', 'Pulldown'],
+    avoid: ['remada', 'levantamento', 'terra', 'good morning'],
+    alternatives: ['Puxada no Pulley', 'Pulldown', 'Remada apoiada no banco'],
   },
+  // Lombar - dor lombar, hernia lombar
   lombar: {
-    avoid: ['agachamento', 'stiff', 'remada curvada'],
-    alternatives: ['Leg Press 45', 'Hack Machine'],
+    avoid: ['agachamento', 'stiff', 'remada curvada', 'terra', 'good morning', 'abdominal'],
+    alternatives: ['Leg Press 45', 'Hack Machine', 'Prancha', 'Gluteo no cabo'],
+  },
+  // Punho/Mao - tendinite, tunel do carpo
+  punho: {
+    avoid: ['rosca', 'supino', 'flexao', 'triceps frances', 'desenvolvimento'],
+    alternatives: ['Maquinas com pegada neutra', 'Extensora', 'Flexora', 'Leg Press'],
+  },
+  // Cotovelo - epicondilite (cotovelo de tenista)
+  cotovelo: {
+    avoid: ['rosca', 'triceps', 'supino', 'remada', 'puxada'],
+    alternatives: ['Exercicios de pernas', 'Maquinas com pegada neutra', 'Abdominais'],
+  },
+  // Quadril - bursite, impacto femoroacetabular
+  quadril: {
+    avoid: ['agachamento profundo', 'afundo', 'stiff', 'abdutora', 'adutora'],
+    alternatives: ['Leg Press amplitude parcial', 'Extensora', 'Flexora', 'Panturrilha'],
+  },
+  // Cervical - hernia cervical, dor no pescoco
+  cervical: {
+    avoid: ['desenvolvimento', 'encolhimento', 'remada alta', 'abdominal com flexao'],
+    alternatives: ['Elevacao Lateral', 'Peck Deck', 'Exercicios sentado com apoio'],
+  },
+  // Tornozelo - entorse, instabilidade
+  tornozelo: {
+    avoid: ['agachamento', 'afundo', 'salto', 'panturrilha em pe', 'corrida'],
+    alternatives: ['Leg Press', 'Extensora', 'Flexora', 'Exercicios sentado'],
   },
 };
 

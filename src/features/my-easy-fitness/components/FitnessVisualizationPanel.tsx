@@ -18,19 +18,32 @@ import {
   Check,
   Plus,
   Trash2,
+  BookOpen,
 } from 'lucide-react';
+import {
+  IconRun,
+  IconYoga,
+  IconStretching,
+  IconBarbell,
+  IconBike,
+  IconSwimming,
+} from '@tabler/icons-react';
 import { useState } from 'react';
-import type { UserPersonalInfo, Treino, Dieta, Alimento } from '../types';
+import type { UserPersonalInfo, Treino, Dieta, Alimento, TrainingModality } from '../types';
+import { ModalidadesTab } from './ModalidadesTab';
+import { ExerciciosTab } from './ExerciciosTab';
 
-type TabId = 'visao-geral' | 'personal-info' | 'treinos' | 'dieta';
+type TabId = 'visao-geral' | 'personal-info' | 'treinos' | 'exercicios' | 'dieta';
 
 type FitnessVisualizationPanelProps = {
   personalInfo: UserPersonalInfo;
   treinos: Treino[];
   dieta: Dieta | null;
+  selectedModality: TrainingModality;
   onUpdatePersonalInfo: (personalInfo: UserPersonalInfo) => void;
   onUpdateTreinos: (treinos: Treino[]) => void;
   onUpdateDieta: (dieta: Dieta | null) => void;
+  onSelectModality: (modality: TrainingModality) => void;
 };
 
 // Tab Button Component
@@ -739,211 +752,7 @@ function PersonalInfoTab({
   );
 }
 
-// Treinos Tab
-function TreinosTab({
-  treinos,
-  onUpdate,
-}: {
-  treinos: Treino[];
-  onUpdate: (treinos: Treino[]) => void;
-}) {
-  const [treinoSelecionado, setTreinoSelecionado] = useState<string | null>(
-    treinos.length > 0 ? treinos[0].id : null
-  );
-  const [editingTreino, setEditingTreino] = useState<string | null>(null);
-
-  const treino = treinos.find((t) => t.id === treinoSelecionado);
-
-  const updateTreinoNome = (id: string, nome: string) => {
-    onUpdate(treinos.map((t) => (t.id === id ? { ...t, nome } : t)));
-    setEditingTreino(null);
-  };
-
-  const updateTreinoDia = (id: string, diaSemana: string) => {
-    onUpdate(treinos.map((t) => (t.id === id ? { ...t, diaSemana } : t)));
-  };
-
-  const removeTreino = (id: string) => {
-    const newTreinos = treinos.filter((t) => t.id !== id);
-    onUpdate(newTreinos);
-    if (treinoSelecionado === id) {
-      setTreinoSelecionado(newTreinos.length > 0 ? newTreinos[0].id : null);
-    }
-  };
-
-  const updateExercicio = (
-    treinoId: string,
-    exercicioIndex: number,
-    field: string,
-    value: string | number
-  ) => {
-    onUpdate(
-      treinos.map((t) => {
-        if (t.id !== treinoId) return t;
-        const newExercicios = [...t.exercicios];
-        newExercicios[exercicioIndex] = { ...newExercicios[exercicioIndex], [field]: value };
-        return { ...t, exercicios: newExercicios };
-      })
-    );
-  };
-
-  const removeExercicio = (treinoId: string, exercicioIndex: number) => {
-    onUpdate(
-      treinos.map((t) => {
-        if (t.id !== treinoId) return t;
-        return { ...t, exercicios: t.exercicios.filter((_, i) => i !== exercicioIndex) };
-      })
-    );
-  };
-
-  const addExercicio = (treinoId: string) => {
-    onUpdate(
-      treinos.map((t) => {
-        if (t.id !== treinoId) return t;
-        return {
-          ...t,
-          exercicios: [
-            ...t.exercicios,
-            { nome: 'Novo exercicio', series: 3, repeticoes: '10-12', descanso: '60s' },
-          ],
-        };
-      })
-    );
-  };
-
-  return (
-    <div className="p-6 space-y-6">
-      {treinos.length > 0 ? (
-        <>
-          {/* Seletor de Treino */}
-          <div className="flex gap-2 overflow-x-auto pb-2">
-            {treinos.map((t) => (
-              <div key={t.id} className="flex items-center gap-1">
-                {editingTreino === t.id ? (
-                  <input
-                    type="text"
-                    defaultValue={t.nome}
-                    onBlur={(e) => updateTreinoNome(t.id, e.target.value)}
-                    onKeyPress={(e) => {
-                      if (e.key === 'Enter') {
-                        updateTreinoNome(t.id, (e.target as HTMLInputElement).value);
-                      }
-                    }}
-                    className="px-3 py-2 rounded-lg text-sm font-medium bg-slate-700 text-white border border-lime-500"
-                    autoFocus
-                  />
-                ) : (
-                  <button
-                    onClick={() => setTreinoSelecionado(t.id)}
-                    onDoubleClick={() => setEditingTreino(t.id)}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all ${
-                      treinoSelecionado === t.id
-                        ? 'bg-lime-500 text-black'
-                        : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-                    }`}
-                  >
-                    {t.nome}
-                  </button>
-                )}
-                <button
-                  onClick={() => removeTreino(t.id)}
-                  className="p-1 text-slate-500 hover:text-red-400 hover:bg-red-400/10 rounded"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
-              </div>
-            ))}
-          </div>
-
-          {/* Detalhes do Treino */}
-          {treino && (
-            <div className="bg-slate-800/50 rounded-xl border border-slate-700 overflow-hidden">
-              <div className="p-4 border-b border-slate-700 bg-slate-800/50">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-semibold text-white">{treino.nome}</h3>
-                  <input
-                    type="text"
-                    value={treino.diaSemana}
-                    onChange={(e) => updateTreinoDia(treino.id, e.target.value)}
-                    className="px-3 py-1 bg-lime-500/20 text-lime-400 rounded-full text-sm border border-lime-500/30 focus:border-lime-500"
-                  />
-                </div>
-              </div>
-              <div className="divide-y divide-slate-700/50">
-                {treino.exercicios.map((exercicio, idx) => (
-                  <div key={idx} className="p-4 hover:bg-slate-800/30 transition-colors">
-                    <div className="flex items-center justify-between mb-2">
-                      <input
-                        type="text"
-                        value={exercicio.nome}
-                        onChange={(e) => updateExercicio(treino.id, idx, 'nome', e.target.value)}
-                        className="font-medium text-white bg-transparent border-b border-transparent hover:border-slate-600 focus:border-lime-500 outline-none"
-                      />
-                      <button
-                        onClick={() => removeExercicio(treino.id, idx)}
-                        className="p-1 text-slate-500 hover:text-red-400"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
-                    <div className="flex items-center gap-4 text-sm">
-                      <div className="flex items-center gap-1">
-                        <span className="text-slate-400">Series:</span>
-                        <input
-                          type="number"
-                          value={exercicio.series}
-                          onChange={(e) =>
-                            updateExercicio(treino.id, idx, 'series', parseInt(e.target.value) || 0)
-                          }
-                          className="w-12 bg-slate-700 rounded px-2 py-1 text-lime-400"
-                        />
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <span className="text-slate-400">Reps:</span>
-                        <input
-                          type="text"
-                          value={exercicio.repeticoes}
-                          onChange={(e) => updateExercicio(treino.id, idx, 'repeticoes', e.target.value)}
-                          className="w-16 bg-slate-700 rounded px-2 py-1 text-lime-400"
-                        />
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <span className="text-slate-400">Descanso:</span>
-                        <input
-                          type="text"
-                          value={exercicio.descanso}
-                          onChange={(e) => updateExercicio(treino.id, idx, 'descanso', e.target.value)}
-                          className="w-16 bg-slate-700 rounded px-2 py-1 text-slate-300"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                ))}
-                <button
-                  onClick={() => addExercicio(treino.id)}
-                  className="w-full p-3 text-lime-400 hover:bg-lime-400/10 transition-colors flex items-center justify-center gap-2"
-                >
-                  <Plus className="h-4 w-4" />
-                  Adicionar exercicio
-                </button>
-              </div>
-            </div>
-          )}
-        </>
-      ) : (
-        <div className="flex flex-col items-center justify-center py-16 text-center">
-          <div className="p-4 rounded-full bg-lime-500/20 mb-4">
-            <Dumbbell className="h-10 w-10 text-lime-400" />
-          </div>
-          <h3 className="text-lg font-semibold text-white mb-2">Nenhum treino configurado</h3>
-          <p className="text-slate-400 max-w-md">
-            Peca ao assistente para criar uma planilha de treino personalizada para voce.
-          </p>
-        </div>
-      )}
-    </div>
-  );
-}
+// TreinosTab removed - replaced by ModalidadesTab
 
 // Dieta Tab
 function DietaTab({ dieta, onUpdate }: { dieta: Dieta | null; onUpdate: (dieta: Dieta | null) => void }) {
@@ -1152,33 +961,65 @@ export function FitnessVisualizationPanel({
   personalInfo,
   treinos,
   dieta,
+  selectedModality,
   onUpdatePersonalInfo,
   onUpdateTreinos,
   onUpdateDieta,
+  onSelectModality,
 }: FitnessVisualizationPanelProps) {
   const [activeTab, setActiveTab] = useState<TabId>('visao-geral');
 
   const tabs = [
     { id: 'visao-geral' as TabId, label: 'Visao Geral', icon: LayoutDashboard },
-    { id: 'personal-info' as TabId, label: 'Informações Pessoais', icon: User },
+    { id: 'personal-info' as TabId, label: 'Informacoes Pessoais', icon: User },
     { id: 'treinos' as TabId, label: 'Treinos', icon: Dumbbell },
+    { id: 'exercicios' as TabId, label: 'Exercicios', icon: BookOpen },
     { id: 'dieta' as TabId, label: 'Dieta', icon: Salad },
   ];
 
   return (
-    <div className="flex-1 min-h-0 bg-slate-900/30 flex flex-col">
+    <div className="flex-1 min-h-0 bg-slate-900/30 flex flex-col relative overflow-hidden">
+      {/* Decorative watermark background icons */}
+      <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
+        {/* Top row */}
+        <IconYoga className="absolute top-8 left-[10%] w-12 h-12 text-lime-400 opacity-[0.12]" />
+        <IconBarbell className="absolute top-12 left-[40%] w-14 h-14 text-lime-400 opacity-[0.12]" />
+        <IconRun className="absolute top-6 right-[15%] w-12 h-12 text-lime-400 opacity-[0.12]" />
+        {/* Middle row */}
+        <IconBike className="absolute top-[35%] left-[5%] w-14 h-14 text-lime-400 opacity-[0.12]" />
+        <IconSwimming className="absolute top-[40%] left-[30%] w-12 h-12 text-lime-400 opacity-[0.12]" />
+        <IconStretching className="absolute top-[38%] right-[25%] w-14 h-14 text-lime-400 opacity-[0.12]" />
+        <IconYoga className="absolute top-[32%] right-[5%] w-12 h-12 text-lime-400 opacity-[0.12]" />
+        {/* Bottom row */}
+        <IconBarbell className="absolute bottom-[30%] left-[15%] w-12 h-12 text-lime-400 opacity-[0.12]" />
+        <IconRun className="absolute bottom-[25%] left-[45%] w-14 h-14 text-lime-400 opacity-[0.12]" />
+        <IconBike className="absolute bottom-[28%] right-[10%] w-12 h-12 text-lime-400 opacity-[0.12]" />
+        {/* Very bottom */}
+        <IconSwimming className="absolute bottom-8 left-[20%] w-12 h-12 text-lime-400 opacity-[0.12]" />
+        <IconStretching className="absolute bottom-12 left-[55%] w-14 h-14 text-lime-400 opacity-[0.12]" />
+        <IconYoga className="absolute bottom-6 right-[12%] w-12 h-12 text-lime-400 opacity-[0.12]" />
+      </div>
+
       {/* Tabs */}
       <div className="flex-shrink-0 border-b border-slate-800 bg-slate-900/50">
-        <div className="flex">
-          {tabs.map((tab) => (
-            <TabButton
-              key={tab.id}
-              active={activeTab === tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              icon={tab.icon}
-              label={tab.label}
-            />
-          ))}
+        <div className="flex items-center">
+          <div className="flex overflow-x-auto flex-1">
+            {tabs.map((tab) => (
+              <TabButton
+                key={tab.id}
+                active={activeTab === tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                icon={tab.icon}
+                label={tab.label}
+              />
+            ))}
+          </div>
+          {/* Disclaimer */}
+          <div className="flex-shrink-0 px-3 hidden lg:block">
+            <span className="text-[10px] text-[#4285F4]">
+              IA nao substitui profissionais de saude
+            </span>
+          </div>
         </div>
       </div>
 
@@ -1187,8 +1028,19 @@ export function FitnessVisualizationPanel({
         {activeTab === 'visao-geral' && (
           <VisaoGeralTab personalInfo={personalInfo} treinos={treinos} dieta={dieta} />
         )}
-        {activeTab === 'personal-info' && <PersonalInfoTab personalInfo={personalInfo} onUpdate={onUpdatePersonalInfo} />}
-        {activeTab === 'treinos' && <TreinosTab treinos={treinos} onUpdate={onUpdateTreinos} />}
+        {activeTab === 'personal-info' && (
+          <PersonalInfoTab personalInfo={personalInfo} onUpdate={onUpdatePersonalInfo} />
+        )}
+        {activeTab === 'treinos' && (
+          <ModalidadesTab
+            treinos={treinos}
+            selectedModality={selectedModality}
+            personalInfo={personalInfo}
+            onUpdateTreinos={onUpdateTreinos}
+            onSelectModality={onSelectModality}
+          />
+        )}
+        {activeTab === 'exercicios' && <ExerciciosTab />}
         {activeTab === 'dieta' && <DietaTab dieta={dieta} onUpdate={onUpdateDieta} />}
       </div>
     </div>
