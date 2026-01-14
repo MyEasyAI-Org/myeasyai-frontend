@@ -1,4 +1,4 @@
-import { Briefcase, DollarSign, ExternalLink, Package, PenTool, Target } from 'lucide-react';
+import { Briefcase, DollarSign, ExternalLink, GraduationCap, Package, PenTool, Target } from 'lucide-react';
 import type { UserProduct } from '../../hooks/useUserData';
 import { ProductCard } from './ProductCard';
 
@@ -9,6 +9,7 @@ type ProductsTabProps = {
   onGoToCRM?: () => void;
   onGoToMyEasyContent?: () => void;
   onGoToMyEasyResume?: () => void;
+  onGoToMyEasyLearning?: () => void;
   accountCreatedAt?: string;
 };
 
@@ -19,6 +20,7 @@ export function ProductsTab({
   onGoToCRM,
   onGoToMyEasyContent,
   onGoToMyEasyResume,
+  onGoToMyEasyLearning,
   accountCreatedAt,
 }: ProductsTabProps) {
   return (
@@ -206,6 +208,44 @@ export function ProductsTab({
                 </button>
               </div>
             </div>
+
+            {/* MyEasyLearning Card - Always visible */}
+            <div className="rounded-lg border border-slate-800 bg-slate-900/50 p-6 hover:border-blue-500 transition-colors">
+              <div className="flex items-start justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="rounded-lg bg-blue-500/20 p-3">
+                    <GraduationCap className="h-6 w-6 text-blue-400" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-white">
+                      MyEasyLearning
+                    </h3>
+                    <span className="inline-block mt-1 rounded-full bg-blue-500/20 text-blue-400 px-2 py-1 text-xs font-semibold">
+                      Ativo
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-4 space-y-2 text-sm">
+                <p className="text-slate-400">
+                  Crie planos de estudo personalizados com IA para dominar novas habilidades e alavancar sua carreira.
+                </p>
+              </div>
+
+              <div className="mt-6 flex space-x-2">
+                <button
+                  onClick={onGoToMyEasyLearning}
+                  className="flex-1 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 transition-colors flex items-center justify-center space-x-2"
+                >
+                  <ExternalLink className="h-4 w-4" />
+                  <span>Acessar</span>
+                </button>
+                <button className="rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-sm text-white hover:bg-slate-700 transition-colors">
+                  Gerenciar
+                </button>
+              </div>
+            </div>
           </div>
 
           {/* Summary Card - always show (includes hard-coded products) */}
@@ -216,8 +256,8 @@ export function ProductsTab({
             <div className="mt-4 grid gap-4 md:grid-cols-3">
               <div className="text-center">
                 <p className="text-3xl font-bold text-white">
-                  {/* Count userProducts + 4 hard-coded products (MyEasyPricing + MyEasyCRM + MyEasyContent + MyEasyResume) */}
-                  {userProducts.filter((p) => p.product_status === 'active').length + 4}
+                  {/* Count userProducts + 5 hard-coded products (MyEasyPricing + MyEasyCRM + MyEasyContent + MyEasyResume + MyEasyLearning) */}
+                  {userProducts.filter((p) => p.product_status === 'active').length + 5}
                 </p>
                 <p className="mt-1 text-sm text-slate-400">
                   Produtos Ativos
