@@ -30,6 +30,8 @@ import { MyEasyContent } from './features/my-easy-content';
 import { MyEasyCRM } from './features/my-easy-crm';
 import { MyEasyPricing } from './features/my-easy-pricing/MyEasyPricing';
 import { MyEasyWebsite } from './features/my-easy-website/MyEasyWebsite';
+import { MyEasyResume } from './features/my-easy-resume/MyEasyResume';
+import { MyEasyLearning } from './features/my-easy-learning/MyEasyLearning';
 import { useInactivityTimeout } from './hooks/useInactivityTimeout';
 import { useModalState } from './hooks/useModalState';
 import { useRealtimeSync } from './hooks/useRealtimeSync';
@@ -316,6 +318,14 @@ function AppContent() {
 
   const goToMyEasyContent = () => {
     navigate(ROUTES.MY_EASY_CONTENT);
+  };
+
+  const goToMyEasyResume = () => {
+    navigate(ROUTES.MY_EASY_RESUME);
+  };
+
+  const goToMyEasyLearning = () => {
+    navigate(ROUTES.MY_EASY_LEARNING);
   };
 
   const goToSubscription = () => {
@@ -792,6 +802,9 @@ function AppContent() {
                 onGoToBusinessGuru={goToBusinessGuru}
                 onGoToMyEasyPricing={goToMyEasyPricing}
                 onGoToMyEasyCRM={goToMyEasyCRM}
+                onGoToMyEasyContent={goToMyEasyContent}
+                onGoToMyEasyResume={goToMyEasyResume}
+                onGoToMyEasyLearning={goToMyEasyLearning}
                 initialTab={dashboardInitialTab}
                 onLoadingComplete={() => {
                   console.log('Dashboard loaded successfully!');
@@ -882,6 +895,36 @@ function AppContent() {
             isCheckingAuth={isCheckingAuth}
           >
             <MyEasyContent onBackToDashboard={goToDashboardProducts} />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path={ROUTES.MY_EASY_RESUME}
+        element={
+          <ProtectedRoute
+            user={user}
+            needsOnboarding={needsOnboarding}
+            onOpenOnboarding={() => onboardingModal.open()}
+            isLoading={loading}
+            isCheckingAuth={isCheckingAuth}
+          >
+            <MyEasyResume onBackToDashboard={goToDashboardProducts} />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path={ROUTES.MY_EASY_LEARNING}
+        element={
+          <ProtectedRoute
+            user={user}
+            needsOnboarding={needsOnboarding}
+            onOpenOnboarding={() => onboardingModal.open()}
+            isLoading={loading}
+            isCheckingAuth={isCheckingAuth}
+          >
+            <MyEasyLearning onBackToDashboard={goToDashboardProducts} />
           </ProtectedRoute>
         }
       />

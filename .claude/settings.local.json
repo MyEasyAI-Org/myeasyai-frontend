@@ -34,7 +34,8 @@
       "Bash(tasklist:*)",
       "Bash(findstr:*)",
       "Bash(taskkill:*)",
-      "Bash(npm run build:check:*)"
+      "Bash(npm run build:check:*)",
+      "Bash(npm run type-check:*)"
     ],
     "deny": [],
     "ask": []

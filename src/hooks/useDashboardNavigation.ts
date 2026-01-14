@@ -35,6 +35,10 @@ export type UseDashboardNavigationOptions = {
   onGoToMyEasyCRM?: () => void;
   /** Callback function to navigate to MyEasyContent feature */
   onGoToMyEasyContent?: () => void;
+  /** Callback function to navigate to MyEasyResume feature */
+  onGoToMyEasyResume?: () => void;
+  /** Callback function to navigate to MyEasyLearning feature */
+  onGoToMyEasyLearning?: () => void;
   /** Initial active tab (default: 'overview') */
   initialTab?: DashboardTab;
 };
@@ -88,6 +92,8 @@ export function useDashboardNavigation(
     onGoToMyEasyPricing,
     onGoToMyEasyCRM,
     onGoToMyEasyContent,
+    onGoToMyEasyResume,
+    onGoToMyEasyLearning,
     initialTab = DEFAULT_INITIAL_TAB,
   } = options;
 
@@ -200,6 +206,38 @@ export function useDashboardNavigation(
   }, [onGoToMyEasyContent, navigate]);
 
   /**
+   * Navigate to MyEasyResume feature
+   * @description
+   * Attempts to use the provided callback. If not available, uses React Router
+   * to navigate to the MyEasyResume route.
+   *
+   * @returns {void}
+   */
+  const goToResume = useCallback(() => {
+    if (onGoToMyEasyResume) {
+      onGoToMyEasyResume();
+    } else {
+      navigate(ROUTES.MY_EASY_RESUME);
+    }
+  }, [onGoToMyEasyResume, navigate]);
+
+  /**
+   * Navigate to MyEasyLearning feature
+   * @description
+   * Attempts to use the provided callback. If not available, uses React Router
+   * to navigate to the MyEasyLearning route.
+   *
+   * @returns {void}
+   */
+  const goToLearning = useCallback(() => {
+    if (onGoToMyEasyLearning) {
+      onGoToMyEasyLearning();
+    } else {
+      navigate(ROUTES.MY_EASY_LEARNING);
+    }
+  }, [onGoToMyEasyLearning, navigate]);
+
+  /**
    * Navigate to a feature based on product name
    * @description
    * Smart routing that analyzes the product name and navigates to the appropriate feature:
@@ -208,6 +246,8 @@ export function useDashboardNavigation(
    * - Names containing "pricing" or "preco" → MyEasyPricing
    * - Names containing "crm" → MyEasyCRM
    * - Names containing "content" → MyEasyContent
+   * - Names containing "resume" or "curriculo" → MyEasyResume
+   * - Names containing "learning" or "aprendizado" or "estudo" → MyEasyLearning
    * - Other names → Home
    *
    * @param {string} productName - Name of the product to access
@@ -227,11 +267,15 @@ export function useDashboardNavigation(
         goToCRM();
       } else if (name.includes('content')) {
         goToContent();
+      } else if (name.includes('resume') || name.includes('curriculo')) {
+        goToResume();
+      } else if (name.includes('learning') || name.includes('aprendizado') || name.includes('estudo')) {
+        goToLearning();
       } else {
         goToHome();
       }
     },
-    [goToWebsite, goToGuru, goToPricing, goToCRM, goToContent, goToHome],
+    [goToWebsite, goToGuru, goToPricing, goToCRM, goToContent, goToResume, goToLearning, goToHome],
   );
 
   // ============================================================================
@@ -248,5 +292,7 @@ export function useDashboardNavigation(
     goToPricing,
     goToCRM,
     goToContent,
+    goToResume,
+    goToLearning,
   };
 }
