@@ -23,6 +23,7 @@ type DashboardProps = {
   onGoToMyEasyPricing?: () => void;
   onGoToMyEasyCRM?: () => void;
   onGoToMyEasyContent?: () => void;
+  onGoToMyEasyResume?: () => void;
   onLoadingComplete?: () => void;
   initialTab?: 'overview' | 'subscription' | 'products' | 'usage' | 'settings' | 'profile';
 };
@@ -34,6 +35,7 @@ export function Dashboard({
   onGoToMyEasyPricing,
   onGoToMyEasyCRM,
   onGoToMyEasyContent,
+  onGoToMyEasyResume,
   onLoadingComplete,
   initialTab,
 }: DashboardProps = {}) {
@@ -56,7 +58,7 @@ export function Dashboard({
   } = useUserData();
 
   // Dashboard navigation hook (manages tabs and feature navigation)
-  const { activeTab, setActiveTab, navigateToProduct, goToCRM, goToContent } =
+  const { activeTab, setActiveTab, navigateToProduct, goToCRM, goToContent, goToResume } =
     useDashboardNavigation({
       onGoHome,
       onGoToMyEasyWebsite,
@@ -64,6 +66,7 @@ export function Dashboard({
       onGoToMyEasyPricing,
       onGoToMyEasyCRM,
       onGoToMyEasyContent,
+      onGoToMyEasyResume,
       initialTab,
     });
 
@@ -155,6 +158,7 @@ export function Dashboard({
             onAccessProduct={navigateToProduct}
             onGoToCRM={goToCRM}
             onGoToMyEasyContent={goToContent}
+            onGoToMyEasyResume={goToResume}
             accountCreatedAt={cadastralInfo.created_at}
           />
         )}
