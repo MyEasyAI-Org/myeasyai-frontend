@@ -5,10 +5,10 @@ import {
   Clock,
   Copy,
   Download,
+  Eye,
   Facebook,
   FileText,
   Hash,
-  Heart,
   Image,
   Instagram,
   Linkedin,
@@ -17,6 +17,7 @@ import {
   Sparkles,
   Twitter,
   Youtube,
+  Library,
 } from 'lucide-react';
 import type React from 'react';
 import { useState } from 'react';
@@ -33,6 +34,9 @@ import {
   formatContentForDisplay,
   getNetworkName,
 } from '../utils/contentGenerator';
+import { ContentLibrary } from './ContentLibrary';
+import { SocialNetworkPreview } from './SocialNetworkPreview';
+import type { ContentLibraryItem, ContentLibraryFilters } from '../hooks/useContentLibrary';
 
 type ContentPreviewProps = {
   contentData: ContentData;
@@ -40,6 +44,14 @@ type ContentPreviewProps = {
   onSaveContent: (content: GeneratedContent) => void;
   onRegenerateContent: (content: GeneratedContent) => void;
   onExportCalendar: (format: 'csv' | 'json') => void;
+  // Library props
+  libraryItems: ContentLibraryItem[];
+  libraryIsLoading: boolean;
+  libraryFilters: ContentLibraryFilters;
+  onUpdateLibraryFilters: (filters: Partial<ContentLibraryFilters>) => void;
+  onClearLibraryFilters: () => void;
+  onToggleLibraryFavorite: (id: string) => Promise<boolean>;
+  onDeleteLibraryItem: (id: string) => Promise<boolean>;
 };
 
 const NETWORK_ICONS: Record<SocialNetwork, React.ElementType> = {
@@ -66,11 +78,19 @@ export function ContentPreview({
   onSaveContent,
   onRegenerateContent,
   onExportCalendar,
+  libraryItems,
+  libraryIsLoading,
+  libraryFilters,
+  onUpdateLibraryFilters,
+  onClearLibraryFilters,
+  onToggleLibraryFavorite,
+  onDeleteLibraryItem,
 }: ContentPreviewProps) {
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'content' | 'calendar' | 'library'>(
     'content',
   );
+  const [previewContent, setPreviewContent] = useState<GeneratedContent | null>(null);
 
   const handleCopy = async (content: GeneratedContent) => {
     const text = formatContentForDisplay(content);
@@ -201,6 +221,7 @@ export function ContentPreview({
           {/* Actions */}
           <div className="flex gap-2 pt-2 border-t border-slate-700">
             <button
+              type="button"
               onClick={() => handleCopy(content)}
               className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-orange-600 text-white text-sm font-semibold hover:bg-orange-700 transition-colors"
             >
@@ -217,6 +238,15 @@ export function ContentPreview({
               )}
             </button>
             <button
+              type="button"
+              onClick={() => setPreviewContent(content)}
+              className="flex items-center justify-center gap-2 px-3 py-2 rounded-lg border border-slate-600 text-slate-300 text-sm hover:bg-slate-700 transition-colors"
+              title="Ver preview por rede"
+            >
+              <Eye className="h-4 w-4" />
+            </button>
+            <button
+              type="button"
               onClick={() => onSaveContent(content)}
               className="flex items-center justify-center gap-2 px-3 py-2 rounded-lg border border-slate-600 text-slate-300 text-sm hover:bg-slate-700 transition-colors"
             >
@@ -224,6 +254,7 @@ export function ContentPreview({
               <span>Salvar</span>
             </button>
             <button
+              type="button"
               onClick={() => onRegenerateContent(content)}
               className="flex items-center justify-center gap-2 px-3 py-2 rounded-lg border border-slate-600 text-slate-300 text-sm hover:bg-slate-700 transition-colors"
             >
@@ -269,33 +300,6 @@ export function ContentPreview({
             {entry.status}
           </span>
         </div>
-      </div>
-    );
-  };
-
-  const renderLibraryItem = (savedContent: typeof contentData.savedContents[0]) => {
-    return (
-      <div
-        key={savedContent.id}
-        className="p-4 rounded-lg border border-slate-700 bg-slate-800/50"
-      >
-        <div className="flex items-center justify-between mb-2">
-          {renderNetworkBadge(savedContent.content.network)}
-          <button className="p-1 hover:bg-slate-700 rounded">
-            <Heart
-              className={`h-4 w-4 ${savedContent.isFavorite ? 'text-red-500 fill-red-500' : 'text-slate-400'}`}
-            />
-          </button>
-        </div>
-        <p className="text-sm text-white font-medium mb-1">
-          {savedContent.content.title}
-        </p>
-        <p className="text-xs text-slate-400 line-clamp-2">
-          {savedContent.content.content}
-        </p>
-        <p className="text-xs text-slate-500 mt-2">
-          Salvo em: {savedContent.savedAt.toLocaleDateString('pt-BR')}
-        </p>
       </div>
     );
   };
@@ -368,8 +372,8 @@ export function ContentPreview({
             }`}
           >
             <div className="flex items-center gap-2">
-              <BookmarkPlus className="h-4 w-4" />
-              <span>Biblioteca ({contentData.savedContents.length})</span>
+              <Library className="h-4 w-4" />
+              <span>Biblioteca ({libraryItems.length})</span>
             </div>
           </button>
         </div>
@@ -426,22 +430,33 @@ export function ContentPreview({
               {contentData.calendar.map(renderCalendarEntry)}
             </div>
           )
-        ) : contentData.savedContents.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-center">
-            <BookmarkPlus className="h-16 w-16 text-slate-600 mb-4" />
-            <h3 className="text-xl font-semibold text-white mb-2">
-              Biblioteca vazia
-            </h3>
-            <p className="text-slate-400 max-w-md">
-              Salve seus conteudos favoritos para consultar depois.
-            </p>
-          </div>
         ) : (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {contentData.savedContents.map(renderLibraryItem)}
+          <div className="h-full -m-6">
+            <ContentLibrary
+              items={libraryItems}
+              isLoading={libraryIsLoading}
+              filters={libraryFilters}
+              onUpdateFilters={onUpdateLibraryFilters}
+              onClearFilters={onClearLibraryFilters}
+              onToggleFavorite={onToggleLibraryFavorite}
+              onDeleteItem={onDeleteLibraryItem}
+              onCopyContent={(item) => {
+                const text = item.content;
+                navigator.clipboard.writeText(text);
+              }}
+            />
           </div>
         )}
       </div>
+
+      {/* Social Network Preview Modal */}
+      {previewContent && (
+        <SocialNetworkPreview
+          content={previewContent}
+          isOpen={!!previewContent}
+          onClose={() => setPreviewContent(null)}
+        />
+      )}
     </div>
   );
 }

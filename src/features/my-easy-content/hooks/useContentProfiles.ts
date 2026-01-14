@@ -22,16 +22,29 @@ export function useContentProfiles(userId: string | null) {
 
   /**
    * Parse JSON arrays from D1 response
+   * Handles both already-parsed arrays and JSON strings
    */
   const parseProfile = (raw: any): ContentBusinessProfile => {
+    // Helper to safely parse JSON or return array as-is
+    const parseArrayField = (value: unknown): string[] => {
+      if (!value) return [];
+      if (Array.isArray(value)) return value;
+      if (typeof value === 'string') {
+        try {
+          const parsed = JSON.parse(value);
+          return Array.isArray(parsed) ? parsed : [];
+        } catch {
+          // If it's a comma-separated string, split it
+          return value.includes(',') ? value.split(',').map((s: string) => s.trim()) : [value];
+        }
+      }
+      return [];
+    };
+
     return {
       ...raw,
-      selected_networks: raw.selected_networks
-        ? JSON.parse(raw.selected_networks)
-        : [],
-      preferred_content_types: raw.preferred_content_types
-        ? JSON.parse(raw.preferred_content_types)
-        : [],
+      selected_networks: parseArrayField(raw.selected_networks),
+      preferred_content_types: parseArrayField(raw.preferred_content_types),
       brand_voice: raw.brand_voice || 'professional',
     };
   };
