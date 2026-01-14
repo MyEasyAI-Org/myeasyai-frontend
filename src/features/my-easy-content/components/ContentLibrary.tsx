@@ -19,11 +19,13 @@ import {
   Clock,
   RefreshCw,
   Check,
+  Eye,
 } from 'lucide-react';
 import { useState, useMemo } from 'react';
 import type { ContentLibraryItem, ContentLibraryFilters } from '../hooks/useContentLibrary';
-import type { ContentType, SocialNetwork } from '../types';
+import type { ContentType, GeneratedContent, SocialNetwork } from '../types';
 import { CONTENT_TYPES, SOCIAL_NETWORKS } from '../constants';
+import { SocialNetworkPreview } from './SocialNetworkPreview';
 
 interface ContentLibraryProps {
   items: ContentLibraryItem[];
@@ -77,6 +79,7 @@ export function ContentLibrary({
   const [showFilters, setShowFilters] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [previewItem, setPreviewItem] = useState<ContentLibraryItem | null>(null);
 
   // Count active filters
   const activeFilterCount = useMemo(() => {
@@ -112,6 +115,20 @@ export function ContentLibrary({
       year: 'numeric',
     });
   };
+
+  // Convert library item to GeneratedContent for preview
+  const toGeneratedContent = (item: ContentLibraryItem): GeneratedContent => ({
+    id: item.id,
+    type: item.content_type,
+    network: item.network,
+    title: item.title || '',
+    content: item.content,
+    hashtags: item.hashtags,
+    imageDescription: item.image_description || undefined,
+    bestTime: item.best_time || undefined,
+    variations: item.variations,
+    createdAt: new Date(item.created_at),
+  });
 
   // Render full content card (same style as ContentPreview)
   const renderContentCard = (item: ContentLibraryItem) => {
@@ -251,6 +268,7 @@ export function ContentLibrary({
             </span>
             <div className="flex gap-2">
               <button
+                type="button"
                 onClick={() => handleCopy(item)}
                 className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-orange-600 text-white text-sm font-semibold hover:bg-orange-700 transition-colors"
               >
@@ -266,8 +284,17 @@ export function ContentLibrary({
                   </>
                 )}
               </button>
+              <button
+                type="button"
+                onClick={() => setPreviewItem(item)}
+                className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-slate-600 text-slate-300 text-sm hover:bg-slate-700 transition-colors"
+                title="Ver preview por rede"
+              >
+                <Eye className="h-4 w-4" />
+              </button>
               {onScheduleItem && (
                 <button
+                  type="button"
                   onClick={() => onScheduleItem(item)}
                   className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-slate-600 text-slate-300 text-sm hover:bg-slate-700 transition-colors"
                   title="Agendar"
@@ -276,6 +303,7 @@ export function ContentLibrary({
                 </button>
               )}
               <button
+                type="button"
                 onClick={() => handleDelete(item)}
                 disabled={isDeleting}
                 className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-red-800/50 text-red-400 text-sm hover:bg-red-900/30 transition-colors"
@@ -424,6 +452,15 @@ export function ContentLibrary({
           {items.length} {items.length === 1 ? 'conteudo' : 'conteudos'}
           {filters.is_favorite && ` favorito${items.length === 1 ? '' : 's'}`}
         </div>
+      )}
+
+      {/* Social Network Preview Modal */}
+      {previewItem && (
+        <SocialNetworkPreview
+          content={toGeneratedContent(previewItem)}
+          isOpen={!!previewItem}
+          onClose={() => setPreviewItem(null)}
+        />
       )}
     </div>
   );

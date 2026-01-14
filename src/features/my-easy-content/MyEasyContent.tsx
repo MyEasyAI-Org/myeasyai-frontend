@@ -25,6 +25,8 @@ import { ContentChatPanel } from './components/ContentChatPanel';
 import { ContentPreview } from './components/ContentPreview';
 import { ProfileSelector } from './components/ProfileSelector';
 import { CreateProfileModal } from './components/CreateProfileModal';
+import { TrendingSuggestions } from './components/TrendingSuggestions';
+import type { TrendingTopic } from './constants/trendingData';
 import {
   exportCalendar,
   generateCalendarEntries,
@@ -600,6 +602,52 @@ export function MyEasyContent({ onBackToDashboard }: MyEasyContentProps) {
     [editingProfile, updateProfile, createProfile, handleSelectProfile]
   );
 
+  // Handle trending topic selection - sets the topic and moves to objective input
+  const handleSelectTrendingTopic = useCallback(
+    (topic: TrendingTopic) => {
+      saveSnapshot();
+      content.updateCurrentTopic(topic.title);
+
+      addMessage({
+        role: 'user',
+        content: `Quero criar conteudo sobre: ${topic.title}`,
+      });
+
+      addMessage({
+        role: 'assistant',
+        content: `Otimo tema! "${topic.title}" esta em alta.\n\n${topic.description}\n\nQual e o objetivo desse conteudo? (Ex: gerar engajamento, vender, educar, entreter)`,
+      });
+
+      setCurrentStep(CONVERSATION_STEPS.OBJECTIVE_INPUT);
+    },
+    [saveSnapshot, content, addMessage]
+  );
+
+  // Handle generate content from trending topic - directly generates content
+  const handleGenerateFromTrending = useCallback(
+    async (topicTitle: string) => {
+      saveSnapshot();
+      content.updateCurrentTopic(topicTitle);
+      content.updateCurrentObjective('gerar engajamento');
+
+      addMessage({
+        role: 'user',
+        content: `Gerar conteudo sobre: ${topicTitle}`,
+      });
+
+      await generateContent('gerar engajamento');
+    },
+    [saveSnapshot, content, addMessage, generateContent]
+  );
+
+  // Handle hashtag selection from trending - adds to input
+  const handleSelectTrendingHashtag = useCallback(
+    (hashtag: string) => {
+      setInputMessage((prev) => (prev ? `${prev} ${hashtag}` : hashtag));
+    },
+    []
+  );
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-black-main to-orange-900/20">
       {/* Header */}
@@ -671,6 +719,21 @@ export function MyEasyContent({ onBackToDashboard }: MyEasyContentProps) {
           onGoBack={goBack}
           messagesEndRef={messagesEndRef}
         />
+
+        {/* Trending Suggestions Panel - shows when in TOPIC_INPUT or RESULT step */}
+        {(currentStep === CONVERSATION_STEPS.TOPIC_INPUT ||
+          currentStep === CONVERSATION_STEPS.RESULT) &&
+          content.contentData.businessNiche && (
+            <div className="w-[320px] min-w-[320px] border-r border-slate-800 bg-slate-900/30 p-3 overflow-y-auto">
+              <TrendingSuggestions
+                niche={content.contentData.businessNiche}
+                network={content.contentData.selectedNetworks[0]}
+                onSelectHashtag={handleSelectTrendingHashtag}
+                onSelectTopic={handleSelectTrendingTopic}
+                onGenerateContent={handleGenerateFromTrending}
+              />
+            </div>
+          )}
 
         <ContentPreview
           contentData={content.contentData}
