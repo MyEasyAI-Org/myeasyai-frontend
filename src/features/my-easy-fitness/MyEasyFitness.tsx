@@ -14,6 +14,7 @@ import { useState } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import { FitnessChatPanel } from './components/FitnessChatPanel';
 import { FitnessVisualizationPanel } from './components/FitnessVisualizationPanel';
+import { DemoProfilesButton } from './components/DemoProfilesButton';
 import { useFitnessData } from './hooks/useFitnessData';
 import { usePersonalInfoFlow } from './hooks/useAnamneseFlow';
 import type { TrainingModality } from './types';
@@ -66,7 +67,7 @@ export function MyEasyFitness({ onBackToDashboard, userName }: MyEasyFitnessProp
   return (
     <div className="h-screen overflow-hidden bg-gradient-to-br from-black-main to-blue-main text-white flex flex-col relative">
       {/* Header */}
-      <header className="flex-shrink-0 border-b border-slate-800 bg-black-main/50 backdrop-blur-sm relative z-10">
+      <header className="flex-shrink-0 border-b border-slate-800 bg-black-main/50 backdrop-blur-sm relative z-50">
         <div className="mx-auto max-w-[1920px] px-4 sm:px-6 lg:px-8">
           <div className="flex h-16 items-center justify-between">
             <div className="flex items-center space-x-3 sm:space-x-4">
@@ -84,13 +85,16 @@ export function MyEasyFitness({ onBackToDashboard, userName }: MyEasyFitnessProp
                 </p>
               </div>
             </div>
-            <button
-              onClick={handleBack}
-              className="flex items-center space-x-2 text-slate-300 hover:text-white transition-colors"
-            >
-              <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5" />
-              <span className="hidden sm:inline">Voltar ao Dashboard</span>
-            </button>
+            <div className="flex items-center gap-3">
+              <DemoProfilesButton onLoadProfile={updatePersonalInfo} />
+              <button
+                onClick={handleBack}
+                className="flex items-center space-x-2 text-slate-300 hover:text-white transition-colors"
+              >
+                <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5" />
+                <span className="hidden sm:inline">Voltar ao Dashboard</span>
+              </button>
+            </div>
           </div>
         </div>
       </header>

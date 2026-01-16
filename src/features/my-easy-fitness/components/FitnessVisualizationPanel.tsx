@@ -30,10 +30,11 @@ import {
 } from '@tabler/icons-react';
 import { useState } from 'react';
 import type { UserPersonalInfo, Treino, Dieta, Alimento, TrainingModality } from '../types';
-import { ModalidadesTab } from './ModalidadesTab';
+import { ModalidadeTab } from './ModalidadeTab';
+import { TreinosTab } from './TreinosTab';
 import { ExerciciosTab } from './ExerciciosTab';
 
-type TabId = 'visao-geral' | 'personal-info' | 'treinos' | 'exercicios' | 'dieta';
+type TabId = 'visao-geral' | 'personal-info' | 'modalidade' | 'treinos' | 'dieta' | 'exercicios';
 
 type FitnessVisualizationPanelProps = {
   personalInfo: UserPersonalInfo;
@@ -972,9 +973,10 @@ export function FitnessVisualizationPanel({
   const tabs = [
     { id: 'visao-geral' as TabId, label: 'Visao Geral', icon: LayoutDashboard },
     { id: 'personal-info' as TabId, label: 'Informacoes Pessoais', icon: User },
+    { id: 'modalidade' as TabId, label: 'Modalidade', icon: Activity },
     { id: 'treinos' as TabId, label: 'Treinos', icon: Dumbbell },
-    { id: 'exercicios' as TabId, label: 'Exercicios', icon: BookOpen },
     { id: 'dieta' as TabId, label: 'Dieta', icon: Salad },
+    { id: 'exercicios' as TabId, label: 'Biblioteca de exercicios', icon: BookOpen },
   ];
 
   return (
@@ -1015,10 +1017,12 @@ export function FitnessVisualizationPanel({
             ))}
           </div>
           {/* Disclaimer */}
-          <div className="flex-shrink-0 px-3 hidden lg:block">
-            <span className="text-[10px] text-[#4285F4]">
-              IA nao substitui profissionais de saude
-            </span>
+          <div className="flex-shrink-0 px-3 hidden lg:block text-center">
+            <p className="text-[10px] text-[#4285F4] leading-tight">
+              Esse modulo nao substitui a orientacao
+              <br />
+              e acompanhamento de profissionais habilitados
+            </p>
           </div>
         </div>
       </div>
@@ -1031,13 +1035,17 @@ export function FitnessVisualizationPanel({
         {activeTab === 'personal-info' && (
           <PersonalInfoTab personalInfo={personalInfo} onUpdate={onUpdatePersonalInfo} />
         )}
-        {activeTab === 'treinos' && (
-          <ModalidadesTab
-            treinos={treinos}
+        {activeTab === 'modalidade' && (
+          <ModalidadeTab
             selectedModality={selectedModality}
+            onSelectModality={onSelectModality}
+          />
+        )}
+        {activeTab === 'treinos' && (
+          <TreinosTab
+            treinos={treinos}
             personalInfo={personalInfo}
             onUpdateTreinos={onUpdateTreinos}
-            onSelectModality={onSelectModality}
           />
         )}
         {activeTab === 'exercicios' && <ExerciciosTab />}

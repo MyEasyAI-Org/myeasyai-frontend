@@ -74,9 +74,15 @@ function canGenerateWorkouts(info: UserPersonalInfo): boolean {
 
 /**
  * Check if user has minimum info to generate diet
+ * Requires diet preferences (numeroRefeicoes) to be set to prevent auto-generation on profile load
  */
 function canGenerateDiet(info: UserPersonalInfo): boolean {
-  return !!(info.peso && info.peso > 0 && info.altura && info.altura > 0 && info.idade && info.idade > 0);
+  return !!(
+    info.peso && info.peso > 0 &&
+    info.altura && info.altura > 0 &&
+    info.idade && info.idade > 0 &&
+    info.numeroRefeicoes && info.numeroRefeicoes > 0
+  );
 }
 
 /**

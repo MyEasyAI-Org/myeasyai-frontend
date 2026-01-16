@@ -1484,7 +1484,6 @@ export const EXERCISE_DATABASE: ExerciseInfo[] = [
     modalidade: ['musculacao'],
     categoria: 'pernas',
   },
-
   // ============ CORE (8 exercícios) ============
   {
     id: 'prancha',
@@ -1702,7 +1701,6 @@ export const EXERCISE_DATABASE: ExerciseInfo[] = [
     modalidade: ['calistenia', 'funcional'],
     categoria: 'core',
   },
-
   // ============ CARDIO/FUNCIONAL (10 exercícios) ============
   {
     id: 'burpee',

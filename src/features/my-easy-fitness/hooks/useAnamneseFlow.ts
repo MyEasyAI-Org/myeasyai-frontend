@@ -40,6 +40,32 @@ import {
   isStatusRequest,
 } from '../utils/dietGenerator';
 
+/**
+ * Check if basic personal data is complete (enough to generate workouts/diets)
+ */
+function hasBasicDataComplete(info: UserPersonalInfo): boolean {
+  return !!(
+    info.idade && info.idade > 0 &&
+    info.sexo &&
+    info.peso && info.peso > 0 &&
+    info.altura && info.altura > 0 &&
+    info.objetivo &&
+    info.nivelAtividade
+  );
+}
+
+/**
+ * Determine the appropriate step based on existing data
+ */
+function getStepBasedOnData(info: UserPersonalInfo, hasName: boolean): PersonalInfoStep {
+  if (hasBasicDataComplete(info)) return 'complete';
+  if (!info.idade || !info.sexo) return hasName ? 'info_basica_sem_nome' : 'info_basica';
+  if (!info.peso || !info.altura) return 'medidas';
+  if (!info.objetivo) return 'objetivo';
+  if (!info.nivelAtividade) return 'atividade';
+  return 'complete';
+}
+
 interface UsePersonalInfoFlowProps {
   personalInfo: UserPersonalInfo;
   treinos: Treino[];
@@ -78,8 +104,12 @@ export function usePersonalInfoFlow({
   onUpdateDieta,
   authenticatedUserName,
 }: UsePersonalInfoFlowProps) {
-  // Determine initial step based on whether we have the user name
-  const initialStep: PersonalInfoStep = authenticatedUserName ? 'info_basica_sem_nome' : 'info_basica';
+  // Determine initial step based on existing data and whether we have the user name
+  const hasName = !!(authenticatedUserName || personalInfo.nome);
+  const initialStep: PersonalInfoStep = getStepBasedOnData(personalInfo, hasName);
+
+  // Track the previous profile name to detect profile changes
+  const [previousProfileName, setPreviousProfileName] = useState<string>(personalInfo.nome);
 
   const [messages, setMessages] = useState<FitnessMessage[]>([getInitialMessage(authenticatedUserName)]);
   const [inputMessage, setInputMessage] = useState('');
@@ -97,6 +127,28 @@ export function usePersonalInfoFlow({
       setHasSetInitialName(true);
     }
   }, [authenticatedUserName, hasSetInitialName, personalInfo.nome, onUpdatePersonalInfo]);
+
+  // Detect profile changes (e.g., when demo profile is loaded)
+  useEffect(() => {
+    // Check if the profile name changed (new profile loaded)
+    if (personalInfo.nome && personalInfo.nome !== previousProfileName) {
+      setPreviousProfileName(personalInfo.nome);
+
+      // Recalculate step based on new data
+      const newStep = getStepBasedOnData(personalInfo, true);
+      setPersonalInfoStep(newStep);
+
+      // If basic data is complete, show a message confirming the profile was loaded
+      if (newStep === 'complete') {
+        const profileLoadedMessage: FitnessMessage = {
+          role: 'assistant',
+          content: `Perfil de ${personalInfo.nome} carregado! Seus dados estao completos.\n\nVoce pode:\n• Dizer "treino" para criar uma planilha de treino\n• Dizer "dieta" para criar um plano alimentar\n• Editar seus dados na aba "Informacoes Pessoais"`,
+          timestamp: new Date(),
+        };
+        setMessages((prev) => [...prev, profileLoadedMessage]);
+      }
+    }
+  }, [personalInfo, previousProfileName]);
 
   /**
    * Check if workout preferences are filled
