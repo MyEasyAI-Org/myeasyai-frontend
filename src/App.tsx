@@ -55,6 +55,7 @@ function authUserToUser(authUser: AuthUser | null): User | null {
     user_metadata: {
       name: authUser.name,
       full_name: authUser.name,
+      preferred_name: authUser.preferred_name,
       avatar_url: authUser.avatar_url,
     },
     app_metadata: {},
@@ -468,6 +469,10 @@ function AppContent() {
         if (authUser) {
           const convertedUser = authUserToUser(authUser);
           setUser(convertedUser);
+
+          // Close login/signup modals on successful auth
+          loginModal.close();
+          signupModal.close();
 
           // Ensure user is in database
           if (convertedUser) {

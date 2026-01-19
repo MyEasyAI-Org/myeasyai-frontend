@@ -342,3 +342,88 @@ export type CrmTask = typeof crmTasks.$inferSelect;
 export type NewCrmTask = typeof crmTasks.$inferInsert;
 export type CrmActivity = typeof crmActivities.$inferSelect;
 export type NewCrmActivity = typeof crmActivities.$inferInsert;
+
+// =============================================================================
+// Content Tables (MyEasyContent)
+// =============================================================================
+
+/**
+ * Tabela de perfis de negócio para geração de conteúdo
+ * Permite que um usuário tenha múltiplos presets (restaurante, loja, etc.)
+ */
+export const contentBusinessProfiles = sqliteTable('content_business_profiles', {
+  id: text('id').primaryKey(),
+  user_id: text('user_id')
+    .notNull()
+    .references(() => users.uuid, { onDelete: 'cascade' }),
+  name: text('name').notNull(), // "Restaurante do João", "Loja de Instrumentos"
+  business_niche: text('business_niche').notNull(), // 'restaurant', 'retail', etc.
+  target_audience: text('target_audience'),
+  brand_voice: text('brand_voice').default('professional'),
+  selected_networks: text('selected_networks'), // JSON array
+  preferred_content_types: text('preferred_content_types'), // JSON array
+  icon: text('icon'), // Emoji ou identificador de ícone
+  is_default: integer('is_default', { mode: 'boolean' }).default(false),
+  created_at: text('created_at').default(sql`(datetime('now'))`),
+  updated_at: text('updated_at').default(sql`(datetime('now'))`),
+});
+
+/**
+ * Tabela de biblioteca de conteúdos gerados/salvos
+ */
+export const contentLibrary = sqliteTable('content_library', {
+  id: text('id').primaryKey(),
+  user_id: text('user_id')
+    .notNull()
+    .references(() => users.uuid, { onDelete: 'cascade' }),
+  profile_id: text('profile_id')
+    .notNull()
+    .references(() => contentBusinessProfiles.id, { onDelete: 'cascade' }),
+  content_type: text('content_type').notNull(), // 'feed_post', 'caption', etc.
+  network: text('network').notNull(), // 'instagram', 'linkedin', etc.
+  title: text('title'),
+  content: text('content').notNull(),
+  hashtags: text('hashtags'), // JSON array
+  image_description: text('image_description'),
+  best_time: text('best_time'),
+  variations: text('variations'), // JSON array
+  is_favorite: integer('is_favorite', { mode: 'boolean' }).default(false),
+  tags: text('tags'), // JSON array
+  folder: text('folder'),
+  created_at: text('created_at').default(sql`(datetime('now'))`),
+});
+
+/**
+ * Tabela de calendário editorial
+ */
+export const contentCalendar = sqliteTable('content_calendar', {
+  id: text('id').primaryKey(),
+  user_id: text('user_id')
+    .notNull()
+    .references(() => users.uuid, { onDelete: 'cascade' }),
+  profile_id: text('profile_id')
+    .notNull()
+    .references(() => contentBusinessProfiles.id, { onDelete: 'cascade' }),
+  library_content_id: text('library_content_id').references(() => contentLibrary.id, {
+    onDelete: 'set null',
+  }),
+  scheduled_date: text('scheduled_date').notNull(),
+  day_of_week: text('day_of_week'),
+  network: text('network').notNull(),
+  content_type: text('content_type').notNull(),
+  title: text('title').notNull(),
+  description: text('description'),
+  hashtags: text('hashtags'), // JSON array
+  best_time: text('best_time'),
+  status: text('status').default('planned'), // 'planned', 'draft', 'ready', 'published'
+  created_at: text('created_at').default(sql`(datetime('now'))`),
+  updated_at: text('updated_at').default(sql`(datetime('now'))`),
+});
+
+// Content types
+export type ContentBusinessProfile = typeof contentBusinessProfiles.$inferSelect;
+export type NewContentBusinessProfile = typeof contentBusinessProfiles.$inferInsert;
+export type ContentLibraryItem = typeof contentLibrary.$inferSelect;
+export type NewContentLibraryItem = typeof contentLibrary.$inferInsert;
+export type ContentCalendarEntry = typeof contentCalendar.$inferSelect;
+export type NewContentCalendarEntry = typeof contentCalendar.$inferInsert;

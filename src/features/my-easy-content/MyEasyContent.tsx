@@ -1,10 +1,12 @@
-import { ArrowLeft, PenTool } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type {
   BusinessNiche,
+  ContentBusinessProfile,
   ContentMessage,
   ContentTone,
   ContentType,
+  CreateContentProfileInput,
   GeneratedContent,
   SocialNetwork,
 } from './types';
@@ -17,20 +19,42 @@ import {
   SOCIAL_NETWORKS,
 } from './constants';
 import { useContentData } from './hooks/useContentData';
+import { useContentProfiles } from './hooks/useContentProfiles';
 import { ContentChatPanel } from './components/ContentChatPanel';
 import { ContentPreview } from './components/ContentPreview';
+import { ProfileSelector } from './components/ProfileSelector';
+import { CreateProfileModal } from './components/CreateProfileModal';
 import {
   exportCalendar,
   generateCalendarEntries,
   generateContentIdeas,
 } from './utils/contentGenerator';
 import { socialContentService } from '../../services/SocialContentService';
+import { useUserData } from '../../hooks/useUserData';
 
 type MyEasyContentProps = {
   onBackToDashboard?: () => void;
 };
 
 export function MyEasyContent({ onBackToDashboard }: MyEasyContentProps) {
+  // User data for profile management
+  const { userUuid } = useUserData();
+
+  // Content profiles management
+  const {
+    profiles,
+    currentProfile,
+    isLoading: isLoadingProfiles,
+    isSaving: isSavingProfile,
+    createProfile,
+    updateProfile,
+    selectProfile,
+  } = useContentProfiles(userUuid);
+
+  // Profile modal state
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [editingProfile, setEditingProfile] = useState<ContentBusinessProfile | null>(null);
+
   // Content data management
   const content = useContentData();
 
@@ -408,6 +432,56 @@ export function MyEasyContent({ onBackToDashboard }: MyEasyContentProps) {
     [content.contentData.calendar],
   );
 
+  // Profile handlers
+  const handleCreateProfile = useCallback(() => {
+    setEditingProfile(null);
+    setIsProfileModalOpen(true);
+  }, []);
+
+  const handleEditProfile = useCallback((profile: ContentBusinessProfile) => {
+    setEditingProfile(profile);
+    setIsProfileModalOpen(true);
+  }, []);
+
+  const handleSelectProfile = useCallback(
+    (profile: ContentBusinessProfile) => {
+      selectProfile(profile);
+      // Apply profile settings to content data
+      if (profile.business_niche) {
+        content.updateBusinessNiche(profile.business_niche);
+      }
+      if (profile.target_audience) {
+        content.updateTargetAudience(profile.target_audience);
+      }
+      if (profile.brand_voice) {
+        content.updateBrandVoice(profile.brand_voice);
+      }
+      if (profile.selected_networks && profile.selected_networks.length > 0) {
+        content.setNetworks(profile.selected_networks);
+      }
+      if (profile.preferred_content_types && profile.preferred_content_types.length > 0) {
+        content.setContentTypes(profile.preferred_content_types);
+      }
+    },
+    [selectProfile, content]
+  );
+
+  const handleSaveProfile = useCallback(
+    async (input: CreateContentProfileInput) => {
+      if (editingProfile) {
+        await updateProfile(editingProfile.id, input);
+      } else {
+        const newProfile = await createProfile(input);
+        if (newProfile) {
+          handleSelectProfile(newProfile);
+        }
+      }
+      setIsProfileModalOpen(false);
+      setEditingProfile(null);
+    },
+    [editingProfile, updateProfile, createProfile, handleSelectProfile]
+  );
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-black-main to-orange-900/20">
       {/* Header */}
@@ -429,8 +503,19 @@ export function MyEasyContent({ onBackToDashboard }: MyEasyContentProps) {
                 </p>
               </div>
             </div>
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-4">
+              {/* Profile Selector */}
+              <ProfileSelector
+                profiles={profiles}
+                currentProfile={currentProfile}
+                isLoading={isLoadingProfiles}
+                onSelectProfile={handleSelectProfile}
+                onCreateProfile={handleCreateProfile}
+                onEditProfile={handleEditProfile}
+              />
+
               <button
+                type="button"
                 onClick={() =>
                   onBackToDashboard
                     ? onBackToDashboard()
@@ -476,6 +561,18 @@ export function MyEasyContent({ onBackToDashboard }: MyEasyContentProps) {
           onExportCalendar={handleExportCalendar}
         />
       </div>
+
+      {/* Create/Edit Profile Modal */}
+      <CreateProfileModal
+        isOpen={isProfileModalOpen}
+        editProfile={editingProfile}
+        isSaving={isSavingProfile}
+        onClose={() => {
+          setIsProfileModalOpen(false);
+          setEditingProfile(null);
+        }}
+        onSave={handleSaveProfile}
+      />
     </div>
   );
 }
