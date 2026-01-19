@@ -83,8 +83,9 @@ interface UsePersonalInfoFlowProps {
 function getInitialMessage(userName?: string): FitnessMessage {
   if (userName) {
     return {
+      id: `initial-${Date.now()}`,
       role: 'assistant',
-      content: `Ola, ${userName}! Sou seu assistente de fitness. Vou te ajudar a criar treinos e dietas personalizados.\n\nPara comecar, me conte: qual seu sexo biologico e idade?\n\n(Ex: "masculino, 28 anos")`,
+      content: `Olá, ${userName}! Sou seu assistente de fitness. Vou te ajudar a criar treinos e dietas personalizados.\n\nPara começar, me conte: qual seu sexo biológico e idade?\n\n(Ex: "masculino, 28 anos")`,
       timestamp: new Date(),
     };
   }
@@ -141,8 +142,9 @@ export function usePersonalInfoFlow({
       // If basic data is complete, show a message confirming the profile was loaded
       if (newStep === 'complete') {
         const profileLoadedMessage: FitnessMessage = {
+          id: `profile-loaded-${Date.now()}`,
           role: 'assistant',
-          content: `Perfil de ${personalInfo.nome} carregado! Seus dados estao completos.\n\nVoce pode:\n• Dizer "treino" para criar uma planilha de treino\n• Dizer "dieta" para criar um plano alimentar\n• Editar seus dados na aba "Informacoes Pessoais"`,
+          content: `Perfil de ${personalInfo.nome} carregado! Seus dados estão completos.\n\nVocê pode:\n• Dizer "treino" para criar uma planilha de treino\n• Dizer "dieta" para criar um plano alimentar\n• Editar seus dados na aba "Informações Pessoais"`,
           timestamp: new Date(),
         };
         setMessages((prev) => [...prev, profileLoadedMessage]);
@@ -167,11 +169,22 @@ export function usePersonalInfoFlow({
   }, [personalInfo.numeroRefeicoes, personalInfo.restricoesAlimentares, personalInfo.horarioTreino]);
 
   /**
+   * Generate a unique message ID
+   */
+  const generateMessageId = useCallback(() => {
+    return `msg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  }, []);
+
+  /**
    * Add a message to the conversation
    */
   const addMessage = useCallback((message: FitnessMessage) => {
-    setMessages((prev) => [...prev, message]);
-  }, []);
+    const messageWithId = {
+      ...message,
+      id: message.id || generateMessageId(),
+    };
+    setMessages((prev) => [...prev, messageWithId]);
+  }, [generateMessageId]);
 
   /**
    * Add assistant response
@@ -191,7 +204,7 @@ export function usePersonalInfoFlow({
     (data: UserPersonalInfo): string => {
       const bmi = calculateBMI(data.peso, data.altura);
 
-      let resposta = `✅ Perfeito, ${data.nome}! Informacoes basicas coletadas!\n\n`;
+      let resposta = `✅ Perfeito, ${data.nome}! Informações básicas coletadas!\n\n`;
       resposta += `📋 **Resumo dos seus dados:**\n`;
       resposta += `• Idade: ${data.idade} anos\n`;
       resposta += `• Sexo: ${data.sexo === 'masculino' ? 'Masculino' : 'Feminino'}\n`;
@@ -201,21 +214,21 @@ export function usePersonalInfoFlow({
         resposta += `• IMC: ${bmi.toFixed(1)}\n`;
       }
       resposta += `• Objetivo: ${data.objetivo}\n`;
-      resposta += `• Nivel de atividade: ${getActivityLevelName(data.nivelAtividade)}\n`;
+      resposta += `• Nível de atividade: ${getActivityLevelName(data.nivelAtividade)}\n`;
 
       // Health info
       if (data.restricoesMedicas.length > 0 || data.lesoes.length > 0) {
         if (data.restricoesMedicas.length > 0) {
-          resposta += `• Restricoes medicas: ${data.restricoesMedicas.join(', ')}\n`;
+          resposta += `• Restrições médicas: ${data.restricoesMedicas.join(', ')}\n`;
         }
         if (data.lesoes.length > 0) {
-          resposta += `• Lesoes: ${data.lesoes.join(', ')}\n`;
+          resposta += `• Lesões: ${data.lesoes.join(', ')}\n`;
         }
       }
 
-      resposta += `\nVoce pode ver e editar esses dados na aba "Informacoes Pessoais".\n\n`;
-      resposta += `Agora posso criar treinos e dietas PERSONALIZADOS para voce!\n`;
-      resposta += `Quando pedir, vou fazer algumas perguntas especificas para personalizar ao maximo.\n\n`;
+      resposta += `\nVocê pode ver e editar esses dados na aba "Informações Pessoais".\n\n`;
+      resposta += `Agora posso criar treinos e dietas PERSONALIZADOS para você!\n`;
+      resposta += `Quando pedir, vou fazer algumas perguntas específicas para personalizar ao máximo.\n\n`;
       resposta += `• Diga "treino" para criar uma planilha de treino\n`;
       resposta += `• Diga "dieta" para criar um plano alimentar`;
 
@@ -328,7 +341,7 @@ export function usePersonalInfoFlow({
         treinos.length,
         dieta !== null
       );
-      console.log('Contexto do usuario:', userContext);
+      console.log('Contexto do usuário:', userContext);
 
       // Check for workout request
       if (isWorkoutRequest(input)) {
@@ -378,7 +391,7 @@ export function usePersonalInfoFlow({
       resposta += '• Criar planilhas de treino (diga "quero um treino")\n';
       resposta += '• Montar plano alimentar (diga "monte minha dieta")\n';
       resposta += '• Ver seus dados atuais (diga "meus dados")\n';
-      resposta += '• Tirar duvidas sobre exercicios e nutricao\n\n';
+      resposta += '• Tirar dúvidas sobre exercícios e nutrição\n\n';
       resposta += 'O que gostaria de fazer?';
 
       addAssistantMessage(resposta);

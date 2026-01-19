@@ -64,6 +64,7 @@ function mapD1ToPersonalInfo(profile: D1FitnessProfile): UserPersonalInfo {
     numeroRefeicoes: (profile as any).numero_refeicoes ?? 0,
     horarioTreino: ((profile as any).horario_treino ?? '') as UserPersonalInfo['horarioTreino'],
     localTreino: ((profile as any).local_treino ?? '') as UserPersonalInfo['localTreino'],
+    modalidade: ((profile as any).modalidade ?? '') as UserPersonalInfo['modalidade'],
   };
 }
 
@@ -140,6 +141,22 @@ export const FitnessService = {
         nivel_atividade: personalInfo.nivelAtividade,
         restricoes_medicas: personalInfo.restricoesMedicas,
         lesoes: personalInfo.lesoes,
+        // Training preferences
+        dias_treino_semana: personalInfo.diasTreinoSemana,
+        tempo_treino_minutos: personalInfo.tempoTreinoMinutos,
+        preferencia_treino: personalInfo.preferenciaTreino,
+        experiencia_treino: personalInfo.experienciaTreino,
+        local_treino: personalInfo.localTreino,
+        modalidade: personalInfo.modalidade,
+        // Diet preferences
+        restricoes_alimentares: personalInfo.restricoesAlimentares,
+        comidas_favoritas: personalInfo.comidasFavoritas,
+        comidas_evitar: personalInfo.comidasEvitar,
+        numero_refeicoes: personalInfo.numeroRefeicoes,
+        horario_treino: personalInfo.horarioTreino,
+        // Gender
+        genero: personalInfo.genero,
+        genero_outro: personalInfo.generoOutro,
       });
 
       if (result.error) {

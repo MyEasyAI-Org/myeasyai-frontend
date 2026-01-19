@@ -156,6 +156,23 @@ export interface D1FitnessProfile {
   nivel_atividade: string;
   restricoes_medicas: string | null; // JSON array as string
   lesoes: string | null; // JSON array as string
+  // Training preferences
+  dias_treino_semana: number | null;
+  tempo_treino_minutos: number | null;
+  preferencia_treino: string | null;
+  experiencia_treino: string | null;
+  local_treino: string | null;
+  modalidade: string | null;
+  // Diet preferences
+  restricoes_alimentares: string | null; // JSON array as string
+  comidas_favoritas: string | null; // JSON array as string
+  comidas_evitar: string | null; // JSON array as string
+  numero_refeicoes: number | null;
+  horario_treino: string | null;
+  // Gender
+  genero: string | null;
+  genero_outro: string | null;
+  // Timestamps
   created_at: string;
   updated_at: string | null;
 }
@@ -1494,6 +1511,22 @@ export class D1Client {
     nivel_atividade: string;
     restricoes_medicas?: string[];
     lesoes?: string[];
+    // Training preferences
+    dias_treino_semana?: number;
+    tempo_treino_minutos?: number;
+    preferencia_treino?: string;
+    experiencia_treino?: string;
+    local_treino?: string;
+    modalidade?: string;
+    // Diet preferences
+    restricoes_alimentares?: string[];
+    comidas_favoritas?: string[];
+    comidas_evitar?: string[];
+    numero_refeicoes?: number;
+    horario_treino?: string;
+    // Gender
+    genero?: string;
+    genero_outro?: string;
   }): Promise<D1ApiResponse<D1FitnessProfile>> {
     return this.fetch<D1FitnessProfile>('/fitness/profile', {
       method: 'PUT',
@@ -1501,6 +1534,9 @@ export class D1Client {
         ...profile,
         restricoes_medicas: JSON.stringify(profile.restricoes_medicas || []),
         lesoes: JSON.stringify(profile.lesoes || []),
+        restricoes_alimentares: JSON.stringify(profile.restricoes_alimentares || []),
+        comidas_favoritas: JSON.stringify(profile.comidas_favoritas || []),
+        comidas_evitar: JSON.stringify(profile.comidas_evitar || []),
       }),
     });
   }

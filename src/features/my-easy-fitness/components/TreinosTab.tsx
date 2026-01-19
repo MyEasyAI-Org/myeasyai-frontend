@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, memo, useMemo, useCallback } from 'react';
 import {
   Dumbbell,
   Pencil,
@@ -52,7 +52,7 @@ function findExerciseInfo(exerciseName: string): ExerciseInfo | null {
 }
 
 // Exercise Swap Modal Component
-function ExerciseSwapModal({
+const ExerciseSwapModal = memo(function ExerciseSwapModal({
   isOpen,
   exerciseName,
   alternatives,
@@ -72,7 +72,7 @@ function ExerciseSwapModal({
       <div className="bg-slate-800 rounded-xl border border-slate-700 max-w-md w-full max-h-[80vh] overflow-hidden">
         <div className="p-4 border-b border-slate-700 flex items-center justify-between">
           <div>
-            <h3 className="text-lg font-semibold text-white">Trocar Exercicio</h3>
+            <h3 className="text-lg font-semibold text-white">Trocar Exercício</h3>
             <p className="text-sm text-slate-400">Substituir: {exerciseName}</p>
           </div>
           <button
@@ -86,9 +86,9 @@ function ExerciseSwapModal({
         <div className="p-4 overflow-y-auto max-h-[60vh]">
           {alternatives.length > 0 ? (
             <div className="space-y-2">
-              {alternatives.map((alt, idx) => (
+              {alternatives.map((alt) => (
                 <button
-                  key={idx}
+                  key={alt.nome}
                   onClick={() => onSelect(alt)}
                   className="w-full p-3 bg-slate-700/50 hover:bg-slate-700 rounded-lg text-left transition-colors group"
                 >
@@ -104,17 +104,17 @@ function ExerciseSwapModal({
             </div>
           ) : (
             <div className="text-center py-8">
-              <p className="text-slate-400">Nenhuma alternativa disponivel para este exercicio.</p>
+              <p className="text-slate-400">Nenhuma alternativa disponível para este exercício.</p>
             </div>
           )}
         </div>
       </div>
     </div>
   );
-}
+});
 
 // Expandable Exercise Card Component
-function ExpandableExerciseCard({
+const ExpandableExerciseCard = memo(function ExpandableExerciseCard({
   exercise,
   exerciseIndex,
   isExpanded,
@@ -132,7 +132,7 @@ function ExpandableExerciseCard({
   onSwap: () => void;
 }) {
   const [movementImageError, setMovementImageError] = useState(false);
-  const exerciseInfo = findExerciseInfo(exercise.nome);
+  const exerciseInfo = useMemo(() => findExerciseInfo(exercise.nome), [exercise.nome]);
 
   return (
     <div className="bg-slate-800/50 rounded-xl border border-slate-700 overflow-hidden">
@@ -323,10 +323,10 @@ function ExpandableExerciseCard({
       )}
     </div>
   );
-}
+});
 
 // Workout Card Component
-function WorkoutCard({
+const WorkoutCard = memo(function WorkoutCard({
   treino,
   personalInfo,
   onUpdate,
@@ -492,23 +492,23 @@ function WorkoutCard({
       </div>
     </>
   );
-}
+});
 
 // Main Component
-export function TreinosTab({
+export const TreinosTab = memo(function TreinosTab({
   treinos,
   personalInfo,
   onUpdateTreinos,
 }: TreinosTabProps) {
-  const updateTreino = (treinoId: string, updates: Partial<Treino>) => {
+  const updateTreino = useCallback((treinoId: string, updates: Partial<Treino>) => {
     onUpdateTreinos(
       treinos.map((t) => (t.id === treinoId ? { ...t, ...updates } : t))
     );
-  };
+  }, [treinos, onUpdateTreinos]);
 
-  const deleteTreino = (treinoId: string) => {
+  const deleteTreino = useCallback((treinoId: string) => {
     onUpdateTreinos(treinos.filter((t) => t.id !== treinoId));
-  };
+  }, [treinos, onUpdateTreinos]);
 
   return (
     <div className="p-6 space-y-6">
@@ -549,4 +549,4 @@ export function TreinosTab({
       )}
     </div>
   );
-}
+});

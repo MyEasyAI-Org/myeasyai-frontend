@@ -3,58 +3,31 @@
  *
  * Main component for the fitness assistant module.
  * Uses clean architecture with separated concerns:
- * - hooks/ for state management
+ * - contexts/ for state management via React Context
+ * - hooks/ for reusable logic
  * - utils/ for business logic
  * - components/ for UI
  * - types/ for type definitions
  * - constants/ for configuration
  */
 
-import { useState } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import { FitnessChatPanel } from './components/FitnessChatPanel';
 import { FitnessVisualizationPanel } from './components/FitnessVisualizationPanel';
 import { DemoProfilesButton } from './components/DemoProfilesButton';
-import { useFitnessData } from './hooks/useFitnessData';
-import { usePersonalInfoFlow } from './hooks/useAnamneseFlow';
-import type { TrainingModality } from './types';
+import { FitnessErrorBoundary } from './components/FitnessErrorBoundary';
+import { FitnessProvider, useFitnessContext } from './contexts';
 
 type MyEasyFitnessProps = {
   onBackToDashboard: () => void;
   userName?: string;
 };
 
-export function MyEasyFitness({ onBackToDashboard, userName }: MyEasyFitnessProps) {
-  // Selected modality state for the UI
-  const [selectedModality, setSelectedModality] = useState<TrainingModality>('');
-
-  // Data state management
-  const {
-    personalInfo,
-    treinos,
-    dieta,
-    updatePersonalInfo,
-    addTreino,
-    updateDieta,
-    setTreinos,
-  } = useFitnessData(userName);
-
-  // Conversation flow management
-  const {
-    messages,
-    inputMessage,
-    isGenerating,
-    setInputMessage,
-    handleSendMessage,
-  } = usePersonalInfoFlow({
-    personalInfo,
-    treinos,
-    dieta,
-    onUpdatePersonalInfo: updatePersonalInfo,
-    onAddTreino: addTreino,
-    onSetTreinos: setTreinos,
-    onUpdateDieta: updateDieta,
-  });
+/**
+ * Inner content component that uses the fitness context
+ */
+function MyEasyFitnessContent({ onBackToDashboard }: { onBackToDashboard: () => void }) {
+  const { updatePersonalInfo } = useFitnessContext();
 
   const handleBack = () => {
     if (onBackToDashboard) {
@@ -102,26 +75,24 @@ export function MyEasyFitness({ onBackToDashboard, userName }: MyEasyFitnessProp
       {/* Main Content - Two Panels */}
       <main className="flex-1 flex overflow-hidden min-h-0 relative z-10">
         {/* Left Panel - Chat */}
-        <FitnessChatPanel
-          messages={messages}
-          inputMessage={inputMessage}
-          setInputMessage={setInputMessage}
-          isGenerating={isGenerating}
-          onSendMessage={handleSendMessage}
-        />
+        <FitnessChatPanel />
 
         {/* Right Panel - Dashboard with Tabs */}
-        <FitnessVisualizationPanel
-          personalInfo={personalInfo}
-          treinos={treinos}
-          dieta={dieta}
-          selectedModality={selectedModality}
-          onUpdatePersonalInfo={updatePersonalInfo}
-          onUpdateTreinos={setTreinos}
-          onUpdateDieta={updateDieta}
-          onSelectModality={setSelectedModality}
-        />
+        <FitnessVisualizationPanel />
       </main>
     </div>
+  );
+}
+
+/**
+ * Main component wrapped with FitnessProvider and ErrorBoundary
+ */
+export function MyEasyFitness({ onBackToDashboard, userName }: MyEasyFitnessProps) {
+  return (
+    <FitnessErrorBoundary>
+      <FitnessProvider userName={userName}>
+        <MyEasyFitnessContent onBackToDashboard={onBackToDashboard} />
+      </FitnessProvider>
+    </FitnessErrorBoundary>
   );
 }

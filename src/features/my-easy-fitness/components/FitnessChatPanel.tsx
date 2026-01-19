@@ -1,23 +1,24 @@
+/**
+ * FitnessChatPanel
+ *
+ * Chat interface for the fitness assistant.
+ * Uses FitnessContext for state management.
+ */
+
 import { MessageSquare, Send, Sparkles } from 'lucide-react';
 import type React from 'react';
 import { useRef, useEffect } from 'react';
-import type { FitnessMessage } from '../types';
+import { useFitnessContext } from '../contexts';
 
-type FitnessChatPanelProps = {
-  messages: FitnessMessage[];
-  inputMessage: string;
-  setInputMessage: (value: string) => void;
-  isGenerating: boolean;
-  onSendMessage: () => void;
-};
+export function FitnessChatPanel() {
+  const {
+    messages,
+    inputMessage,
+    setInputMessage,
+    isGenerating,
+    handleSendMessage,
+  } = useFitnessContext();
 
-export function FitnessChatPanel({
-  messages,
-  inputMessage,
-  setInputMessage,
-  isGenerating,
-  onSendMessage,
-}: FitnessChatPanelProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -25,10 +26,10 @@ export function FitnessChatPanel({
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
+  const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      onSendMessage();
+      handleSendMessage();
     }
   };
 
@@ -48,7 +49,7 @@ export function FitnessChatPanel({
       <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-4">
         {messages.map((message, index) => (
           <div
-            key={index}
+            key={message.id || index}
             className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
           >
             <div
@@ -112,13 +113,13 @@ export function FitnessChatPanel({
             type="text"
             value={inputMessage}
             onChange={(e) => setInputMessage(e.target.value)}
-            onKeyPress={handleKeyPress}
+            onKeyDown={handleKeyDown}
             placeholder="Pergunte sobre treinos, dieta, suplementos..."
             disabled={isGenerating}
             className="flex-1 rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-white placeholder-slate-500 focus:border-lime-500 focus:outline-none focus:ring-2 focus:ring-lime-500 disabled:opacity-50"
           />
           <button
-            onClick={onSendMessage}
+            onClick={handleSendMessage}
             disabled={!inputMessage.trim() || isGenerating}
             className="rounded-lg bg-lime-600 p-2 text-white hover:bg-lime-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >

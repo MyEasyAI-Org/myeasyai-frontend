@@ -55,7 +55,7 @@ export {
   generateUserContext,
 } from './utils/fitnessCalculations';
 
-export { generateWorkout, isWorkoutRequest } from './utils/workoutGenerator';
+export { generatePersonalizedWorkoutPlan, isWorkoutRequest } from './utils/workoutGenerator';
 export { generateDiet, isDietRequest } from './utils/dietGenerator';
 
 // Constants - export for potential customization

@@ -50,9 +50,9 @@ export function DemoProfilesButton({ onLoadProfile }: DemoProfilesButtonProps) {
               </p>
             </div>
             <div className="max-h-80 overflow-y-auto">
-              {DEMO_PROFILES.map((profile, index) => (
+              {DEMO_PROFILES.map((profile) => (
                 <button
-                  key={index}
+                  key={profile.nome}
                   onClick={() => {
                     onLoadProfile(profile);
                     setIsOpen(false);

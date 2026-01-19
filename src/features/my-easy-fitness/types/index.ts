@@ -59,6 +59,7 @@ export interface UserPersonalInfo {
   preferenciaTreino: string; // ex: "musculação", "funcional", "cardio"
   experienciaTreino: 'iniciante' | 'intermediario' | 'avancado' | '';
   localTreino: 'academia' | 'casa' | ''; // onde o usuario treina
+  modalidade: TrainingModality; // modalidade de treino selecionada
   // Diet preferences
   restricoesAlimentares: string[]; // ex: "lactose", "gluten", "vegetariano"
   comidasFavoritas: string[]; // comidas que gosta e quer incluir
@@ -149,6 +150,7 @@ export interface Dieta {
  * Chat message in fitness assistant
  */
 export interface FitnessMessage {
+  id?: string;
   role: 'user' | 'assistant';
   content: string;
   timestamp?: Date;
