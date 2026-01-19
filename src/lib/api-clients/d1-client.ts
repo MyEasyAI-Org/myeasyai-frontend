@@ -1617,6 +1617,8 @@ export class D1Client {
    */
   async deleteFitnessDieta(userUuid: string): Promise<D1ApiResponse<{ success: boolean }>> {
     return this.fetch(`/fitness/dieta/user/${userUuid}`, { method: 'DELETE' });
+  }
+
   // ==================== CONTENT BUSINESS PROFILES ====================
 
   /**
