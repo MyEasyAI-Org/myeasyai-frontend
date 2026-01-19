@@ -1,4 +1,4 @@
-import { Briefcase, DollarSign, ExternalLink, GraduationCap, Package, PenTool, Target } from 'lucide-react';
+import { Briefcase, DollarSign, ExternalLink, GraduationCap, Package, PenTool, Target, HelpCircle } from 'lucide-react';
 import type { UserProduct } from '../../hooks/useUserData';
 import { ProductCard } from './ProductCard';
 
@@ -10,6 +10,7 @@ type ProductsTabProps = {
   onGoToMyEasyContent?: () => void;
   onGoToMyEasyResume?: () => void;
   onGoToMyEasyLearning?: () => void;
+  onGoToSupport?: () => void;
   accountCreatedAt?: string;
 };
 
@@ -21,15 +22,28 @@ export function ProductsTab({
   onGoToMyEasyContent,
   onGoToMyEasyResume,
   onGoToMyEasyLearning,
+  onGoToSupport,
   accountCreatedAt,
 }: ProductsTabProps) {
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-white">Meus Produtos</h1>
-        <p className="mt-2 text-slate-400">
-          Produtos e serviços que você está assinando atualmente.
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-white">Meus Produtos</h1>
+          <p className="mt-2 text-slate-400">
+            Produtos e serviços que você está assinando atualmente.
+          </p>
+        </div>
+        {onGoToSupport && (
+          <button
+            type="button"
+            onClick={onGoToSupport}
+            className="flex items-center space-x-2 rounded-lg border border-purple-600 bg-purple-600/10 px-6 py-3 font-semibold text-purple-400 transition-colors hover:bg-purple-600/20"
+          >
+            <HelpCircle className="h-5 w-5" />
+            <span>Central de Suporte</span>
+          </button>
+        )}
       </div>
 
       {/* Active Products + MyEasyPricing */}
