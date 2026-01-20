@@ -5,6 +5,9 @@ import { defineConfig } from 'vite';
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  resolve: {
+    dedupe: ['three', 'three-stdlib', '@react-three/fiber', '@react-three/drei'],
+  },
   build: {
     rollupOptions: {
       output: {
@@ -28,5 +31,17 @@ export default defineConfig({
       '.ngrok-free.app',
       '.ngrok.io',
     ],
+    headers: {
+      // Required for WebContainer SharedArrayBuffer support
+      'Cross-Origin-Embedder-Policy': 'credentialless',
+      'Cross-Origin-Opener-Policy': 'same-origin',
+    },
+  },
+  preview: {
+    headers: {
+      // Required for WebContainer SharedArrayBuffer support
+      'Cross-Origin-Embedder-Policy': 'credentialless',
+      'Cross-Origin-Opener-Policy': 'same-origin',
+    },
   },
 });

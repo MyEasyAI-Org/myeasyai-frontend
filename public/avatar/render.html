@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    body { margin: 0; background: #1e1e2e; overflow: hidden; }
+  </style>
+  <script async src="https://unpkg.com/es-module-shims@1.8.0/dist/es-module-shims.js"></script>
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://unpkg.com/three@0.168.0/build/three.module.js",
+      "three/addons/": "https://unpkg.com/three@0.168.0/examples/jsm/"
+    }
+  }
+  </script>
+</head>
+<body>
+  <script type="module">
+    import * as THREE from 'three';
+    import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+
+    const params = new URLSearchParams(window.location.search);
+    const modelPath = params.get('model');
+
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x1e1e2e);
+
+    const camera = new THREE.PerspectiveCamera(50, 1, 0.01, 100);
+    camera.position.set(0, 0, 3);
+    camera.lookAt(0, 0, 0);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+    renderer.setSize(256, 256);
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    document.body.appendChild(renderer.domElement);
+
+    // Strong lighting
+    scene.add(new THREE.AmbientLight(0xffffff, 2));
+
+    const light1 = new THREE.DirectionalLight(0xffffff, 2);
+    light1.position.set(5, 5, 5);
+    scene.add(light1);
+
+    const light2 = new THREE.DirectionalLight(0xffffff, 1.5);
+    light2.position.set(-5, 3, -5);
+    scene.add(light2);
+
+    function animate() {
+      requestAnimationFrame(animate);
+      renderer.render(scene, camera);
+    }
+    animate();
+
+    if (modelPath) {
+      const loader = new GLTFLoader();
+      loader.load(
+        modelPath,
+        function(gltf) {
+          const model = gltf.scene;
+
+          // Fix materials for all meshes
+          model.traverse((child) => {
+            if (child.isMesh || child.isSkinnedMesh) {
+              if (child.material) {
+                child.material.side = THREE.DoubleSide;
+                child.material.transparent = false;
+                child.material.needsUpdate = true;
+              }
+            }
+          });
+
+          // Calculate bounding box of the ENTIRE model
+          const box = new THREE.Box3().setFromObject(model);
+          const size = new THREE.Vector3();
+          const center = new THREE.Vector3();
+          box.getSize(size);
+          box.getCenter(center);
+
+          const maxDim = Math.max(size.x, size.y, size.z);
+
+          if (maxDim === 0) {
+            window.RENDER_ERROR = true;
+            return;
+          }
+
+          // Create pivot for the whole model
+          const pivot = new THREE.Group();
+          scene.add(pivot);
+          pivot.add(model);
+
+          // Scale to fit
+          const scale = 1.3 / maxDim;
+          pivot.scale.setScalar(scale);
+
+          // Center the model
+          pivot.position.set(
+            -center.x * scale,
+            -center.y * scale,
+            -center.z * scale
+          );
+
+          // No rotation - view from front
+
+          window.RENDER_DONE = true;
+        },
+        undefined,
+        function(error) {
+          console.error('Load error:', error);
+          window.RENDER_ERROR = true;
+        }
+      );
+    }
+  </script>
+</body>
+</html>

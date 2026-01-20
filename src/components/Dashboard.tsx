@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { AssistantChatWidget } from '../features/assistant-chat';
 import { useDashboardNavigation } from '../hooks/useDashboardNavigation';
 import { useNotifications } from '../hooks/useNotifications';
 import { useUserData } from '../hooks/useUserData';
@@ -6,6 +7,7 @@ import { authService } from '../services/AuthServiceV2';
 import type { Notification } from '../types/Notification';
 import { Footer } from './Footer';
 import NotificationDetailModal from './NotificationDetailModal';
+import { DashboardAvatarWidget } from './dashboard/DashboardAvatarWidget';
 import { DashboardHeader } from './dashboard/DashboardHeader';
 import { LoadingScreen } from './dashboard/LoadingScreen';
 import { NavigationTabs } from './dashboard/NavigationTabs';
@@ -56,7 +58,7 @@ export function Dashboard({
   } = useUserData();
 
   // Dashboard navigation hook (manages tabs and feature navigation)
-  const { activeTab, setActiveTab, navigateToProduct, goToCRM, goToContent } =
+  const { activeTab, setActiveTab, navigateToProduct, goToCRM, goToContent, goToAvatar, goToCode } =
     useDashboardNavigation({
       onGoHome,
       onGoToMyEasyWebsite,
@@ -155,6 +157,8 @@ export function Dashboard({
             onAccessProduct={navigateToProduct}
             onGoToCRM={goToCRM}
             onGoToMyEasyContent={goToContent}
+            onGoToMyEasyAvatar={goToAvatar}
+            onGoToMyEasyCode={goToCode}
             accountCreatedAt={cadastralInfo.created_at}
           />
         )}
@@ -181,6 +185,12 @@ export function Dashboard({
         notification={selectedNotification}
         onClose={() => setSelectedNotification(null)}
       />
+
+      {/* Dashboard Avatar Widget */}
+      <DashboardAvatarWidget />
+
+      {/* Assistant Chat Widget */}
+      <AssistantChatWidget />
     </div>
   );
 }

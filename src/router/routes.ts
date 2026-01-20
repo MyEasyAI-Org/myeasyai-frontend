@@ -18,7 +18,10 @@ export const ROUTES = {
   MY_EASY_CRM: '/crm',
   MY_EASY_PRICING: '/pricing',
   MY_EASY_CONTENT: '/myeasycontent',
+  MY_EASY_AVATAR: '/myeasyavatar',
+  MY_EASY_CODE: '/myeasycode',
 } as const;
 
 export type RouteKey = keyof typeof ROUTES;
 export type RoutePath = (typeof ROUTES)[RouteKey];
+

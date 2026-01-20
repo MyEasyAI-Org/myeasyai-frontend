@@ -42,7 +42,7 @@ type ContentPreviewProps = {
   onExportCalendar: (format: 'csv' | 'json') => void;
 };
 
-const NETWORK_ICONS: Record<SocialNetwork, React.ElementType> = {
+const NETWORK_ICONS: Record<SocialNetwork, React.ComponentType<{ className?: string }>> = {
   instagram: Instagram,
   facebook: Facebook,
   linkedin: Linkedin,

@@ -39,3 +39,14 @@ dist-ssr
 
 # Documentation (local only)
 docs/
+
+# Nulls
+nul
+NUL
+
+# Experiments
+bolt.diy-main/
+groq-vite/
+r3f-ultimate-character-configurator-main/
+scripts/
+nul
