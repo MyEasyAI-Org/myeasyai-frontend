@@ -146,9 +146,15 @@ class AuthServiceV2 {
    */
   private async validateCloudflareToken(token: string): Promise<boolean> {
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5s timeout
+
       const response = await fetch(`${API_URL}/auth/me`, {
         headers: { Authorization: `Bearer ${token}` },
+        signal: controller.signal,
       });
+
+      clearTimeout(timeoutId);
 
       if (response.ok) {
         const { user } = await response.json();
@@ -190,18 +196,25 @@ class AuthServiceV2 {
     }
 
     try {
-      // Usar endpoint ensureUser que faz upsert
-      const result = await d1Client.ensureUser({
-        uuid: user.uuid,
-        email: user.email,
-        name: user.name,
-        preferred_name: user.preferred_name,
-        avatar_url: user.avatar_url,
-      });
+      // Usar endpoint ensureUser que faz upsert com timeout de 5s
+      const timeoutPromise = new Promise<{ error: string }>((resolve) =>
+        setTimeout(() => resolve({ error: 'Timeout syncing to D1' }), 5000)
+      );
+
+      const result = await Promise.race([
+        d1Client.ensureUser({
+          uuid: user.uuid,
+          email: user.email,
+          name: user.name,
+          preferred_name: user.preferred_name,
+          avatar_url: user.avatar_url,
+        }),
+        timeoutPromise,
+      ]);
 
       if (result.error) {
         console.error('❌ [AUTH V2] Failed to sync user to D1:', result.error);
-      } else {
+      } else if ('data' in result) {
         console.log('✅ [AUTH V2] User synced to D1:', user.email, result.data?.created ? '(created)' : '(existing)');
       }
     } catch (error) {

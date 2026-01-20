@@ -20,6 +20,8 @@ export const ROUTES = {
   MY_EASY_CONTENT: '/myeasycontent',
   MY_EASY_AVATAR: '/myeasyavatar',
   MY_EASY_CODE: '/myeasycode',
+  MY_EASY_RESUME: '/myeasyresume',
+  MY_EASY_LEARNING: '/myeasylearning',
 } as const;
 
 export type RouteKey = keyof typeof ROUTES;

@@ -260,6 +260,98 @@ export interface D1CrmMetrics {
   revenue_this_month: number;
 }
 
+// =============================================================================
+// Content Types (MyEasyContent)
+// =============================================================================
+
+export interface D1ContentBusinessProfile {
+  id: string;
+  user_id: string;
+  name: string;
+  business_niche: string;
+  target_audience: string | null;
+  brand_voice: string;
+  selected_networks: string | null; // JSON array as string
+  preferred_content_types: string | null; // JSON array as string
+  icon: string | null;
+  is_default: boolean;
+  created_at: string;
+  updated_at: string | null;
+}
+
+export interface D1ContentLibraryItem {
+  id: string;
+  user_id: string;
+  profile_id: string;
+  content_type: string;
+  network: string;
+  title: string | null;
+  content: string;
+  hashtags: string | null; // JSON array as string
+  image_description: string | null;
+  best_time: string | null;
+  variations: string | null; // JSON array as string
+  is_favorite: boolean;
+  tags: string | null; // JSON array as string
+  folder: string | null;
+  created_at: string;
+}
+
+export interface D1ContentCalendarEntry {
+  id: string;
+  user_id: string;
+  profile_id: string;
+  library_content_id: string | null;
+  scheduled_date: string;
+  day_of_week: string | null;
+  network: string;
+  content_type: string;
+  title: string;
+  description: string | null;
+  hashtags: string | null; // JSON array as string
+  best_time: string | null;
+  status: string;
+  created_at: string;
+  updated_at: string | null;
+}
+
+// =============================================================================
+// Resume Types (MyEasyResume)
+// =============================================================================
+
+export interface D1ResumeProfile {
+  id: string;
+  user_id: string;
+  name: string;
+  career_level: string;
+  target_role: string;
+  industry: string;
+  template_style: string;
+  preferred_language: string;
+  is_default: boolean;
+  created_at: string;
+  updated_at: string | null;
+}
+
+export interface D1Resume {
+  id: string;
+  user_id: string;
+  profile_id: string;
+  version_name: string;
+  personal_info: string; // JSON
+  professional_summary: string;
+  experiences: string; // JSON array
+  education: string; // JSON array
+  skills: string; // JSON array
+  languages: string; // JSON array
+  certifications: string; // JSON array
+  projects: string; // JSON array
+  is_favorite: boolean;
+  tags: string; // JSON array
+  created_at: string;
+  updated_at: string | null;
+}
+
 /**
  * Cliente HTTP para a API D1 (Cloudflare Worker)
  */
@@ -284,24 +376,31 @@ export class D1Client {
   }
 
   /**
-   * Wrapper para fetch com tratamento de erros
+   * Wrapper para fetch com tratamento de erros e timeout
    */
   private async fetch<T>(
     endpoint: string,
-    options: RequestInit = {}
+    options: RequestInit = {},
+    timeoutMs = 5000
   ): Promise<D1ApiResponse<T>> {
     if (!this.enabled) {
       return { error: 'D1 not configured' };
     }
 
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
       const response = await fetch(`${this.baseUrl}${endpoint}`, {
         ...options,
         headers: {
           'Content-Type': 'application/json',
           ...options.headers,
         },
+        signal: controller.signal,
       });
+
+      clearTimeout(timeoutId);
 
       const data = await response.json();
 
@@ -314,6 +413,10 @@ export class D1Client {
 
       return data;
     } catch (error: any) {
+      if (error.name === 'AbortError') {
+        console.error(`❌ [D1 CLIENT] Request timeout (${timeoutMs}ms):`, endpoint);
+        return { error: `Request timeout after ${timeoutMs}ms` };
+      }
       console.error(`❌ [D1 CLIENT] Fetch error:`, error);
       return { error: error.message };
     }
@@ -1359,6 +1462,469 @@ export class D1Client {
     if (endDate) params.append('end_date', endDate);
     const query = params.toString() ? `?${params.toString()}` : '';
     return this.fetch(`/crm/activities/count/user/${userId}${query}`);
+  }
+
+  // ==================== CONTENT BUSINESS PROFILES ====================
+
+  /**
+   * Lista perfis de negócio do usuário
+   */
+  async getContentProfiles(userId: string): Promise<D1ApiResponse<D1ContentBusinessProfile[]>> {
+    return this.fetch<D1ContentBusinessProfile[]>(`/content/profiles/user/${userId}`);
+  }
+
+  /**
+   * Busca perfil por ID
+   */
+  async getContentProfile(id: string): Promise<D1ApiResponse<D1ContentBusinessProfile>> {
+    return this.fetch<D1ContentBusinessProfile>(`/content/profiles/${id}`);
+  }
+
+  /**
+   * Busca perfil padrão do usuário
+   */
+  async getDefaultContentProfile(userId: string): Promise<D1ApiResponse<D1ContentBusinessProfile>> {
+    return this.fetch<D1ContentBusinessProfile>(`/content/profiles/default/user/${userId}`);
+  }
+
+  /**
+   * Cria novo perfil de negócio
+   */
+  async createContentProfile(profile: {
+    user_id: string;
+    name: string;
+    business_niche: string;
+    target_audience?: string;
+    brand_voice?: string;
+    selected_networks?: string[];
+    preferred_content_types?: string[];
+    icon?: string;
+    is_default?: boolean;
+  }): Promise<D1ApiResponse<D1ContentBusinessProfile>> {
+    return this.fetch<D1ContentBusinessProfile>('/content/profiles', {
+      method: 'POST',
+      body: JSON.stringify(profile),
+    });
+  }
+
+  /**
+   * Atualiza perfil de negócio
+   */
+  async updateContentProfile(
+    id: string,
+    updates: Partial<{
+      name: string;
+      business_niche: string;
+      target_audience: string;
+      brand_voice: string;
+      selected_networks: string[];
+      preferred_content_types: string[];
+      icon: string;
+    }>
+  ): Promise<D1ApiResponse<D1ContentBusinessProfile>> {
+    return this.fetch<D1ContentBusinessProfile>(`/content/profiles/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(updates),
+    });
+  }
+
+  /**
+   * Define perfil como padrão
+   */
+  async setDefaultContentProfile(id: string): Promise<D1ApiResponse<D1ContentBusinessProfile>> {
+    return this.fetch<D1ContentBusinessProfile>(`/content/profiles/${id}/set-default`, {
+      method: 'PATCH',
+    });
+  }
+
+  /**
+   * Deleta perfil de negócio
+   */
+  async deleteContentProfile(id: string): Promise<D1ApiResponse<{ success: boolean }>> {
+    return this.fetch(`/content/profiles/${id}`, { method: 'DELETE' });
+  }
+
+  // ==================== CONTENT LIBRARY ====================
+
+  /**
+   * Lista conteúdos da biblioteca por perfil
+   */
+  async getContentLibrary(
+    profileId: string,
+    options?: {
+      is_favorite?: boolean;
+      content_type?: string;
+      network?: string;
+      folder?: string;
+      limit?: number;
+      offset?: number;
+    }
+  ): Promise<D1ApiResponse<D1ContentLibraryItem[]>> {
+    const params = new URLSearchParams();
+    if (options?.is_favorite !== undefined) params.append('is_favorite', String(options.is_favorite));
+    if (options?.content_type) params.append('content_type', options.content_type);
+    if (options?.network) params.append('network', options.network);
+    if (options?.folder) params.append('folder', options.folder);
+    if (options?.limit) params.append('limit', String(options.limit));
+    if (options?.offset) params.append('offset', String(options.offset));
+    const query = params.toString() ? `?${params.toString()}` : '';
+    return this.fetch<D1ContentLibraryItem[]>(`/content/library/profile/${profileId}${query}`);
+  }
+
+  /**
+   * Busca item da biblioteca por ID
+   */
+  async getContentLibraryItem(id: string): Promise<D1ApiResponse<D1ContentLibraryItem>> {
+    return this.fetch<D1ContentLibraryItem>(`/content/library/${id}`);
+  }
+
+  /**
+   * Cria novo item na biblioteca
+   */
+  async createContentLibraryItem(item: {
+    user_id: string;
+    profile_id: string;
+    content_type: string;
+    network: string;
+    content: string;
+    title?: string;
+    hashtags?: string[];
+    image_description?: string;
+    best_time?: string;
+    variations?: string[];
+    tags?: string[];
+    folder?: string;
+  }): Promise<D1ApiResponse<D1ContentLibraryItem>> {
+    return this.fetch<D1ContentLibraryItem>('/content/library', {
+      method: 'POST',
+      body: JSON.stringify(item),
+    });
+  }
+
+  /**
+   * Atualiza item da biblioteca
+   */
+  async updateContentLibraryItem(
+    id: string,
+    updates: Partial<{
+      title: string;
+      content: string;
+      hashtags: string[];
+      image_description: string;
+      best_time: string;
+      variations: string[];
+      tags: string[];
+      folder: string;
+    }>
+  ): Promise<D1ApiResponse<D1ContentLibraryItem>> {
+    return this.fetch<D1ContentLibraryItem>(`/content/library/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(updates),
+    });
+  }
+
+  /**
+   * Alterna favorito do item
+   */
+  async toggleContentLibraryFavorite(id: string): Promise<D1ApiResponse<D1ContentLibraryItem>> {
+    return this.fetch<D1ContentLibraryItem>(`/content/library/${id}/toggle-favorite`, {
+      method: 'PATCH',
+    });
+  }
+
+  /**
+   * Deleta item da biblioteca
+   */
+  async deleteContentLibraryItem(id: string): Promise<D1ApiResponse<{ success: boolean }>> {
+    return this.fetch(`/content/library/${id}`, { method: 'DELETE' });
+  }
+
+  // ==================== CONTENT CALENDAR ====================
+
+  /**
+   * Lista entradas do calendário por perfil
+   */
+  async getContentCalendar(
+    profileId: string,
+    options?: {
+      start_date?: string;
+      end_date?: string;
+      status?: string;
+      network?: string;
+    }
+  ): Promise<D1ApiResponse<D1ContentCalendarEntry[]>> {
+    const params = new URLSearchParams();
+    if (options?.start_date) params.append('start_date', options.start_date);
+    if (options?.end_date) params.append('end_date', options.end_date);
+    if (options?.status) params.append('status', options.status);
+    if (options?.network) params.append('network', options.network);
+    const query = params.toString() ? `?${params.toString()}` : '';
+    return this.fetch<D1ContentCalendarEntry[]>(`/content/calendar/profile/${profileId}${query}`);
+  }
+
+  /**
+   * Busca entrada do calendário por ID
+   */
+  async getContentCalendarEntry(id: string): Promise<D1ApiResponse<D1ContentCalendarEntry>> {
+    return this.fetch<D1ContentCalendarEntry>(`/content/calendar/${id}`);
+  }
+
+  /**
+   * Cria nova entrada no calendário
+   */
+  async createContentCalendarEntry(entry: {
+    user_id: string;
+    profile_id: string;
+    scheduled_date: string;
+    network: string;
+    content_type: string;
+    title: string;
+    library_content_id?: string;
+    day_of_week?: string;
+    description?: string;
+    hashtags?: string[];
+    best_time?: string;
+    status?: string;
+  }): Promise<D1ApiResponse<D1ContentCalendarEntry>> {
+    return this.fetch<D1ContentCalendarEntry>('/content/calendar', {
+      method: 'POST',
+      body: JSON.stringify(entry),
+    });
+  }
+
+  /**
+   * Cria múltiplas entradas no calendário
+   */
+  async createContentCalendarBulk(entries: Array<{
+    user_id: string;
+    profile_id: string;
+    scheduled_date: string;
+    network: string;
+    content_type: string;
+    title: string;
+    library_content_id?: string;
+    day_of_week?: string;
+    description?: string;
+    hashtags?: string[];
+    best_time?: string;
+    status?: string;
+  }>): Promise<D1ApiResponse<{ created: number; entries: D1ContentCalendarEntry[] }>> {
+    return this.fetch('/content/calendar/bulk', {
+      method: 'POST',
+      body: JSON.stringify({ entries }),
+    });
+  }
+
+  /**
+   * Atualiza entrada do calendário
+   */
+  async updateContentCalendarEntry(
+    id: string,
+    updates: Partial<{
+      scheduled_date: string;
+      day_of_week: string;
+      network: string;
+      content_type: string;
+      title: string;
+      description: string;
+      hashtags: string[];
+      best_time: string;
+      status: string;
+      library_content_id: string;
+    }>
+  ): Promise<D1ApiResponse<D1ContentCalendarEntry>> {
+    return this.fetch<D1ContentCalendarEntry>(`/content/calendar/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(updates),
+    });
+  }
+
+  /**
+   * Deleta entrada do calendário
+   */
+  async deleteContentCalendarEntry(id: string): Promise<D1ApiResponse<{ success: boolean }>> {
+    return this.fetch(`/content/calendar/${id}`, { method: 'DELETE' });
+  }
+
+  /**
+   * Deleta todas entradas de um perfil
+   */
+  async clearContentCalendar(profileId: string): Promise<D1ApiResponse<{ deleted: number }>> {
+    return this.fetch(`/content/calendar/profile/${profileId}`, { method: 'DELETE' });
+  }
+
+  // ==================== RESUME ====================
+
+  // --- Resume Profiles ---
+
+  /**
+   * Lista perfis de currículo do usuário
+   */
+  async getResumeProfiles(userId: string): Promise<D1ApiResponse<D1ResumeProfile[]>> {
+    return this.fetch<D1ResumeProfile[]>(`/resume/profiles/user/${userId}`);
+  }
+
+  /**
+   * Busca perfil de currículo por ID
+   */
+  async getResumeProfile(id: string): Promise<D1ApiResponse<D1ResumeProfile>> {
+    return this.fetch<D1ResumeProfile>(`/resume/profiles/${id}`);
+  }
+
+  /**
+   * Busca perfil padrão do usuário
+   */
+  async getDefaultResumeProfile(userId: string): Promise<D1ApiResponse<D1ResumeProfile>> {
+    return this.fetch<D1ResumeProfile>(`/resume/profiles/default/user/${userId}`);
+  }
+
+  /**
+   * Cria novo perfil de currículo
+   */
+  async createResumeProfile(profile: {
+    user_id: string;
+    name: string;
+    career_level: string;
+    target_role: string;
+    industry: string;
+    template_style: string;
+    preferred_language: string;
+    is_default: boolean;
+  }): Promise<D1ApiResponse<D1ResumeProfile>> {
+    return this.fetch<D1ResumeProfile>('/resume/profiles', {
+      method: 'POST',
+      body: JSON.stringify(profile),
+    });
+  }
+
+  /**
+   * Atualiza perfil de currículo
+   */
+  async updateResumeProfile(
+    id: string,
+    updates: Partial<D1ResumeProfile>
+  ): Promise<D1ApiResponse<D1ResumeProfile>> {
+    return this.fetch<D1ResumeProfile>(`/resume/profiles/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(updates),
+    });
+  }
+
+  /**
+   * Define perfil como padrão
+   */
+  async setDefaultResumeProfile(
+    id: string,
+    userId: string
+  ): Promise<D1ApiResponse<D1ResumeProfile>> {
+    return this.fetch<D1ResumeProfile>(`/resume/profiles/${id}/set-default`, {
+      method: 'POST',
+      body: JSON.stringify({ user_id: userId }),
+    });
+  }
+
+  /**
+   * Deleta perfil de currículo
+   */
+  async deleteResumeProfile(id: string): Promise<D1ApiResponse<{ success: boolean }>> {
+    return this.fetch(`/resume/profiles/${id}`, { method: 'DELETE' });
+  }
+
+  // --- Resume Library ---
+
+  /**
+   * Lista currículos salvos de um perfil
+   */
+  async getResumeLibrary(
+    profileId: string,
+    filters?: {
+      is_favorite?: boolean;
+      tags?: string[];
+    }
+  ): Promise<D1ApiResponse<D1Resume[]>> {
+    const params = new URLSearchParams();
+    if (filters?.is_favorite !== undefined) {
+      params.append('is_favorite', filters.is_favorite.toString());
+    }
+    if (filters?.tags && filters.tags.length > 0) {
+      params.append('tags', filters.tags.join(','));
+    }
+
+    const query = params.toString();
+    const endpoint = `/resume/library/profile/${profileId}${query ? `?${query}` : ''}`;
+    return this.fetch<D1Resume[]>(endpoint);
+  }
+
+  /**
+   * Busca currículo por ID
+   */
+  async getResume(id: string): Promise<D1ApiResponse<D1Resume>> {
+    return this.fetch<D1Resume>(`/resume/library/${id}`);
+  }
+
+  /**
+   * Salva novo currículo
+   */
+  async createResume(resume: {
+    user_id: string;
+    profile_id: string;
+    version_name: string;
+    personal_info: object;
+    professional_summary: string;
+    experiences: object[];
+    education: object[];
+    skills: object[];
+    languages?: object[];
+    certifications?: object[];
+    projects?: object[];
+    is_favorite?: boolean;
+    tags?: string[];
+  }): Promise<D1ApiResponse<D1Resume>> {
+    return this.fetch<D1Resume>('/resume/library', {
+      method: 'POST',
+      body: JSON.stringify(resume),
+    });
+  }
+
+  /**
+   * Atualiza currículo
+   */
+  async updateResume(
+    id: string,
+    updates: Partial<{
+      version_name: string;
+      personal_info: object;
+      professional_summary: string;
+      experiences: object[];
+      education: object[];
+      skills: object[];
+      languages: object[];
+      certifications: object[];
+      projects: object[];
+      is_favorite: boolean;
+      tags: string[];
+    }>
+  ): Promise<D1ApiResponse<D1Resume>> {
+    return this.fetch<D1Resume>(`/resume/library/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(updates),
+    });
+  }
+
+  /**
+   * Alterna favorito do currículo
+   */
+  async toggleResumeFavorite(id: string): Promise<D1ApiResponse<D1Resume>> {
+    return this.fetch<D1Resume>(`/resume/library/${id}/toggle-favorite`, {
+      method: 'POST',
+    });
+  }
+
+  /**
+   * Deleta currículo
+   */
+  async deleteResume(id: string): Promise<D1ApiResponse<{ success: boolean }>> {
+    return this.fetch(`/resume/library/${id}`, { method: 'DELETE' });
   }
 
   // ==================== HEALTH ====================

@@ -191,6 +191,39 @@ export interface BestPostingTimes {
 export type ExportFormat = 'pdf' | 'excel' | 'csv' | 'json';
 
 /**
+ * Business profile for multi-profile support
+ * Mirrors D1 content_business_profiles table
+ */
+export interface ContentBusinessProfile {
+  id: string;
+  user_id: string;
+  name: string;
+  business_niche: BusinessNiche;
+  target_audience: string | null;
+  brand_voice: ContentTone;
+  selected_networks: SocialNetwork[];
+  preferred_content_types: ContentType[];
+  icon: string | null;
+  is_default: boolean;
+  created_at: string;
+  updated_at: string | null;
+}
+
+/**
+ * Input for creating a new business profile
+ */
+export interface CreateContentProfileInput {
+  name: string;
+  business_niche: BusinessNiche;
+  target_audience?: string;
+  brand_voice?: ContentTone;
+  selected_networks?: SocialNetwork[];
+  preferred_content_types?: ContentType[];
+  icon?: string;
+  is_default?: boolean;
+}
+
+/**
  * Content generation request
  */
 export interface ContentGenerationRequest {
