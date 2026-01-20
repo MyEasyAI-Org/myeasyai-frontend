@@ -1,18 +1,18 @@
-import { useState, useEffect } from 'react';
 import {
   ArrowLeft,
-  PlayCircle,
-  Search,
-  Wifi,
-  Monitor,
-  RefreshCcw,
+  CheckCircle,
   ChevronDown,
   ChevronUp,
-  MessageSquare,
-  Sparkles,
   HelpCircle,
-  CheckCircle,
+  MessageSquare,
+  Monitor,
+  PlayCircle,
+  RefreshCcw,
+  Search,
+  Sparkles,
+  Wifi,
 } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
 type SupportPageProps = {
   onBackToDashboard: () => void;
@@ -46,7 +46,9 @@ type FAQItem = {
 export function SupportPage({ onBackToDashboard }: SupportPageProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedFAQ, setExpandedFAQ] = useState<string | null>(null);
-  const [selectedVideo, setSelectedVideo] = useState<TutorialVideo | null>(null);
+  const [selectedVideo, setSelectedVideo] = useState<TutorialVideo | null>(
+    null,
+  );
 
   // Close modal on ESC key press
   useEffect(() => {
@@ -67,7 +69,8 @@ export function SupportPage({ onBackToDashboard }: SupportPageProps) {
     {
       id: '1',
       title: 'Primeiros Passos com MyEasyAI',
-      description: 'Aprenda o básico da plataforma e como começar a usar todos os recursos.',
+      description:
+        'Aprenda o básico da plataforma e como começar a usar todos os recursos.',
       thumbnail: '/bone-logo.png',
       duration: '5:30',
       category: 'Introdução',
@@ -112,7 +115,8 @@ export function SupportPage({ onBackToDashboard }: SupportPageProps) {
     {
       id: '6',
       title: 'Currículos Perfeitos com MyEasyResume',
-      description: 'Crie currículos otimizados para conquistar sua vaga dos sonhos.',
+      description:
+        'Crie currículos otimizados para conquistar sua vaga dos sonhos.',
       thumbnail: '/bone-logo.png',
       duration: '9:10',
       category: 'MyEasyResume',
@@ -121,7 +125,8 @@ export function SupportPage({ onBackToDashboard }: SupportPageProps) {
     {
       id: '7',
       title: 'MyEasyLearning: Cursos Personalizados',
-      description: 'Aprenda novas habilidades com trilhas de aprendizado criadas por IA.',
+      description:
+        'Aprenda novas habilidades com trilhas de aprendizado criadas por IA.',
       thumbnail: '/bone-logo.png',
       duration: '10:25',
       category: 'MyEasyLearning',
@@ -130,7 +135,8 @@ export function SupportPage({ onBackToDashboard }: SupportPageProps) {
     {
       id: '8',
       title: 'Integrações e Automações',
-      description: 'Conecte suas ferramentas e automatize processos repetitivos.',
+      description:
+        'Conecte suas ferramentas e automatize processos repetitivos.',
       thumbnail: '/bone-logo.png',
       duration: '11:50',
       category: 'Avançado',
@@ -144,7 +150,8 @@ export function SupportPage({ onBackToDashboard }: SupportPageProps) {
       id: '1',
       icon: <Wifi className="h-6 w-6" />,
       title: 'Verifique sua Conexão com a Internet',
-      description: 'Problemas de conexão são a causa mais comum de erros na plataforma.',
+      description:
+        'Problemas de conexão são a causa mais comum de erros na plataforma.',
       steps: [
         'Verifique se você está conectado à internet',
         'Teste sua conexão abrindo outro site',
@@ -194,91 +201,106 @@ export function SupportPage({ onBackToDashboard }: SupportPageProps) {
     {
       id: '1',
       question: 'Como faço para criar minha primeira conta?',
-      answer: 'Para criar sua conta, clique em "Cadastrar-se" no topo da página inicial. Você pode se registrar usando seu email ou fazer login social com Google. Após o cadastro, você terá acesso imediato a todos os produtos da plataforma.',
+      answer:
+        'Para criar sua conta, clique em "Cadastrar-se" no topo da página inicial. Você pode se registrar usando seu email ou fazer login social com Google. Após o cadastro, você terá acesso imediato a todos os produtos da plataforma.',
       category: 'Conta',
     },
     {
       id: '2',
       question: 'Esqueci minha senha. Como recupero?',
-      answer: 'Na tela de login, clique em "Esqueci minha senha". Digite seu email cadastrado e você receberá um link para redefinir sua senha. Verifique também sua caixa de spam.',
+      answer:
+        'Na tela de login, clique em "Esqueci minha senha". Digite seu email cadastrado e você receberá um link para redefinir sua senha. Verifique também sua caixa de spam.',
       category: 'Conta',
     },
     {
       id: '3',
       question: 'Quais formas de pagamento vocês aceitam?',
-      answer: 'Aceitamos cartões de crédito (Visa, Mastercard, American Express), PIX e boleto bancário. Todas as transações são processadas de forma segura.',
+      answer:
+        'Aceitamos cartões de crédito (Visa, Mastercard, American Express), PIX e boleto bancário. Todas as transações são processadas de forma segura.',
       category: 'Pagamento',
     },
     {
       id: '4',
       question: 'Posso cancelar minha assinatura a qualquer momento?',
-      answer: 'Sim! Você pode cancelar sua assinatura a qualquer momento através do Dashboard, na aba "Assinatura". Não há multas ou taxas de cancelamento.',
+      answer:
+        'Sim! Você pode cancelar sua assinatura a qualquer momento através do Dashboard, na aba "Assinatura". Não há multas ou taxas de cancelamento.',
       category: 'Assinatura',
     },
     {
       id: '5',
       question: 'Como funciona o período de teste gratuito?',
-      answer: 'Oferecemos 7 dias de teste gratuito para novos usuários. Durante este período, você tem acesso completo a todos os recursos. Não é necessário cadastrar cartão de crédito.',
+      answer:
+        'Oferecemos 7 dias de teste gratuito para novos usuários. Durante este período, você tem acesso completo a todos os recursos. Não é necessário cadastrar cartão de crédito.',
       category: 'Assinatura',
     },
     {
       id: '6',
       question: 'Meus dados estão seguros na plataforma?',
-      answer: 'Sim! Utilizamos criptografia de ponta a ponta e seguimos as melhores práticas de segurança. Seus dados são armazenados em servidores seguros e nunca compartilhamos suas informações com terceiros.',
+      answer:
+        'Sim! Utilizamos criptografia de ponta a ponta e seguimos as melhores práticas de segurança. Seus dados são armazenados em servidores seguros e nunca compartilhamos suas informações com terceiros.',
       category: 'Segurança',
     },
     {
       id: '7',
       question: 'Posso usar o MyEasyAI em vários dispositivos?',
-      answer: 'Sim! Você pode acessar sua conta de qualquer dispositivo (computador, tablet, celular). Todos os seus dados são sincronizados automaticamente na nuvem.',
+      answer:
+        'Sim! Você pode acessar sua conta de qualquer dispositivo (computador, tablet, celular). Todos os seus dados são sincronizados automaticamente na nuvem.',
       category: 'Acesso',
     },
     {
       id: '8',
       question: 'Como funciona o MyEasyWebsite?',
-      answer: 'O MyEasyWebsite é uma ferramenta de criação de sites com IA. Você descreve o que precisa, e nossa IA gera um site profissional completo. Você pode personalizar cores, textos e imagens facilmente.',
+      answer:
+        'O MyEasyWebsite é uma ferramenta de criação de sites com IA. Você descreve o que precisa, e nossa IA gera um site profissional completo. Você pode personalizar cores, textos e imagens facilmente.',
       category: 'Produtos',
     },
     {
       id: '9',
       question: 'Quantos sites posso criar?',
-      answer: 'O número de sites depende do seu plano. O plano Free permite 1 site, o Basic permite 3 sites, o Pro permite 10 sites e o Enterprise oferece sites ilimitados.',
+      answer:
+        'O número de sites depende do seu plano. O plano Free permite 1 site, o Basic permite 3 sites, o Pro permite 10 sites e o Enterprise oferece sites ilimitados.',
       category: 'Produtos',
     },
     {
       id: '10',
       question: 'Posso exportar meu conteúdo?',
-      answer: 'Sim! Todos os produtos permitem exportação. Você pode exportar sites como HTML, tabelas de preços como PDF/Excel, currículos como PDF, e posts de redes sociais como imagens.',
+      answer:
+        'Sim! Todos os produtos permitem exportação. Você pode exportar sites como HTML, tabelas de preços como PDF/Excel, currículos como PDF, e posts de redes sociais como imagens.',
       category: 'Produtos',
     },
     {
       id: '11',
       question: 'O MyEasyCRM integra com outras ferramentas?',
-      answer: 'No momento, o MyEasyCRM é uma solução standalone. Estamos trabalhando em integrações com ferramentas populares como Google Calendar, WhatsApp e email marketing.',
+      answer:
+        'No momento, o MyEasyCRM é uma solução standalone. Estamos trabalhando em integrações com ferramentas populares como Google Calendar, WhatsApp e email marketing.',
       category: 'Integrações',
     },
     {
       id: '12',
       question: 'Como funciona o suporte técnico?',
-      answer: 'Oferecemos suporte por chat AI disponível 24/7. Para casos mais complexos, você pode abrir um ticket que será respondido em até 24 horas úteis.',
+      answer:
+        'Oferecemos suporte por chat AI disponível 24/7. Para casos mais complexos, você pode abrir um ticket que será respondido em até 24 horas úteis.',
       category: 'Suporte',
     },
     {
       id: '13',
       question: 'Vocês oferecem treinamento para equipes?',
-      answer: 'Sim! Para planos Enterprise, oferecemos sessões de treinamento personalizadas para sua equipe. Entre em contato com nosso time comercial para mais detalhes.',
+      answer:
+        'Sim! Para planos Enterprise, oferecemos sessões de treinamento personalizadas para sua equipe. Entre em contato com nosso time comercial para mais detalhes.',
       category: 'Empresas',
     },
     {
       id: '14',
       question: 'Posso fazer upgrade do meu plano?',
-      answer: 'Sim! Você pode fazer upgrade a qualquer momento através do Dashboard. A diferença de valor será calculada proporcionalmente.',
+      answer:
+        'Sim! Você pode fazer upgrade a qualquer momento através do Dashboard. A diferença de valor será calculada proporcionalmente.',
       category: 'Assinatura',
     },
     {
       id: '15',
       question: 'A IA entende português brasileiro?',
-      answer: 'Sim! Nossa IA foi treinada especificamente para português brasileiro, entendendo gírias, expressões regionais e o contexto cultural do Brasil.',
+      answer:
+        'Sim! Nossa IA foi treinada especificamente para português brasileiro, entendendo gírias, expressões regionais e o contexto cultural do Brasil.',
       category: 'IA',
     },
   ];
@@ -288,7 +310,7 @@ export function SupportPage({ onBackToDashboard }: SupportPageProps) {
     (item) =>
       item.question.toLowerCase().includes(searchQuery.toLowerCase()) ||
       item.answer.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.category.toLowerCase().includes(searchQuery.toLowerCase())
+      item.category.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
   const toggleFAQ = (id: string) => {
@@ -329,21 +351,23 @@ export function SupportPage({ onBackToDashboard }: SupportPageProps) {
         {/* Hero Section */}
         <div className="mb-12 text-center">
           <h1 className="mb-4 text-4xl font-bold text-white">
-            Como podemos ajudar você?
+            Como podemos te ajudar?
           </h1>
-          <p className="text-lg text-slate-400">
-            Encontre respostas, tutoriais e suporte para aproveitar ao máximo a plataforma MyEasyAI
+          <p className="mx-auto max-w-3xl text-lg text-slate-400">
+            Seja pra aprender algo novo, resolver um probleminha ou só tirar uma dúvida rápida — a gente tá aqui pra você. Assista nossos tutoriais em vídeo, confira dicas pra resolver pepinos comuns, conheça nosso assistente de IA (em breve!) ou dê uma olhada nas perguntas frequentes.
           </p>
         </div>
 
         {/* Section 1: Video Tutorials */}
         <section className="mb-16">
-          <div className="mb-8 flex items-center space-x-3">
+          <div className="mb-4 flex items-center space-x-3">
             <PlayCircle className="h-8 w-8 text-blue-400" />
-            <h2 className="text-3xl font-bold text-white">Tutoriais em Vídeo</h2>
+            <h2 className="text-3xl font-bold text-white">
+              Aprenda no seu ritmo
+            </h2>
           </div>
-          <p className="mb-6 text-slate-400">
-            Aprenda a usar todos os recursos da plataforma com nossos vídeos tutoriais.
+          <p className="mb-6 max-w-3xl text-slate-400">
+            A gente sabe que às vezes um vídeo vale mais que mil palavras. Por isso, preparamos tutoriais curtos e direto ao ponto pra você dominar cada ferramenta sem enrolação.
           </p>
           <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
             {tutorials.map((video) => (
@@ -371,7 +395,9 @@ export function SupportPage({ onBackToDashboard }: SupportPageProps) {
                 <h3 className="mb-1 text-sm font-semibold text-white line-clamp-2">
                   {video.title}
                 </h3>
-                <p className="text-xs text-slate-400 line-clamp-2">{video.description}</p>
+                <p className="text-xs text-slate-400 line-clamp-2">
+                  {video.description}
+                </p>
               </div>
             ))}
           </div>
@@ -379,12 +405,12 @@ export function SupportPage({ onBackToDashboard }: SupportPageProps) {
 
         {/* Section 2: Quick Tech Support */}
         <section className="mb-16">
-          <div className="mb-8 flex items-center space-x-3">
+          <div className="mb-4 flex items-center space-x-3">
             <HelpCircle className="h-8 w-8 text-green-400" />
-            <h2 className="text-3xl font-bold text-white">Soluções Rápidas</h2>
+            <h2 className="text-3xl font-bold text-white">Deu ruim? Relaxa!</h2>
           </div>
-          <p className="mb-6 text-slate-400">
-            Resolva os problemas mais comuns em poucos passos.
+          <p className="mb-6 max-w-3xl text-slate-400">
+            Calma que a maioria dos problemas tem solução rápida. Antes de acionar o suporte, dá uma olhada nessas dicas que resolvem 90% dos pepinos mais comuns.
           </p>
           <div className="grid gap-6 md:grid-cols-2">
             {techSupport.map((item) => (
@@ -416,12 +442,15 @@ export function SupportPage({ onBackToDashboard }: SupportPageProps) {
 
         {/* Section 3: AI Chat Support (Placeholder) */}
         <section className="mb-16">
-          <div className="mb-8 flex items-center space-x-3">
+          <div className="mb-4 flex items-center space-x-3">
             <Sparkles className="h-8 w-8 text-yellow-400" />
             <h2 className="text-3xl font-bold text-white">
-              Suporte com IA (Em Breve)
+              Seu assistente pessoal tá chegando
             </h2>
           </div>
+          <p className="mb-6 max-w-3xl text-slate-400">
+            Imagina ter alguém disponível 24h por dia, 7 dias por semana, só pra tirar suas dúvidas? Pois é, tá quase pronto. Nosso chat com IA vai revolucionar a forma como você recebe suporte.
+          </p>
           <div className="rounded-lg border border-slate-800 bg-gradient-to-br from-slate-900/80 to-purple-900/20 p-8">
             <div className="flex flex-col items-center text-center">
               <div className="mb-6 rounded-full bg-yellow-500/20 p-6">
@@ -431,9 +460,10 @@ export function SupportPage({ onBackToDashboard }: SupportPageProps) {
                 Chat com IA Inteligente
               </h3>
               <p className="mb-6 max-w-2xl text-slate-300">
-                Em breve você poderá conversar com nossa IA treinada especialmente para ajudar com
-                todas as suas dúvidas sobre a plataforma. O chat estará disponível 24/7 e oferecerá
-                respostas instantâneas e personalizadas.
+                Em breve você poderá conversar com nossa IA treinada
+                especialmente para ajudar com todas as suas dúvidas sobre a
+                plataforma. O chat estará disponível 24/7 e oferecerá respostas
+                instantâneas e personalizadas.
               </p>
               <div className="mb-6 grid gap-4 md:grid-cols-3">
                 <div className="rounded-lg border border-slate-700 bg-slate-900/50 p-4">
@@ -447,7 +477,9 @@ export function SupportPage({ onBackToDashboard }: SupportPageProps) {
                 </div>
                 <div className="rounded-lg border border-slate-700 bg-slate-900/50 p-4">
                   <MessageSquare className="mx-auto mb-2 h-8 w-8 text-blue-400" />
-                  <h4 className="mb-1 font-semibold text-white">Disponível 24/7</h4>
+                  <h4 className="mb-1 font-semibold text-white">
+                    Disponível 24/7
+                  </h4>
                   <p className="text-sm text-slate-400">
                     Suporte a qualquer hora do dia
                   </p>
@@ -469,7 +501,8 @@ export function SupportPage({ onBackToDashboard }: SupportPageProps) {
                 Em Desenvolvimento
               </button>
               <p className="mt-4 text-sm text-slate-500">
-                Enquanto isso, use o FAQ ou entre em contato através do formulário de contato
+                Enquanto isso, use o FAQ ou entre em contato através do
+                formulário de contato
               </p>
             </div>
           </div>
@@ -477,14 +510,14 @@ export function SupportPage({ onBackToDashboard }: SupportPageProps) {
 
         {/* Section 4: FAQ */}
         <section id="faq" className="mb-16 scroll-mt-20">
-          <div className="mb-8 flex items-center space-x-3">
+          <div className="mb-4 flex items-center space-x-3">
             <Search className="h-8 w-8 text-purple-400" />
             <h2 className="text-3xl font-bold text-white">
-              Perguntas Frequentes
+              Tá com dúvida? Bora resolver!
             </h2>
           </div>
-          <p className="mb-6 text-slate-400">
-            Encontre respostas para as dúvidas mais comuns sobre a plataforma.
+          <p className="mb-6 max-w-3xl text-slate-400">
+            Reunimos aqui as perguntas que mais recebemos. Spoiler: provavelmente a sua já foi respondida. Dá uma pesquisada e, se não achar, pode contar com a gente.
           </p>
 
           {/* Search Bar */}
@@ -501,7 +534,8 @@ export function SupportPage({ onBackToDashboard }: SupportPageProps) {
             </div>
             {searchQuery && (
               <p className="mt-2 text-sm text-slate-400">
-                {filteredFAQ.length} resultado{filteredFAQ.length !== 1 ? 's' : ''} encontrado
+                {filteredFAQ.length} resultado
+                {filteredFAQ.length !== 1 ? 's' : ''} encontrado
                 {filteredFAQ.length !== 1 ? 's' : ''}
               </p>
             )}
@@ -570,7 +604,9 @@ export function SupportPage({ onBackToDashboard }: SupportPageProps) {
               onClick={() => setSelectedVideo(null)}
               className="absolute -top-10 right-0 text-white hover:text-slate-300 transition-colors"
             >
-              <span className="text-sm">Pressione ESC ou clique fora para fechar</span>
+              <span className="text-sm">
+                Pressione ESC ou clique fora para fechar
+              </span>
             </button>
             <div className="relative w-full pt-[56.25%]">
               <iframe
@@ -582,7 +618,9 @@ export function SupportPage({ onBackToDashboard }: SupportPageProps) {
               />
             </div>
             <div className="mt-4 text-center">
-              <h3 className="text-xl font-semibold text-white">{selectedVideo.title}</h3>
+              <h3 className="text-xl font-semibold text-white">
+                {selectedVideo.title}
+              </h3>
               <p className="text-slate-400 mt-1">{selectedVideo.description}</p>
             </div>
           </div>

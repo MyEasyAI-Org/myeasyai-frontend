@@ -1,4 +1,4 @@
-import { Briefcase, DollarSign, ExternalLink, GraduationCap, Package, PenTool, Target, HelpCircle } from 'lucide-react';
+import { Briefcase, DollarSign, ExternalLink, GraduationCap, PenTool, Target, HelpCircle } from 'lucide-react';
 import type { UserProduct } from '../../hooks/useUserData';
 import { ProductCard } from './ProductCard';
 
@@ -262,35 +262,9 @@ export function ProductsTab({
             </div>
           </div>
 
-          {/* Summary Card - always show (includes hard-coded products) */}
+          
           <div className="rounded-lg border border-slate-800 bg-slate-900/50 p-6">
-            <h2 className="text-xl font-bold text-white">
-              Resumo de Assinaturas
-            </h2>
-            <div className="mt-4 grid gap-4 md:grid-cols-3">
-              <div className="text-center">
-                <p className="text-3xl font-bold text-white">
-                  {/* Count userProducts + 5 hard-coded products (MyEasyPricing + MyEasyCRM + MyEasyContent + MyEasyResume + MyEasyLearning) */}
-                  {userProducts.filter((p) => p.product_status === 'active').length + 5}
-                </p>
-                <p className="mt-1 text-sm text-slate-400">
-                  Produtos Ativos
-                </p>
-              </div>
-              <div className="text-center">
-                <p className="text-3xl font-bold text-white">
-                  {userProducts.reduce(
-                    (sum, p) =>
-                      sum +
-                      (p.sites_created || 0) +
-                      (p.consultations_made || 0),
-                    0,
-                  )}
-                </p>
-                <p className="mt-1 text-sm text-slate-400">
-                  Total de Uso
-                </p>
-              </div>
+            
               <div className="text-center">
                 <p className="text-3xl font-bold text-green-400">
                   {accountCreatedAt
@@ -302,87 +276,10 @@ export function ProductsTab({
                 </p>
               </div>
             </div>
-          </div>
         </>
       )}
 
-      {/* Available Products */}
-      <div>
-        <h2 className="text-2xl font-bold text-white">
-          Produtos Disponíveis
-        </h2>
-        <p className="mt-2 text-slate-400">
-          Explore outros produtos que podem ajudar seu negócio.
-        </p>
-
-        <div className="mt-6 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          <div className="rounded-lg border border-slate-700 bg-slate-900/30 p-6 opacity-75">
-            <div className="flex items-center space-x-3">
-              <div className="rounded-lg bg-slate-700 p-3">
-                <Package className="h-6 w-6 text-slate-400" />
-              </div>
-              <h3 className="text-lg font-semibold text-white">
-                Image Generator
-              </h3>
-            </div>
-            <p className="mt-4 text-sm text-slate-400">
-              Gere imagens de alta qualidade usando IA.
-            </p>
-            <div className="mt-4">
-              <p className="text-2xl font-bold text-white">
-                R$ 59<span className="text-sm text-slate-400">/mês</span>
-              </p>
-            </div>
-            <button className="mt-4 w-full rounded-lg border border-blue-600 bg-blue-600/10 px-4 py-2 text-sm font-semibold text-blue-400 hover:bg-blue-600/20 transition-colors">
-              Adicionar Produto
-            </button>
-          </div>
-
-          <div className="rounded-lg border border-slate-700 bg-slate-900/30 p-6 opacity-75">
-            <div className="flex items-center space-x-3">
-              <div className="rounded-lg bg-slate-700 p-3">
-                <Package className="h-6 w-6 text-slate-400" />
-              </div>
-              <h3 className="text-lg font-semibold text-white">
-                Voice AI
-              </h3>
-            </div>
-            <p className="mt-4 text-sm text-slate-400">
-              Sintetização e reconhecimento de voz avançado.
-            </p>
-            <div className="mt-4">
-              <p className="text-2xl font-bold text-white">
-                R$ 89<span className="text-sm text-slate-400">/mês</span>
-              </p>
-            </div>
-            <button className="mt-4 w-full rounded-lg border border-blue-600 bg-blue-600/10 px-4 py-2 text-sm font-semibold text-blue-400 hover:bg-blue-600/20 transition-colors">
-              Adicionar Produto
-            </button>
-          </div>
-
-          <div className="rounded-lg border border-slate-700 bg-slate-900/30 p-6 opacity-75">
-            <div className="flex items-center space-x-3">
-              <div className="rounded-lg bg-slate-700 p-3">
-                <Package className="h-6 w-6 text-slate-400" />
-              </div>
-              <h3 className="text-lg font-semibold text-white">
-                Custom Models
-              </h3>
-            </div>
-            <p className="mt-4 text-sm text-slate-400">
-              Treine seus próprios modelos de IA personalizados.
-            </p>
-            <div className="mt-4">
-              <p className="text-2xl font-bold text-white">
-                R$ 299<span className="text-sm text-slate-400">/mês</span>
-              </p>
-            </div>
-            <button className="mt-4 w-full rounded-lg border border-blue-600 bg-blue-600/10 px-4 py-2 text-sm font-semibold text-blue-400 hover:bg-blue-600/20 transition-colors">
-              Adicionar Produto
-            </button>
-          </div>
-        </div>
-      </div>
+      
     </div>
   );
 }
