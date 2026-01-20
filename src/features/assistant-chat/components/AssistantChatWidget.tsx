@@ -272,15 +272,18 @@ export function AssistantChatWidget() {
 
   // Handle closing the chat with Spin-Morph Effect (reverse)
   const handleClose = useCallback(() => {
+    console.log('[ChatWidget] handleClose called at', Date.now(), '- animationState:', animationState);
     if (animationState !== 'idle') return;
 
     // Sync bubble position with avatar position before closing
     setBubblePosition(avatarPosition);
 
+    console.log('[ChatWidget] Setting animationState to closing, animationPhase to disappearing');
     setAnimationState('closing');
     setAnimationPhase('disappearing');
 
     // Start avatar spin-out animation (avatar will spin for 800ms)
+    console.log('[ChatWidget] Setting isChatOpen to false');
     setIsChatOpen(false);
 
     // Start closing animation for chat panel

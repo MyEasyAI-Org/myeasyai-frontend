@@ -125,10 +125,13 @@ export function DashboardAvatarWidget() {
   useEffect(() => {
     const styleId = 'avatar-animation-styles';
     if (!document.getElementById(styleId)) {
+      console.log('[AvatarWidget] Injecting CSS animation styles');
       const styleElement = document.createElement('style');
       styleElement.id = styleId;
       styleElement.textContent = avatarAnimationStyles;
       document.head.appendChild(styleElement);
+    } else {
+      console.log('[AvatarWidget] CSS animation styles already exist');
     }
   }, []);
 
@@ -156,8 +159,11 @@ export function DashboardAvatarWidget() {
 
   // Handle animation states when chat opens/closes
   useEffect(() => {
+    console.log('[AvatarWidget] Chat state effect - isChatOpen:', isChatOpen, 'prevChatOpen:', prevChatOpen.current, 'hasAvatar:', hasAvatar, 'showAnimation:', showAnimation);
+
     if (isChatOpen && !prevChatOpen.current && hasAvatar) {
       // Chat just opened - trigger entrance animation (spin)
+      console.log('[AvatarWidget] Chat OPENED - starting entrance animation');
       setShowAnimation('entering');
 
       // Use saved pose during entrance
@@ -180,8 +186,10 @@ export function DashboardAvatarWidget() {
       };
     } else if (!isChatOpen && prevChatOpen.current) {
       // Chat just closed - trigger exit animation with full spin
+      console.log('[AvatarWidget] Chat CLOSED - starting exit animation');
       setShowAnimation('exiting');
       const timer = setTimeout(() => {
+        console.log('[AvatarWidget] Exit animation complete - setting hidden');
         setShowAnimation('hidden');
         setTempPoseOverride(null);
       }, 800); // Full spin animation duration (matches avatarSpinExit)
@@ -193,9 +201,12 @@ export function DashboardAvatarWidget() {
   // Also listen to animationPhase from context for exit animation
   // This ensures the exit animation triggers even if the local state detection fails
   useEffect(() => {
+    console.log('[AvatarWidget] Animation phase effect - animationPhase:', animationPhase, 'showAnimation:', showAnimation);
     if (animationPhase === 'disappearing' && showAnimation !== 'exiting' && showAnimation !== 'hidden') {
+      console.log('[AvatarWidget] Animation phase DISAPPEARING - starting exit animation from context');
       setShowAnimation('exiting');
       const timer = setTimeout(() => {
+        console.log('[AvatarWidget] Exit animation from context complete - setting hidden');
         setShowAnimation('hidden');
         setTempPoseOverride(null);
       }, 800);
@@ -256,6 +267,7 @@ export function DashboardAvatarWidget() {
     // Don't start drag if clicking on the minimize button
     if ((e.target as HTMLElement).closest('button')) return;
 
+    console.log('[AvatarWidget] Drag START - position:', position, 'isExiting:', showAnimation === 'exiting' || animationPhase === 'disappearing');
     e.preventDefault();
     setIsDragging(true);
 
@@ -264,7 +276,7 @@ export function DashboardAvatarWidget() {
 
     dragStartRef.current = { x: clientX, y: clientY };
     initialPositionRef.current = { ...position };
-  }, [position, setIsDragging]);
+  }, [position, setIsDragging, showAnimation, animationPhase]);
 
   // Handle drag move
   const handleDragMove = useCallback((e: MouseEvent | TouchEvent) => {
@@ -284,10 +296,12 @@ export function DashboardAvatarWidget() {
     const maxX = window.innerWidth - 100;
     const maxY = window.innerHeight - 100;
 
-    setPosition({
+    const finalPosition = {
       x: Math.min(Math.max(0, newX), maxX),
       y: Math.min(Math.max(0, newY), maxY),
-    });
+    };
+    console.log('[AvatarWidget] Drag MOVE - new position:', finalPosition);
+    setPosition(finalPosition);
   }, [isDragging, setPosition]);
 
   // Handle drag end
@@ -353,11 +367,18 @@ export function DashboardAvatarWidget() {
   const isExiting = showAnimation === 'exiting' || animationPhase === 'disappearing';
   const isVisible = isChatOpen || isExiting;
 
+  // Log visibility calculation on every render during debugging
+  const animClass = getAnimationClass();
+  console.log('[AvatarWidget] Render at', Date.now(), '- isExiting:', isExiting, 'isVisible:', isVisible, 'isChatOpen:', isChatOpen, 'showAnimation:', showAnimation, 'animationPhase:', animationPhase, 'animationClass:', animClass);
+
+  // Also log z-index and opacity values that will be applied
+  console.log('[AvatarWidget] CSS applied - zIndex:', isVisible ? 'z-50' : 'z-[-1]', 'opacity:', isVisible ? 1 : 0.001, 'class:', animClass);
+
   // SINGLE CANVAS - Always rendered, visibility controlled by CSS
   // This ensures the 3D scene is always warm and ready
   return (
     <div
-      className={`fixed ${isVisible ? 'z-50' : 'z-[-1]'} ${isVisible ? (isDragging ? 'cursor-grabbing' : 'cursor-grab') : 'pointer-events-none'} ${getAnimationClass()}`}
+      className={`fixed ${isVisible ? 'z-50' : 'z-[-1]'} ${isVisible ? (isDragging ? 'cursor-grabbing' : 'cursor-grab') : 'pointer-events-none'} ${animClass}`}
       style={{
         width: `${isVisible ? size.width : 150}px`,
         height: `${isVisible ? size.height : 220}px`,
