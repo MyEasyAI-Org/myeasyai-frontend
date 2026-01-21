@@ -210,3 +210,6 @@ export interface MacrosResult {
   gorduras: number;
   tmb: number;
 }
+
+// Re-export gamification types
+export * from './gamification';

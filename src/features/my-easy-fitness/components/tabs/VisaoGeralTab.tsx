@@ -16,8 +16,11 @@ import {
   Ruler,
   AlertCircle,
   CheckCircle2,
+  Trophy,
 } from 'lucide-react';
 import type { UserPersonalInfo, Treino, Dieta } from '../../types';
+import { GamificationSummary } from '../gamification';
+import { useFitnessContext } from '../../contexts';
 
 type VisaoGeralTabProps = {
   personalInfo: UserPersonalInfo;
@@ -26,6 +29,7 @@ type VisaoGeralTabProps = {
 };
 
 export const VisaoGeralTab = memo(function VisaoGeralTab({ personalInfo, treinos, dieta }: VisaoGeralTabProps) {
+  const { gamification } = useFitnessContext();
   const imc = useMemo(() => {
     if (!personalInfo.peso || !personalInfo.altura) return null;
     return (personalInfo.peso / Math.pow(personalInfo.altura / 100, 2)).toFixed(1);
@@ -94,6 +98,29 @@ export const VisaoGeralTab = memo(function VisaoGeralTab({ personalInfo, treinos
           <p className="text-xs text-slate-500">kcal/dia</p>
         </div>
       </div>
+
+      {/* Gamification Summary */}
+      {!gamification.isLoading && (
+        <GamificationSummary
+          streak={{
+            current: gamification.streak.current,
+            isActiveToday: gamification.streak.isActiveToday,
+          }}
+          xp={{
+            level: gamification.xp.level,
+            progressPercent: gamification.xp.progressPercent,
+          }}
+          badges={{
+            unlockedCount: gamification.badges.unlockedCount,
+            totalCount: gamification.badges.totalCount,
+            recentUnlocks: gamification.badges.recentUnlocks,
+          }}
+          challenges={{
+            dailyProgress: gamification.challenges.dailyProgress,
+            weeklyProgress: gamification.challenges.weeklyProgress,
+          }}
+        />
+      )}
 
       {/* Objetivo */}
       {personalInfo.objetivo && (

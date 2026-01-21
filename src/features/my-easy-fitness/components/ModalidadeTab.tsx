@@ -1,15 +1,16 @@
 import {
   Dumbbell,
-  PersonStanding,
   Zap,
   Footprints,
   Activity,
   Users,
-  ChevronRight,
   Sparkles,
+  PersonStanding,
 } from 'lucide-react';
+import { IconRun } from '@tabler/icons-react';
 import type { TrainingModality } from '../types';
-import { TRAINING_MODALITY_CONFIG } from '../constants';
+import { TRAINING_MODALITY_CONFIG, MODALITY_WATERMARKS } from '../constants';
+import { WatermarkIcon } from './shared';
 
 type ModalidadeTabProps = {
   selectedModality: TrainingModality;
@@ -19,9 +20,9 @@ type ModalidadeTabProps = {
 // Modality icons mapping
 const MODALITY_ICONS: Record<TrainingModality, React.ElementType> = {
   musculacao: Dumbbell,
-  corrida: Footprints,
+  corrida: IconRun,
   crossfit: Zap,
-  caminhada: PersonStanding,
+  caminhada: Footprints,
   funcional: Activity,
   calistenia: Users,
   '': Dumbbell,
@@ -56,13 +57,18 @@ function ModalityCard({
   return (
     <button
       onClick={onClick}
-      className={`relative p-4 rounded-xl border transition-all text-left ${
+      className={`relative p-4 rounded-xl border transition-all text-left overflow-hidden ${
         isSelected
           ? 'border-lime-500 bg-lime-500/10 ring-2 ring-lime-500/30'
           : 'border-slate-700 bg-slate-800/50 hover:border-slate-600 hover:bg-slate-800/70'
       }`}
     >
-      <div className="flex items-start gap-3">
+      {/* Watermark */}
+      {MODALITY_WATERMARKS[modality] && (
+        <WatermarkIcon src={MODALITY_WATERMARKS[modality]} size="sm" />
+      )}
+
+      <div className="flex items-start gap-3 relative z-10">
         <div className={`p-3 rounded-lg bg-gradient-to-br ${colorGradient}`}>
           <Icon className="h-6 w-6 text-white" />
         </div>
@@ -70,10 +76,9 @@ function ModalityCard({
           <h3 className="font-semibold text-white">{config.name}</h3>
           <p className="text-sm text-slate-400 line-clamp-2">{config.description}</p>
         </div>
-        <ChevronRight className={`h-5 w-5 flex-shrink-0 ${isSelected ? 'text-lime-400' : 'text-slate-500'}`} />
       </div>
       {isSelected && (
-        <div className="absolute top-2 right-2">
+        <div className="absolute top-2 right-2 z-10">
           <div className="w-2 h-2 rounded-full bg-lime-400 animate-pulse" />
         </div>
       )}
@@ -90,9 +95,14 @@ function BenefitsCard({ modality }: { modality: TrainingModality }) {
   const colorGradient = MODALITY_COLORS[modality];
 
   return (
-    <div className="bg-slate-800/50 rounded-2xl border border-slate-700 overflow-hidden">
+    <div className="relative bg-slate-800/50 rounded-2xl border border-slate-700 overflow-hidden">
+      {/* Watermark */}
+      {MODALITY_WATERMARKS[modality] && (
+        <WatermarkIcon src={MODALITY_WATERMARKS[modality]} size="lg" />
+      )}
+
       {/* Header */}
-      <div className="p-5 border-b border-slate-700 bg-gradient-to-r from-slate-800 to-slate-800/50">
+      <div className="relative z-10 p-5 border-b border-slate-700 bg-gradient-to-r from-slate-800 to-slate-800/50">
         <div className="flex items-center gap-3">
           <div className={`p-3 rounded-xl bg-gradient-to-br ${colorGradient}`}>
             <Icon className="h-7 w-7 text-white" />
@@ -105,7 +115,7 @@ function BenefitsCard({ modality }: { modality: TrainingModality }) {
       </div>
 
       {/* Benefits Content */}
-      <div className="p-5">
+      <div className="relative z-10 p-5">
         <div className="flex items-center gap-2 mb-4">
           <Sparkles className="h-5 w-5 text-lime-400" />
           <h4 className="text-lg font-semibold text-lime-400">Benefícios</h4>
@@ -155,7 +165,7 @@ export function ModalidadeTab({
       {!selectedModality && (
         <div className="flex flex-col items-center justify-center py-12 text-center bg-slate-800/30 rounded-xl border border-slate-700">
           <div className="p-4 rounded-full bg-lime-500/20 mb-4">
-            <Activity className="h-10 w-10 text-lime-400" />
+            <PersonStanding className="h-10 w-10 text-lime-400" />
           </div>
           <h3 className="text-lg font-semibold text-white mb-2">Escolha uma modalidade</h3>
           <p className="text-slate-400 max-w-md">

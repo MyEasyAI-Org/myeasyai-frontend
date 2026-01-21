@@ -199,6 +199,31 @@ export interface D1FitnessDieta {
   updated_at: string | null;
 }
 
+export interface D1FitnessGamification {
+  id: string;
+  user_uuid: string;
+  // Streak data
+  current_streak: number;
+  longest_streak: number;
+  last_activity_date: string | null;
+  total_active_days: number;
+  // XP data
+  total_xp: number;
+  current_level: number;
+  // Stats
+  total_workouts_completed: number;
+  perfect_weeks: number;
+  perfect_months: number;
+  // JSON stringified arrays
+  badges: string; // JSON array of UserBadge
+  challenges: string; // JSON array of Challenge
+  goals: string; // JSON array of Goal
+  activities: string; // JSON array of ActivityItem (limited to recent 50)
+  // Timestamps
+  created_at: string;
+  updated_at: string | null;
+}
+
 // =============================================================================
 // CRM Types
 // =============================================================================
@@ -1653,6 +1678,40 @@ export class D1Client {
    */
   async deleteFitnessDieta(userUuid: string): Promise<D1ApiResponse<{ success: boolean }>> {
     return this.fetch(`/fitness/dieta/user/${userUuid}`, { method: 'DELETE' });
+  }
+
+  // --- Gamification ---
+
+  /**
+   * Busca dados de gamificação do usuário
+   */
+  async getFitnessGamification(userUuid: string): Promise<D1ApiResponse<D1FitnessGamification | null>> {
+    return this.fetch<D1FitnessGamification | null>(`/fitness/gamification/user/${userUuid}`);
+  }
+
+  /**
+   * Cria ou atualiza dados de gamificação
+   */
+  async upsertFitnessGamification(gamification: {
+    user_uuid: string;
+    current_streak: number;
+    longest_streak: number;
+    last_activity_date: string | null;
+    total_active_days: number;
+    total_xp: number;
+    current_level: number;
+    total_workouts_completed: number;
+    perfect_weeks: number;
+    perfect_months: number;
+    badges: string;
+    challenges: string;
+    goals: string;
+    activities: string;
+  }): Promise<D1ApiResponse<D1FitnessGamification>> {
+    return this.fetch<D1FitnessGamification>('/fitness/gamification', {
+      method: 'PUT',
+      body: JSON.stringify(gamification),
+    });
   }
 
   // ==================== CONTENT BUSINESS PROFILES ====================

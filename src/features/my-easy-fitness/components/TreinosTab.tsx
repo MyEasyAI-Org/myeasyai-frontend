@@ -11,10 +11,15 @@ import {
   ChevronDown,
   ChevronUp,
   Info,
+  CheckCircle,
+  Loader2,
 } from 'lucide-react';
 import type { Treino, UserPersonalInfo, ExerciseAlternative } from '../types';
 import { getExerciseAlternatives, modifyWorkout } from '../utils/workoutGenerator';
 import { EXERCISE_DATABASE, type ExerciseInfo } from '../constants/exerciseDatabase';
+import { TAB_WATERMARKS } from '../constants';
+import { WatermarkIcon } from './shared';
+import { useFitnessContext } from '../contexts';
 
 type TreinosTabProps = {
   treinos: Treino[];
@@ -331,11 +336,15 @@ const WorkoutCard = memo(function WorkoutCard({
   personalInfo,
   onUpdate,
   onDelete,
+  onComplete,
+  isCompleting,
 }: {
   treino: Treino;
   personalInfo: UserPersonalInfo;
   onUpdate: (treino: Treino) => void;
   onDelete: () => void;
+  onComplete: () => void;
+  isCompleting: boolean;
 }) {
   const [editingName, setEditingName] = useState(false);
   const [tempName, setTempName] = useState(treino.nome);
@@ -466,6 +475,27 @@ const WorkoutCard = memo(function WorkoutCard({
           </div>
         </div>
 
+        {/* Complete Workout Button */}
+        <div className="px-4 pt-4">
+          <button
+            onClick={onComplete}
+            disabled={isCompleting}
+            className="w-full py-3 bg-gradient-to-r from-lime-600 to-green-600 hover:from-lime-500 hover:to-green-500 disabled:from-slate-700 disabled:to-slate-700 text-white font-medium rounded-xl transition-all flex items-center justify-center gap-2"
+          >
+            {isCompleting ? (
+              <>
+                <Loader2 className="h-5 w-5 animate-spin" />
+                Registrando...
+              </>
+            ) : (
+              <>
+                <CheckCircle className="h-5 w-5" />
+                Marcar treino completo
+              </>
+            )}
+          </button>
+        </div>
+
         {/* Exercise List */}
         <div className="p-4 space-y-3">
           {treino.exercicios.map((exercicio, idx) => (
@@ -500,6 +530,9 @@ export const TreinosTab = memo(function TreinosTab({
   personalInfo,
   onUpdateTreinos,
 }: TreinosTabProps) {
+  const { gamification } = useFitnessContext();
+  const [completingWorkout, setCompletingWorkout] = useState<string | null>(null);
+
   const updateTreino = useCallback((treinoId: string, updates: Partial<Treino>) => {
     onUpdateTreinos(
       treinos.map((t) => (t.id === treinoId ? { ...t, ...updates } : t))
@@ -510,8 +543,20 @@ export const TreinosTab = memo(function TreinosTab({
     onUpdateTreinos(treinos.filter((t) => t.id !== treinoId));
   }, [treinos, onUpdateTreinos]);
 
+  const handleCompleteWorkout = useCallback(async (treinoId: string) => {
+    setCompletingWorkout(treinoId);
+    try {
+      await gamification.recordWorkoutCompleted();
+    } finally {
+      setCompletingWorkout(null);
+    }
+  }, [gamification]);
+
   return (
-    <div className="p-6 space-y-6">
+    <div className="relative p-6 space-y-6 overflow-hidden">
+      {/* Tab Watermark */}
+      <WatermarkIcon src={TAB_WATERMARKS.treinos} size="lg" />
+
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-xl font-bold text-white flex items-center gap-2">
@@ -533,6 +578,8 @@ export const TreinosTab = memo(function TreinosTab({
               personalInfo={personalInfo}
               onUpdate={(updated) => updateTreino(treino.id, updated)}
               onDelete={() => deleteTreino(treino.id)}
+              onComplete={() => handleCompleteWorkout(treino.id)}
+              isCompleting={completingWorkout === treino.id}
             />
           ))}
         </div>

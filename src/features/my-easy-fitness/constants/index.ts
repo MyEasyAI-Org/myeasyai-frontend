@@ -56,3 +56,20 @@ export {
 
 // Demo profiles
 export { DEMO_PROFILES } from './demoProfiles';
+
+// Gamification
+export {
+  XP_CONFIG,
+  BADGES,
+  BADGES_MAP,
+  DAILY_CHALLENGE_TEMPLATES,
+  WEEKLY_CHALLENGE_TEMPLATES,
+  GOAL_TEMPLATES,
+  RARITY_COLORS,
+  ACTIVITY_ICONS,
+  STREAK_MESSAGES,
+  getStreakMessage,
+} from './gamification';
+
+// Watermark icons
+export { MODALITY_WATERMARKS, TAB_WATERMARKS } from './watermarkIcons';

@@ -7,6 +7,8 @@
 import { memo, useCallback } from 'react';
 import { Apple, Flame, Calendar, Plus, Trash2, X } from 'lucide-react';
 import type { Dieta, Alimento } from '../../types';
+import { TAB_WATERMARKS } from '../../constants';
+import { WatermarkIcon } from '../shared';
 
 type DietaTabProps = {
   dieta: Dieta | null;
@@ -69,7 +71,10 @@ export const DietaTab = memo(function DietaTab({ dieta, onUpdate }: DietaTabProp
   }, [dieta, onUpdate]);
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="relative p-6 space-y-6 overflow-hidden">
+      {/* Tab Watermark */}
+      <WatermarkIcon src={TAB_WATERMARKS.dieta} size="lg" />
+
       {dieta ? (
         <>
           {/* Macros */}

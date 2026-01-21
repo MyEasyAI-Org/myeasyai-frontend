@@ -7,8 +7,10 @@
 
 import { createContext, useContext, useState, useCallback, type ReactNode } from 'react';
 import type { UserPersonalInfo, Treino, Dieta, FitnessMessage, TrainingModality } from '../types';
+import type { GamificationState, Challenge, Goal } from '../types/gamification';
 import { useFitnessData } from '../hooks/useFitnessData';
 import { usePersonalInfoFlow } from '../hooks/useAnamneseFlow';
+import { useGamification } from '../hooks/useGamification';
 
 // Context value type
 interface FitnessContextValue {
@@ -35,6 +37,49 @@ interface FitnessContextValue {
   isGenerating: boolean;
   setInputMessage: (message: string) => void;
   handleSendMessage: () => void;
+
+  // Gamification
+  gamification: {
+    isLoading: boolean;
+    isSaving: boolean;
+    error: string | null;
+    streak: {
+      current: number;
+      longest: number;
+      isActiveToday: boolean;
+      daysSinceLastActivity: number;
+      totalActiveDays: number;
+    };
+    xp: {
+      total: number;
+      level: number;
+      currentLevelXP: number;
+      nextLevelXP: number;
+      progressPercent: number;
+    };
+    badges: {
+      unlocked: Array<{ id: string; name: string; icon: string; unlockedAt: string }>;
+      locked: Array<{ id: string; name: string; icon: string; requirement: string }>;
+      recentUnlocks: Array<{ id: string; name: string; icon: string }>;
+      unlockedCount: number;
+      totalCount: number;
+    };
+    challenges: {
+      daily: Challenge[];
+      weekly: Challenge[];
+      dailyProgress: { completed: number; total: number };
+      weeklyProgress: { completed: number; total: number };
+    };
+    goals: {
+      active: Goal[];
+      completed: Goal[];
+      overallProgress: number;
+    };
+    recordWorkoutCompleted: () => Promise<void>;
+    recordDietFollowed: () => Promise<void>;
+    completeDailyChallenge: (challengeId: string) => void;
+    completeWeeklyChallenge: (challengeId: string) => void;
+  };
 }
 
 // Create context with undefined default (will be provided by provider)
@@ -83,6 +128,13 @@ export function FitnessProvider({ children, userName }: FitnessProviderProps) {
     onUpdateDieta: updateDieta,
   });
 
+  // Gamification system
+  const gamificationData = useGamification({
+    diasTreinoSemana: personalInfo.diasTreinoSemana || 3,
+    objetivo: personalInfo.objetivo || '',
+    enabled: true,
+  });
+
   // Memoize context value to prevent unnecessary re-renders
   const value: FitnessContextValue = {
     // Personal Info
@@ -108,6 +160,22 @@ export function FitnessProvider({ children, userName }: FitnessProviderProps) {
     isGenerating,
     setInputMessage,
     handleSendMessage,
+
+    // Gamification
+    gamification: {
+      isLoading: gamificationData.isLoading,
+      isSaving: gamificationData.isSaving,
+      error: gamificationData.error,
+      streak: gamificationData.streak,
+      xp: gamificationData.xp,
+      badges: gamificationData.badges,
+      challenges: gamificationData.challenges,
+      goals: gamificationData.goals,
+      recordWorkoutCompleted: gamificationData.recordWorkoutCompleted,
+      recordDietFollowed: gamificationData.recordDietFollowed,
+      completeDailyChallenge: gamificationData.completeDailyChallenge,
+      completeWeeklyChallenge: gamificationData.completeWeeklyChallenge,
+    },
   };
 
   return (

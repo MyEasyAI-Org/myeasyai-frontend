@@ -6,30 +6,23 @@
  */
 
 import {
-  Activity,
   Dumbbell,
   LayoutDashboard,
   Salad,
   UserRound,
-  Library,
+  BookOpen,
+  PersonStanding,
+  Trophy,
 } from 'lucide-react';
-import {
-  IconRun,
-  IconYoga,
-  IconStretching,
-  IconBarbell,
-  IconBike,
-  IconSwimming,
-} from '@tabler/icons-react';
 import { useState } from 'react';
 import { useFitnessContext } from '../contexts';
 import { ModalidadeTab } from './ModalidadeTab';
 import { TreinosTab } from './TreinosTab';
 import { ExerciciosTab } from './ExerciciosTab';
 import { TabButton } from './shared';
-import { VisaoGeralTab, DietaTab, PersonalInfoTab } from './tabs';
+import { VisaoGeralTab, DietaTab, PersonalInfoTab, ProgressoTab } from './tabs';
 
-type TabId = 'visao-geral' | 'personal-info' | 'modalidade' | 'treinos' | 'dieta' | 'exercicios';
+type TabId = 'visao-geral' | 'personal-info' | 'modalidade' | 'treinos' | 'dieta' | 'exercicios' | 'progresso';
 
 export function FitnessVisualizationPanel() {
   const {
@@ -47,36 +40,16 @@ export function FitnessVisualizationPanel() {
 
   const tabs = [
     { id: 'visao-geral' as TabId, label: 'Visão Geral', icon: LayoutDashboard },
+    { id: 'progresso' as TabId, label: 'Progresso', icon: Trophy },
     { id: 'personal-info' as TabId, label: 'Informações Pessoais', icon: UserRound },
-    { id: 'modalidade' as TabId, label: 'Modalidade', icon: Activity },
+    { id: 'modalidade' as TabId, label: 'Modalidade', icon: PersonStanding },
     { id: 'treinos' as TabId, label: 'Treinos', icon: Dumbbell },
     { id: 'dieta' as TabId, label: 'Dieta', icon: Salad },
-    { id: 'exercicios' as TabId, label: 'Biblioteca de exercícios', icon: Library },
+    { id: 'exercicios' as TabId, label: 'Biblioteca de exercícios', icon: BookOpen },
   ];
 
   return (
     <div className="flex-1 min-h-0 bg-slate-900/30 flex flex-col relative overflow-hidden">
-      {/* Decorative watermark background icons */}
-      <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
-        {/* Top row */}
-        <IconYoga className="absolute top-8 left-[10%] w-12 h-12 text-lime-400 opacity-[0.12]" />
-        <IconBarbell className="absolute top-12 left-[40%] w-14 h-14 text-lime-400 opacity-[0.12]" />
-        <IconRun className="absolute top-6 right-[15%] w-12 h-12 text-lime-400 opacity-[0.12]" />
-        {/* Middle row */}
-        <IconBike className="absolute top-[35%] left-[5%] w-14 h-14 text-lime-400 opacity-[0.12]" />
-        <IconSwimming className="absolute top-[40%] left-[30%] w-12 h-12 text-lime-400 opacity-[0.12]" />
-        <IconStretching className="absolute top-[38%] right-[25%] w-14 h-14 text-lime-400 opacity-[0.12]" />
-        <IconYoga className="absolute top-[32%] right-[5%] w-12 h-12 text-lime-400 opacity-[0.12]" />
-        {/* Bottom row */}
-        <IconBarbell className="absolute bottom-[30%] left-[15%] w-12 h-12 text-lime-400 opacity-[0.12]" />
-        <IconRun className="absolute bottom-[25%] left-[45%] w-14 h-14 text-lime-400 opacity-[0.12]" />
-        <IconBike className="absolute bottom-[28%] right-[10%] w-12 h-12 text-lime-400 opacity-[0.12]" />
-        {/* Very bottom */}
-        <IconSwimming className="absolute bottom-8 left-[20%] w-12 h-12 text-lime-400 opacity-[0.12]" />
-        <IconStretching className="absolute bottom-12 left-[55%] w-14 h-14 text-lime-400 opacity-[0.12]" />
-        <IconYoga className="absolute bottom-6 right-[12%] w-12 h-12 text-lime-400 opacity-[0.12]" />
-      </div>
-
       {/* Tabs */}
       <div className="flex-shrink-0 border-b border-slate-800 bg-slate-900/50">
         <div className="flex items-center">
@@ -92,9 +65,9 @@ export function FitnessVisualizationPanel() {
             ))}
           </div>
           {/* Disclaimer */}
-          <div className="flex-shrink-0 px-3 hidden lg:block text-center">
+          <div className="flex-shrink-0 px-2 text-center">
             <div
-              className="border border-[#4285F4]/50 rounded-md px-3 py-1.5 bg-[#4285F4]/5"
+              className="border border-[#4285F4]/50 rounded px-2 py-1 bg-[#4285F4]/5"
               style={{
                 animation: 'subtle-pulse 3s ease-in-out infinite',
               }}
@@ -107,10 +80,12 @@ export function FitnessVisualizationPanel() {
                   }
                 `}
               </style>
-              <p className="text-[10px] text-[#4285F4] leading-tight">
-                Esse módulo não substitui a orientação
+              <p className="text-[9px] text-[#4285F4] leading-tight">
+                Esse módulo não substitui
                 <br />
-                e acompanhamento de profissionais habilitados
+                a orientação e acompanhamento
+                <br />
+                de profissionais habilitados
               </p>
             </div>
           </div>
@@ -120,8 +95,13 @@ export function FitnessVisualizationPanel() {
       {/* Tab Content */}
       <div className="flex-1 min-h-0 overflow-y-auto">
         {activeTab === 'visao-geral' && (
-          <VisaoGeralTab personalInfo={personalInfo} treinos={treinos} dieta={dieta} />
+          <VisaoGeralTab
+            personalInfo={personalInfo}
+            treinos={treinos}
+            dieta={dieta}
+          />
         )}
+        {activeTab === 'progresso' && <ProgressoTab />}
         {activeTab === 'personal-info' && (
           <PersonalInfoTab personalInfo={personalInfo} onUpdate={updatePersonalInfo} />
         )}

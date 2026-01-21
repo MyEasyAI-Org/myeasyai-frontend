@@ -4,6 +4,8 @@ import {
   EXERCISE_DATABASE,
   type ExerciseInfo,
 } from '../constants/exerciseDatabase';
+import { TAB_WATERMARKS } from '../constants';
+import { WatermarkIcon } from './shared';
 
 const CATEGORY_LABELS: Record<ExerciseInfo['categoria'], string> = {
   peito: 'Peito',
@@ -359,7 +361,10 @@ export function ExerciciosTab() {
   }, [filteredExercises]);
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="relative p-6 space-y-6 overflow-hidden">
+      {/* Tab Watermark */}
+      <WatermarkIcon src={TAB_WATERMARKS.exercicios} size="lg" />
+
       {/* Header */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">

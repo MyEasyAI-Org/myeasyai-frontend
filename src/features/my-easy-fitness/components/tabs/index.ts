@@ -7,3 +7,4 @@
 export { VisaoGeralTab } from './VisaoGeralTab';
 export { DietaTab } from './DietaTab';
 export { PersonalInfoTab } from './PersonalInfoTab';
+export { ProgressoTab } from './ProgressoTab';

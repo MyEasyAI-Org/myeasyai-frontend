@@ -22,3 +22,11 @@ export {
   canGenerateWorkouts,
   canGenerateDiet,
 } from './fitnessDataHelpers';
+
+// Gamification hooks
+export { useGamification } from './useGamification';
+export { useStreaks, isStreakAtRisk, isStreakLost } from './useStreaks';
+export { useBadges, getNextMilestone } from './useBadges';
+export { useChallenges } from './useChallenges';
+export { useGoals } from './useGoals';
+export { useAutoSaveGamification, useSaveOnUnload } from './useAutoSaveGamification';
