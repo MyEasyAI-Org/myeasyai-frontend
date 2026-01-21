@@ -16,7 +16,7 @@ interface ResumeChatPanelProps {
   onLanguageSelect: (lang: ResumeLanguage) => void;
   onIndustrySelect: (industry: string) => void;
   onGoBack: () => void;
-  messagesEndRef: React.RefObject<HTMLDivElement | null>;
+  messagesEndRef: React.RefObject<HTMLDivElement>;
 }
 
 export function ResumeChatPanel({
