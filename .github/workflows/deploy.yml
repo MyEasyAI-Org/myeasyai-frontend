@@ -58,3 +58,49 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: Deploy avatar files to R2
+        run: |
+          # Upload avatar models
+          if [ -d "dist/avatar/models" ]; then
+            for file in dist/avatar/models/*; do
+              if [ -f "$file" ]; then
+                filename=$(basename "$file")
+                echo "Uploading avatar model: $filename"
+                wrangler r2 object put "myeasyai-sites/red-purple-amora/avatar/models/$filename" --file="$file" --content-type="model/gltf-binary" --remote
+              fi
+            done
+          fi
+          # Upload avatar images
+          if [ -d "dist/avatar/images" ]; then
+            find dist/avatar/images -type f | while read file; do
+              relpath="${file#dist/}"
+              ext="${file##*.}"
+              case "$ext" in
+                png) ct="image/png";;
+                jpg|jpeg) ct="image/jpeg";;
+                webp) ct="image/webp";;
+                *) ct="application/octet-stream";;
+              esac
+              echo "Uploading: $relpath"
+              wrangler r2 object put "myeasyai-sites/red-purple-amora/$relpath" --file="$file" --content-type="$ct" --remote
+            done
+          fi
+          # Upload avatar thumbnails
+          if [ -d "dist/avatar/thumbnails" ]; then
+            find dist/avatar/thumbnails -type f | while read file; do
+              relpath="${file#dist/}"
+              ext="${file##*.}"
+              case "$ext" in
+                png) ct="image/png";;
+                jpg|jpeg) ct="image/jpeg";;
+                webp) ct="image/webp";;
+                *) ct="application/octet-stream";;
+              esac
+              echo "Uploading: $relpath"
+              wrangler r2 object put "myeasyai-sites/red-purple-amora/$relpath" --file="$file" --content-type="$ct" --remote
+            done
+          fi
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
