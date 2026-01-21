@@ -12,7 +12,11 @@ const XIcon = ({ className }: { className?: string }) => (
   </svg>
 );
 
-export function Footer() {
+type FooterProps = {
+  onNavigateToSupport?: () => void;
+};
+
+export function Footer({ onNavigateToSupport }: FooterProps = {}) {
   return (
     <footer
       id="contato"
@@ -112,27 +116,56 @@ export function Footer() {
             <ul className="space-y-2">
               <li>
                 <a
-                  href="#"
+                  href="#contato"
                   className="text-slate-400 transition-colors hover:text-blue-400"
                 >
                   Contato
                 </a>
               </li>
               <li>
-                <a
-                  href="#"
-                  className="text-slate-400 transition-colors hover:text-blue-400"
-                >
-                  Documentação
-                </a>
+                {onNavigateToSupport ? (
+                  <button
+                    type="button"
+                    onClick={onNavigateToSupport}
+                    className="text-slate-400 transition-colors hover:text-blue-400"
+                  >
+                    Documentação
+                  </button>
+                ) : (
+                  <a
+                    href="#"
+                    className="text-slate-400 transition-colors hover:text-blue-400"
+                  >
+                    Documentação
+                  </a>
+                )}
               </li>
               <li>
-                <a
-                  href="#"
-                  className="text-slate-400 transition-colors hover:text-blue-400"
-                >
-                  FAQ
-                </a>
+                {onNavigateToSupport ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onNavigateToSupport();
+                      // Scroll to FAQ section after navigation
+                      setTimeout(() => {
+                        const faqSection = document.getElementById('faq');
+                        if (faqSection) {
+                          faqSection.scrollIntoView({ behavior: 'smooth' });
+                        }
+                      }, 100);
+                    }}
+                    className="text-slate-400 transition-colors hover:text-blue-400"
+                  >
+                    FAQ
+                  </button>
+                ) : (
+                  <a
+                    href="#"
+                    className="text-slate-400 transition-colors hover:text-blue-400"
+                  >
+                    FAQ
+                  </a>
+                )}
               </li>
               <li>
                 <a

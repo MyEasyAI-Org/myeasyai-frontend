@@ -29,6 +29,7 @@ type DashboardProps = {
   onGoToMyEasyCode?: () => void;
   onGoToMyEasyResume?: () => void;
   onGoToMyEasyLearning?: () => void;
+  onGoToSupport?: () => void;
   onLoadingComplete?: () => void;
   initialTab?: 'overview' | 'subscription' | 'products' | 'usage' | 'settings' | 'profile';
 };
@@ -44,6 +45,7 @@ export function Dashboard({
   onGoToMyEasyCode,
   onGoToMyEasyResume,
   onGoToMyEasyLearning,
+  onGoToSupport,
   onLoadingComplete,
   initialTab,
 }: DashboardProps = {}) {
@@ -173,6 +175,7 @@ export function Dashboard({
             onGoToMyEasyCode={goToCode}
             onGoToMyEasyResume={goToResume}
             onGoToMyEasyLearning={goToLearning}
+            onGoToSupport={onGoToSupport}
             accountCreatedAt={cadastralInfo.created_at}
           />
         )}
@@ -192,7 +195,7 @@ export function Dashboard({
       </div>
 
       {/* Footer */}
-      <Footer />
+      <Footer onNavigateToSupport={onGoToSupport} />
 
       {/* Notification Detail Modal */}
       <NotificationDetailModal

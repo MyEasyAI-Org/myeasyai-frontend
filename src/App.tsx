@@ -34,6 +34,7 @@ import { MyEasyPricing } from './features/my-easy-pricing/MyEasyPricing';
 import { MyEasyWebsite } from './features/my-easy-website/MyEasyWebsite';
 import { MyEasyResume } from './features/my-easy-resume/MyEasyResume';
 import { MyEasyLearning } from './features/my-easy-learning/MyEasyLearning';
+import { SupportPage } from './pages/SupportPage';
 import { useInactivityTimeout } from './hooks/useInactivityTimeout';
 import { useModalState } from './hooks/useModalState';
 import { useRealtimeSync } from './hooks/useRealtimeSync';
@@ -337,6 +338,10 @@ function AppContent() {
 
   const goToMyEasyLearning = () => {
     navigate(ROUTES.MY_EASY_LEARNING);
+  };
+
+  const goToSupport = () => {
+    navigate(ROUTES.SUPPORT);
   };
 
   const goToSubscription = () => {
@@ -773,7 +778,7 @@ function AppContent() {
             <MidStats />
             <Courses />
             <FinalCta onSignupClick={openSignup} />
-            <Footer />
+            <Footer onNavigateToSupport={user ? goToSupport : undefined} />
 
             {user && (
               <OnboardingModal
@@ -818,6 +823,7 @@ function AppContent() {
                 onGoToMyEasyCode={goToMyEasyCode}
                 onGoToMyEasyResume={goToMyEasyResume}
                 onGoToMyEasyLearning={goToMyEasyLearning}
+                onGoToSupport={goToSupport}
                 initialTab={dashboardInitialTab}
                 onLoadingComplete={() => {
                   console.log('Dashboard loaded successfully!');
@@ -968,6 +974,21 @@ function AppContent() {
             isCheckingAuth={isCheckingAuth}
           >
             <MyEasyLearning onBackToDashboard={goToDashboardProducts} />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path={ROUTES.SUPPORT}
+        element={
+          <ProtectedRoute
+            user={user}
+            needsOnboarding={needsOnboarding}
+            onOpenOnboarding={() => onboardingModal.open()}
+            isLoading={loading}
+            isCheckingAuth={isCheckingAuth}
+          >
+            <SupportPage onBackToDashboard={goToDashboardProducts} />
           </ProtectedRoute>
         }
       />
