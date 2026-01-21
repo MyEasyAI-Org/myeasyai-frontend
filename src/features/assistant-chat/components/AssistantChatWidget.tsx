@@ -114,6 +114,15 @@ export function AssistantChatWidget() {
   // Get avatar name and selfie from store
   const avatarName = useConfiguratorStore((state) => state.avatarName);
   const avatarSelfie = useConfiguratorStore((state) => state.avatarSelfie);
+  const loadSavedAvatar = useConfiguratorStore((state) => state.loadSavedAvatar);
+  const assets = useConfiguratorStore((state) => state.assets);
+
+  // Load saved avatar data on mount (when assets are available)
+  useEffect(() => {
+    if (assets.length > 0) {
+      loadSavedAvatar();
+    }
+  }, [assets.length, loadSavedAvatar]);
 
   // Display name: use avatar name if set, otherwise "Assistente"
   const displayName = avatarName ? `Assistente (${avatarName})` : 'Assistente';
@@ -426,13 +435,13 @@ export function AssistantChatWidget() {
         <div
           className="absolute z-20"
           style={{
-            right: isAvatarMinimized ? '-15px' : '-20px',
+            right: '-19px',
             bottom: isAvatarMinimized ? '28.5px' : '100px',
             width: 0,
             height: 0,
             borderTop: '14px solid transparent',
             borderBottom: '14px solid transparent',
-            borderLeft: '20px solid rgba(15, 23, 42, 0.95)',
+            borderLeft: '20px solid rgb(15, 23, 42)',
             filter: 'drop-shadow(2px 0 3px rgba(168,85,247,0.2))',
           }}
         />
@@ -714,6 +723,24 @@ export function AssistantChatWidget() {
                 height: '96px',
               }}
             >
+              {/* Subtle pulse glow effect behind bubble */}
+              <svg
+                width="80"
+                height="96"
+                viewBox="0 0 80 96"
+                className="absolute inset-0"
+                style={{
+                  filter: 'blur(8px)',
+                  animation: 'bubblePulse 3s ease-in-out infinite',
+                }}
+              >
+                <circle cx="40" cy="40" r="36" fill="rgba(139, 92, 246, 0.4)" />
+                <path
+                  d="M10 62 L25 62 L8 78 Z"
+                  fill="rgba(139, 92, 246, 0.4)"
+                  transform="rotate(25, 16, 62)"
+                />
+              </svg>
               {/* Unified bubble shape with tail */}
               <svg
                 width="80"
@@ -731,12 +758,11 @@ export function AssistantChatWidget() {
                 {/* Circle with WhatsApp-style tail */}
                 <circle cx="40" cy="40" r="36" fill="url(#bubbleGrad)" />
                 <path
-                  d="M8 62 L24 62 L6 85 Z"
+                  d="M10 62 L25 62 L8 78 Z"
                   fill="url(#bubbleGrad)"
                   transform="rotate(25, 16, 62)"
                 />
               </svg>
-
               {/* Avatar image with gradient border */}
               <div
                 className="absolute rounded-full overflow-hidden"
@@ -763,10 +789,10 @@ export function AssistantChatWidget() {
               </div>
             </div>
 
-            {/* Online indicator */}
-            <span className="absolute right-2 top-2 flex h-3 w-3">
+            {/* Online indicator - centered on circle border */}
+            <span className="absolute flex" style={{ right: '10px', top: '7.9px', width: '13px', height: '13px' }}>
               <span className="absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" style={{ animation: 'ping 2s cubic-bezier(0, 0, 0.2, 1) infinite' }} />
-              <span className="relative inline-flex h-3 w-3 rounded-full border-2 border-white bg-green-500" />
+              <span className="relative inline-flex rounded-full border-2 border-white bg-green-500" style={{ width: '13px', height: '13px' }} />
             </span>
           </div>
         </div>

@@ -69,7 +69,7 @@ const avatarAnimationStyles = `
 
   @keyframes floatBounce {
     0%, 100% { transform: translateY(0px); }
-    50% { transform: translateY(-6px); }
+    50% { transform: translateY(-1px); }
   }
 
   .avatar-magic-entrance {
@@ -83,7 +83,7 @@ const avatarAnimationStyles = `
   }
 
   .avatar-float {
-    animation: floatBounce 3s ease-in-out infinite;
+    animation: floatBounce 2s ease-in-out infinite;
   }
 `;
 
