@@ -1,5 +1,5 @@
-import { useCallback, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useCallback, useEffect, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ROUTES } from '../router';
 
 // ============================================================================
@@ -35,6 +35,10 @@ export type UseDashboardNavigationOptions = {
   onGoToMyEasyCRM?: () => void;
   /** Callback function to navigate to MyEasyContent feature */
   onGoToMyEasyContent?: () => void;
+  /** Callback function to navigate to MyEasyAvatar feature */
+  onGoToMyEasyAvatar?: () => void;
+  /** Callback function to navigate to MyEasyCode feature */
+  onGoToMyEasyCode?: () => void;
   /** Callback function to navigate to MyEasyResume feature */
   onGoToMyEasyResume?: () => void;
   /** Callback function to navigate to MyEasyLearning feature */
@@ -63,7 +67,7 @@ const DEFAULT_INITIAL_TAB: DashboardTab = 'overview';
  * @description
  * Provides centralized navigation logic for the dashboard, including:
  * - **Tab management**: Switch between dashboard tabs
- * - **Feature navigation**: Navigate to external features (MyEasyWebsite, BusinessGuru, MyEasyCRM)
+ * - **Feature navigation**: Navigate to external features (MyEasyWebsite, BusinessGuru, MyEasyCRM, etc)
  * - **Product routing**: Smart routing based on product names
  * - **React Router integration**: Uses react-router-dom for URL-based navigation
  *
@@ -92,18 +96,47 @@ export function useDashboardNavigation(
     onGoToMyEasyPricing,
     onGoToMyEasyCRM,
     onGoToMyEasyContent,
+    onGoToMyEasyAvatar,
+    onGoToMyEasyCode,
     onGoToMyEasyResume,
     onGoToMyEasyLearning,
     initialTab = DEFAULT_INITIAL_TAB,
   } = options;
 
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   // ============================================================================
   // STATE
   // ============================================================================
 
-  const [activeTab, setActiveTab] = useState<DashboardTab>(initialTab);
+  // Get initial tab from URL param or use provided initialTab
+  const getInitialTab = (): DashboardTab => {
+    const urlTab = searchParams.get('tab');
+    const validTabs: DashboardTab[] = ['overview', 'subscription', 'products', 'usage', 'settings', 'profile'];
+    if (urlTab && validTabs.includes(urlTab as DashboardTab)) {
+      return urlTab as DashboardTab;
+    }
+    return initialTab;
+  };
+
+  const [activeTab, setActiveTabState] = useState<DashboardTab>(getInitialTab);
+
+  // Listen for URL changes and update tab accordingly
+  useEffect(() => {
+    const urlTab = searchParams.get('tab');
+    const validTabs: DashboardTab[] = ['overview', 'subscription', 'products', 'usage', 'settings', 'profile'];
+    if (urlTab && validTabs.includes(urlTab as DashboardTab) && urlTab !== activeTab) {
+      setActiveTabState(urlTab as DashboardTab);
+    }
+  }, [searchParams, activeTab]);
+
+  // Custom setActiveTab that also updates URL
+  const setActiveTab = useCallback((tab: DashboardTab) => {
+    setActiveTabState(tab);
+    // Update URL without navigation (just update the query param)
+    setSearchParams({ tab }, { replace: true });
+  }, [setSearchParams]);
 
   // ============================================================================
   // NAVIGATION FUNCTIONS
@@ -206,6 +239,38 @@ export function useDashboardNavigation(
   }, [onGoToMyEasyContent, navigate]);
 
   /**
+   * Navigate to MyEasyAvatar feature
+   * @description
+   * Attempts to use the provided callback. If not available, uses React Router
+   * to navigate to the MyEasyAvatar route.
+   *
+   * @returns {void}
+   */
+  const goToAvatar = useCallback(() => {
+    if (onGoToMyEasyAvatar) {
+      onGoToMyEasyAvatar();
+    } else {
+      navigate(ROUTES.MY_EASY_AVATAR);
+    }
+  }, [onGoToMyEasyAvatar, navigate]);
+
+  /**
+   * Navigate to MyEasyCode feature
+   * @description
+   * Attempts to use the provided callback. If not available, uses React Router
+   * to navigate to the MyEasyCode route.
+   *
+   * @returns {void}
+   */
+  const goToCode = useCallback(() => {
+    if (onGoToMyEasyCode) {
+      onGoToMyEasyCode();
+    } else {
+      navigate(ROUTES.MY_EASY_CODE);
+    }
+  }, [onGoToMyEasyCode, navigate]);
+
+  /**
    * Navigate to MyEasyResume feature
    * @description
    * Attempts to use the provided callback. If not available, uses React Router
@@ -246,6 +311,8 @@ export function useDashboardNavigation(
    * - Names containing "pricing" or "preco" → MyEasyPricing
    * - Names containing "crm" → MyEasyCRM
    * - Names containing "content" → MyEasyContent
+   * - Names containing "avatar" → MyEasyAvatar
+   * - Names containing "code" → MyEasyCode
    * - Names containing "resume" or "curriculo" → MyEasyResume
    * - Names containing "learning" or "aprendizado" or "estudo" → MyEasyLearning
    * - Other names → Home
@@ -267,6 +334,10 @@ export function useDashboardNavigation(
         goToCRM();
       } else if (name.includes('content')) {
         goToContent();
+      } else if (name.includes('avatar')) {
+        goToAvatar();
+      } else if (name.includes('code')) {
+        goToCode();
       } else if (name.includes('resume') || name.includes('curriculo')) {
         goToResume();
       } else if (name.includes('learning') || name.includes('aprendizado') || name.includes('estudo')) {
@@ -275,7 +346,7 @@ export function useDashboardNavigation(
         goToHome();
       }
     },
-    [goToWebsite, goToGuru, goToPricing, goToCRM, goToContent, goToResume, goToLearning, goToHome],
+    [goToWebsite, goToGuru, goToPricing, goToCRM, goToContent, goToAvatar, goToCode, goToResume, goToLearning, goToHome],
   );
 
   // ============================================================================
@@ -292,6 +363,8 @@ export function useDashboardNavigation(
     goToPricing,
     goToCRM,
     goToContent,
+    goToAvatar,
+    goToCode,
     goToResume,
     goToLearning,
   };

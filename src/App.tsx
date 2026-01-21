@@ -26,6 +26,8 @@ import { Preview } from './components/Preview';
 import { PWAInstallBanner } from './components/PWAInstallBanner';
 import { AuthCallback } from './components/AuthCallback';
 import { BusinessGuru } from './features/business-guru/BusinessGuru';
+import { MyEasyAvatar } from './features/my-easy-avatar';
+import { MyEasyCode } from './features/my-easy-code';
 import { MyEasyContent } from './features/my-easy-content';
 import { MyEasyCRM } from './features/my-easy-crm';
 import { MyEasyPricing } from './features/my-easy-pricing/MyEasyPricing';
@@ -38,6 +40,7 @@ import { useModalState } from './hooks/useModalState';
 import { useRealtimeSync } from './hooks/useRealtimeSync';
 import { supabase } from './lib/api-clients/supabase-client';
 import { ROUTES } from './router';
+import { AvatarWidgetProvider } from './contexts/AvatarWidgetContext';
 import { authService, type AuthUser } from './services/AuthServiceV2';
 import { userManagementServiceV2 } from './services/UserManagementServiceV2';
 
@@ -315,6 +318,14 @@ function AppContent() {
 
   const goToMyEasyPricing = () => {
     navigate(ROUTES.MY_EASY_PRICING);
+  };
+
+  const goToMyEasyAvatar = () => {
+    navigate(ROUTES.MY_EASY_AVATAR);
+  };
+
+  const goToMyEasyCode = () => {
+    navigate(ROUTES.MY_EASY_CODE);
   };
 
   const goToMyEasyContent = () => {
@@ -808,6 +819,8 @@ function AppContent() {
                 onGoToMyEasyPricing={goToMyEasyPricing}
                 onGoToMyEasyCRM={goToMyEasyCRM}
                 onGoToMyEasyContent={goToMyEasyContent}
+                onGoToMyEasyAvatar={goToMyEasyAvatar}
+                onGoToMyEasyCode={goToMyEasyCode}
                 onGoToMyEasyResume={goToMyEasyResume}
                 onGoToMyEasyLearning={goToMyEasyLearning}
                 onGoToSupport={goToSupport}
@@ -906,6 +919,36 @@ function AppContent() {
       />
 
       <Route
+        path={ROUTES.MY_EASY_AVATAR}
+        element={
+          <ProtectedRoute
+            user={user}
+            needsOnboarding={needsOnboarding}
+            onOpenOnboarding={() => onboardingModal.open()}
+            isLoading={loading}
+            isCheckingAuth={isCheckingAuth}
+          >
+            <MyEasyAvatar onBack={goToDashboardProducts} />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path={ROUTES.MY_EASY_CODE}
+        element={
+          <ProtectedRoute
+            user={user}
+            needsOnboarding={needsOnboarding}
+            onOpenOnboarding={() => onboardingModal.open()}
+            isLoading={loading}
+            isCheckingAuth={isCheckingAuth}
+          >
+            <MyEasyCode onBack={goToDashboardProducts} />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
         path={ROUTES.MY_EASY_RESUME}
         element={
           <ProtectedRoute
@@ -962,7 +1005,9 @@ function AppContent() {
 function App() {
   return (
     <BrowserRouter>
-      <AppContent />
+      <AvatarWidgetProvider>
+        <AppContent />
+      </AvatarWidgetProvider>
     </BrowserRouter>
   );
 }

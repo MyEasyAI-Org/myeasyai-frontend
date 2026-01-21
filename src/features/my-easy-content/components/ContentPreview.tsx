@@ -54,7 +54,7 @@ type ContentPreviewProps = {
   onDeleteLibraryItem: (id: string) => Promise<boolean>;
 };
 
-const NETWORK_ICONS: Record<SocialNetwork, React.ElementType> = {
+const NETWORK_ICONS: Record<SocialNetwork, React.ComponentType<{ className?: string }>> = {
   instagram: Instagram,
   facebook: Facebook,
   linkedin: Linkedin,

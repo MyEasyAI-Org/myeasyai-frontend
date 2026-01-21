@@ -65,10 +65,10 @@ type ContentChatPanelProps = {
   onConfirmNetworks: () => void;
   onConfirmContentTypes: () => void;
   onGoBack: () => void;
-  messagesEndRef: React.RefObject<HTMLDivElement | null>;
+  messagesEndRef: React.RefObject<HTMLDivElement>;
 };
 
-const ICON_MAP: Record<string, React.ElementType> = {
+const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   Instagram,
   Facebook,
   Linkedin,
