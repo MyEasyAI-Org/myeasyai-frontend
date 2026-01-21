@@ -61,19 +61,17 @@ jobs:
 
       - name: Deploy avatar files to R2
         run: |
-          # Upload avatar models
+          # Upload avatar models (using find to handle spaces in filenames)
           if [ -d "dist/avatar/models" ]; then
-            for file in dist/avatar/models/*; do
-              if [ -f "$file" ]; then
-                filename=$(basename "$file")
-                echo "Uploading avatar model: $filename"
-                wrangler r2 object put "myeasyai-sites/red-purple-amora/avatar/models/$filename" --file="$file" --content-type="model/gltf-binary" --remote
-              fi
+            find dist/avatar/models -type f -name "*.glb" -print0 | while IFS= read -r -d '' file; do
+              relpath="${file#dist/}"
+              echo "Uploading avatar model: $relpath"
+              wrangler r2 object put "myeasyai-sites/red-purple-amora/$relpath" --file="$file" --content-type="model/gltf-binary" --remote
             done
           fi
           # Upload avatar images
           if [ -d "dist/avatar/images" ]; then
-            find dist/avatar/images -type f | while read file; do
+            find dist/avatar/images -type f -print0 | while IFS= read -r -d '' file; do
               relpath="${file#dist/}"
               ext="${file##*.}"
               case "$ext" in
@@ -88,7 +86,7 @@ jobs:
           fi
           # Upload avatar thumbnails
           if [ -d "dist/avatar/thumbnails" ]; then
-            find dist/avatar/thumbnails -type f | while read file; do
+            find dist/avatar/thumbnails -type f -print0 | while IFS= read -r -d '' file; do
               relpath="${file#dist/}"
               ext="${file##*.}"
               case "$ext" in
