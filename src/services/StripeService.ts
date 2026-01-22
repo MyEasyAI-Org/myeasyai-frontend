@@ -1,7 +1,8 @@
 // Stripe Service for MyEasyAI
 // Handles all Stripe-related operations via the backend Worker
 
-import { API_BASE_URL } from '../config/api';
+// API Base URL (same as D1 API)
+const API_BASE_URL = import.meta.env.VITE_CLOUDFLARE_D1_API_URL || '';
 
 // Stripe Publishable Key (test mode)
 const STRIPE_PUBLISHABLE_KEY = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || '';
