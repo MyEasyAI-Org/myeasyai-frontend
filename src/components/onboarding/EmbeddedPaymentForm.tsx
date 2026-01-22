@@ -1,5 +1,6 @@
 // Embedded Payment Form using Stripe Elements
 // Integrates with the onboarding flow for in-modal payment
+// Uses SetupIntent flow: collect payment method, then create subscription
 
 import { useState } from 'react';
 import {
@@ -7,12 +8,17 @@ import {
   useStripe,
   useElements,
 } from '@stripe/react-stripe-js';
+import { stripeService } from '../../services/StripeService';
 
 interface EmbeddedPaymentFormProps {
   onSuccess: () => void;
   onError: (message: string) => void;
   planName: string;
   priceDisplay: string;
+  customerId: string;
+  priceId: string;
+  userId: string;
+  plan: string;
 }
 
 export function EmbeddedPaymentForm({
@@ -20,6 +26,10 @@ export function EmbeddedPaymentForm({
   onError,
   planName,
   priceDisplay,
+  customerId,
+  priceId,
+  userId,
+  plan,
 }: EmbeddedPaymentFormProps) {
   const stripe = useStripe();
   const elements = useElements();
@@ -37,7 +47,8 @@ export function EmbeddedPaymentForm({
     setPaymentError(null);
 
     try {
-      const { error, paymentIntent } = await stripe.confirmPayment({
+      // Step 1: Confirm the SetupIntent (collects and saves payment method)
+      const { error, setupIntent } = await stripe.confirmSetup({
         elements,
         confirmParams: {
           return_url: `${window.location.origin}/checkout/success`,
@@ -46,20 +57,49 @@ export function EmbeddedPaymentForm({
       });
 
       if (error) {
-        console.error('[EmbeddedPaymentForm] Payment error:', error);
+        console.error('[EmbeddedPaymentForm] Setup error:', error);
         const errorMessage = error.message || 'Erro ao processar pagamento';
         setPaymentError(errorMessage);
         onError(errorMessage);
-      } else if (paymentIntent && paymentIntent.status === 'succeeded') {
-        console.log('[EmbeddedPaymentForm] Payment succeeded:', paymentIntent.id);
-        onSuccess();
-      } else if (paymentIntent && paymentIntent.status === 'processing') {
-        // Payment is still processing
+        return;
+      }
+
+      if (setupIntent && setupIntent.status === 'succeeded') {
+        console.log('[EmbeddedPaymentForm] SetupIntent succeeded:', setupIntent.id);
+
+        // Step 2: Create the actual subscription now that payment method is saved
+        try {
+          const subscription = await stripeService.confirmSubscription({
+            customerId,
+            priceId,
+            userId,
+            plan,
+          });
+
+          console.log('[EmbeddedPaymentForm] Subscription created:', subscription.subscriptionId);
+          onSuccess();
+        } catch (subError) {
+          console.error('[EmbeddedPaymentForm] Subscription error:', subError);
+          const errorMessage = subError instanceof Error ? subError.message : 'Erro ao criar assinatura';
+          setPaymentError(errorMessage);
+          onError(errorMessage);
+        }
+      } else if (setupIntent && setupIntent.status === 'processing') {
         setPaymentError('Pagamento em processamento. Aguarde...');
       } else {
-        // Handle other statuses
-        console.log('[EmbeddedPaymentForm] Payment status:', paymentIntent?.status);
-        onSuccess();
+        console.log('[EmbeddedPaymentForm] SetupIntent status:', setupIntent?.status);
+        // Try to create subscription anyway
+        try {
+          await stripeService.confirmSubscription({
+            customerId,
+            priceId,
+            userId,
+            plan,
+          });
+          onSuccess();
+        } catch {
+          onError('Status de pagamento desconhecido');
+        }
       }
     } catch (err) {
       console.error('[EmbeddedPaymentForm] Error:', err);

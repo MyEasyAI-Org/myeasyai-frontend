@@ -26,9 +26,16 @@ export interface PortalSessionResponse {
 }
 
 export interface CreateSubscriptionResponse {
-  subscriptionId: string;
+  setupIntentId: string;
   clientSecret: string;
-  paymentIntentId: string;
+  customerId: string;
+  priceId: string;
+  status: string;
+  intentType: 'setup_intent';
+}
+
+export interface ConfirmSubscriptionResponse {
+  subscriptionId: string;
   status: string;
 }
 
@@ -172,6 +179,32 @@ class StripeService {
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.error || 'Failed to create subscription');
+    }
+
+    return response.json();
+  }
+
+  /**
+   * Confirm subscription after SetupIntent is confirmed
+   * Creates the actual subscription now that payment method is attached
+   */
+  async confirmSubscription(params: {
+    customerId: string;
+    priceId: string;
+    userId: string;
+    plan: string;
+  }): Promise<ConfirmSubscriptionResponse> {
+    const response = await fetch(`${this.baseUrl}/confirm-subscription`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(params),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to confirm subscription');
     }
 
     return response.json();

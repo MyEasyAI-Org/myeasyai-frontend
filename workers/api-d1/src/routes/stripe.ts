@@ -530,18 +530,81 @@ stripeRoutes.post('/create-subscription', async (c) => {
         .where(eq(users.uuid, userId));
     }
 
-    // Create subscription with payment_behavior=default_incomplete
-    // This creates a subscription and returns a PaymentIntent that needs to be confirmed
-    const subscriptionParams = new URLSearchParams({
-      customer: customerId,
-      'items[0][price]': priceId,
-      payment_behavior: 'default_incomplete',
-      payment_settings_save_default_payment_method: 'on_subscription',
-      'payment_settings[payment_method_types][0]': 'card',
-      'expand[0]': 'latest_invoice.payment_intent',
-      'metadata[userId]': userId,
-      'metadata[plan]': plan,
+    // Create a SetupIntent first to collect payment method, then create subscription
+    // This is the recommended approach for Stripe Elements with subscriptions
+    const setupIntentResponse = await fetch('https://api.stripe.com/v1/setup_intents', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${STRIPE_SECRET_KEY}`,
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({
+        customer: customerId,
+        'payment_method_types[]': 'card',
+        'metadata[userId]': userId,
+        'metadata[plan]': plan,
+        'metadata[priceId]': priceId,
+        usage: 'off_session',
+      }).toString(),
     });
+
+    if (!setupIntentResponse.ok) {
+      const error = await setupIntentResponse.text();
+      console.error('[Stripe] Failed to create setup intent:', error);
+      return c.json({ error: 'Failed to create setup intent', details: error }, 500);
+    }
+
+    const setupIntent = await setupIntentResponse.json() as {
+      id: string;
+      client_secret: string;
+      status: string;
+    };
+
+    console.log(`[Stripe] SetupIntent created: ${setupIntent.id} for user ${userId}`);
+
+    // Store the pending subscription info so webhook can create it after payment method is confirmed
+    // For now, we'll create the subscription after frontend confirms the SetupIntent
+
+    return c.json({
+      setupIntentId: setupIntent.id,
+      clientSecret: setupIntent.client_secret,
+      customerId: customerId,
+      priceId: priceId,
+      status: setupIntent.status,
+      intentType: 'setup_intent',
+    });
+  } catch (error) {
+    console.error('[Stripe] Error creating subscription:', error);
+    return c.json({ error: 'Internal server error' }, 500);
+  }
+});
+
+/**
+ * POST /stripe/confirm-subscription
+ * After SetupIntent is confirmed, create the actual subscription
+ * Called from frontend after user confirms payment method
+ */
+stripeRoutes.post('/confirm-subscription', async (c) => {
+  try {
+    const { customerId, priceId, userId, plan } = await c.req.json();
+
+    if (!customerId || !priceId || !userId) {
+      return c.json({ error: 'Missing required fields: customerId, priceId, userId' }, 400);
+    }
+
+    const STRIPE_SECRET_KEY = c.env.STRIPE_SECRET_KEY;
+    if (!STRIPE_SECRET_KEY) {
+      return c.json({ error: 'Stripe not configured' }, 500);
+    }
+
+    // Create the subscription now that payment method is attached
+    // The customer's default payment method (attached via SetupIntent) will be used
+    const subscriptionParams = new URLSearchParams();
+    subscriptionParams.append('customer', customerId);
+    subscriptionParams.append('items[0][price]', priceId);
+    subscriptionParams.append('metadata[userId]', userId);
+    subscriptionParams.append('metadata[plan]', plan || 'individual');
+    subscriptionParams.append('expand[]', 'latest_invoice');
 
     const subscriptionResponse = await fetch('https://api.stripe.com/v1/subscriptions', {
       method: 'POST',
@@ -561,33 +624,28 @@ stripeRoutes.post('/create-subscription', async (c) => {
     const subscription = await subscriptionResponse.json() as {
       id: string;
       status: string;
-      latest_invoice: {
-        id: string;
-        payment_intent: {
-          id: string;
-          client_secret: string;
-          status: string;
-        } | null;
-      };
+      current_period_end: number;
     };
 
-    const paymentIntent = subscription.latest_invoice?.payment_intent;
+    // Update user's subscription in database
+    const db = c.get('db');
+    await db.update(users)
+      .set({
+        subscription_status: subscription.status === 'active' ? 'active' : 'pending',
+        subscription_plan: plan || 'individual',
+        stripe_subscription_id: subscription.id,
+        subscription_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
+      })
+      .where(eq(users.uuid, userId));
 
-    if (!paymentIntent) {
-      console.error('[Stripe] No payment intent in subscription');
-      return c.json({ error: 'Failed to get payment intent' }, 500);
-    }
-
-    console.log(`[Stripe] Subscription created: ${subscription.id} for user ${userId}, PI: ${paymentIntent.id}`);
+    console.log(`[Stripe] Subscription created: ${subscription.id} for user ${userId}, status: ${subscription.status}`);
 
     return c.json({
       subscriptionId: subscription.id,
-      clientSecret: paymentIntent.client_secret,
-      paymentIntentId: paymentIntent.id,
       status: subscription.status,
     });
   } catch (error) {
-    console.error('[Stripe] Error creating subscription:', error);
+    console.error('[Stripe] Error confirming subscription:', error);
     return c.json({ error: 'Internal server error' }, 500);
   }
 });
