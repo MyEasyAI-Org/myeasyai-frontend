@@ -59,19 +59,35 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
+      - name: Debug - List dist/avatar contents
+        run: |
+          echo "=== Checking dist/avatar structure ==="
+          ls -la dist/ || echo "dist/ not found"
+          ls -la dist/avatar/ || echo "dist/avatar/ not found"
+          ls -la dist/avatar/models/ | head -20 || echo "dist/avatar/models/ not found"
+          echo "=== Looking for Teleporter Base.glb ==="
+          find dist -name "*Teleporter*" -type f 2>/dev/null || echo "No Teleporter files found"
+
       - name: Deploy avatar files to R2
         run: |
-          # Upload avatar models (using find to handle spaces in filenames)
+          # Upload avatar models - use process substitution to avoid subshell issues
+          echo "=== Starting avatar model upload ==="
           if [ -d "dist/avatar/models" ]; then
-            find dist/avatar/models -type f -name "*.glb" -print0 | while IFS= read -r -d '' file; do
+            echo "Found dist/avatar/models directory"
+            while IFS= read -r -d '' file; do
               relpath="${file#dist/}"
               echo "Uploading avatar model: $relpath"
               wrangler r2 object put "myeasyai-sites/red-purple-amora/$relpath" --file="$file" --content-type="model/gltf-binary" --remote
-            done
+            done < <(find dist/avatar/models -type f -name "*.glb" -print0)
+          else
+            echo "WARNING: dist/avatar/models directory not found!"
           fi
+
           # Upload avatar images
+          echo "=== Starting avatar images upload ==="
           if [ -d "dist/avatar/images" ]; then
-            find dist/avatar/images -type f -print0 | while IFS= read -r -d '' file; do
+            echo "Found dist/avatar/images directory"
+            while IFS= read -r -d '' file; do
               relpath="${file#dist/}"
               ext="${file##*.}"
               case "$ext" in
@@ -82,11 +98,16 @@ jobs:
               esac
               echo "Uploading: $relpath"
               wrangler r2 object put "myeasyai-sites/red-purple-amora/$relpath" --file="$file" --content-type="$ct" --remote
-            done
+            done < <(find dist/avatar/images -type f -print0)
+          else
+            echo "WARNING: dist/avatar/images directory not found!"
           fi
+
           # Upload avatar thumbnails
+          echo "=== Starting avatar thumbnails upload ==="
           if [ -d "dist/avatar/thumbnails" ]; then
-            find dist/avatar/thumbnails -type f -print0 | while IFS= read -r -d '' file; do
+            echo "Found dist/avatar/thumbnails directory"
+            while IFS= read -r -d '' file; do
               relpath="${file#dist/}"
               ext="${file##*.}"
               case "$ext" in
@@ -97,8 +118,11 @@ jobs:
               esac
               echo "Uploading: $relpath"
               wrangler r2 object put "myeasyai-sites/red-purple-amora/$relpath" --file="$file" --content-type="$ct" --remote
-            done
+            done < <(find dist/avatar/thumbnails -type f -print0)
+          else
+            echo "WARNING: dist/avatar/thumbnails directory not found!"
           fi
+          echo "=== Avatar upload complete ==="
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
