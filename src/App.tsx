@@ -37,6 +37,8 @@ import { MyEasyLearning } from './features/my-easy-learning/MyEasyLearning';
 import { SupportPage } from './pages/SupportPage';
 import { CreateTicketPage } from './pages/CreateTicketPage';
 import { MyTicketsPage } from './pages/MyTicketsPage';
+import { CheckoutSuccessPage } from './pages/CheckoutSuccessPage';
+import { CheckoutCancelPage } from './pages/CheckoutCancelPage';
 import { useInactivityTimeout } from './hooks/useInactivityTimeout';
 import { useModalState } from './hooks/useModalState';
 import { useRealtimeSync } from './hooks/useRealtimeSync';
@@ -799,6 +801,10 @@ function AppContent() {
 
       {/* Auth callback route - processes OAuth redirects from Cloudflare/Supabase */}
       <Route path={ROUTES.AUTH_CALLBACK} element={<AuthCallback />} />
+
+      {/* Checkout routes - require auth but accessible during onboarding */}
+      <Route path={ROUTES.CHECKOUT_SUCCESS} element={<CheckoutSuccessPage />} />
+      <Route path={ROUTES.CHECKOUT_CANCEL} element={<CheckoutCancelPage />} />
 
       {/* Protected routes */}
       <Route

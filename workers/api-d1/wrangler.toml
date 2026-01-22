@@ -31,6 +31,8 @@ SUPABASE_URL = "https://abmixlwlizdyvlxrizmi.supabase.co"
 # wrangler secret put GOOGLE_CLIENT_ID
 # wrangler secret put GOOGLE_CLIENT_SECRET
 # wrangler secret put SUPABASE_SERVICE_ROLE_KEY
+# wrangler secret put STRIPE_SECRET_KEY
+# wrangler secret put STRIPE_WEBHOOK_SECRET
 #
 # Para obter as credenciais do Google:
 # 1. Acesse https://console.cloud.google.com/apis/credentials
@@ -43,6 +45,17 @@ SUPABASE_URL = "https://abmixlwlizdyvlxrizmi.supabase.co"
 # 1. Acesse o projeto no Supabase Dashboard
 # 2. Settings > API > service_role key (NÃO anon key!)
 # 3. Execute: wrangler secret put SUPABASE_SERVICE_ROLE_KEY
+#
+# Para Stripe (Payment Processing):
+# 1. Acesse https://dashboard.stripe.com/test/apikeys
+# 2. Copie a Secret key (sk_test_...)
+# 3. Execute: wrangler secret put STRIPE_SECRET_KEY
+# 4. Crie um webhook em https://dashboard.stripe.com/test/webhooks
+#    - Endpoint: https://connect.myeasyai.com/stripe/webhook
+#    - Eventos: checkout.session.completed, customer.subscription.*,
+#               invoice.payment_failed, invoice.payment_succeeded
+# 5. Copie o Signing secret (whsec_...)
+# 6. Execute: wrangler secret put STRIPE_WEBHOOK_SECRET
 # ============================================
 
 # Cron Triggers para sync automático
