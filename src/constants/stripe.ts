@@ -5,23 +5,22 @@ export type PlanId = 'individual' | 'plus' | 'premium';
 export type Currency = 'brl' | 'usd';
 export type BillingPeriod = 'monthly' | 'annual';
 
-// Stripe Price IDs (TEST MODE)
-// These are the actual price IDs from Stripe Dashboard
+// Stripe Price IDs (TEST MODE) - RECURRING SUBSCRIPTIONS
 export const STRIPE_PRICE_IDS = {
-  // BRL - Annual (12x installments)
-  individual_brl_annual: 'price_1Ss6lv2FRnSpHchtPDqBXsD6',
-  plus_brl_annual: 'price_1Ss6nm2FRnSpHchtKlOb5nky',
-  premium_brl_annual: 'price_1Ss6qd2FRnSpHchtbZtN9tvy',
+  // BRL - À Vista (Annual upfront - desconto)
+  individual_brl_annual: 'price_1SsVGZ2FRnSpHchtqo4P3FAF',
+  plus_brl_annual: 'price_1SsVId2FRnSpHchtZ61C8a7M',
+  premium_brl_annual: 'price_1SsVJN2FRnSpHchtYSZ0847B',
 
-  // BRL - Monthly
-  individual_brl_monthly: 'price_1Ss6mv2FRnSpHcht3nfasUPK',
-  plus_brl_monthly: 'price_1Ss6oB2FRnSpHchtFKhlkj2n',
-  premium_brl_monthly: 'price_1Ss6rc2FRnSpHchtBHPW7ahr',
+  // BRL - Parcelado 12x (Monthly - valor cheio)
+  individual_brl_monthly: 'price_1SsVKL2FRnSpHcht37v05CRQ',
+  plus_brl_monthly: 'price_1SsVL02FRnSpHcht7a9dZxiB',
+  premium_brl_monthly: 'price_1SsVLd2FRnSpHchtxFc7sGrG',
 
   // USD - Annual
-  individual_usd_annual: 'price_1SsSOZ2FRnSpHchtzJw5nArR',
-  plus_usd_annual: 'price_1SsSO42FRnSpHchtPdfnFPGo',
-  premium_usd_annual: 'price_1SsSNY2FRnSpHchtnSVB2lam',
+  individual_usd_annual: 'price_1SsVMB2FRnSpHchtNaOzfcuk',
+  plus_usd_annual: 'price_1SsVMZ2FRnSpHchtrqq2HEhI',
+  premium_usd_annual: 'price_1SsVMx2FRnSpHchteTGyrw7W',
 } as const;
 
 // Helper to get price ID for a plan

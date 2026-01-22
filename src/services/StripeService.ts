@@ -25,6 +25,13 @@ export interface PortalSessionResponse {
   url: string;
 }
 
+export interface CreateSubscriptionResponse {
+  subscriptionId: string;
+  clientSecret: string;
+  paymentIntentId: string;
+  status: string;
+}
+
 class StripeService {
   private baseUrl: string;
 
@@ -54,6 +61,7 @@ class StripeService {
     userId: string;
     plan: 'individual' | 'plus' | 'premium';
     country: string;
+    billingPeriod?: 'annual' | 'monthly';
     successUrl?: string;
     cancelUrl?: string;
   }): Promise<CheckoutSessionResponse> {
@@ -67,6 +75,7 @@ class StripeService {
         userId: params.userId,
         plan: params.plan,
         country: params.country,
+        billingPeriod: params.billingPeriod || 'monthly',
         successUrl: params.successUrl || `${window.location.origin}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
         cancelUrl: params.cancelUrl || `${window.location.origin}/checkout/cancel`,
       }),
@@ -136,6 +145,39 @@ class StripeService {
   }
 
   /**
+   * Create a subscription for embedded payment (Stripe Elements)
+   * Returns client_secret to confirm payment in the frontend
+   */
+  async createSubscription(params: {
+    email: string;
+    userId: string;
+    plan: 'individual' | 'plus' | 'premium';
+    country: string;
+    billingPeriod?: 'annual' | 'monthly';
+  }): Promise<CreateSubscriptionResponse> {
+    const response = await fetch(`${this.baseUrl}/create-subscription`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        email: params.email,
+        userId: params.userId,
+        plan: params.plan,
+        country: params.country,
+        billingPeriod: params.billingPeriod || 'monthly',
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to create subscription');
+    }
+
+    return response.json();
+  }
+
+  /**
    * Redirect to Stripe Checkout
    */
   async redirectToCheckout(params: {
@@ -143,6 +185,7 @@ class StripeService {
     userId: string;
     plan: 'individual' | 'plus' | 'premium';
     country: string;
+    billingPeriod?: 'annual' | 'monthly';
   }): Promise<void> {
     const session = await this.createCheckoutSession(params);
 

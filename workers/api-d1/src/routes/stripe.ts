@@ -12,23 +12,32 @@ interface StripeEnv extends Env {
   STRIPE_WEBHOOK_SECRET: string;
 }
 
-// Stripe Price IDs (TEST MODE)
-// Annual subscription prices from Stripe Dashboard
+// Stripe Price IDs (TEST MODE) - RECURRING SUBSCRIPTIONS
 const PRICE_IDS = {
-  // BRL prices (Brazil - Annual with 12x installments)
-  individual_brl: 'price_1Ss6lv2FRnSpHchtPDqBXsD6',
-  plus_brl: 'price_1Ss6nm2FRnSpHchtKlOb5nky',
-  premium_brl: 'price_1Ss6qd2FRnSpHchtbZtN9tvy',
-  // USD prices (International - Annual upfront)
-  individual_usd: 'price_1SsSOZ2FRnSpHchtzJw5nArR',
-  plus_usd: 'price_1SsSO42FRnSpHchtPdfnFPGo',
-  premium_usd: 'price_1SsSNY2FRnSpHchtnSVB2lam',
+  // BRL - À Vista (Annual upfront)
+  individual_brl_annual: 'price_1SsVGZ2FRnSpHchtqo4P3FAF',
+  plus_brl_annual: 'price_1SsVId2FRnSpHchtZ61C8a7M',
+  premium_brl_annual: 'price_1SsVJN2FRnSpHchtYSZ0847B',
+  // BRL - Parcelado 12x (Monthly)
+  individual_brl_monthly: 'price_1SsVKL2FRnSpHcht37v05CRQ',
+  plus_brl_monthly: 'price_1SsVL02FRnSpHcht7a9dZxiB',
+  premium_brl_monthly: 'price_1SsVLd2FRnSpHchtxFc7sGrG',
+  // USD - Annual
+  individual_usd: 'price_1SsVMB2FRnSpHchtNaOzfcuk',
+  plus_usd: 'price_1SsVMZ2FRnSpHchtrqq2HEhI',
+  premium_usd: 'price_1SsVMx2FRnSpHchteTGyrw7W',
 };
 
-// Map plan + currency to price ID
-function getPriceId(plan: string, currency: string): string {
-  const key = `${plan}_${currency.toLowerCase()}` as keyof typeof PRICE_IDS;
-  return PRICE_IDS[key] || PRICE_IDS.individual_usd;
+// Map plan + currency + billing period to price ID
+function getPriceId(plan: string, currency: string, billingPeriod: 'annual' | 'monthly' = 'monthly'): string {
+  // For USD, always use annual (no monthly option)
+  if (currency.toLowerCase() === 'usd') {
+    const key = `${plan}_usd` as keyof typeof PRICE_IDS;
+    return PRICE_IDS[key] || PRICE_IDS.individual_usd;
+  }
+  // For BRL, use the specified billing period
+  const key = `${plan}_brl_${billingPeriod}` as keyof typeof PRICE_IDS;
+  return PRICE_IDS[key] || PRICE_IDS.individual_brl_monthly;
 }
 
 // Map Stripe price ID back to plan name
@@ -49,7 +58,7 @@ export const stripeRoutes = new Hono<{ Bindings: StripeEnv; Variables: Variables
  */
 stripeRoutes.post('/create-checkout-session', async (c) => {
   try {
-    const { email, userId, plan, country, successUrl, cancelUrl } = await c.req.json();
+    const { email, userId, plan, country, billingPeriod, successUrl, cancelUrl } = await c.req.json();
 
     if (!email || !userId || !plan) {
       return c.json({ error: 'Missing required fields: email, userId, plan' }, 400);
@@ -63,7 +72,10 @@ stripeRoutes.post('/create-checkout-session', async (c) => {
 
     // Determine currency based on country
     const currency = country === 'BR' ? 'brl' : 'usd';
-    const priceId = getPriceId(plan, currency);
+    // For BRL: billingPeriod can be 'annual' (à vista) or 'monthly' (12x)
+    // For USD: always annual
+    const period = billingPeriod || 'monthly';
+    const priceId = getPriceId(plan, currency, period);
 
     // Check if user already has a Stripe customer
     const db = c.get('db');
@@ -90,7 +102,7 @@ stripeRoutes.post('/create-checkout-session', async (c) => {
       if (!customerResponse.ok) {
         const error = await customerResponse.text();
         console.error('[Stripe] Failed to create customer:', error);
-        return c.json({ error: 'Failed to create customer' }, 500);
+        return c.json({ error: 'Failed to create customer', details: error }, 500);
       }
 
       const customer = await customerResponse.json() as { id: string };
@@ -117,10 +129,8 @@ stripeRoutes.post('/create-checkout-session', async (c) => {
       'subscription_data[metadata][plan]': plan,
     };
 
-    // For Brazil, enable installments if available (Stripe handles this automatically for eligible cards)
-    if (currency === 'brl') {
-      sessionParams['payment_method_options[card][installments][enabled]'] = 'true';
-    }
+    // Note: Stripe installments are only for one-time payments, not subscriptions
+    // For subscriptions, we use monthly recurring billing instead
 
     // Create checkout session
     const sessionResponse = await fetch('https://api.stripe.com/v1/checkout/sessions', {
@@ -135,7 +145,8 @@ stripeRoutes.post('/create-checkout-session', async (c) => {
     if (!sessionResponse.ok) {
       const error = await sessionResponse.text();
       console.error('[Stripe] Failed to create checkout session:', error);
-      return c.json({ error: 'Failed to create checkout session' }, 500);
+      // Return detailed error in development
+      return c.json({ error: 'Failed to create checkout session', details: error }, 500);
     }
 
     const session = await sessionResponse.json() as { id: string; url: string };
@@ -416,6 +427,216 @@ stripeRoutes.post('/update-price-ids', async (c) => {
  */
 stripeRoutes.get('/price-ids', async (c) => {
   return c.json({ priceIds: PRICE_IDS });
+});
+
+/**
+ * GET /stripe/debug
+ * Check Stripe configuration (for debugging)
+ */
+stripeRoutes.get('/debug', async (c) => {
+  const STRIPE_SECRET_KEY = c.env.STRIPE_SECRET_KEY;
+  const hasKey = !!STRIPE_SECRET_KEY;
+  const keyPrefix = hasKey ? STRIPE_SECRET_KEY.substring(0, 12) + '...' : 'NOT SET';
+
+  // Test Stripe API connection
+  let stripeStatus = 'unknown';
+  let stripeError = null;
+
+  if (hasKey) {
+    try {
+      const response = await fetch('https://api.stripe.com/v1/balance', {
+        headers: {
+          'Authorization': `Bearer ${STRIPE_SECRET_KEY}`,
+        },
+      });
+      if (response.ok) {
+        stripeStatus = 'connected';
+      } else {
+        const error = await response.text();
+        stripeStatus = 'error';
+        stripeError = error;
+      }
+    } catch (err) {
+      stripeStatus = 'error';
+      stripeError = String(err);
+    }
+  }
+
+  return c.json({
+    hasStripeKey: hasKey,
+    keyPrefix,
+    stripeStatus,
+    stripeError,
+    frontendUrl: c.env.FRONTEND_URL,
+  });
+});
+
+/**
+ * POST /stripe/create-subscription
+ * Creates a Stripe Subscription with embedded payment (for Stripe Elements)
+ * Returns client_secret for confirming payment in the frontend
+ */
+stripeRoutes.post('/create-subscription', async (c) => {
+  try {
+    const { email, userId, plan, country, billingPeriod } = await c.req.json();
+
+    if (!email || !userId || !plan) {
+      return c.json({ error: 'Missing required fields: email, userId, plan' }, 400);
+    }
+
+    const STRIPE_SECRET_KEY = c.env.STRIPE_SECRET_KEY;
+    if (!STRIPE_SECRET_KEY) {
+      console.error('[Stripe] STRIPE_SECRET_KEY not configured');
+      return c.json({ error: 'Stripe not configured' }, 500);
+    }
+
+    // Determine currency based on country
+    const currency = country === 'BR' ? 'brl' : 'usd';
+    const period = billingPeriod || 'monthly';
+    const priceId = getPriceId(plan, currency, period);
+
+    const db = c.get('db');
+    const existingUser = await db.select().from(users).where(eq(users.uuid, userId)).get();
+
+    let customerId = existingUser?.stripe_customer_id;
+
+    // Create or retrieve Stripe customer
+    if (!customerId) {
+      const customerResponse = await fetch('https://api.stripe.com/v1/customers', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${STRIPE_SECRET_KEY}`,
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+          email,
+          'metadata[userId]': userId,
+          'metadata[country]': country || '',
+        }).toString(),
+      });
+
+      if (!customerResponse.ok) {
+        const error = await customerResponse.text();
+        console.error('[Stripe] Failed to create customer:', error);
+        return c.json({ error: 'Failed to create customer', details: error }, 500);
+      }
+
+      const customer = await customerResponse.json() as { id: string };
+      customerId = customer.id;
+
+      // Save customer ID to database
+      await db.update(users)
+        .set({ stripe_customer_id: customerId })
+        .where(eq(users.uuid, userId));
+    }
+
+    // Create subscription with payment_behavior=default_incomplete
+    // This creates a subscription and returns a PaymentIntent that needs to be confirmed
+    const subscriptionParams = new URLSearchParams({
+      customer: customerId,
+      'items[0][price]': priceId,
+      payment_behavior: 'default_incomplete',
+      payment_settings_save_default_payment_method: 'on_subscription',
+      'payment_settings[payment_method_types][0]': 'card',
+      'expand[0]': 'latest_invoice.payment_intent',
+      'metadata[userId]': userId,
+      'metadata[plan]': plan,
+    });
+
+    const subscriptionResponse = await fetch('https://api.stripe.com/v1/subscriptions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${STRIPE_SECRET_KEY}`,
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: subscriptionParams.toString(),
+    });
+
+    if (!subscriptionResponse.ok) {
+      const error = await subscriptionResponse.text();
+      console.error('[Stripe] Failed to create subscription:', error);
+      return c.json({ error: 'Failed to create subscription', details: error }, 500);
+    }
+
+    const subscription = await subscriptionResponse.json() as {
+      id: string;
+      status: string;
+      latest_invoice: {
+        id: string;
+        payment_intent: {
+          id: string;
+          client_secret: string;
+          status: string;
+        } | null;
+      };
+    };
+
+    const paymentIntent = subscription.latest_invoice?.payment_intent;
+
+    if (!paymentIntent) {
+      console.error('[Stripe] No payment intent in subscription');
+      return c.json({ error: 'Failed to get payment intent' }, 500);
+    }
+
+    console.log(`[Stripe] Subscription created: ${subscription.id} for user ${userId}, PI: ${paymentIntent.id}`);
+
+    return c.json({
+      subscriptionId: subscription.id,
+      clientSecret: paymentIntent.client_secret,
+      paymentIntentId: paymentIntent.id,
+      status: subscription.status,
+    });
+  } catch (error) {
+    console.error('[Stripe] Error creating subscription:', error);
+    return c.json({ error: 'Internal server error' }, 500);
+  }
+});
+
+/**
+ * GET /stripe/check-price/:priceId
+ * Check if a price is recurring or one-time
+ */
+stripeRoutes.get('/check-price/:priceId', async (c) => {
+  const priceId = c.req.param('priceId');
+  const STRIPE_SECRET_KEY = c.env.STRIPE_SECRET_KEY;
+
+  if (!STRIPE_SECRET_KEY) {
+    return c.json({ error: 'Stripe not configured' }, 500);
+  }
+
+  try {
+    const response = await fetch(`https://api.stripe.com/v1/prices/${priceId}`, {
+      headers: {
+        'Authorization': `Bearer ${STRIPE_SECRET_KEY}`,
+      },
+    });
+
+    if (!response.ok) {
+      const error = await response.text();
+      return c.json({ error: 'Failed to fetch price', details: error }, 500);
+    }
+
+    const price = await response.json() as {
+      id: string;
+      type: string;
+      recurring: { interval: string; interval_count: number } | null;
+      unit_amount: number;
+      currency: string;
+      product: string;
+    };
+
+    return c.json({
+      id: price.id,
+      type: price.type,
+      isRecurring: price.type === 'recurring',
+      recurring: price.recurring,
+      amount: price.unit_amount,
+      currency: price.currency,
+      product: price.product,
+    });
+  } catch (err) {
+    return c.json({ error: String(err) }, 500);
+  }
 });
 
 // ============================================================================
