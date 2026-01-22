@@ -35,6 +35,8 @@ import { MyEasyWebsite } from './features/my-easy-website/MyEasyWebsite';
 import { MyEasyResume } from './features/my-easy-resume/MyEasyResume';
 import { MyEasyLearning } from './features/my-easy-learning/MyEasyLearning';
 import { SupportPage } from './pages/SupportPage';
+import { CreateTicketPage } from './pages/CreateTicketPage';
+import { MyTicketsPage } from './pages/MyTicketsPage';
 import { useInactivityTimeout } from './hooks/useInactivityTimeout';
 import { useModalState } from './hooks/useModalState';
 import { useRealtimeSync } from './hooks/useRealtimeSync';
@@ -989,6 +991,36 @@ function AppContent() {
             isCheckingAuth={isCheckingAuth}
           >
             <SupportPage onBackToDashboard={goToDashboardProducts} />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path={ROUTES.SUPPORT_TICKET}
+        element={
+          <ProtectedRoute
+            user={user}
+            needsOnboarding={needsOnboarding}
+            onOpenOnboarding={() => onboardingModal.open()}
+            isLoading={loading}
+            isCheckingAuth={isCheckingAuth}
+          >
+            <CreateTicketPage />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path={ROUTES.SUPPORT_TICKETS}
+        element={
+          <ProtectedRoute
+            user={user}
+            needsOnboarding={needsOnboarding}
+            onOpenOnboarding={() => onboardingModal.open()}
+            isLoading={loading}
+            isCheckingAuth={isCheckingAuth}
+          >
+            <MyTicketsPage />
           </ProtectedRoute>
         }
       />

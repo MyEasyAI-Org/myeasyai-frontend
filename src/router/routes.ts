@@ -14,6 +14,8 @@ export const ROUTES = {
   // Protected routes (require authentication)
   DASHBOARD: '/dashboard',
   SUPPORT: '/support',
+  SUPPORT_TICKET: '/support/ticket',
+  SUPPORT_TICKETS: '/support/tickets',
   MY_EASY_WEBSITE: '/myeasywebsite',
   BUSINESS_GURU: '/businessguru',
   MY_EASY_CRM: '/crm',
