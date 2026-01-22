@@ -34,6 +34,10 @@ export function PlanSelectionStep({
   const [error, setError] = useState<string | null>(null);
   const [phase, setPhase] = useState<StepPhase>('select-plan');
   const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [subscriptionData, setSubscriptionData] = useState<{
+    customerId: string;
+    priceId: string;
+  } | null>(null);
 
   const currency = getCurrencyForCountry(countryCode);
   const isBrazil = countryCode === 'BR';
@@ -105,7 +109,7 @@ export function PlanSelectionStep({
     setError(null);
 
     try {
-      // Create subscription and get client secret
+      // Create SetupIntent and get client secret
       const response = await stripeService.createSubscription({
         email: userEmail,
         userId: userId,
@@ -115,6 +119,10 @@ export function PlanSelectionStep({
       });
 
       setClientSecret(response.clientSecret);
+      setSubscriptionData({
+        customerId: response.customerId,
+        priceId: response.priceId,
+      });
       setPhase('payment');
     } catch (err) {
       console.error('[PlanSelectionStep] Error creating subscription:', err);
@@ -188,6 +196,10 @@ export function PlanSelectionStep({
             onError={handlePaymentError}
             planName={currentPlan?.name || 'Plano'}
             priceDisplay={`${currentPriceDisplay?.main} ${currentPriceDisplay?.sub}`}
+            customerId={subscriptionData?.customerId || ''}
+            priceId={subscriptionData?.priceId || ''}
+            userId={userId}
+            plan={selectedPlan}
           />
         </Elements>
       </div>
@@ -210,7 +222,7 @@ export function PlanSelectionStep({
             }`}
           >
             À Vista
-            <span className="ml-1 text-xs opacity-75">(desconto)</span>
+
           </button>
           <button
             type="button"
