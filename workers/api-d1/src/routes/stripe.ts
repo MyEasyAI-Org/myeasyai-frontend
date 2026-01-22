@@ -659,13 +659,24 @@ stripeRoutes.post('/confirm-subscription', async (c) => {
       });
     }
 
+    // Calculate period end date safely
+    let periodEndDate: string | null = null;
+    if (subscription.current_period_end && typeof subscription.current_period_end === 'number') {
+      try {
+        periodEndDate = new Date(subscription.current_period_end * 1000).toISOString();
+      } catch (dateErr) {
+        console.error('[Stripe] Invalid period end date:', subscription.current_period_end, dateErr);
+      }
+    }
+    console.log('[Stripe] Period end:', subscription.current_period_end, '→', periodEndDate);
+
     // Update the user
     const updateResult = await db.update(users)
       .set({
         subscription_status: subscription.status === 'active' ? 'active' : 'pending',
         subscription_plan: plan || 'individual',
         stripe_subscription_id: subscription.id,
-        subscription_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
+        subscription_period_end: periodEndDate,
       })
       .where(eq(users.uuid, userId));
 
