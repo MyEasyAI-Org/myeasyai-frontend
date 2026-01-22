@@ -4,6 +4,7 @@ import {
   CheckCircle,
   ChevronDown,
   ChevronUp,
+  ExternalLink,
   HelpCircle,
   MessageSquare,
   Monitor,
@@ -13,12 +14,17 @@ import {
   Search,
   Send,
   Sparkles,
+  Ticket,
   Wifi,
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
+import { useNavigate } from 'react-router-dom';
 import { useAssistantChat } from '../features/assistant-chat/hooks/useAssistantChat';
 import { useConfiguratorStore } from '../features/my-easy-avatar/store';
+import { ROUTES } from '../router';
+import { ticketService, type Ticket as TicketType } from '../services/TicketService';
+import { authService } from '../services/AuthServiceV2';
 
 type SupportPageProps = {
   onBackToDashboard: () => void;
@@ -50,6 +56,7 @@ type FAQItem = {
 };
 
 export function SupportPage({ onBackToDashboard }: SupportPageProps) {
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedFAQ, setExpandedFAQ] = useState<string | null>(null);
   const [selectedVideo, setSelectedVideo] = useState<TutorialVideo | null>(
@@ -57,6 +64,8 @@ export function SupportPage({ onBackToDashboard }: SupportPageProps) {
   );
   const [chatInput, setChatInput] = useState('');
   const [isChatFocused, setIsChatFocused] = useState(false);
+  const [userTickets, setUserTickets] = useState<TicketType[]>([]);
+  const [showTicketBanner, setShowTicketBanner] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatInputRef = useRef<HTMLInputElement>(null);
 
@@ -69,6 +78,19 @@ export function SupportPage({ onBackToDashboard }: SupportPageProps) {
   const loadSavedAvatar = useConfiguratorStore((state) => state.loadSavedAvatar);
   const assets = useConfiguratorStore((state) => state.assets);
 
+  const user = authService.getCurrentUser();
+
+  // Load user tickets
+  useEffect(() => {
+    const loadTickets = async () => {
+      if (user?.email) {
+        const tickets = await ticketService.getUserTickets(user.email);
+        setUserTickets(tickets);
+      }
+    };
+    loadTickets();
+  }, [user?.email]);
+
   // Load saved avatar data
   useEffect(() => {
     if (assets.length > 0) {
@@ -80,6 +102,19 @@ export function SupportPage({ onBackToDashboard }: SupportPageProps) {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  // Show ticket banner after 3 user messages
+  useEffect(() => {
+    const userMessageCount = messages.filter(m => m.role === 'user').length;
+    if (userMessageCount >= 3 && !showTicketBanner) {
+      setShowTicketBanner(true);
+    }
+  }, [messages, showTicketBanner]);
+
+  // Open ticket page in new tab
+  const openTicketPage = () => {
+    window.open(ROUTES.SUPPORT_TICKET, '_blank');
+  };
 
   // Close modal on ESC key press
   useEffect(() => {
@@ -366,6 +401,8 @@ export function SupportPage({ onBackToDashboard }: SupportPageProps) {
     setExpandedFAQ(expandedFAQ === id ? null : id);
   };
 
+  const openTicketsCount = userTickets.filter(t => t.status === 'open' || t.status === 'in_progress').length;
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-black-main to-blue-main">
       {/* Header */}
@@ -381,15 +418,30 @@ export function SupportPage({ onBackToDashboard }: SupportPageProps) {
                 <span>Voltar para o Dashboard</span>
               </button>
             </div>
-            <div className="flex items-center space-x-3">
-              <img
-                src="/bone-logo.png"
-                alt="MyEasyAI Logo"
-                className="h-10 w-10 object-contain"
-              />
+            <div className="flex items-center gap-4">
+              {/* My Tickets Button */}
+              <button
+                onClick={() => navigate(ROUTES.SUPPORT_TICKETS)}
+                className="relative flex items-center gap-2 rounded-lg bg-slate-800 px-4 py-2 text-slate-300 transition-colors hover:bg-slate-700 hover:text-white"
+              >
+                <Ticket className="h-5 w-5" />
+                <span className="hidden sm:inline">Meus Tickets</span>
+                {openTicketsCount > 0 && (
+                  <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-purple-500 text-xs font-bold text-white">
+                    {openTicketsCount}
+                  </span>
+                )}
+              </button>
+              <div className="flex items-center space-x-3">
+                <img
+                  src="/bone-logo.png"
+                  alt="MyEasyAI Logo"
+                  className="h-10 w-10 object-contain"
+                />
               <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-xl font-bold text-transparent">
                 Central de Suporte
               </span>
+              </div>
             </div>
           </div>
         </div>
@@ -658,6 +710,34 @@ export function SupportPage({ onBackToDashboard }: SupportPageProps) {
                           <span className="h-2 w-2 animate-bounce rounded-full bg-purple-400" style={{ animationDelay: '0ms' }} />
                           <span className="h-2 w-2 animate-bounce rounded-full bg-purple-400" style={{ animationDelay: '150ms' }} />
                           <span className="h-2 w-2 animate-bounce rounded-full bg-purple-400" style={{ animationDelay: '300ms' }} />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Ticket suggestion banner - appears after 3 messages */}
+                  {showTicketBanner && (
+                    <div className="mt-4 rounded-xl border border-amber-500/30 bg-gradient-to-r from-amber-500/10 to-orange-500/10 p-4">
+                      <div className="flex items-start gap-3">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-500/20">
+                          <Ticket className="h-5 w-5 text-amber-400" />
+                        </div>
+                        <div className="flex-1">
+                          <p className="mb-2 font-medium text-white">
+                            Ainda nao conseguimos resolver?
+                          </p>
+                          <p className="mb-3 text-sm text-slate-400">
+                            Se o assistente nao conseguiu ajudar, nossa equipe de suporte pode analisar seu caso pessoalmente.
+                          </p>
+                          <button
+                            type="button"
+                            onClick={openTicketPage}
+                            className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-amber-500 to-orange-500 px-4 py-2 text-sm font-semibold text-white transition-all hover:shadow-lg hover:shadow-amber-500/25"
+                          >
+                            <Ticket className="h-4 w-4" />
+                            Abrir Ticket de Suporte
+                            <ExternalLink className="h-3.5 w-3.5" />
+                          </button>
                         </div>
                       </div>
                     </div>
