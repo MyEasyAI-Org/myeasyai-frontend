@@ -20,7 +20,7 @@ export function MyTicketsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'open' | 'resolved'>('all');
 
-  const user = authService.getCurrentUser();
+  const user = authService.getUser();
 
   useEffect(() => {
     loadTickets();

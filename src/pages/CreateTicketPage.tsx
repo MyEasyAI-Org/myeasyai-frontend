@@ -39,7 +39,7 @@ export function CreateTicketPage() {
   const [error, setError] = useState<string | null>(null);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
-  const user = authService.getCurrentUser();
+  const user = authService.getUser();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

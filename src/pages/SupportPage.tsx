@@ -78,7 +78,7 @@ export function SupportPage({ onBackToDashboard }: SupportPageProps) {
   const loadSavedAvatar = useConfiguratorStore((state) => state.loadSavedAvatar);
   const assets = useConfiguratorStore((state) => state.assets);
 
-  const user = authService.getCurrentUser();
+  const user = authService.getUser();
 
   // Load user tickets
   useEffect(() => {
