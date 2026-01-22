@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowDownCircle, ArrowUpCircle, X, AlertTriangle, ExternalLink, CreditCard } from 'lucide-react';
+import { ArrowDownCircle, ArrowUpCircle, X, AlertTriangle, ExternalLink, CreditCard, Check } from 'lucide-react';
 import { toast } from 'sonner';
 import { PLANS, getPlanByValue, getPlanChangeType, type SubscriptionPlan } from '../../constants/plans';
 import type { SubscriptionData } from '../../hooks/useUserData';
