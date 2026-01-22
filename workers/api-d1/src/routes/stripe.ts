@@ -694,6 +694,159 @@ stripeRoutes.post('/confirm-subscription', async (c) => {
 });
 
 /**
+ * POST /stripe/update-subscription
+ * Update an existing subscription to a new plan (upgrade/downgrade)
+ * Handles proration automatically through Stripe
+ */
+stripeRoutes.post('/update-subscription', async (c) => {
+  try {
+    const body = await c.req.json();
+    const { userId, newPlan, country } = body;
+
+    console.log('[Stripe] update-subscription called with:', { userId, newPlan, country });
+
+    if (!userId || !newPlan) {
+      return c.json({ error: 'Missing required fields: userId, newPlan' }, 400);
+    }
+
+    const STRIPE_SECRET_KEY = c.env.STRIPE_SECRET_KEY;
+    if (!STRIPE_SECRET_KEY) {
+      return c.json({ error: 'Stripe not configured' }, 500);
+    }
+
+    // Get user from database to find their subscription
+    const db = c.get('db');
+    const existingUser = await db.select().from(users).where(eq(users.uuid, userId)).get();
+
+    if (!existingUser) {
+      console.error('[Stripe] User not found:', userId);
+      return c.json({ error: 'User not found' }, 404);
+    }
+
+    if (!existingUser.stripe_subscription_id) {
+      console.error('[Stripe] User has no subscription:', userId);
+      return c.json({ error: 'User has no active subscription' }, 400);
+    }
+
+    console.log('[Stripe] Found user subscription:', existingUser.stripe_subscription_id);
+
+    // Get the current subscription from Stripe
+    const subResponse = await fetch(`https://api.stripe.com/v1/subscriptions/${existingUser.stripe_subscription_id}`, {
+      headers: {
+        'Authorization': `Bearer ${STRIPE_SECRET_KEY}`,
+      },
+    });
+
+    if (!subResponse.ok) {
+      const error = await subResponse.text();
+      console.error('[Stripe] Failed to get subscription:', error);
+      return c.json({ error: 'Failed to get subscription from Stripe' }, 500);
+    }
+
+    const subscription = await subResponse.json() as {
+      id: string;
+      status: string;
+      items: {
+        data: Array<{
+          id: string;
+          price: { id: string };
+        }>;
+      };
+      current_period_end: number;
+    };
+
+    console.log('[Stripe] Current subscription status:', subscription.status, 'items:', subscription.items.data.length);
+
+    if (subscription.status !== 'active' && subscription.status !== 'trialing') {
+      return c.json({ error: 'Subscription is not active' }, 400);
+    }
+
+    // Get the subscription item ID (first item)
+    const subscriptionItemId = subscription.items.data[0]?.id;
+    if (!subscriptionItemId) {
+      return c.json({ error: 'No subscription items found' }, 400);
+    }
+
+    // Determine the new price ID based on plan and country
+    const currency = country === 'BR' ? 'brl' : 'usd';
+    // Use the same billing period as the current subscription (check current price)
+    const currentPriceId = subscription.items.data[0]?.price?.id || '';
+    const isMonthly = currentPriceId.includes('monthly') ||
+                      Object.entries(PRICE_IDS).some(([k, v]) => v === currentPriceId && k.includes('monthly'));
+    const billingPeriod = isMonthly ? 'monthly' : 'annual';
+    const newPriceId = getPriceId(newPlan, currency, billingPeriod);
+
+    console.log('[Stripe] Updating subscription item:', subscriptionItemId, 'to price:', newPriceId, 'billing:', billingPeriod);
+
+    // Update the subscription with proration
+    // proration_behavior: 'create_prorations' will charge/credit the difference
+    const updateParams = new URLSearchParams();
+    updateParams.append('items[0][id]', subscriptionItemId);
+    updateParams.append('items[0][price]', newPriceId);
+    updateParams.append('proration_behavior', 'create_prorations');
+    updateParams.append('metadata[plan]', newPlan);
+    updateParams.append('metadata[userId]', userId);
+
+    const updateResponse = await fetch(`https://api.stripe.com/v1/subscriptions/${subscription.id}`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${STRIPE_SECRET_KEY}`,
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: updateParams.toString(),
+    });
+
+    const updateText = await updateResponse.text();
+    console.log('[Stripe] Update response status:', updateResponse.status);
+
+    if (!updateResponse.ok) {
+      console.error('[Stripe] Failed to update subscription:', updateText);
+      return c.json({ error: 'Failed to update subscription', details: updateText }, 500);
+    }
+
+    const updatedSubscription = JSON.parse(updateText) as {
+      id: string;
+      status: string;
+      current_period_end: number;
+    };
+
+    console.log('[Stripe] Subscription updated successfully:', updatedSubscription.id);
+
+    // Calculate period end date safely
+    let periodEndDate: string | null = null;
+    if (updatedSubscription.current_period_end && typeof updatedSubscription.current_period_end === 'number') {
+      try {
+        periodEndDate = new Date(updatedSubscription.current_period_end * 1000).toISOString();
+      } catch (dateErr) {
+        console.error('[Stripe] Invalid period end date:', updatedSubscription.current_period_end, dateErr);
+      }
+    }
+
+    // Update user's subscription plan in database
+    await db.update(users)
+      .set({
+        subscription_plan: newPlan,
+        subscription_status: updatedSubscription.status === 'active' ? 'active' : 'pending',
+        subscription_period_end: periodEndDate,
+      })
+      .where(eq(users.uuid, userId));
+
+    console.log('[Stripe] Database updated for user:', userId, 'New plan:', newPlan);
+
+    return c.json({
+      success: true,
+      subscriptionId: updatedSubscription.id,
+      newPlan,
+      status: updatedSubscription.status,
+    });
+  } catch (error) {
+    console.error('[Stripe] Error updating subscription:', error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    return c.json({ error: 'Internal server error', details: errorMessage }, 500);
+  }
+});
+
+/**
  * GET /stripe/check-price/:priceId
  * Check if a price is recurring or one-time
  */

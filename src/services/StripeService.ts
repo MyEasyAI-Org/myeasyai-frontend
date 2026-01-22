@@ -39,6 +39,13 @@ export interface ConfirmSubscriptionResponse {
   status: string;
 }
 
+export interface UpdateSubscriptionResponse {
+  success: boolean;
+  subscriptionId: string;
+  newPlan: string;
+  status: string;
+}
+
 class StripeService {
   private baseUrl: string;
 
@@ -206,6 +213,31 @@ class StripeService {
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.error || 'Failed to confirm subscription');
+    }
+
+    return response.json();
+  }
+
+  /**
+   * Update an existing subscription to a new plan (upgrade/downgrade)
+   * Handles proration automatically through Stripe
+   */
+  async updateSubscription(params: {
+    userId: string;
+    newPlan: 'individual' | 'plus' | 'premium';
+    country?: string;
+  }): Promise<UpdateSubscriptionResponse> {
+    const response = await fetch(`${this.baseUrl}/update-subscription`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(params),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to update subscription');
     }
 
     return response.json();
