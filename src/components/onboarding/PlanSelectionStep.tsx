@@ -1,9 +1,16 @@
 // Plan Selection Step for Onboarding
-// Step 4: Select subscription plan and proceed to Stripe Checkout
+// Step 4: Select subscription plan and pay with embedded Stripe Elements
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
+import { loadStripe } from '@stripe/stripe-js';
+import { Elements } from '@stripe/react-stripe-js';
 import { PLANS, getCurrencyForCountry, type PlanId } from '../../constants/stripe';
 import { stripeService } from '../../services/StripeService';
+import { EmbeddedPaymentForm } from './EmbeddedPaymentForm';
+
+// Initialize Stripe once
+const stripePublishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || '';
+const stripePromise = stripePublishableKey ? loadStripe(stripePublishableKey) : null;
 
 interface PlanSelectionStepProps {
   userEmail: string;
@@ -12,45 +19,218 @@ interface PlanSelectionStepProps {
   onSuccess?: () => void;
 }
 
+type BillingPeriod = 'annual' | 'monthly';
+type StepPhase = 'select-plan' | 'payment';
+
 export function PlanSelectionStep({
   userEmail,
   userId,
   countryCode,
+  onSuccess,
 }: PlanSelectionStepProps) {
   const [selectedPlan, setSelectedPlan] = useState<PlanId>('plus');
+  const [billingPeriod, setBillingPeriod] = useState<BillingPeriod>('monthly');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [phase, setPhase] = useState<StepPhase>('select-plan');
+  const [clientSecret, setClientSecret] = useState<string | null>(null);
 
   const currency = getCurrencyForCountry(countryCode);
+  const isBrazil = countryCode === 'BR';
 
-  const handleSubscribe = async () => {
+  // Calculate prices based on billing period for Brazil
+  const getPriceDisplay = (plan: typeof PLANS[0]) => {
+    const pricing = plan.pricing[currency];
+
+    if (isBrazil) {
+      if (billingPeriod === 'annual') {
+        // À vista - desconto
+        return {
+          main: pricing.displayPrice,
+          sub: 'à vista',
+          note: `ou 12x de ${pricing.installmentPrice}`,
+        };
+      } else {
+        // Parcelado 12x
+        return {
+          main: pricing.installmentPrice || '',
+          sub: 'por mês (12x)',
+          note: `Total: R$ ${((pricing.price / 100) * 1.2).toFixed(2).replace('.', ',')}`,
+        };
+      }
+    }
+
+    // USD - always annual
+    return {
+      main: pricing.displayPrice,
+      sub: '/ano',
+      note: null,
+    };
+  };
+
+  // Get price display for current selection
+  const currentPlan = PLANS.find(p => p.id === selectedPlan);
+  const currentPriceDisplay = currentPlan ? getPriceDisplay(currentPlan) : null;
+
+  // Stripe Elements appearance
+  const appearance = useMemo(() => ({
+    theme: 'night' as const,
+    variables: {
+      colorPrimary: '#a855f7',
+      colorBackground: '#1e293b',
+      colorText: '#f1f5f9',
+      colorDanger: '#ef4444',
+      fontFamily: 'system-ui, sans-serif',
+      borderRadius: '8px',
+    },
+    rules: {
+      '.Input': {
+        backgroundColor: '#334155',
+        border: '1px solid #475569',
+      },
+      '.Input:focus': {
+        border: '1px solid #a855f7',
+        boxShadow: '0 0 0 2px rgba(168, 85, 247, 0.3)',
+      },
+      '.Label': {
+        color: '#94a3b8',
+      },
+    },
+  }), []);
+
+  const handleContinueToPayment = async () => {
     if (!selectedPlan) return;
 
     setLoading(true);
     setError(null);
 
     try {
-      await stripeService.redirectToCheckout({
+      // Create subscription and get client secret
+      const response = await stripeService.createSubscription({
         email: userEmail,
         userId: userId,
         plan: selectedPlan,
         country: countryCode,
+        billingPeriod: isBrazil ? billingPeriod : 'annual',
       });
-      // Note: redirectToCheckout will redirect the page, so we won't reach here
+
+      setClientSecret(response.clientSecret);
+      setPhase('payment');
     } catch (err) {
-      console.error('[PlanSelectionStep] Error creating checkout:', err);
+      console.error('[PlanSelectionStep] Error creating subscription:', err);
       setError(err instanceof Error ? err.message : 'Erro ao processar pagamento');
+    } finally {
       setLoading(false);
     }
   };
 
+  const handlePaymentSuccess = () => {
+    console.log('[PlanSelectionStep] Payment successful');
+    if (onSuccess) {
+      onSuccess();
+    }
+  };
+
+  const handlePaymentError = (message: string) => {
+    console.error('[PlanSelectionStep] Payment error:', message);
+    setError(message);
+  };
+
+  const handleBackToPlanSelection = () => {
+    setPhase('select-plan');
+    setClientSecret(null);
+    setError(null);
+  };
+
+  // Render payment phase
+  if (phase === 'payment' && clientSecret && stripePromise) {
+    return (
+      <div className="space-y-4">
+        {/* Back Button */}
+        <button
+          type="button"
+          onClick={handleBackToPlanSelection}
+          className="flex items-center gap-2 text-slate-400 hover:text-slate-200 transition-colors"
+        >
+          <svg
+            className="w-4 h-4"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M15 19l-7-7 7-7"
+            />
+          </svg>
+          Voltar para planos
+        </button>
+
+        {/* Error Message */}
+        {error && (
+          <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-sm">
+            {error}
+          </div>
+        )}
+
+        {/* Stripe Elements */}
+        <Elements
+          stripe={stripePromise}
+          options={{
+            clientSecret,
+            appearance,
+          }}
+        >
+          <EmbeddedPaymentForm
+            onSuccess={handlePaymentSuccess}
+            onError={handlePaymentError}
+            planName={currentPlan?.name || 'Plano'}
+            priceDisplay={`${currentPriceDisplay?.main} ${currentPriceDisplay?.sub}`}
+          />
+        </Elements>
+      </div>
+    );
+  }
+
+  // Render plan selection phase
   return (
     <div className="space-y-6">
+      {/* Billing Period Toggle - Only for Brazil */}
+      {isBrazil && (
+        <div className="flex justify-center gap-2 p-1 bg-slate-800/50 rounded-lg">
+          <button
+            type="button"
+            onClick={() => setBillingPeriod('annual')}
+            className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all ${
+              billingPeriod === 'annual'
+                ? 'bg-purple-500 text-white shadow-lg'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            À Vista
+            <span className="ml-1 text-xs opacity-75">(desconto)</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setBillingPeriod('monthly')}
+            className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all ${
+              billingPeriod === 'monthly'
+                ? 'bg-purple-500 text-white shadow-lg'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            12x no Cartão
+          </button>
+        </div>
+      )}
+
       {/* Plan Cards */}
       <div className="grid gap-4">
         {PLANS.map((plan) => {
-          const pricing = plan.pricing[currency];
           const isSelected = selectedPlan === plan.id;
+          const priceDisplay = getPriceDisplay(plan);
 
           return (
             <button
@@ -113,25 +293,16 @@ export function PlanSelectionStep({
 
                 {/* Price */}
                 <div className="text-right ml-4">
-                  {currency === 'brl' && pricing.installments ? (
-                    <>
-                      <div className="text-2xl font-bold text-slate-100">
-                        {pricing.installmentPrice}
-                      </div>
-                      <div className="text-sm text-slate-400">
-                        em {pricing.installments}x
-                      </div>
-                      <div className="text-xs text-slate-500 mt-1">
-                        ou {pricing.displayPrice}/ano
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <div className="text-2xl font-bold text-slate-100">
-                        {pricing.displayPrice}
-                      </div>
-                      <div className="text-sm text-slate-400">/ano</div>
-                    </>
+                  <div className="text-2xl font-bold text-slate-100">
+                    {priceDisplay.main}
+                  </div>
+                  <div className="text-sm text-slate-400">
+                    {priceDisplay.sub}
+                  </div>
+                  {priceDisplay.note && (
+                    <div className="text-xs text-slate-500 mt-1">
+                      {priceDisplay.note}
+                    </div>
                   )}
                 </div>
               </div>
@@ -172,9 +343,9 @@ export function PlanSelectionStep({
         </div>
       )}
 
-      {/* Subscribe Button */}
+      {/* Continue Button */}
       <button
-        onClick={handleSubscribe}
+        onClick={handleContinueToPayment}
         disabled={loading || !selectedPlan}
         className={`w-full py-4 rounded-xl font-semibold text-lg transition-all ${
           loading || !selectedPlan
@@ -207,7 +378,7 @@ export function PlanSelectionStep({
             Processando...
           </span>
         ) : (
-          `Assinar ${PLANS.find((p) => p.id === selectedPlan)?.name}`
+          `Continuar com ${PLANS.find((p) => p.id === selectedPlan)?.name}`
         )}
       </button>
 
