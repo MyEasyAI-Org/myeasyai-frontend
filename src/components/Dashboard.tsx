@@ -61,7 +61,6 @@ export function Dashboard({
     loadingStep,
     error,
     updateProfile,
-    updateSubscriptionPlan,
     refreshSubscription,
     refreshProducts,
     refreshAll,
@@ -160,7 +159,6 @@ export function Dashboard({
         {activeTab === 'subscription' && (
           <SubscriptionTab
             subscription={subscription}
-            onPlanChange={updateSubscriptionPlan}
           />
         )}
 

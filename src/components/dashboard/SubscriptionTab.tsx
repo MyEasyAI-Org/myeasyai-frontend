@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowDownCircle, ArrowUpCircle, Check, X, AlertTriangle, ExternalLink, CreditCard } from 'lucide-react';
+import { ArrowDownCircle, ArrowUpCircle, X, AlertTriangle, ExternalLink, CreditCard } from 'lucide-react';
 import { toast } from 'sonner';
 import { PLANS, getPlanByValue, getPlanChangeType, type SubscriptionPlan } from '../../constants/plans';
 import type { SubscriptionData } from '../../hooks/useUserData';
@@ -9,10 +9,9 @@ import { authService } from '../../services/AuthServiceV2';
 
 type SubscriptionTabProps = {
   subscription: SubscriptionData;
-  onPlanChange?: (newPlan: SubscriptionPlan) => Promise<boolean>;
 };
 
-export function SubscriptionTab({ subscription, onPlanChange }: SubscriptionTabProps) {
+export function SubscriptionTab({ subscription }: SubscriptionTabProps) {
   const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan | null>(null);
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -54,31 +53,42 @@ export function SubscriptionTab({ subscription, onPlanChange }: SubscriptionTabP
     setIsConfirmModalOpen(true);
   };
 
+  // Update subscription via Stripe API (handles proration)
   const handleConfirmChange = async () => {
     if (!selectedPlan) return;
 
     setIsProcessing(true);
     try {
-      if (onPlanChange) {
-        const success = await onPlanChange(selectedPlan);
-        if (success) {
-          toast.success('Plano alterado com sucesso!', {
-            description: `Você agora está no plano ${selectedPlan.toUpperCase()}.`,
-          });
-        } else {
-          toast.error('Erro ao alterar plano', {
-            description: 'Tente novamente mais tarde.',
-          });
-        }
+      const user = authService.getUser();
+      if (!user?.uuid) {
+        toast.error('Erro ao alterar plano', {
+          description: 'Usuário não encontrado.',
+        });
+        return;
+      }
+
+      // Call Stripe API to update subscription with proration
+      const result = await stripeService.updateSubscription({
+        userId: user.uuid,
+        newPlan: selectedPlan,
+        country: 'BR', // TODO: Get from user profile
+      });
+
+      if (result.success) {
+        toast.success('Plano alterado com sucesso!', {
+          description: `Você agora está no plano ${selectedPlan.toUpperCase()}. A cobrança proporcional foi aplicada.`,
+        });
+        // Refresh the page to show updated plan
+        window.location.reload();
       } else {
-        // Simular mudança se não houver handler
-        toast.success('Solicitação enviada!', {
-          description: `Mudança para o plano ${selectedPlan.toUpperCase()} foi solicitada.`,
+        toast.error('Erro ao alterar plano', {
+          description: 'Tente novamente mais tarde.',
         });
       }
     } catch (error) {
-      toast.error('Erro ao processar', {
-        description: String(error),
+      console.error('[SubscriptionTab] Error updating subscription:', error);
+      toast.error('Erro ao alterar plano', {
+        description: error instanceof Error ? error.message : 'Tente novamente.',
       });
     } finally {
       setIsProcessing(false);
