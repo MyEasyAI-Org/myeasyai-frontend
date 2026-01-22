@@ -8,6 +8,7 @@ import { getCitiesByState } from '../constants/brazilianCities';
 import { userManagementServiceV2 } from '../services/UserManagementServiceV2';
 import { Modal } from './Modal';
 import { TermsModal } from './TermsModal';
+import { PlanSelectionStep } from './onboarding/PlanSelectionStep';
 
 type OnboardingModalProps = {
   isOpen: boolean;
@@ -55,6 +56,11 @@ const steps = [
     id: 'preferences',
     title: 'Preferencias',
     description: 'Personalize sua experiencia',
+  },
+  {
+    id: 'plan',
+    title: 'Plano',
+    description: 'Escolha o plano ideal para voce',
   },
 ];
 
@@ -274,13 +280,61 @@ export function OnboardingModal({
       }
       case 2: // Preferences
         return !!formData.preferred_language;
+      case 3: // Plan Selection - always valid, handled by PlanSelectionStep
+        return true;
       default:
         return true;
     }
   };
 
-  const nextStep = () => {
-    if (canProceed() && currentStep < steps.length - 1) {
+  const nextStep = async () => {
+    if (!canProceed()) return;
+
+    // Save user data after preferences step (step 2) before going to plan selection
+    if (currentStep === 2) {
+      setLoading(true);
+      try {
+        const country = getCountryConfig(formData.country_code || 'BR');
+        const fullPhoneNumber = country
+          ? `${country.dial} ${formData.mobile_phone}`
+          : formData.mobile_phone;
+
+        // Use UserManagementServiceV2 (D1 Primary + Supabase Fallback)
+        const result = await userManagementServiceV2.updateUserProfile(user.email!, {
+          name: formData.name || 'Usuario',
+          preferred_name: formData.preferred_name || undefined,
+          mobile_phone: fullPhoneNumber
+            ? String(parseInt(fullPhoneNumber.replace(/\D/g, '')))
+            : undefined,
+          country: formData.country_code || 'BR',
+          state: formData.state || undefined,
+          city: formData.city || undefined,
+          preferred_language: formData.preferred_language || 'pt',
+        });
+
+        if (!result.success) {
+          console.error('Erro ao salvar dados:', result.error);
+          toast.error('Erro ao salvar informacoes', {
+            description: 'Tente novamente.',
+          });
+          setLoading(false);
+          return;
+        }
+
+        console.log('✅ [ONBOARDING] Perfil atualizado via UserManagementServiceV2');
+      } catch (error) {
+        console.error('Erro inesperado:', error);
+        toast.error('Erro inesperado', {
+          description: 'Tente novamente.',
+        });
+        setLoading(false);
+        return;
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    if (currentStep < steps.length - 1) {
       setCurrentStep(currentStep + 1);
     }
   };
@@ -291,47 +345,12 @@ export function OnboardingModal({
     }
   };
 
+  // Note: handleSubmit is no longer used since data is saved in step 2
+  // and step 3 (plan selection) redirects to Stripe
   const handleSubmit = async () => {
-    if (!canProceed()) return;
-
-    setLoading(true);
-    try {
-      const country = getCountryConfig(formData.country_code || 'BR');
-      const fullPhoneNumber = country
-        ? `${country.dial} ${formData.mobile_phone}`
-        : formData.mobile_phone;
-
-      // Use UserManagementServiceV2 (D1 Primary + Supabase Fallback)
-      const result = await userManagementServiceV2.updateUserProfile(user.email!, {
-        name: formData.name || 'Usuario',
-        preferred_name: formData.preferred_name || undefined,
-        mobile_phone: fullPhoneNumber
-          ? String(parseInt(fullPhoneNumber.replace(/\D/g, '')))
-          : undefined,
-        country: 'BR', // Assumindo Brasil por enquanto
-        state: formData.state || undefined,
-        city: formData.city || undefined,
-        preferred_language: formData.preferred_language || 'pt',
-      });
-
-      if (!result.success) {
-        console.error('Erro ao salvar dados:', result.error);
-        toast.error('Erro ao salvar informacoes', {
-          description: 'Tente novamente.',
-        });
-        return;
-      }
-
-      console.log('✅ [ONBOARDING] Perfil atualizado via UserManagementServiceV2');
-      onComplete();
-    } catch (error) {
-      console.error('Erro inesperado:', error);
-      toast.error('Erro inesperado', {
-        description: 'Tente novamente.',
-      });
-    } finally {
-      setLoading(false);
-    }
+    // This is now a no-op since the flow goes to Stripe Checkout
+    // The onComplete callback will be called after successful payment
+    // via the CheckoutSuccessPage
   };
 
   const renderStepContent = () => {
@@ -757,6 +776,16 @@ export function OnboardingModal({
         );
       }
 
+      case 3: // Plan Selection
+        return (
+          <PlanSelectionStep
+            userEmail={user.email || ''}
+            userId={user.id}
+            countryCode={formData.country_code || 'BR'}
+            onSuccess={onComplete}
+          />
+        );
+
       default:
         return null;
     }
@@ -917,46 +946,34 @@ export function OnboardingModal({
           {renderStepContent()}
         </div>
 
-        {/* Navigation */}
-        <div className="flex justify-between pt-4">
-          <button
-            onClick={prevStep}
-            disabled={currentStep === 0}
-            className={`px-6 py-3 rounded-lg font-semibold transition-colors ${
-              currentStep === 0
-                ? 'bg-slate-700 text-slate-500 cursor-not-allowed'
-                : 'bg-slate-600 text-slate-200 hover:bg-slate-500'
-            }`}
-          >
-            Anterior
-          </button>
-
-          {currentStep === steps.length - 1 ? (
+        {/* Navigation - Hide on step 3 (plan selection) since it has its own button */}
+        {currentStep !== 3 && (
+          <div className="flex justify-between pt-4">
             <button
-              onClick={handleSubmit}
-              disabled={loading || !canProceed()}
+              onClick={prevStep}
+              disabled={currentStep === 0}
               className={`px-6 py-3 rounded-lg font-semibold transition-colors ${
-                loading || !canProceed()
-                  ? 'bg-purple-400 text-white cursor-not-allowed opacity-50'
-                  : 'bg-gradient-to-r from-purple-500 to-blue-500 text-white hover:from-purple-600 hover:to-blue-600'
+                currentStep === 0
+                  ? 'bg-slate-700 text-slate-500 cursor-not-allowed'
+                  : 'bg-slate-600 text-slate-200 hover:bg-slate-500'
               }`}
             >
-              {loading ? 'Salvando...' : 'Finalizar'}
+              Anterior
             </button>
-          ) : (
+
             <button
               onClick={nextStep}
-              disabled={!canProceed()}
+              disabled={!canProceed() || loading}
               className={`px-6 py-3 rounded-lg font-semibold transition-colors ${
-                !canProceed()
+                !canProceed() || loading
                   ? 'bg-purple-400 text-white cursor-not-allowed opacity-50'
                   : 'bg-gradient-to-r from-purple-500 to-blue-500 text-white hover:from-purple-600 hover:to-blue-600'
               }`}
             >
-              Proximo
+              {loading ? 'Salvando...' : 'Proximo'}
             </button>
-          )}
-        </div>
+          </div>
+        )}
       </Modal>
 
       {/* Terms Modal */}

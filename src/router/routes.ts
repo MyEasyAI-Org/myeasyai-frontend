@@ -11,6 +11,10 @@ export const ROUTES = {
   HOME: '/',
   AUTH_CALLBACK: '/auth/callback',
 
+  // Checkout routes (semi-protected - require auth but no subscription)
+  CHECKOUT_SUCCESS: '/checkout/success',
+  CHECKOUT_CANCEL: '/checkout/cancel',
+
   // Protected routes (require authentication)
   DASHBOARD: '/dashboard',
   SUPPORT: '/support',

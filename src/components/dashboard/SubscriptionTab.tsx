@@ -1,9 +1,11 @@
 import { useState } from 'react';
-import { ArrowDownCircle, ArrowUpCircle, Check, X, AlertTriangle } from 'lucide-react';
+import { ArrowDownCircle, ArrowUpCircle, Check, X, AlertTriangle, ExternalLink, CreditCard } from 'lucide-react';
 import { toast } from 'sonner';
 import { PLANS, getPlanByValue, getPlanChangeType, type SubscriptionPlan } from '../../constants/plans';
 import type { SubscriptionData } from '../../hooks/useUserData';
 import { PlanCard } from './PlanCard';
+import { stripeService } from '../../services/StripeService';
+import { authService } from '../../services/AuthServiceV2';
 
 type SubscriptionTabProps = {
   subscription: SubscriptionData;
@@ -14,8 +16,32 @@ export function SubscriptionTab({ subscription, onPlanChange }: SubscriptionTabP
   const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan | null>(null);
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isLoadingPortal, setIsLoadingPortal] = useState(false);
 
   console.log('🟡 [SubscriptionTab] Current subscription:', subscription);
+
+  // Handle opening Stripe Customer Portal
+  const handleOpenCustomerPortal = async () => {
+    const user = authService.getUser();
+    if (!user?.uuid) {
+      toast.error('Erro ao abrir portal', {
+        description: 'Usuario nao encontrado.',
+      });
+      return;
+    }
+
+    setIsLoadingPortal(true);
+    try {
+      await stripeService.redirectToPortal(user.uuid);
+      // Note: redirectToPortal will redirect the page, so we won't reach here
+    } catch (error) {
+      console.error('[SubscriptionTab] Error opening portal:', error);
+      toast.error('Erro ao abrir portal', {
+        description: error instanceof Error ? error.message : 'Tente novamente.',
+      });
+      setIsLoadingPortal(false);
+    }
+  };
 
   const handleSelectPlan = (newPlan: SubscriptionPlan) => {
     console.log('🟢 [SubscriptionTab] handleSelectPlan called:', { newPlan, currentPlan: subscription.plan });
@@ -101,6 +127,44 @@ export function SubscriptionTab({ subscription, onPlanChange }: SubscriptionTabP
           <ArrowUpCircle className="h-5 w-5 text-green-400" />
           <span>Alterações entram em vigor imediatamente</span>
         </div>
+      </div>
+
+      {/* Manage Subscription Section - Stripe Customer Portal */}
+      <div className="rounded-lg border border-slate-800 bg-slate-900/50 p-6">
+        <div className="flex items-start justify-between">
+          <div>
+            <h2 className="text-xl font-bold text-white flex items-center gap-2">
+              <CreditCard className="h-5 w-5 text-purple-400" />
+              Gerenciar Assinatura
+            </h2>
+            <p className="mt-2 text-slate-400">
+              Acesse o portal de pagamentos para atualizar seu cartao, ver faturas,
+              cancelar assinatura ou alterar seu plano.
+            </p>
+          </div>
+        </div>
+
+        <button
+          onClick={handleOpenCustomerPortal}
+          disabled={isLoadingPortal}
+          className="mt-4 flex items-center gap-2 px-6 py-3 rounded-xl font-semibold bg-gradient-to-r from-purple-500 to-blue-500 text-white hover:from-purple-600 hover:to-blue-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {isLoadingPortal ? (
+            <>
+              <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              <span>Abrindo portal...</span>
+            </>
+          ) : (
+            <>
+              <ExternalLink className="h-5 w-5" />
+              <span>Abrir Portal de Pagamentos</span>
+            </>
+          )}
+        </button>
+
+        <p className="mt-3 text-xs text-slate-500">
+          Voce sera redirecionado para o portal seguro do Stripe.
+        </p>
       </div>
 
       {/* Modal de Confirmação */}

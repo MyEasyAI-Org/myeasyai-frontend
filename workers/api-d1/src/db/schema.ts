@@ -20,11 +20,16 @@ export const users = sqliteTable('users', {
   avatar_url: text('avatar_url'),
   preferred_language: text('preferred_language').default('pt'),
   subscription_plan: text('subscription_plan').default('individual'),
-  subscription_status: text('subscription_status').default('active'),
+  subscription_status: text('subscription_status').default('inactive'), // Changed: inactive until paid
   bio: text('bio'),
   company_name: text('company_name'),
   created_at: text('created_at').default(sql`(datetime('now'))`),
   last_online: text('last_online'),
+  // Stripe integration fields
+  stripe_customer_id: text('stripe_customer_id'),
+  stripe_subscription_id: text('stripe_subscription_id'),
+  subscription_period_end: text('subscription_period_end'),
+  subscription_cancel_at_period_end: integer('subscription_cancel_at_period_end', { mode: 'boolean' }).default(false),
 });
 
 /**
