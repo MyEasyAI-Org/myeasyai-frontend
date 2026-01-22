@@ -39,7 +39,7 @@ jobs:
 
       - name: Deploy assets to R2
         run: |
-          for file in dist/assets/*; do
+          while IFS= read -r -d '' file; do
             filename=$(basename "$file")
             ext="${filename##*.}"
             case "$ext" in
@@ -54,7 +54,7 @@ jobs:
             esac
             echo "Uploading $filename with content-type $ct"
             wrangler r2 object put "myeasyai-sites/red-purple-amora/assets/$filename" --file="$file" --content-type="$ct" --remote
-          done
+          done < <(find dist/assets -type f -print0)
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -65,7 +65,7 @@ jobs:
           ls -la dist/ || echo "dist/ not found"
           ls -la dist/avatar/ || echo "dist/avatar/ not found"
           ls -la dist/avatar/models/ | head -20 || echo "dist/avatar/models/ not found"
-          echo "=== Looking for Teleporter Base.glb ==="
+          echo "=== Looking for Teleporter-Base.glb ==="
           find dist -name "*Teleporter*" -type f 2>/dev/null || echo "No Teleporter files found"
 
       - name: Deploy avatar files to R2
