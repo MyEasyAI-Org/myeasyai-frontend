@@ -55,11 +55,12 @@ export function PlanSelectionStep({
           note: `ou 12x de ${pricing.installmentPrice}`,
         };
       } else {
-        // Parcelado 12x
+        // Parcelado 12x (com 20% de juros)
+        const totalWithInterest = pricing.price * 1.2;
         return {
           main: pricing.installmentPrice || '',
           sub: 'por mês (12x)',
-          note: `Total: R$ ${((pricing.price / 100) * 1.2).toFixed(2).replace('.', ',')}`,
+          note: `Total: R$ ${totalWithInterest.toFixed(2).replace('.', ',')}`,
         };
       }
     }

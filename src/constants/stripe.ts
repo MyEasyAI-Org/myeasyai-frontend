@@ -72,7 +72,7 @@ export const PLANS: Plan[] = [
         currency: 'brl',
         displayPrice: 'R$ 297,00',
         installments: 12,
-        installmentPrice: 'R$ 24,75',
+        installmentPrice: 'R$ 29,70', // 297 * 1.20 / 12 = 29,70
       },
       usd: {
         price: 59,
@@ -98,7 +98,7 @@ export const PLANS: Plan[] = [
         currency: 'brl',
         displayPrice: 'R$ 497,00',
         installments: 12,
-        installmentPrice: 'R$ 41,42',
+        installmentPrice: 'R$ 49,70', // 497 * 1.20 / 12 = 49,70
       },
       usd: {
         price: 99,
@@ -126,7 +126,7 @@ export const PLANS: Plan[] = [
         currency: 'brl',
         displayPrice: 'R$ 997,00',
         installments: 12,
-        installmentPrice: 'R$ 83,08',
+        installmentPrice: 'R$ 99,70', // 997 * 1.20 / 12 = 99,70
       },
       usd: {
         price: 199,
