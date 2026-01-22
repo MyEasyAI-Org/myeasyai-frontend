@@ -642,23 +642,45 @@ stripeRoutes.post('/confirm-subscription', async (c) => {
     console.log('[Stripe] Subscription created successfully:', subscription.id, 'status:', subscription.status);
 
     // Update user's subscription in database
-    try {
-      const db = c.get('db');
-      await db.update(users)
-        .set({
-          subscription_status: subscription.status === 'active' ? 'active' : 'pending',
-          subscription_plan: plan || 'individual',
-          stripe_subscription_id: subscription.id,
-          subscription_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
-        })
-        .where(eq(users.uuid, userId));
+    const db = c.get('db');
 
-      console.log('[Stripe] Database updated for user:', userId);
-    } catch (dbErr) {
-      console.error('[Stripe] Database update failed:', dbErr);
-      // Still return success since subscription was created in Stripe
-      // The webhook will also update the database
+    // First check if user exists
+    const existingUser = await db.select().from(users).where(eq(users.uuid, userId)).get();
+    console.log('[Stripe] Looking for user:', userId, 'Found:', existingUser ? 'yes' : 'no');
+
+    if (!existingUser) {
+      console.error('[Stripe] User not found in database:', userId);
+      // Still return success since Stripe subscription was created
+      // The webhook should handle the update
+      return c.json({
+        subscriptionId: subscription.id,
+        status: subscription.status,
+        warning: 'User not found in database, webhook will update',
+      });
     }
+
+    // Calculate period end date safely
+    let periodEndDate: string | null = null;
+    if (subscription.current_period_end && typeof subscription.current_period_end === 'number') {
+      try {
+        periodEndDate = new Date(subscription.current_period_end * 1000).toISOString();
+      } catch (dateErr) {
+        console.error('[Stripe] Invalid period end date:', subscription.current_period_end, dateErr);
+      }
+    }
+    console.log('[Stripe] Period end:', subscription.current_period_end, '→', periodEndDate);
+
+    // Update the user
+    const updateResult = await db.update(users)
+      .set({
+        subscription_status: subscription.status === 'active' ? 'active' : 'pending',
+        subscription_plan: plan || 'individual',
+        stripe_subscription_id: subscription.id,
+        subscription_period_end: periodEndDate,
+      })
+      .where(eq(users.uuid, userId));
+
+    console.log('[Stripe] Database update result for user:', userId, 'Plan:', plan, 'Status:', subscription.status);
 
     return c.json({
       subscriptionId: subscription.id,
