@@ -586,7 +586,7 @@ stripeRoutes.post('/create-subscription', async (c) => {
  */
 stripeRoutes.post('/confirm-subscription', async (c) => {
   try {
-    const { customerId, priceId, userId, plan } = await c.req.json();
+    const { customerId, priceId, userId, plan, paymentMethodId } = await c.req.json();
 
     if (!customerId || !priceId || !userId) {
       return c.json({ error: 'Missing required fields: customerId, priceId, userId' }, 400);
@@ -597,11 +597,13 @@ stripeRoutes.post('/confirm-subscription', async (c) => {
       return c.json({ error: 'Stripe not configured' }, 500);
     }
 
-    // Create the subscription now that payment method is attached
-    // The customer's default payment method (attached via SetupIntent) will be used
+    // Create the subscription with the payment method from the confirmed SetupIntent
     const subscriptionParams = new URLSearchParams();
     subscriptionParams.append('customer', customerId);
     subscriptionParams.append('items[0][price]', priceId);
+    if (paymentMethodId) {
+      subscriptionParams.append('default_payment_method', paymentMethodId);
+    }
     subscriptionParams.append('metadata[userId]', userId);
     subscriptionParams.append('metadata[plan]', plan || 'individual');
     subscriptionParams.append('expand[]', 'latest_invoice');

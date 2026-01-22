@@ -65,7 +65,12 @@ export function EmbeddedPaymentForm({
       }
 
       if (setupIntent && setupIntent.status === 'succeeded') {
-        console.log('[EmbeddedPaymentForm] SetupIntent succeeded:', setupIntent.id);
+        // Get the payment method ID from the confirmed SetupIntent
+        const paymentMethodId = typeof setupIntent.payment_method === 'string'
+          ? setupIntent.payment_method
+          : (setupIntent.payment_method as { id: string } | null)?.id;
+
+        console.log('[EmbeddedPaymentForm] SetupIntent succeeded:', setupIntent.id, 'paymentMethod:', paymentMethodId);
 
         // Step 2: Create the actual subscription now that payment method is saved
         try {
@@ -74,6 +79,7 @@ export function EmbeddedPaymentForm({
             priceId,
             userId,
             plan,
+            paymentMethodId,
           });
 
           console.log('[EmbeddedPaymentForm] Subscription created:', subscription.subscriptionId);
@@ -88,6 +94,13 @@ export function EmbeddedPaymentForm({
         setPaymentError('Pagamento em processamento. Aguarde...');
       } else {
         console.log('[EmbeddedPaymentForm] SetupIntent status:', setupIntent?.status);
+        // Get payment method if available
+        const paymentMethodId = setupIntent?.payment_method
+          ? (typeof setupIntent.payment_method === 'string'
+              ? setupIntent.payment_method
+              : (setupIntent.payment_method as { id: string } | null)?.id)
+          : undefined;
+
         // Try to create subscription anyway
         try {
           await stripeService.confirmSubscription({
@@ -95,6 +108,7 @@ export function EmbeddedPaymentForm({
             priceId,
             userId,
             plan,
+            paymentMethodId,
           });
           onSuccess();
         } catch {

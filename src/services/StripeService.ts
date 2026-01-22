@@ -193,6 +193,7 @@ class StripeService {
     priceId: string;
     userId: string;
     plan: string;
+    paymentMethodId?: string;
   }): Promise<ConfirmSubscriptionResponse> {
     const response = await fetch(`${this.baseUrl}/confirm-subscription`, {
       method: 'POST',
