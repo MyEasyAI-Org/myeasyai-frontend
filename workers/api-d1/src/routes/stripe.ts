@@ -586,7 +586,10 @@ stripeRoutes.post('/create-subscription', async (c) => {
  */
 stripeRoutes.post('/confirm-subscription', async (c) => {
   try {
-    const { customerId, priceId, userId, plan, paymentMethodId } = await c.req.json();
+    const body = await c.req.json();
+    const { customerId, priceId, userId, plan, paymentMethodId } = body;
+
+    console.log('[Stripe] confirm-subscription called with:', { customerId, priceId, userId, plan, paymentMethodId: paymentMethodId ? 'present' : 'missing' });
 
     if (!customerId || !priceId || !userId) {
       return c.json({ error: 'Missing required fields: customerId, priceId, userId' }, 400);
@@ -606,7 +609,9 @@ stripeRoutes.post('/confirm-subscription', async (c) => {
     }
     subscriptionParams.append('metadata[userId]', userId);
     subscriptionParams.append('metadata[plan]', plan || 'individual');
-    subscriptionParams.append('expand[]', 'latest_invoice');
+    subscriptionParams.append('expand[0]', 'latest_invoice');
+
+    console.log('[Stripe] Creating subscription with params:', subscriptionParams.toString());
 
     const subscriptionResponse = await fetch('https://api.stripe.com/v1/subscriptions', {
       method: 'POST',
@@ -617,30 +622,43 @@ stripeRoutes.post('/confirm-subscription', async (c) => {
       body: subscriptionParams.toString(),
     });
 
+    const subscriptionText = await subscriptionResponse.text();
+    console.log('[Stripe] Subscription response status:', subscriptionResponse.status);
+    console.log('[Stripe] Subscription response:', subscriptionText.substring(0, 500));
+
     if (!subscriptionResponse.ok) {
-      const error = await subscriptionResponse.text();
-      console.error('[Stripe] Failed to create subscription:', error);
-      return c.json({ error: 'Failed to create subscription', details: error }, 500);
+      console.error('[Stripe] Failed to create subscription:', subscriptionText);
+      return c.json({ error: 'Failed to create subscription', details: subscriptionText }, 500);
     }
 
-    const subscription = await subscriptionResponse.json() as {
-      id: string;
-      status: string;
-      current_period_end: number;
-    };
+    let subscription: { id: string; status: string; current_period_end: number };
+    try {
+      subscription = JSON.parse(subscriptionText);
+    } catch (parseErr) {
+      console.error('[Stripe] Failed to parse subscription response:', parseErr);
+      return c.json({ error: 'Failed to parse subscription response' }, 500);
+    }
+
+    console.log('[Stripe] Subscription created successfully:', subscription.id, 'status:', subscription.status);
 
     // Update user's subscription in database
-    const db = c.get('db');
-    await db.update(users)
-      .set({
-        subscription_status: subscription.status === 'active' ? 'active' : 'pending',
-        subscription_plan: plan || 'individual',
-        stripe_subscription_id: subscription.id,
-        subscription_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
-      })
-      .where(eq(users.uuid, userId));
+    try {
+      const db = c.get('db');
+      await db.update(users)
+        .set({
+          subscription_status: subscription.status === 'active' ? 'active' : 'pending',
+          subscription_plan: plan || 'individual',
+          stripe_subscription_id: subscription.id,
+          subscription_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
+        })
+        .where(eq(users.uuid, userId));
 
-    console.log(`[Stripe] Subscription created: ${subscription.id} for user ${userId}, status: ${subscription.status}`);
+      console.log('[Stripe] Database updated for user:', userId);
+    } catch (dbErr) {
+      console.error('[Stripe] Database update failed:', dbErr);
+      // Still return success since subscription was created in Stripe
+      // The webhook will also update the database
+    }
 
     return c.json({
       subscriptionId: subscription.id,
@@ -648,7 +666,8 @@ stripeRoutes.post('/confirm-subscription', async (c) => {
     });
   } catch (error) {
     console.error('[Stripe] Error confirming subscription:', error);
-    return c.json({ error: 'Internal server error' }, 500);
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    return c.json({ error: 'Internal server error', details: errorMessage }, 500);
   }
 });
 
