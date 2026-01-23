@@ -405,8 +405,8 @@ type ChatPanelProps = {
   handlePricingOption?: (option: string) => void;
 
   // Refs
-  fileInputRef: React.RefObject<HTMLInputElement | null>;
-  messagesEndRef: React.RefObject<HTMLDivElement | null>;
+  fileInputRef: React.RefObject<HTMLInputElement>;
+  messagesEndRef: React.RefObject<HTMLDivElement>;
 };
 
 export function ChatPanel({

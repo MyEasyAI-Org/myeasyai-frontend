@@ -1,0 +1,353 @@
+{
+  "common": {
+    "loading": "Chargement...",
+    "error": "Erreur",
+    "success": "Succes",
+    "cancel": "Annuler",
+    "confirm": "Confirmer",
+    "save": "Enregistrer",
+    "delete": "Supprimer",
+    "edit": "Modifier",
+    "close": "Fermer",
+    "back": "Retour",
+    "next": "Suivant",
+    "previous": "Precedent",
+    "search": "Rechercher",
+    "select": "Selectionner",
+    "yes": "Oui",
+    "no": "Non",
+    "or": "ou",
+    "and": "et",
+    "required": "Obligatoire",
+    "optional": "Optionnel"
+  },
+
+  "nav": {
+    "home": "Accueil",
+    "dashboard": "Tableau de bord",
+    "products": "Produits",
+    "subscription": "Abonnement",
+    "settings": "Parametres",
+    "support": "Support",
+    "logout": "Deconnexion",
+    "login": "Connexion",
+    "signup": "S'inscrire",
+    "hello": "Bonjour"
+  },
+
+  "auth": {
+    "login": {
+      "title": "Bon retour!",
+      "subtitle": "Connectez-vous a votre compte pour continuer",
+      "email": "E-mail",
+      "password": "Mot de passe",
+      "forgotPassword": "Mot de passe oublie?",
+      "noAccount": "Vous n'avez pas de compte?",
+      "signupLink": "Inscrivez-vous",
+      "continueWith": "Ou continuez avec",
+      "google": "Continuer avec Google",
+      "submitting": "Connexion en cours..."
+    },
+    "signup": {
+      "title": "Creez votre compte",
+      "subtitle": "Commencez votre parcours avec MyEasyAI",
+      "name": "Nom complet",
+      "email": "E-mail",
+      "password": "Mot de passe",
+      "confirmPassword": "Confirmer le mot de passe",
+      "hasAccount": "Vous avez deja un compte?",
+      "loginLink": "Connectez-vous",
+      "continueWith": "Ou continuez avec",
+      "google": "Continuer avec Google",
+      "submitting": "Creation du compte...",
+      "passwordRequirements": "Minimum 8 caracteres"
+    },
+    "errors": {
+      "invalidEmail": "E-mail invalide",
+      "invalidPassword": "Mot de passe invalide",
+      "passwordMismatch": "Les mots de passe ne correspondent pas",
+      "emailInUse": "Cet e-mail est deja utilise",
+      "weakPassword": "Mot de passe trop faible",
+      "networkError": "Erreur de connexion. Veuillez reessayer.",
+      "generic": "Une erreur s'est produite. Veuillez reessayer."
+    }
+  },
+
+  "onboarding": {
+    "title": "Completez votre profil",
+    "subtitle": "Pour une experience personnalisee, nous avons besoin de quelques informations.",
+    "step": "Etape",
+    "of": "sur",
+    "completed": "termine",
+
+    "steps": {
+      "personal": {
+        "title": "Donnees Personnelles",
+        "description": "Commencons par vos informations de base"
+      },
+      "contact": {
+        "title": "Contact",
+        "description": "Comment pouvons-nous vous contacter?"
+      },
+      "plan": {
+        "title": "Plan",
+        "description": "Choisissez le plan ideal pour vous"
+      }
+    },
+
+    "fields": {
+      "fullName": "Votre nom complet",
+      "fullNamePlaceholder": "Ex: Jean Dupont",
+      "fullNameError": "Entrez le prenom et le nom",
+      "preferredName": "Comment voulez-vous etre appele?",
+      "preferredNamePlaceholder": "Ex: Jean, Jeannot, JD...",
+      "preferredNameHint": "Ecrivez un nom amical pour que nous l'utilisions avec vous",
+      "language": "Langue preferee",
+      "searchLanguage": "Rechercher une langue...",
+      "phone": "Telephone / WhatsApp",
+      "phoneIncomplete": "Numero de telephone incomplet",
+      "searchCountry": "Rechercher un pays...",
+      "state": "Etat",
+      "selectState": "Selectionnez votre etat",
+      "searchState": "Rechercher un etat...",
+      "city": "Ville",
+      "selectCity": "Selectionnez votre ville",
+      "selectStateFirst": "Selectionnez d'abord l'etat",
+      "searchCity": "Rechercher une ville...",
+      "noCityFound": "Aucune ville trouvee"
+    },
+
+    "terms": {
+      "accept": "J'ai lu et j'accepte les",
+      "termsOfUse": "Conditions d'Utilisation"
+    },
+
+    "buttons": {
+      "previous": "Precedent",
+      "next": "Suivant",
+      "saving": "Enregistrement..."
+    },
+
+    "errors": {
+      "saveError": "Erreur lors de l'enregistrement des informations",
+      "tryAgain": "Veuillez reessayer.",
+      "unexpectedError": "Erreur inattendue"
+    }
+  },
+
+  "plans": {
+    "title": "Choisissez votre plan",
+    "subtitle": "Selectionnez le plan qui repond le mieux a vos besoins",
+    "monthly": "Mensuel",
+    "annual": "Annuel",
+    "perMonth": "/mois",
+    "perYear": "/an",
+    "installments": "12x de",
+    "mostPopular": "Le Plus Populaire",
+    "currentPlan": "Plan Actuel",
+    "select": "Selectionner",
+    "selected": "Selectionne",
+    "subscribe": "S'abonner",
+    "features": "Fonctionnalites incluses",
+
+    "individual": {
+      "name": "Individuel",
+      "description": "Parfait pour commencer"
+    },
+    "plus": {
+      "name": "Plus",
+      "description": "Pour ceux qui veulent plus"
+    },
+    "premium": {
+      "name": "Premium",
+      "description": "Acces complet"
+    },
+
+    "limits": {
+      "sites": "site | sites",
+      "unlimitedSites": "Sites illimites",
+      "storage": "de stockage",
+      "support": "Support prioritaire",
+      "api": "Acces API"
+    },
+
+    "backToPlans": "Retour aux plans",
+    "payUpfront": "Paiement Unique",
+    "pay12x": "12x sur Carte",
+    "continueWith": "Continuer avec",
+    "securityNote": "Paiement securise via Stripe. Annulez a tout moment.",
+    "selectedPlan": "Plan selectionne"
+  },
+
+  "subscription": {
+    "title": "Votre Abonnement",
+    "status": {
+      "active": "Actif",
+      "inactive": "Inactif",
+      "pastDue": "Paiement En Attente",
+      "cancelled": "Annule",
+      "trialing": "Periode d'Essai"
+    },
+    "nextBilling": "Prochaine facturation",
+    "manage": "Gerer l'Abonnement",
+    "openPortal": "Ouvrir le Portail de Paiement",
+    "changePlan": "Changer de Plan",
+    "upgrade": "Ameliorer",
+    "downgrade": "Reduire",
+
+    "modal": {
+      "upgradeTitle": "Confirmer l'Amelioration",
+      "downgradeTitle": "Confirmer le Changement",
+      "currentPlan": "Plan Actuel",
+      "newPlan": "Nouveau Plan",
+      "amountDue": "Montant a Payer Maintenant",
+      "prorationNote": "Ce montant est calcule proportionnellement au temps restant de votre periode actuelle.",
+      "credit": "Credit",
+      "creditNote": "Ce credit sera applique a vos prochaines factures.",
+      "downgradeWarning": "Attention lors de la reduction",
+      "downgradeWarningText": "Vous pourriez perdre l'acces a certaines fonctionnalites. Verifiez que vos sites et donnees sont dans les limites du nouveau plan.",
+      "processing": "Traitement...",
+      "confirmUpgrade": "Confirmer l'Amelioration",
+      "confirmChange": "Confirmer le Changement"
+    }
+  },
+
+  "dashboard": {
+    "welcome": "Bienvenue",
+    "overview": "Vue d'Ensemble",
+    "recentActivity": "Activite Recente",
+    "quickActions": "Actions Rapides",
+
+    "tabs": {
+      "overview": "Vue d'Ensemble",
+      "products": "Produits",
+      "subscription": "Abonnement",
+      "settings": "Parametres"
+    },
+
+    "stats": {
+      "totalSites": "Sites Crees",
+      "activeProducts": "Produits Actifs",
+      "storageUsed": "Stockage Utilise"
+    }
+  },
+
+  "products": {
+    "title": "Nos Produits",
+    "subtitle": "Outils IA pour booster votre entreprise",
+    "explore": "Explorer",
+    "comingSoon": "Bientot Disponible",
+    "new": "Nouveau",
+
+    "myeasywebsite": {
+      "name": "MyEasy Website",
+      "description": "Creez des sites web professionnels en quelques minutes avec l'IA"
+    },
+    "businessguru": {
+      "name": "Business Guru",
+      "description": "Conseil en affaires avec intelligence artificielle"
+    },
+    "myeasycrm": {
+      "name": "MyEasy CRM",
+      "description": "Gerez vos clients et ventes de maniere intelligente"
+    },
+    "myeasypricing": {
+      "name": "MyEasy Pricing",
+      "description": "Calculez les prix et les marges beneficiaires automatiquement"
+    },
+    "myeasycontent": {
+      "name": "MyEasy Content",
+      "description": "Generez du contenu pour les reseaux sociaux avec l'IA"
+    },
+    "myeasyavatar": {
+      "name": "MyEasy Avatar",
+      "description": "Creez votre avatar 3D personnalise"
+    },
+    "myeasycode": {
+      "name": "MyEasy Code",
+      "description": "Developpez des applications avec l'assistance de l'IA"
+    },
+    "myeasyresume": {
+      "name": "MyEasy Resume",
+      "description": "CV professionnels en quelques secondes"
+    },
+    "myeasylearning": {
+      "name": "MyEasy Learning",
+      "description": "Apprenez de nouvelles competences avec l'IA"
+    }
+  },
+
+  "settings": {
+    "title": "Parametres",
+    "profile": {
+      "title": "Profil",
+      "name": "Nom",
+      "email": "E-mail",
+      "phone": "Telephone",
+      "avatar": "Photo de Profil",
+      "changeAvatar": "Changer la Photo"
+    },
+    "preferences": {
+      "title": "Preferences",
+      "language": "Langue",
+      "theme": "Theme",
+      "notifications": "Notifications"
+    },
+    "security": {
+      "title": "Securite",
+      "changePassword": "Changer le Mot de Passe",
+      "twoFactor": "Authentification a Deux Facteurs"
+    },
+    "danger": {
+      "title": "Zone de Danger",
+      "deleteAccount": "Supprimer le Compte",
+      "deleteWarning": "Cette action ne peut pas etre annulee."
+    }
+  },
+
+  "support": {
+    "title": "Support",
+    "subtitle": "Comment pouvons-nous vous aider?",
+    "newTicket": "Nouveau Ticket",
+    "myTickets": "Mes Tickets",
+    "faq": "FAQ",
+    "contact": "Contact",
+    "status": {
+      "open": "Ouvert",
+      "inProgress": "En Cours",
+      "resolved": "Resolu",
+      "closed": "Ferme"
+    }
+  },
+
+  "footer": {
+    "rights": "Tous droits reserves",
+    "terms": "Conditions d'Utilisation",
+    "privacy": "Politique de Confidentialite",
+    "contact": "Contact"
+  },
+
+  "errors": {
+    "notFound": "Page non trouvee",
+    "unauthorized": "Acces non autorise",
+    "serverError": "Erreur serveur",
+    "networkError": "Erreur de connexion",
+    "tryAgain": "Reessayer",
+    "goHome": "Retour a l'accueil"
+  },
+
+  "notifications": {
+    "success": {
+      "saved": "Enregistre avec succes!",
+      "deleted": "Supprime avec succes!",
+      "updated": "Mis a jour avec succes!",
+      "copied": "Copie dans le presse-papiers!"
+    },
+    "error": {
+      "generic": "Une erreur s'est produite. Veuillez reessayer.",
+      "save": "Erreur lors de l'enregistrement.",
+      "delete": "Erreur lors de la suppression.",
+      "load": "Erreur lors du chargement des donnees."
+    }
+  }
+}

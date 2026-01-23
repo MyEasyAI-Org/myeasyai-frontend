@@ -26,16 +26,26 @@ import { Preview } from './components/Preview';
 import { PWAInstallBanner } from './components/PWAInstallBanner';
 import { AuthCallback } from './components/AuthCallback';
 import { BusinessGuru } from './features/business-guru/BusinessGuru';
+import { MyEasyAvatar } from './features/my-easy-avatar';
+import { MyEasyCode } from './features/my-easy-code';
 import { MyEasyContent } from './features/my-easy-content';
 import { MyEasyCRM } from './features/my-easy-crm';
 import { MyEasyPricing } from './features/my-easy-pricing/MyEasyPricing';
 import { MyEasyFitness } from './features/my-easy-fitness';
 import { MyEasyWebsite } from './features/my-easy-website/MyEasyWebsite';
+import { MyEasyResume } from './features/my-easy-resume/MyEasyResume';
+import { MyEasyLearning } from './features/my-easy-learning/MyEasyLearning';
+import { SupportPage } from './pages/SupportPage';
+import { CreateTicketPage } from './pages/CreateTicketPage';
+import { MyTicketsPage } from './pages/MyTicketsPage';
+import { CheckoutSuccessPage } from './pages/CheckoutSuccessPage';
+import { CheckoutCancelPage } from './pages/CheckoutCancelPage';
 import { useInactivityTimeout } from './hooks/useInactivityTimeout';
 import { useModalState } from './hooks/useModalState';
 import { useRealtimeSync } from './hooks/useRealtimeSync';
 import { supabase } from './lib/api-clients/supabase-client';
 import { ROUTES } from './router';
+import { AvatarWidgetProvider } from './contexts/AvatarWidgetContext';
 import { authService, type AuthUser } from './services/AuthServiceV2';
 import { userManagementServiceV2 } from './services/UserManagementServiceV2';
 
@@ -71,11 +81,15 @@ function authUserToUser(authUser: AuthUser | null): User | null {
  * IMPORTANT: During auth check (isLoading=true), we render children to:
  * 1. Show the Dashboard's LoadingScreen instead of a blank page
  * 2. Keep the user on the same URL so they stay on the same page after F5
+ *
+ * PAYMENT BLOCKING: If needsPayment is true, user cannot access protected routes
+ * They are redirected to home and the onboarding modal opens for payment step
  */
 function ProtectedRoute({
   children,
   user,
   needsOnboarding,
+  needsPayment,
   onOpenOnboarding,
   isLoading,
   isCheckingAuth,
@@ -83,19 +97,30 @@ function ProtectedRoute({
   children: React.ReactNode;
   user: User | null;
   needsOnboarding: boolean;
+  needsPayment: boolean;
   onOpenOnboarding: () => void;
   isLoading: boolean;
   isCheckingAuth: boolean;
 }) {
   const location = useLocation();
 
-  // If we have a user, render children immediately
-  // The Dashboard component has its own LoadingScreen with progress bar
+  // If we have a user, check additional requirements
   if (user) {
+    // If needs onboarding, redirect to home and open onboarding modal
     if (needsOnboarding) {
       onOpenOnboarding();
       return <Navigate to={ROUTES.HOME} replace />;
     }
+
+    // If needs payment (no active subscription), redirect to home and open onboarding for payment
+    // This blocks access when: no subscription, past_due, cancelled, or inactive
+    if (needsPayment) {
+      console.log('🚫 [ProtectedRoute] Blocking access - payment required');
+      onOpenOnboarding();
+      return <Navigate to={ROUTES.HOME} replace />;
+    }
+
+    // User has active subscription - allow access
     return <>{children}</>;
   }
 
@@ -145,6 +170,9 @@ function AppContent() {
     'overview' | 'subscription' | 'products' | 'usage' | 'settings' | 'profile'
   >('overview');
   const isUserActionRef = useRef(false);
+  // Subscription status for payment blocking
+  const [subscriptionStatus, setSubscriptionStatus] = useState<string | null>(null);
+  const [needsPayment, setNeedsPayment] = useState(false);
   const wasPageHiddenRef = useRef(false);
   const ignoreNextAuthEventRef = useRef(false);
 
@@ -159,6 +187,32 @@ function AppContent() {
     signupModal.open();
   };
   const closeSignup = () => signupModal.close();
+
+  // Function to check subscription status and determine if payment is needed
+  const checkSubscriptionStatus = async (userEmail: string): Promise<{ status: string | null; needsPayment: boolean }> => {
+    try {
+      const result = await userManagementServiceV2.getUserProfile(userEmail);
+      if (!result.success || !result.data) {
+        console.log('🔴 [APP] Could not fetch subscription status');
+        return { status: null, needsPayment: true }; // Block if we can't verify
+      }
+
+      const status = result.data.subscription_status;
+      console.log('💳 [APP] Subscription status:', status);
+
+      // User needs payment if:
+      // - No status (never subscribed)
+      // - inactive (no active subscription)
+      // - past_due (payment failed)
+      // - cancelled (subscription cancelled)
+      const needsPaymentCheck = !status || status === 'inactive' || status === 'past_due' || status === 'cancelled';
+
+      return { status, needsPayment: needsPaymentCheck };
+    } catch (error) {
+      console.error('🔴 [APP] Error checking subscription status:', error);
+      return { status: null, needsPayment: true }; // Block if error
+    }
+  };
 
   // Function to fetch user data from database (D1 Primary + Supabase Fallback)
   const fetchUserData = async (userEmail: string) => {
@@ -315,12 +369,32 @@ function AppContent() {
     navigate(ROUTES.MY_EASY_PRICING);
   };
 
+  const goToMyEasyAvatar = () => {
+    navigate(ROUTES.MY_EASY_AVATAR);
+  };
+
+  const goToMyEasyCode = () => {
+    navigate(ROUTES.MY_EASY_CODE);
+  };
+
   const goToMyEasyContent = () => {
     navigate(ROUTES.MY_EASY_CONTENT);
   };
 
   const goToMyEasyFitness = () => {
     navigate(ROUTES.MY_EASY_FITNESS);
+  };
+
+  const goToMyEasyResume = () => {
+    navigate(ROUTES.MY_EASY_RESUME);
+  };
+
+  const goToMyEasyLearning = () => {
+    navigate(ROUTES.MY_EASY_LEARNING);
+  };
+
+  const goToSupport = () => {
+    navigate(ROUTES.SUPPORT);
   };
 
   const goToSubscription = () => {
@@ -414,10 +488,18 @@ function AppContent() {
             authUserToUser(authUser)!
           );
 
+        // Check subscription status (only if doesn't need onboarding)
+        let paymentCheck = { status: null as string | null, needsPayment: false };
+        if (!needsOnboardingCheck && authUser.email) {
+          paymentCheck = await checkSubscriptionStatus(authUser.email);
+        }
+
         // NOW set all states together to prevent partial renders
         setUserName(userData.name);
         setUser(authUserToUser(authUser));
         setNeedsOnboarding(needsOnboardingCheck);
+        setSubscriptionStatus(paymentCheck.status);
+        setNeedsPayment(paymentCheck.needsPayment);
         setLoading(false);
         setIsCheckingAuth(false);
         return;
@@ -437,9 +519,22 @@ function AppContent() {
             userData = await fetchUserData(session.user.email);
           }
 
+          // Check onboarding
+          const needsOnboardingCheck =
+            await userManagementServiceV2.checkUserNeedsOnboarding(session.user);
+
+          // Check subscription status (only if doesn't need onboarding)
+          let paymentCheck = { status: null as string | null, needsPayment: false };
+          if (!needsOnboardingCheck && session.user.email) {
+            paymentCheck = await checkSubscriptionStatus(session.user.email);
+          }
+
           // NOW set all states together
           setUserName(userData.name);
           setUser(session.user);
+          setNeedsOnboarding(needsOnboardingCheck);
+          setSubscriptionStatus(paymentCheck.status);
+          setNeedsPayment(paymentCheck.needsPayment);
         } else {
           setUser(null);
         }
@@ -493,7 +588,21 @@ function AppContent() {
               );
             setNeedsOnboarding(needsOnboardingCheck);
 
-            if (needsOnboardingCheck) {
+            // Check subscription status (only if doesn't need onboarding)
+            if (!needsOnboardingCheck && authUser.email) {
+              const paymentCheck = await checkSubscriptionStatus(authUser.email);
+              setSubscriptionStatus(paymentCheck.status);
+              setNeedsPayment(paymentCheck.needsPayment);
+
+              // If needs payment, redirect to home and open onboarding for payment step
+              if (paymentCheck.needsPayment) {
+                console.log('💳 [APP] User needs payment, redirecting to onboarding...');
+                navigate(ROUTES.HOME);
+                setTimeout(() => {
+                  onboardingModal.open();
+                }, 100);
+              }
+            } else if (needsOnboardingCheck) {
               navigate(ROUTES.HOME);
               setTimeout(() => {
                 onboardingModal.open();
@@ -514,6 +623,8 @@ function AppContent() {
           setUser(null);
           setUserName('Usuário');
           setUserAvatarUrl(undefined);
+          setSubscriptionStatus(null);
+          setNeedsPayment(false);
         }
 
         setLoading(false);
@@ -654,8 +765,22 @@ function AppContent() {
           setUserName(userData.name);
           setNeedsOnboarding(needsOnboardingCheck);
 
-          // If needs onboarding, stay on home and show onboarding modal
-          if (needsOnboardingCheck) {
+          // Check subscription status (only if doesn't need onboarding)
+          if (!needsOnboardingCheck && session.user.email) {
+            const paymentCheck = await checkSubscriptionStatus(session.user.email);
+            setSubscriptionStatus(paymentCheck.status);
+            setNeedsPayment(paymentCheck.needsPayment);
+
+            // If needs payment, redirect to home and open onboarding for payment step
+            if (paymentCheck.needsPayment) {
+              console.log('💳 [APP] User needs payment, redirecting to onboarding...');
+              navigate(ROUTES.HOME);
+              setTimeout(() => {
+                onboardingModal.open();
+              }, 100);
+            }
+          } else if (needsOnboardingCheck) {
+            // If needs onboarding, stay on home and show onboarding modal
             navigate(ROUTES.HOME);
             setTimeout(() => {
               onboardingModal.open();
@@ -679,6 +804,8 @@ function AppContent() {
         setUserName('Usuário');
         setUserAvatarUrl(undefined);
         setNeedsOnboarding(false);
+        setSubscriptionStatus(null);
+        setNeedsPayment(false);
         onboardingModal.close();
         loginModal.close();
         signupModal.close();
@@ -757,7 +884,7 @@ function AppContent() {
             <MidStats />
             <Courses />
             <FinalCta onSignupClick={openSignup} />
-            <Footer />
+            <Footer onNavigateToSupport={user ? goToSupport : undefined} />
 
             {user && (
               <OnboardingModal
@@ -765,7 +892,8 @@ function AppContent() {
                 onClose={closeOnboarding}
                 onComplete={handleOnboardingComplete}
                 user={user}
-                disableClose={needsOnboarding}
+                disableClose={needsOnboarding || needsPayment}
+                initialStep={needsPayment && !needsOnboarding ? 2 : 0}
               />
             )}
 
@@ -777,6 +905,10 @@ function AppContent() {
       {/* Auth callback route - processes OAuth redirects from Cloudflare/Supabase */}
       <Route path={ROUTES.AUTH_CALLBACK} element={<AuthCallback />} />
 
+      {/* Checkout routes - require auth but accessible during onboarding */}
+      <Route path={ROUTES.CHECKOUT_SUCCESS} element={<CheckoutSuccessPage />} />
+      <Route path={ROUTES.CHECKOUT_CANCEL} element={<CheckoutCancelPage />} />
+
       {/* Protected routes */}
       <Route
         path={ROUTES.DASHBOARD}
@@ -784,6 +916,7 @@ function AppContent() {
           <ProtectedRoute
             user={user}
             needsOnboarding={needsOnboarding}
+            needsPayment={needsPayment}
             onOpenOnboarding={() => onboardingModal.open()}
             isLoading={loading}
             isCheckingAuth={isCheckingAuth}
@@ -799,6 +932,11 @@ function AppContent() {
                 onGoToMyEasyCRM={goToMyEasyCRM}
                 onGoToMyEasyContent={goToMyEasyContent}
                 onGoToMyEasyFitness={goToMyEasyFitness}
+                onGoToMyEasyAvatar={goToMyEasyAvatar}
+                onGoToMyEasyCode={goToMyEasyCode}
+                onGoToMyEasyResume={goToMyEasyResume}
+                onGoToMyEasyLearning={goToMyEasyLearning}
+                onGoToSupport={goToSupport}
                 initialTab={dashboardInitialTab}
                 onLoadingComplete={() => {
                   console.log('Dashboard loaded successfully!');
@@ -816,6 +954,7 @@ function AppContent() {
           <ProtectedRoute
             user={user}
             needsOnboarding={needsOnboarding}
+            needsPayment={needsPayment}
             onOpenOnboarding={() => onboardingModal.open()}
             isLoading={loading}
             isCheckingAuth={isCheckingAuth}
@@ -834,6 +973,7 @@ function AppContent() {
           <ProtectedRoute
             user={user}
             needsOnboarding={needsOnboarding}
+            needsPayment={needsPayment}
             onOpenOnboarding={() => onboardingModal.open()}
             isLoading={loading}
             isCheckingAuth={isCheckingAuth}
@@ -849,6 +989,7 @@ function AppContent() {
           <ProtectedRoute
             user={user}
             needsOnboarding={needsOnboarding}
+            needsPayment={needsPayment}
             onOpenOnboarding={() => onboardingModal.open()}
             isLoading={loading}
             isCheckingAuth={isCheckingAuth}
@@ -869,6 +1010,7 @@ function AppContent() {
           <ProtectedRoute
             user={user}
             needsOnboarding={needsOnboarding}
+            needsPayment={needsPayment}
             onOpenOnboarding={() => onboardingModal.open()}
             isLoading={loading}
             isCheckingAuth={isCheckingAuth}
@@ -884,6 +1026,7 @@ function AppContent() {
           <ProtectedRoute
             user={user}
             needsOnboarding={needsOnboarding}
+            needsPayment={needsPayment}
             onOpenOnboarding={() => onboardingModal.open()}
             isLoading={loading}
             isCheckingAuth={isCheckingAuth}
@@ -899,11 +1042,124 @@ function AppContent() {
           <ProtectedRoute
             user={user}
             needsOnboarding={needsOnboarding}
+            needsPayment={needsPayment}
             onOpenOnboarding={() => onboardingModal.open()}
             isLoading={loading}
             isCheckingAuth={isCheckingAuth}
           >
-            <MyEasyFitness onBackToDashboard={goToDashboard} userName={userName} />
+            <MyEasyFitness onBackToDashboard={goToDashboardProducts} userName={userName} />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path={ROUTES.MY_EASY_AVATAR}
+        element={
+          <ProtectedRoute
+            user={user}
+            needsOnboarding={needsOnboarding}
+            needsPayment={needsPayment}
+            onOpenOnboarding={() => onboardingModal.open()}
+            isLoading={loading}
+            isCheckingAuth={isCheckingAuth}
+          >
+            <MyEasyAvatar onBack={goToDashboardProducts} />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path={ROUTES.MY_EASY_CODE}
+        element={
+          <ProtectedRoute
+            user={user}
+            needsOnboarding={needsOnboarding}
+            needsPayment={needsPayment}
+            onOpenOnboarding={() => onboardingModal.open()}
+            isLoading={loading}
+            isCheckingAuth={isCheckingAuth}
+          >
+            <MyEasyCode onBack={goToDashboardProducts} />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path={ROUTES.MY_EASY_RESUME}
+        element={
+          <ProtectedRoute
+            user={user}
+            needsOnboarding={needsOnboarding}
+            needsPayment={needsPayment}
+            onOpenOnboarding={() => onboardingModal.open()}
+            isLoading={loading}
+            isCheckingAuth={isCheckingAuth}
+          >
+            <MyEasyResume onBackToDashboard={goToDashboardProducts} />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path={ROUTES.MY_EASY_LEARNING}
+        element={
+          <ProtectedRoute
+            user={user}
+            needsOnboarding={needsOnboarding}
+            needsPayment={needsPayment}
+            onOpenOnboarding={() => onboardingModal.open()}
+            isLoading={loading}
+            isCheckingAuth={isCheckingAuth}
+          >
+            <MyEasyLearning onBackToDashboard={goToDashboardProducts} />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path={ROUTES.SUPPORT}
+        element={
+          <ProtectedRoute
+            user={user}
+            needsOnboarding={needsOnboarding}
+            needsPayment={needsPayment}
+            onOpenOnboarding={() => onboardingModal.open()}
+            isLoading={loading}
+            isCheckingAuth={isCheckingAuth}
+          >
+            <SupportPage onBackToDashboard={goToDashboardProducts} />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path={ROUTES.SUPPORT_TICKET}
+        element={
+          <ProtectedRoute
+            user={user}
+            needsOnboarding={needsOnboarding}
+            needsPayment={needsPayment}
+            onOpenOnboarding={() => onboardingModal.open()}
+            isLoading={loading}
+            isCheckingAuth={isCheckingAuth}
+          >
+            <CreateTicketPage />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path={ROUTES.SUPPORT_TICKETS}
+        element={
+          <ProtectedRoute
+            user={user}
+            needsOnboarding={needsOnboarding}
+            needsPayment={needsPayment}
+            onOpenOnboarding={() => onboardingModal.open()}
+            isLoading={loading}
+            isCheckingAuth={isCheckingAuth}
+          >
+            <MyTicketsPage />
           </ProtectedRoute>
         }
       />
@@ -920,7 +1176,9 @@ function AppContent() {
 function App() {
   return (
     <BrowserRouter>
-      <AppContent />
+      <AvatarWidgetProvider>
+        <AppContent />
+      </AvatarWidgetProvider>
     </BrowserRouter>
   );
 }

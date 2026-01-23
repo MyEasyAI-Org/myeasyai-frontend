@@ -31,7 +31,6 @@ export const PLANS: Plan[] = [
     tokens: '1.000',
     features: [
       'Acesso básico à plataforma',
-      '1.000 tokens por mês',
       'Suporte por email',
       'Documentação completa',
       '1 site MyEasyWebsite',
@@ -52,7 +51,6 @@ export const PLANS: Plan[] = [
     tokens: '10.000',
     features: [
       'Tudo do plano Individual',
-      '10.000 tokens por mês',
       'Suporte prioritário',
       'API Access',
       'Analytics básico',
@@ -76,7 +74,6 @@ export const PLANS: Plan[] = [
     tokens: '50.000',
     features: [
       'Tudo do plano Plus',
-      '50.000 tokens por mês',
       'Suporte 24/7',
       'Analytics avançado',
       'Integrações customizadas',

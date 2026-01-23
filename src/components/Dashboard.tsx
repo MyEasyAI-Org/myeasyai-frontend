@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { AssistantChatWidget } from '../features/assistant-chat';
 import { useDashboardNavigation } from '../hooks/useDashboardNavigation';
 import { useNotifications } from '../hooks/useNotifications';
 import { useUserData } from '../hooks/useUserData';
@@ -6,6 +7,7 @@ import { authService } from '../services/AuthServiceV2';
 import type { Notification } from '../types/Notification';
 import { Footer } from './Footer';
 import NotificationDetailModal from './NotificationDetailModal';
+import { DashboardAvatarWidget } from './dashboard/DashboardAvatarWidget';
 import { DashboardHeader } from './dashboard/DashboardHeader';
 import { LoadingScreen } from './dashboard/LoadingScreen';
 import { NavigationTabs } from './dashboard/NavigationTabs';
@@ -23,6 +25,11 @@ type DashboardProps = {
   onGoToMyEasyPricing?: () => void;
   onGoToMyEasyCRM?: () => void;
   onGoToMyEasyContent?: () => void;
+  onGoToMyEasyAvatar?: () => void;
+  onGoToMyEasyCode?: () => void;
+  onGoToMyEasyResume?: () => void;
+  onGoToMyEasyLearning?: () => void;
+  onGoToSupport?: () => void;
   onGoToMyEasyFitness?: () => void;
   onLoadingComplete?: () => void;
   initialTab?: 'overview' | 'subscription' | 'products' | 'usage' | 'settings' | 'profile';
@@ -35,6 +42,11 @@ export function Dashboard({
   onGoToMyEasyPricing,
   onGoToMyEasyCRM,
   onGoToMyEasyContent,
+  onGoToMyEasyAvatar,
+  onGoToMyEasyCode,
+  onGoToMyEasyResume,
+  onGoToMyEasyLearning,
+  onGoToSupport,
   onGoToMyEasyFitness,
   onLoadingComplete,
   initialTab,
@@ -51,14 +63,13 @@ export function Dashboard({
     loadingStep,
     error,
     updateProfile,
-    updateSubscriptionPlan,
     refreshSubscription,
     refreshProducts,
     refreshAll,
   } = useUserData();
 
   // Dashboard navigation hook (manages tabs and feature navigation)
-  const { activeTab, setActiveTab, navigateToProduct, goToCRM, goToContent, goToFitness } =
+  const { activeTab, setActiveTab, navigateToProduct, goToCRM, goToContent, goToAvatar, goToCode, goToResume, goToLearning, goToFitness } =
     useDashboardNavigation({
       onGoHome,
       onGoToMyEasyWebsite,
@@ -66,6 +77,10 @@ export function Dashboard({
       onGoToMyEasyPricing,
       onGoToMyEasyCRM,
       onGoToMyEasyContent,
+      onGoToMyEasyAvatar,
+      onGoToMyEasyCode,
+      onGoToMyEasyResume,
+      onGoToMyEasyLearning,
       onGoToMyEasyFitness,
       initialTab,
     });
@@ -147,7 +162,6 @@ export function Dashboard({
         {activeTab === 'subscription' && (
           <SubscriptionTab
             subscription={subscription}
-            onPlanChange={updateSubscriptionPlan}
           />
         )}
 
@@ -159,6 +173,11 @@ export function Dashboard({
             onGoToCRM={goToCRM}
             onGoToMyEasyContent={goToContent}
             onGoToMyEasyFitness={goToFitness}
+            onGoToMyEasyAvatar={goToAvatar}
+            onGoToMyEasyCode={goToCode}
+            onGoToMyEasyResume={goToResume}
+            onGoToMyEasyLearning={goToLearning}
+            onGoToSupport={onGoToSupport}
             accountCreatedAt={cadastralInfo.created_at}
           />
         )}
@@ -178,13 +197,19 @@ export function Dashboard({
       </div>
 
       {/* Footer */}
-      <Footer />
+      <Footer onNavigateToSupport={onGoToSupport} />
 
       {/* Notification Detail Modal */}
       <NotificationDetailModal
         notification={selectedNotification}
         onClose={() => setSelectedNotification(null)}
       />
+
+      {/* Dashboard Avatar Widget */}
+      <DashboardAvatarWidget />
+
+      {/* Assistant Chat Widget */}
+      <AssistantChatWidget />
     </div>
   );
 }

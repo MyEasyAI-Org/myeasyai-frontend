@@ -407,6 +407,43 @@ export interface D1ContentCalendarEntry {
   updated_at: string | null;
 }
 
+// =============================================================================
+// Resume Types (MyEasyResume)
+// =============================================================================
+
+export interface D1ResumeProfile {
+  id: string;
+  user_id: string;
+  name: string;
+  career_level: string;
+  target_role: string;
+  industry: string;
+  template_style: string;
+  preferred_language: string;
+  is_default: boolean;
+  created_at: string;
+  updated_at: string | null;
+}
+
+export interface D1Resume {
+  id: string;
+  user_id: string;
+  profile_id: string;
+  version_name: string;
+  personal_info: string; // JSON
+  professional_summary: string;
+  experiences: string; // JSON array
+  education: string; // JSON array
+  skills: string; // JSON array
+  languages: string; // JSON array
+  certifications: string; // JSON array
+  projects: string; // JSON array
+  is_favorite: boolean;
+  tags: string; // JSON array
+  created_at: string;
+  updated_at: string | null;
+}
+
 /**
  * Cliente HTTP para a API D1 (Cloudflare Worker)
  */
@@ -2018,6 +2055,180 @@ export class D1Client {
    */
   async clearContentCalendar(profileId: string): Promise<D1ApiResponse<{ deleted: number }>> {
     return this.fetch(`/content/calendar/profile/${profileId}`, { method: 'DELETE' });
+  }
+
+  // ==================== RESUME ====================
+
+  // --- Resume Profiles ---
+
+  /**
+   * Lista perfis de currículo do usuário
+   */
+  async getResumeProfiles(userId: string): Promise<D1ApiResponse<D1ResumeProfile[]>> {
+    return this.fetch<D1ResumeProfile[]>(`/resume/profiles/user/${userId}`);
+  }
+
+  /**
+   * Busca perfil de currículo por ID
+   */
+  async getResumeProfile(id: string): Promise<D1ApiResponse<D1ResumeProfile>> {
+    return this.fetch<D1ResumeProfile>(`/resume/profiles/${id}`);
+  }
+
+  /**
+   * Busca perfil padrão do usuário
+   */
+  async getDefaultResumeProfile(userId: string): Promise<D1ApiResponse<D1ResumeProfile>> {
+    return this.fetch<D1ResumeProfile>(`/resume/profiles/default/user/${userId}`);
+  }
+
+  /**
+   * Cria novo perfil de currículo
+   */
+  async createResumeProfile(profile: {
+    user_id: string;
+    name: string;
+    career_level: string;
+    target_role: string;
+    industry: string;
+    template_style: string;
+    preferred_language: string;
+    is_default: boolean;
+  }): Promise<D1ApiResponse<D1ResumeProfile>> {
+    return this.fetch<D1ResumeProfile>('/resume/profiles', {
+      method: 'POST',
+      body: JSON.stringify(profile),
+    });
+  }
+
+  /**
+   * Atualiza perfil de currículo
+   */
+  async updateResumeProfile(
+    id: string,
+    updates: Partial<D1ResumeProfile>
+  ): Promise<D1ApiResponse<D1ResumeProfile>> {
+    return this.fetch<D1ResumeProfile>(`/resume/profiles/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(updates),
+    });
+  }
+
+  /**
+   * Define perfil como padrão
+   */
+  async setDefaultResumeProfile(
+    id: string,
+    userId: string
+  ): Promise<D1ApiResponse<D1ResumeProfile>> {
+    return this.fetch<D1ResumeProfile>(`/resume/profiles/${id}/set-default`, {
+      method: 'POST',
+      body: JSON.stringify({ user_id: userId }),
+    });
+  }
+
+  /**
+   * Deleta perfil de currículo
+   */
+  async deleteResumeProfile(id: string): Promise<D1ApiResponse<{ success: boolean }>> {
+    return this.fetch(`/resume/profiles/${id}`, { method: 'DELETE' });
+  }
+
+  // --- Resume Library ---
+
+  /**
+   * Lista currículos salvos de um perfil
+   */
+  async getResumeLibrary(
+    profileId: string,
+    filters?: {
+      is_favorite?: boolean;
+      tags?: string[];
+    }
+  ): Promise<D1ApiResponse<D1Resume[]>> {
+    const params = new URLSearchParams();
+    if (filters?.is_favorite !== undefined) {
+      params.append('is_favorite', filters.is_favorite.toString());
+    }
+    if (filters?.tags && filters.tags.length > 0) {
+      params.append('tags', filters.tags.join(','));
+    }
+
+    const query = params.toString();
+    const endpoint = `/resume/library/profile/${profileId}${query ? `?${query}` : ''}`;
+    return this.fetch<D1Resume[]>(endpoint);
+  }
+
+  /**
+   * Busca currículo por ID
+   */
+  async getResume(id: string): Promise<D1ApiResponse<D1Resume>> {
+    return this.fetch<D1Resume>(`/resume/library/${id}`);
+  }
+
+  /**
+   * Salva novo currículo
+   */
+  async createResume(resume: {
+    user_id: string;
+    profile_id: string;
+    version_name: string;
+    personal_info: object;
+    professional_summary: string;
+    experiences: object[];
+    education: object[];
+    skills: object[];
+    languages?: object[];
+    certifications?: object[];
+    projects?: object[];
+    is_favorite?: boolean;
+    tags?: string[];
+  }): Promise<D1ApiResponse<D1Resume>> {
+    return this.fetch<D1Resume>('/resume/library', {
+      method: 'POST',
+      body: JSON.stringify(resume),
+    });
+  }
+
+  /**
+   * Atualiza currículo
+   */
+  async updateResume(
+    id: string,
+    updates: Partial<{
+      version_name: string;
+      personal_info: object;
+      professional_summary: string;
+      experiences: object[];
+      education: object[];
+      skills: object[];
+      languages: object[];
+      certifications: object[];
+      projects: object[];
+      is_favorite: boolean;
+      tags: string[];
+    }>
+  ): Promise<D1ApiResponse<D1Resume>> {
+    return this.fetch<D1Resume>(`/resume/library/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(updates),
+    });
+  }
+
+  /**
+   * Alterna favorito do currículo
+   */
+  async toggleResumeFavorite(id: string): Promise<D1ApiResponse<D1Resume>> {
+    return this.fetch<D1Resume>(`/resume/library/${id}/toggle-favorite`, {
+      method: 'POST',
+    });
+  }
+
+  /**
+   * Deleta currículo
+   */
+  async deleteResume(id: string): Promise<D1ApiResponse<{ success: boolean }>> {
+    return this.fetch(`/resume/library/${id}`, { method: 'DELETE' });
   }
 
   // ==================== HEALTH ====================

@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Thumbnail Renderer</title>
+  <style>
+    body { margin: 0; background: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #1e1b4b 100%); overflow: hidden; }
+    canvas { display: block; }
+    #error { color: red; position: absolute; top: 10px; left: 10px; font-family: monospace; display: none; }
+  </style>
+</head>
+<body>
+  <div id="error"></div>
+  <script async src="https://unpkg.com/es-module-shims@1.6.3/dist/es-module-shims.js"></script>
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.168.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.168.0/examples/jsm/"
+      }
+    }
+  </script>
+  <script type="module">
+    import * as THREE from 'three';
+    import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+
+    const params = new URLSearchParams(window.location.search);
+    const modelUrl = params.get('model');
+    const cameraType = params.get('camera') || 'auto'; // auto, head, body, feet
+
+    const scene = new THREE.Scene();
+    // Transparent background for nicer thumbnails
+    scene.background = null;
+
+    const camera = new THREE.PerspectiveCamera(50, 1, 0.01, 100);
+
+    const renderer = new THREE.WebGLRenderer({
+      antialias: true,
+      preserveDrawingBuffer: true,
+      alpha: true
+    });
+    renderer.setSize(256, 256);
+    renderer.setPixelRatio(1);
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    renderer.setClearColor(0x000000, 0);
+    document.body.appendChild(renderer.domElement);
+
+    // Lighting setup for good visibility
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+    scene.add(ambientLight);
+
+    const frontLight = new THREE.DirectionalLight(0xffffff, 1.2);
+    frontLight.position.set(2, 3, 4);
+    scene.add(frontLight);
+
+    const fillLight = new THREE.DirectionalLight(0xffffff, 0.6);
+    fillLight.position.set(-2, 1, 2);
+    scene.add(fillLight);
+
+    const rimLight = new THREE.DirectionalLight(0x8b5cf6, 0.4);
+    rimLight.position.set(0, 2, -3);
+    scene.add(rimLight);
+
+    const loader = new GLTFLoader();
+
+    // Camera positions for different asset types
+    const cameraPositions = {
+      head: { position: [0, 0.5, 2], target: [0, 0.5, 0] },
+      body: { position: [0, 0, 3], target: [0, 0, 0] },
+      feet: { position: [0, -0.8, 2], target: [0, -0.8, 0] },
+      auto: null
+    };
+
+    function setupCamera(model, type) {
+      const box = new THREE.Box3().setFromObject(model);
+      const center = box.getCenter(new THREE.Vector3());
+      const size = box.getSize(new THREE.Vector3());
+
+      if (type !== 'auto' && cameraPositions[type]) {
+        const pos = cameraPositions[type].position;
+        const target = cameraPositions[type].target;
+        camera.position.set(pos[0], pos[1], pos[2]);
+        camera.lookAt(target[0], target[1], target[2]);
+      } else {
+        // Auto-center based on bounding box
+        const maxDim = Math.max(size.x, size.y, size.z);
+        const fov = camera.fov * (Math.PI / 180);
+        let cameraZ = Math.abs(maxDim / Math.sin(fov / 2)) * 0.6;
+        cameraZ = Math.max(cameraZ, 1.5);
+
+        camera.position.set(0, center.y, cameraZ);
+        camera.lookAt(center);
+      }
+    }
+
+    if (modelUrl) {
+      loader.load(
+        modelUrl,
+        (gltf) => {
+          const model = gltf.scene;
+
+          // Get bounding box
+          const box = new THREE.Box3().setFromObject(model);
+          const center = box.getCenter(new THREE.Vector3());
+          const size = box.getSize(new THREE.Vector3());
+
+          // Scale model to fit nicely
+          const maxDim = Math.max(size.x, size.y, size.z);
+          const targetSize = 1.5;
+          const scale = maxDim > 0 ? targetSize / maxDim : 1;
+          model.scale.setScalar(scale);
+
+          // Re-center after scaling
+          box.setFromObject(model);
+          box.getCenter(center);
+          model.position.sub(center);
+
+          // Slight rotation for 3D effect
+          model.rotation.y = Math.PI / 6;
+
+          scene.add(model);
+
+          // Setup camera
+          setupCamera(model, cameraType);
+
+          // Render multiple frames to ensure materials are loaded
+          let frameCount = 0;
+          function renderLoop() {
+            renderer.render(scene, camera);
+            frameCount++;
+            if (frameCount < 10) {
+              requestAnimationFrame(renderLoop);
+            } else {
+              window.renderComplete = true;
+            }
+          }
+          renderLoop();
+        },
+        (progress) => {
+          // Loading progress
+        },
+        (error) => {
+          document.getElementById('error').textContent = 'Error: ' + error.message;
+          document.getElementById('error').style.display = 'block';
+          window.renderError = error.message;
+        }
+      );
+    } else {
+      document.getElementById('error').textContent = 'No model URL provided';
+      document.getElementById('error').style.display = 'block';
+      window.renderError = 'No model URL';
+    }
+  </script>
+</body>
+</html>

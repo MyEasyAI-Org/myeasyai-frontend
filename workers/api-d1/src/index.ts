@@ -15,6 +15,7 @@ import { syncRoutes } from './routes/sync';
 import { pricingRoutes } from './routes/pricing';
 import { crmRoutes } from './routes/crm';
 import { contentRoutes } from './routes/content';
+import { stripeRoutes } from './routes/stripe';
 import { runAutoSync } from './scheduled/autoSync';
 
 // Tipagem do ambiente Cloudflare
@@ -93,6 +94,7 @@ app.route('/sync', syncRoutes);
 app.route('/pricing', pricingRoutes);
 app.route('/crm', crmRoutes);
 app.route('/content', contentRoutes);
+app.route('/stripe', stripeRoutes);
 
 // Root endpoint
 app.get('/', (c) => {
@@ -110,6 +112,7 @@ app.get('/', (c) => {
       pricing: '/pricing',
       crm: '/crm',
       content: '/content',
+      stripe: '/stripe',
     },
   });
 });

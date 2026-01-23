@@ -11,15 +11,27 @@ export const ROUTES = {
   HOME: '/',
   AUTH_CALLBACK: '/auth/callback',
 
+  // Checkout routes (semi-protected - require auth but no subscription)
+  CHECKOUT_SUCCESS: '/checkout/success',
+  CHECKOUT_CANCEL: '/checkout/cancel',
+
   // Protected routes (require authentication)
   DASHBOARD: '/dashboard',
+  SUPPORT: '/support',
+  SUPPORT_TICKET: '/support/ticket',
+  SUPPORT_TICKETS: '/support/tickets',
   MY_EASY_WEBSITE: '/myeasywebsite',
   BUSINESS_GURU: '/businessguru',
   MY_EASY_CRM: '/crm',
   MY_EASY_PRICING: '/pricing',
   MY_EASY_CONTENT: '/myeasycontent',
   MY_EASY_FITNESS: '/myeasyfitness',
+  MY_EASY_AVATAR: '/myeasyavatar',
+  MY_EASY_CODE: '/myeasycode',
+  MY_EASY_RESUME: '/myeasyresume',
+  MY_EASY_LEARNING: '/myeasylearning',
 } as const;
 
 export type RouteKey = keyof typeof ROUTES;
 export type RoutePath = (typeof ROUTES)[RouteKey];
+
