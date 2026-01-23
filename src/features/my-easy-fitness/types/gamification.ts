@@ -1,8 +1,11 @@
 /**
  * Gamification Types
  *
- * Type definitions for the gamification system (streaks, badges, challenges, goals).
+ * Type definitions for the gamification system (streaks, badges, challenges, goals, trophies).
  */
+
+import type { UserTrophy } from './trophies';
+import type { UserUniqueBadge } from '../constants/uniqueBadges';
 
 // =============================================================================
 // Streak Types
@@ -189,8 +192,14 @@ export interface GamificationState {
   // XP and leveling
   xp: XPData;
 
-  // Badges
+  // Legacy badges (kept for backward compatibility)
   badges: UserBadge[];
+
+  // New trophy system with tier progression
+  trophies: UserTrophy[];
+
+  // New unique badges (special achievements)
+  uniqueBadges: UserUniqueBadge[];
 
   // Challenges
   challenges: Challenge[];
@@ -206,6 +215,13 @@ export interface GamificationState {
   totalWorkoutsCompleted: number;
   perfectWeeks: number;
   perfectMonths: number;
+
+  // New metrics for trophies
+  earlyWorkouts: number; // Workouts before 7am
+  nightWorkouts: number; // Workouts after 9pm
+  dietDaysFollowed: number; // Days following diet
+  workoutModalities: string[]; // List of different workout types
+  consecutivePerfectWeeks: number; // For "Combo Perfeito" badge
 }
 
 /**
@@ -225,6 +241,8 @@ export const DEFAULT_GAMIFICATION_STATE: GamificationState = {
     xpToNextLevel: 100,
   },
   badges: [],
+  trophies: [],
+  uniqueBadges: [],
   challenges: [],
   goals: [],
   activities: [],
@@ -232,6 +250,11 @@ export const DEFAULT_GAMIFICATION_STATE: GamificationState = {
   totalWorkoutsCompleted: 0,
   perfectWeeks: 0,
   perfectMonths: 0,
+  earlyWorkouts: 0,
+  nightWorkouts: 0,
+  dietDaysFollowed: 0,
+  workoutModalities: [],
+  consecutivePerfectWeeks: 0,
 };
 
 // =============================================================================
@@ -257,8 +280,16 @@ export interface D1GamificationProfile {
   total_workouts_completed: number;
   perfect_weeks: number;
   perfect_months: number;
+  // New stats for trophies
+  early_workouts: number;
+  night_workouts: number;
+  diet_days_followed: number;
+  workout_modalities: string; // JSON array of strings
+  consecutive_perfect_weeks: number;
   // JSON stringified arrays
-  badges: string; // JSON array of UserBadge
+  badges: string; // JSON array of UserBadge (legacy)
+  trophies: string; // JSON array of UserTrophy
+  unique_badges: string; // JSON array of UserUniqueBadge
   challenges: string; // JSON array of Challenge
   goals: string; // JSON array of Goal
   activities: string; // JSON array of ActivityItem (limited to recent 50)
@@ -287,7 +318,14 @@ export function toD1GamificationProfile(
     total_workouts_completed: state.totalWorkoutsCompleted,
     perfect_weeks: state.perfectWeeks,
     perfect_months: state.perfectMonths,
+    early_workouts: state.earlyWorkouts,
+    night_workouts: state.nightWorkouts,
+    diet_days_followed: state.dietDaysFollowed,
+    workout_modalities: JSON.stringify(state.workoutModalities),
+    consecutive_perfect_weeks: state.consecutivePerfectWeeks,
     badges: JSON.stringify(state.badges),
+    trophies: JSON.stringify(state.trophies),
+    unique_badges: JSON.stringify(state.uniqueBadges),
     challenges: JSON.stringify(state.challenges),
     goals: JSON.stringify(state.goals),
     activities: JSON.stringify(state.activities.slice(0, 50)), // Limit to 50 recent
@@ -301,9 +339,12 @@ export function fromD1GamificationProfile(
   profile: D1GamificationProfile
 ): GamificationState {
   const badges = JSON.parse(profile.badges || '[]') as UserBadge[];
+  const trophies = JSON.parse(profile.trophies || '[]') as UserTrophy[];
+  const uniqueBadges = JSON.parse(profile.unique_badges || '[]') as UserUniqueBadge[];
   const challenges = JSON.parse(profile.challenges || '[]') as Challenge[];
   const goals = JSON.parse(profile.goals || '[]') as Goal[];
   const activities = JSON.parse(profile.activities || '[]') as ActivityItem[];
+  const workoutModalities = JSON.parse(profile.workout_modalities || '[]') as string[];
 
   // Calculate XP level data
   const { currentLevel, xpInCurrentLevel, xpToNextLevel } = calculateLevelData(profile.total_xp);
@@ -322,6 +363,8 @@ export function fromD1GamificationProfile(
       xpToNextLevel,
     },
     badges,
+    trophies,
+    uniqueBadges,
     challenges,
     goals,
     activities,
@@ -329,6 +372,11 @@ export function fromD1GamificationProfile(
     totalWorkoutsCompleted: profile.total_workouts_completed,
     perfectWeeks: profile.perfect_weeks,
     perfectMonths: profile.perfect_months,
+    earlyWorkouts: profile.early_workouts || 0,
+    nightWorkouts: profile.night_workouts || 0,
+    dietDaysFollowed: profile.diet_days_followed || 0,
+    workoutModalities,
+    consecutivePerfectWeeks: profile.consecutive_perfect_weeks || 0,
   };
 }
 

@@ -43,7 +43,7 @@ export const VisaoGeralTab = memo(function VisaoGeralTab({ personalInfo, treinos
   }, []);
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-4 sm:p-6 space-y-4 sm:space-y-6 pb-24 sm:pb-6">
       {/* Stats Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700">

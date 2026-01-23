@@ -23,6 +23,9 @@ export {
   canGenerateDiet,
 } from './fitnessDataHelpers';
 
+// UI hooks
+export { useMediaQuery } from './useMediaQuery';
+
 // Gamification hooks
 export { useGamification } from './useGamification';
 export { useStreaks, isStreakAtRisk, isStreakLost } from './useStreaks';

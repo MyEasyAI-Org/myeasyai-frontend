@@ -8,9 +8,28 @@
 import { createContext, useContext, useState, useCallback, type ReactNode } from 'react';
 import type { UserPersonalInfo, Treino, Dieta, FitnessMessage, TrainingModality } from '../types';
 import type { GamificationState, Challenge, Goal } from '../types/gamification';
+import type { TrophyCategory } from '../types/trophies';
 import { useFitnessData } from '../hooks/useFitnessData';
 import { usePersonalInfoFlow } from '../hooks/useAnamneseFlow';
 import { useGamification } from '../hooks/useGamification';
+
+// Tab type for navigation
+export type TabId =
+  | 'visao-geral'
+  | 'personal-info'
+  | 'modalidade'
+  | 'treinos'
+  | 'dieta'
+  | 'exercicios'
+  | 'progresso';
+
+// Mobile UI state type
+interface MobileUIState {
+  isChatDrawerOpen: boolean;
+  isMoreMenuOpen: boolean;
+  editingExercise: { treinoId: string; exerciseIndex: number } | null;
+  activeTab: TabId;
+}
 
 // Context value type
 interface FitnessContextValue {
@@ -57,6 +76,43 @@ interface FitnessContextValue {
       nextLevelXP: number;
       progressPercent: number;
     };
+    // New trophy system
+    trophies: {
+      all: Array<{
+        id: string;
+        name: string;
+        icon: string;
+        category: TrophyCategory;
+        userProgress: {
+          currentTier: 'none' | 'bronze' | 'silver' | 'gold';
+          progress: number;
+        };
+        tiers: Array<{
+          tier: 'bronze' | 'silver' | 'gold';
+          name: string;
+          description: string;
+          requirement: number;
+          xpReward: number;
+        }>;
+        isMaxed: boolean;
+      }>;
+      goldCount: number;
+      silverCount: number;
+      bronzeCount: number;
+      trophyPoints: number;
+      totalTiers: number;
+      unlockedTiers: number;
+      closestToUnlock: any | null;
+    };
+    // Unique badges (special achievements)
+    uniqueBadges: {
+      unlocked: Array<{ id: string; name: string; icon: string; rarity: string; unlockedAt?: string }>;
+      locked: Array<{ id: string; name: string; icon: string; rarity: string; hint?: string }>;
+      visible: Array<{ id: string; name: string; icon: string; rarity: string; isUnlocked: boolean }>;
+      unlockedCount: number;
+      totalCount: number;
+    };
+    // Legacy badges (kept for backward compatibility)
     badges: {
       unlocked: Array<{ id: string; name: string; icon: string; unlockedAt: string }>;
       locked: Array<{ id: string; name: string; icon: string; requirement: string }>;
@@ -75,11 +131,18 @@ interface FitnessContextValue {
       completed: Goal[];
       overallProgress: number;
     };
-    recordWorkoutCompleted: () => Promise<void>;
+    recordWorkoutCompleted: (workoutHour?: number, modalidade?: string) => Promise<void>;
     recordDietFollowed: () => Promise<void>;
     completeDailyChallenge: (challengeId: string) => void;
     completeWeeklyChallenge: (challengeId: string) => void;
   };
+
+  // Mobile UI State
+  mobileUI: MobileUIState;
+  setMobileChatDrawerOpen: (open: boolean) => void;
+  setMoreMenuOpen: (open: boolean) => void;
+  setEditingExercise: (edit: { treinoId: string; exerciseIndex: number } | null) => void;
+  setActiveTab: (tab: TabId) => void;
 }
 
 // Create context with undefined default (will be provided by provider)
@@ -99,6 +162,33 @@ interface FitnessProviderProps {
 export function FitnessProvider({ children, userName }: FitnessProviderProps) {
   // Selected modality state
   const [selectedModality, setSelectedModality] = useState<TrainingModality>('');
+
+  // Mobile UI state
+  const [mobileUI, setMobileUI] = useState<MobileUIState>({
+    isChatDrawerOpen: false,
+    isMoreMenuOpen: false,
+    editingExercise: null,
+    activeTab: 'visao-geral',
+  });
+
+  const setMobileChatDrawerOpen = useCallback((open: boolean) => {
+    setMobileUI((prev) => ({ ...prev, isChatDrawerOpen: open }));
+  }, []);
+
+  const setMoreMenuOpen = useCallback((open: boolean) => {
+    setMobileUI((prev) => ({ ...prev, isMoreMenuOpen: open }));
+  }, []);
+
+  const setEditingExercise = useCallback(
+    (edit: { treinoId: string; exerciseIndex: number } | null) => {
+      setMobileUI((prev) => ({ ...prev, editingExercise: edit }));
+    },
+    []
+  );
+
+  const setActiveTab = useCallback((tab: TabId) => {
+    setMobileUI((prev) => ({ ...prev, activeTab: tab }));
+  }, []);
 
   // Data state management from custom hook
   const {
@@ -168,6 +258,8 @@ export function FitnessProvider({ children, userName }: FitnessProviderProps) {
       error: gamificationData.error,
       streak: gamificationData.streak,
       xp: gamificationData.xp,
+      trophies: gamificationData.trophies,
+      uniqueBadges: gamificationData.uniqueBadges,
       badges: gamificationData.badges,
       challenges: gamificationData.challenges,
       goals: gamificationData.goals,
@@ -176,6 +268,13 @@ export function FitnessProvider({ children, userName }: FitnessProviderProps) {
       completeDailyChallenge: gamificationData.completeDailyChallenge,
       completeWeeklyChallenge: gamificationData.completeWeeklyChallenge,
     },
+
+    // Mobile UI
+    mobileUI,
+    setMobileChatDrawerOpen,
+    setMoreMenuOpen,
+    setEditingExercise,
+    setActiveTab,
   };
 
   return (

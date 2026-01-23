@@ -5,3 +5,4 @@
  */
 
 export { FitnessProvider, useFitnessContext, FitnessContext } from './FitnessContext';
+export type { TabId } from './FitnessContext';

@@ -34,7 +34,7 @@ export function FitnessChatPanel() {
   };
 
   return (
-    <div className="w-[28%] min-w-[300px] min-h-0 border-r border-slate-800 bg-slate-900/50 flex flex-col">
+    <div className="w-full h-full min-h-0 bg-slate-900/50 flex flex-col">
       {/* Chat Header */}
       <div className="flex-shrink-0 border-b border-slate-800 p-4">
         <div className="flex items-center space-x-3">

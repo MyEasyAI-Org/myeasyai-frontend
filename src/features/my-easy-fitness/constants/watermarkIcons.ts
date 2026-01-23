@@ -14,12 +14,12 @@ const ICONS_BASE = '/sports-icons';
  * Watermark icons for each training modality card
  */
 export const MODALITY_WATERMARKS: Record<TrainingModality, string> = {
-  musculacao: `${ICONS_BASE}/Weightlifting_3.svg`,
+  musculacao: `${ICONS_BASE}/Weightlifting_2.svg`,
   corrida: `${ICONS_BASE}/Athletics running_3.svg`,
-  crossfit: `${ICONS_BASE}/Weightlifting_2.svg`,
-  caminhada: `${ICONS_BASE}/Athletics running_1.svg`,
-  funcional: `${ICONS_BASE}/Gymnastics_2.svg`,
-  calistenia: `${ICONS_BASE}/Sport climbing_2.svg`,
+  crossfit: `${ICONS_BASE}/Weightlifting_3.svg`,
+  caminhada: `${ICONS_BASE}/walking.svg`,
+  funcional: `${ICONS_BASE}/Athletics running_1.svg`,
+  calistenia: `${ICONS_BASE}/—Pngtree—silhouette-of-a-slim-woman_6894481.svg`,
   '': '',
 };
 
@@ -33,4 +33,7 @@ export const TAB_WATERMARKS = {
   treinos: `${ICONS_BASE}/Weightlifting_3.svg`,
   dieta: `${ICONS_BASE}/Athletics running_2.svg`,
   exercicios: `${ICONS_BASE}/Gymnastics_5.svg`,
+  gymBench: `${ICONS_BASE}/gym-bench.svg`,
+  walking: `${ICONS_BASE}/walking.svg`,
+  stretch: `${ICONS_BASE}/stretch.svg`,
 } as const;

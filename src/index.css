@@ -38,6 +38,16 @@ body {
   background-color: rgba(148, 163, 184, 0.6);
 }
 
+/* Hide scrollbar but keep scroll functionality */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
 /* Animated gradient text */
 @keyframes gradient-x {
   0%, 100% {

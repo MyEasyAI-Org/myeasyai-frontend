@@ -3,7 +3,9 @@
  *
  * Main hook that integrates all gamification functionality:
  * - Streaks
- * - Badges
+ * - Trophies (with tier progression)
+ * - Unique Badges (special achievements)
+ * - Legacy Badges (for backward compatibility)
  * - Challenges
  * - Goals
  * - XP/Leveling
@@ -19,11 +21,15 @@ import type {
   ActivityItem,
   StreakData,
 } from '../types/gamification';
+import type { UserTrophy } from '../types/trophies';
 import { DEFAULT_GAMIFICATION_STATE } from '../types/gamification';
 import { XP_CONFIG } from '../constants/gamification';
+import type { UserUniqueBadge } from '../constants/uniqueBadges';
 import { GamificationService } from '../services/GamificationService';
 import { useStreaks } from './useStreaks';
 import { useBadges } from './useBadges';
+import { useTrophies, getClosestTrophyToUnlock } from './useTrophies';
+import { useUniqueBadges } from './useUniqueBadges';
 import { useChallenges } from './useChallenges';
 import { useGoals } from './useGoals';
 import { useAutoSaveGamification } from './useAutoSaveGamification';
@@ -59,7 +65,30 @@ interface UseGamificationReturn {
     progressPercent: number;
   };
 
-  // Badges
+  // Trophies (new system with tier progression)
+  trophies: {
+    all: ReturnType<typeof useTrophies>['trophiesWithProgress'];
+    maxed: ReturnType<typeof useTrophies>['maxedTrophies'];
+    inProgress: ReturnType<typeof useTrophies>['inProgressTrophies'];
+    closestToUnlock: ReturnType<typeof useTrophies>['trophiesWithProgress'][0] | null;
+    goldCount: number;
+    silverCount: number;
+    bronzeCount: number;
+    trophyPoints: number;
+    totalTiers: number;
+    unlockedTiers: number;
+  };
+
+  // Unique Badges (special achievements)
+  uniqueBadges: {
+    unlocked: Array<{ id: string; name: string; icon: string; rarity: string; unlockedAt?: string }>;
+    locked: Array<{ id: string; name: string; icon: string; rarity: string; hint?: string }>;
+    visible: Array<{ id: string; name: string; icon: string; rarity: string; isUnlocked: boolean }>;
+    unlockedCount: number;
+    totalCount: number;
+  };
+
+  // Legacy Badges (kept for backward compatibility)
   badges: {
     unlocked: Array<{ id: string; name: string; icon: string; unlockedAt: string }>;
     locked: Array<{ id: string; name: string; icon: string; requirement: string }>;
@@ -87,7 +116,7 @@ interface UseGamificationReturn {
   activities: ActivityItem[];
 
   // Actions
-  recordWorkoutCompleted: () => Promise<void>;
+  recordWorkoutCompleted: (workoutHour?: number, modalidade?: string) => Promise<void>;
   recordDietFollowed: () => Promise<void>;
   completeDailyChallenge: (challengeId: string) => void;
   completeWeeklyChallenge: (challengeId: string) => void;
@@ -142,6 +171,59 @@ export function useGamification({
     }));
   }, []);
 
+  const handleTrophyTierUnlock = useCallback((trophy: UserTrophy, xpReward: number) => {
+    setState((prev) => {
+      // Update or add the trophy
+      const existingIndex = prev.trophies.findIndex((t) => t.trophyId === trophy.trophyId);
+      const newTrophies = [...prev.trophies];
+      if (existingIndex >= 0) {
+        newTrophies[existingIndex] = trophy;
+      } else {
+        newTrophies.push(trophy);
+      }
+
+      // Create activity for trophy unlock
+      const activity: ActivityItem = {
+        id: crypto.randomUUID(),
+        type: 'badge_earned',
+        title: `Trofeu desbloqueado: ${trophy.currentTier}`,
+        description: `+${xpReward} XP`,
+        xpEarned: xpReward,
+        timestamp: new Date().toISOString(),
+        metadata: { trophyId: trophy.trophyId, tier: trophy.currentTier },
+      };
+
+      return {
+        ...prev,
+        trophies: newTrophies,
+        activities: [activity, ...prev.activities].slice(0, 50),
+        lastUpdated: new Date().toISOString(),
+      };
+    });
+  }, []);
+
+  const handleUniqueBadgeUnlock = useCallback((badge: UserUniqueBadge, xpReward: number) => {
+    setState((prev) => {
+      // Create activity for badge unlock
+      const activity: ActivityItem = {
+        id: crypto.randomUUID(),
+        type: 'badge_earned',
+        title: `Conquista desbloqueada!`,
+        description: `+${xpReward} XP`,
+        xpEarned: xpReward,
+        timestamp: new Date().toISOString(),
+        metadata: { badgeId: badge.badgeId },
+      };
+
+      return {
+        ...prev,
+        uniqueBadges: [...prev.uniqueBadges, badge],
+        activities: [activity, ...prev.activities].slice(0, 50),
+        lastUpdated: new Date().toISOString(),
+      };
+    });
+  }, []);
+
   const handleChallengesUpdate = useCallback((challenges: Challenge[]) => {
     setState((prev) => ({ ...prev, challenges }));
   }, []);
@@ -160,6 +242,16 @@ export function useGamification({
   const badgesHook = useBadges({
     state,
     onBadgeUnlock: handleBadgeUnlock,
+  });
+
+  const trophiesHook = useTrophies({
+    state,
+    onTrophyTierUnlock: handleTrophyTierUnlock,
+  });
+
+  const uniqueBadgesHook = useUniqueBadges({
+    state,
+    onBadgeUnlock: handleUniqueBadgeUnlock,
   });
 
   const challengesHook = useChallenges({
@@ -270,16 +362,39 @@ export function useGamification({
 
   /**
    * Record a workout completion
+   * @param workoutHour - Hour of the workout (0-23) for early/night tracking
+   * @param modalidade - Workout type/modality for variety tracking
    */
-  const recordWorkoutCompleted = useCallback(async () => {
+  const recordWorkoutCompleted = useCallback(async (workoutHour?: number, modalidade?: string) => {
     // Update streak
     const newStreak = streaksHook.updateStreakOnActivity();
 
-    // Update workout count
-    setState((prev) => ({
-      ...prev,
-      totalWorkoutsCompleted: prev.totalWorkoutsCompleted + 1,
-    }));
+    // Get current hour if not provided
+    const hour = workoutHour ?? new Date().getHours();
+
+    // Update workout count and new metrics for trophies
+    setState((prev) => {
+      const updates: Partial<GamificationState> = {
+        totalWorkoutsCompleted: prev.totalWorkoutsCompleted + 1,
+      };
+
+      // Track early workouts (before 7am)
+      if (hour < 7) {
+        updates.earlyWorkouts = (prev.earlyWorkouts || 0) + 1;
+      }
+
+      // Track night workouts (after 9pm / 21:00)
+      if (hour >= 21) {
+        updates.nightWorkouts = (prev.nightWorkouts || 0) + 1;
+      }
+
+      // Track workout modalities
+      if (modalidade && !prev.workoutModalities?.includes(modalidade)) {
+        updates.workoutModalities = [...(prev.workoutModalities || []), modalidade];
+      }
+
+      return { ...prev, ...updates };
+    });
 
     // Add XP
     const isFirstWorkout = state.totalWorkoutsCompleted === 0;
@@ -311,8 +426,14 @@ export function useGamification({
       }
     }
 
-    // Check for new badges
+    // Check for new legacy badges
     badgesHook.checkAndUnlockBadges();
+
+    // Check for new trophy tier unlocks
+    trophiesHook.checkAndUnlockTrophyTiers();
+
+    // Check for new unique badges
+    uniqueBadgesHook.checkAndUnlockBadges();
 
     // Update goals
     goalsHook.refreshGoals();
@@ -324,6 +445,8 @@ export function useGamification({
     state.totalWorkoutsCompleted,
     challengesHook,
     badgesHook,
+    trophiesHook,
+    uniqueBadgesHook,
     goalsHook,
     addXP,
     forceSave,
@@ -333,6 +456,12 @@ export function useGamification({
    * Record diet followed
    */
   const recordDietFollowed = useCallback(async () => {
+    // Update diet days counter for trophy
+    setState((prev) => ({
+      ...prev,
+      dietDaysFollowed: (prev.dietDaysFollowed || 0) + 1,
+    }));
+
     // Update diet challenge
     const dietChallenge = challengesHook.dailyChallenges.find(
       (c) => c.id.includes('daily_diet')
@@ -360,8 +489,11 @@ export function useGamification({
       };
     });
 
+    // Check for trophy unlocks
+    trophiesHook.checkAndUnlockTrophyTiers();
+
     await forceSave();
-  }, [challengesHook, addXP, forceSave]);
+  }, [challengesHook, trophiesHook, addXP, forceSave]);
 
   /**
    * Complete a daily challenge
@@ -439,6 +571,45 @@ export function useGamification({
     totalCount: badgesHook.totalBadges,
   }), [badgesHook]);
 
+  const trophiesData = useMemo(() => ({
+    all: trophiesHook.trophiesWithProgress,
+    maxed: trophiesHook.maxedTrophies,
+    inProgress: trophiesHook.inProgressTrophies,
+    closestToUnlock: getClosestTrophyToUnlock(trophiesHook.trophiesWithProgress),
+    goldCount: trophiesHook.goldCount,
+    silverCount: trophiesHook.silverCount,
+    bronzeCount: trophiesHook.bronzeCount,
+    trophyPoints: trophiesHook.trophyPoints,
+    totalTiers: trophiesHook.totalTiers,
+    unlockedTiers: trophiesHook.unlockedTiers,
+  }), [trophiesHook]);
+
+  const uniqueBadgesData = useMemo(() => ({
+    unlocked: uniqueBadgesHook.unlockedBadges.map((b) => ({
+      id: b.id,
+      name: b.name,
+      icon: b.icon,
+      rarity: b.rarity,
+      unlockedAt: b.unlockedAt,
+    })),
+    locked: uniqueBadgesHook.lockedBadges.map((b) => ({
+      id: b.id,
+      name: b.name,
+      icon: b.icon,
+      rarity: b.rarity,
+      hint: b.hint,
+    })),
+    visible: uniqueBadgesHook.visibleBadges.map((b) => ({
+      id: b.id,
+      name: b.name,
+      icon: b.icon,
+      rarity: b.rarity,
+      isUnlocked: b.isUnlocked,
+    })),
+    unlockedCount: uniqueBadgesHook.unlockedCount,
+    totalCount: uniqueBadgesHook.totalBadges,
+  }), [uniqueBadgesHook]);
+
   return {
     state,
     isLoading,
@@ -454,6 +625,10 @@ export function useGamification({
     },
 
     xp: xpData,
+
+    trophies: trophiesData,
+
+    uniqueBadges: uniqueBadgesData,
 
     badges: badgesData,
 

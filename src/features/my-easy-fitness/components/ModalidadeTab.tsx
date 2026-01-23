@@ -137,7 +137,7 @@ export function ModalidadeTab({
   const modalities: TrainingModality[] = ['musculacao', 'corrida', 'crossfit', 'caminhada', 'funcional', 'calistenia'];
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-4 sm:p-6 space-y-4 sm:space-y-6 pb-24 sm:pb-6">
       {/* Modality Selection */}
       <div>
         <h2 className="text-xl font-bold text-white mb-2">Selecione sua Modalidade</h2>

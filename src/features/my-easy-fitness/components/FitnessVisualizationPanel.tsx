@@ -14,15 +14,13 @@ import {
   PersonStanding,
   Trophy,
 } from 'lucide-react';
-import { useState } from 'react';
-import { useFitnessContext } from '../contexts';
+import { useFitnessContext, type TabId } from '../contexts';
+import { useMediaQuery } from '../hooks';
 import { ModalidadeTab } from './ModalidadeTab';
 import { TreinosTab } from './TreinosTab';
 import { ExerciciosTab } from './ExerciciosTab';
 import { TabButton } from './shared';
 import { VisaoGeralTab, DietaTab, PersonalInfoTab, ProgressoTab } from './tabs';
-
-type TabId = 'visao-geral' | 'personal-info' | 'modalidade' | 'treinos' | 'dieta' | 'exercicios' | 'progresso';
 
 export function FitnessVisualizationPanel() {
   const {
@@ -34,15 +32,19 @@ export function FitnessVisualizationPanel() {
     setTreinos,
     updateDieta,
     setSelectedModality,
+    mobileUI,
+    setActiveTab,
   } = useFitnessContext();
+  const { isMobile } = useMediaQuery();
 
-  const [activeTab, setActiveTab] = useState<TabId>('visao-geral');
+  // Use context state for mobile, keep local for desktop tab clicks
+  const activeTab = mobileUI.activeTab;
 
   const tabs = [
     { id: 'visao-geral' as TabId, label: 'Visão Geral', icon: LayoutDashboard },
     { id: 'progresso' as TabId, label: 'Progresso', icon: Trophy },
     { id: 'personal-info' as TabId, label: 'Informações Pessoais', icon: UserRound },
-    { id: 'modalidade' as TabId, label: 'Modalidade', icon: PersonStanding },
+    { id: 'modalidade' as TabId, label: 'Modalidade', icon: PersonStanding, iconClassName: 'h-5 w-5' },
     { id: 'treinos' as TabId, label: 'Treinos', icon: Dumbbell },
     { id: 'dieta' as TabId, label: 'Dieta', icon: Salad },
     { id: 'exercicios' as TabId, label: 'Biblioteca de exercícios', icon: BookOpen },
@@ -50,8 +52,42 @@ export function FitnessVisualizationPanel() {
 
   return (
     <div className="flex-1 min-h-0 bg-slate-900/30 flex flex-col relative overflow-hidden">
-      {/* Tabs */}
-      <div className="flex-shrink-0 border-b border-slate-800 bg-slate-900/50">
+      {/* Background Silhouettes - Hidden on mobile, distributed uniformly on desktop */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none z-0 hidden sm:block">
+        {/* Crossfit - top left */}
+        <img
+          src="/fitness-backgrounds/crossfit.svg"
+          className="absolute top-8 left-8 w-72 h-72 lg:w-96 lg:h-96 opacity-[0.14] object-contain"
+          alt=""
+        />
+        {/* Stretch - top right */}
+        <img
+          src="/fitness-backgrounds/stretch.svg"
+          className="absolute -top-20 -right-8 w-72 h-72 lg:w-96 lg:h-96 opacity-[0.14] object-contain"
+          alt=""
+        />
+        {/* Running - center */}
+        <img
+          src="/fitness-backgrounds/running-silhouette.svg"
+          className="absolute top-[55%] left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 lg:w-104 lg:h-104 opacity-[0.12] object-contain"
+          alt=""
+        />
+        {/* Barbell Rack - bottom left */}
+        <img
+          src="/fitness-backgrounds/Barbell-Rack-Silhouette.svg"
+          className="absolute -bottom-24 left-8 w-72 h-72 lg:w-96 lg:h-96 opacity-[0.14] object-contain"
+          alt=""
+        />
+        {/* Bodybuilding - bottom right */}
+        <img
+          src="/fitness-backgrounds/bodybuilding.svg"
+          className="absolute -bottom-12 -right-12 w-80 h-80 lg:w-104 lg:h-104 opacity-[0.14] object-contain"
+          alt=""
+        />
+      </div>
+
+      {/* Tabs - Hidden on mobile (uses BottomNavigation instead) */}
+      <div className="hidden sm:block flex-shrink-0 border-b border-slate-800 bg-slate-900/50">
         <div className="flex items-center">
           <div className="flex overflow-x-auto flex-1">
             {tabs.map((tab) => (
@@ -61,11 +97,12 @@ export function FitnessVisualizationPanel() {
                 onClick={() => setActiveTab(tab.id)}
                 icon={tab.icon}
                 label={tab.label}
+                iconClassName={tab.iconClassName}
               />
             ))}
           </div>
-          {/* Disclaimer */}
-          <div className="flex-shrink-0 px-2 text-center">
+          {/* Disclaimer - Hidden on mobile */}
+          <div className="flex-shrink-0 px-2 text-center hidden lg:block">
             <div
               className="border border-[#4285F4]/50 rounded px-2 py-1 bg-[#4285F4]/5"
               style={{

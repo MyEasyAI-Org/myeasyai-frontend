@@ -42,7 +42,7 @@ export const WatermarkIcon = memo(function WatermarkIcon({
       className={`
         ${POSITION_CLASSES[position]}
         ${position === 'bottom-right' ? sizeClass : ''}
-        opacity-[0.15] pointer-events-none select-none z-0
+        opacity-[0.25] pointer-events-none select-none z-0
         ${className}
       `}
       aria-hidden="true"

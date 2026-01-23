@@ -4,8 +4,6 @@ import {
   EXERCISE_DATABASE,
   type ExerciseInfo,
 } from '../constants/exerciseDatabase';
-import { TAB_WATERMARKS } from '../constants';
-import { WatermarkIcon } from './shared';
 
 const CATEGORY_LABELS: Record<ExerciseInfo['categoria'], string> = {
   peito: 'Peito',
@@ -101,7 +99,7 @@ function ExerciseCard({ exercise, isExpanded, onToggle }: {
         className="w-full p-4 flex items-center gap-4 hover:bg-slate-800/70 transition-colors text-left"
       >
         {/* Thumbnail */}
-        <div className="w-16 h-16 rounded-lg overflow-hidden bg-slate-700 flex-shrink-0">
+        <div className="w-10 h-10 sm:w-16 sm:h-16 rounded-lg overflow-hidden bg-slate-700 shrink-0">
           {!movementImageError ? (
             <img
               src={exercise.imagemMovimento}
@@ -361,10 +359,7 @@ export function ExerciciosTab() {
   }, [filteredExercises]);
 
   return (
-    <div className="relative p-6 space-y-6 overflow-hidden">
-      {/* Tab Watermark */}
-      <WatermarkIcon src={TAB_WATERMARKS.exercicios} size="lg" />
-
+    <div className="relative p-4 sm:p-6 space-y-4 sm:space-y-6 overflow-hidden pb-24 sm:pb-6">
       {/* Header */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">

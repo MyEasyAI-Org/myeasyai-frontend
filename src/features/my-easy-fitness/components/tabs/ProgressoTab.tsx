@@ -1,22 +1,21 @@
 /**
  * ProgressoTab Component
  *
- * Full gamification tab showing streak, XP, badges, challenges, and goals.
+ * Full gamification tab showing streak, XP, trophies, badges, challenges, and goals.
  */
 
-import { memo } from 'react';
+import { memo, useMemo } from 'react';
 import { Trophy, Loader2 } from 'lucide-react';
 import { useFitnessContext } from '../../contexts';
-import { TAB_WATERMARKS } from '../../constants';
-import { WatermarkIcon } from '../shared';
 import {
   StreakCard,
   XpProgressBar,
-  BadgeGrid,
+  TrophyGrid,
+  UniqueBadgeGrid,
   ChallengeList,
   GoalProgress,
 } from '../gamification';
-import { BADGES } from '../../constants/gamification';
+import { UNIQUE_BADGES } from '../../constants/uniqueBadges';
 
 export const ProgressoTab = memo(function ProgressoTab() {
   const { gamification } = useFitnessContext();
@@ -44,46 +43,36 @@ export const ProgressoTab = memo(function ProgressoTab() {
     );
   }
 
-  // Transform badge data for BadgeGrid
-  const unlockedBadgesForGrid = BADGES
-    .filter((badge) => gamification.badges.unlocked.some((b) => b.id === badge.id))
-    .map((badge) => {
-      const userBadge = gamification.badges.unlocked.find((b) => b.id === badge.id);
+  // Transform unique badges data for UniqueBadgeGrid
+  const uniqueBadgesForGrid = useMemo(() => {
+    return UNIQUE_BADGES.map((badge) => {
+      const userBadge = gamification.uniqueBadges.unlocked.find(
+        (b) => b.id === badge.id
+      );
       return {
         ...badge,
-        unlockedAt: userBadge?.unlockedAt || '',
+        isUnlocked: !!userBadge,
+        unlockedAt: userBadge?.unlockedAt,
       };
     });
-
-  const lockedBadgesForGrid = BADGES.filter(
-    (badge) => !gamification.badges.unlocked.some((b) => b.id === badge.id)
-  );
+  }, [gamification.uniqueBadges.unlocked]);
 
   return (
-    <div className="relative p-6 space-y-6 overflow-hidden">
-      {/* Tab Watermark */}
-      <WatermarkIcon src={TAB_WATERMARKS.visaoGeral} size="lg" />
-
-      {/* Header */}
-      <div className="flex items-center gap-3 mb-6">
-        <div className="p-3 rounded-xl bg-gradient-to-br from-amber-500/20 to-orange-500/20 border border-amber-500/30">
-          <Trophy className="h-7 w-7 text-amber-400" />
-        </div>
-        <div>
-          <h2 className="text-xl font-bold text-white">Seu Progresso</h2>
-          <p className="text-sm text-slate-400">
-            Acompanhe sua evolucao, conquistas e desafios
-          </p>
-        </div>
+    <div className="relative p-3 sm:p-4 space-y-3 overflow-hidden pb-24 sm:pb-4">
+      {/* Compact Header */}
+      <div className="flex items-center gap-2 mb-2">
+        <Trophy className="h-5 w-5 text-amber-400" />
+        <h2 className="text-lg font-semibold text-white">Seu Progresso</h2>
       </div>
 
-      {/* Top Row: Streak and XP */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      {/* Top Row: Streak and XP - compact mode */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
         <StreakCard
           currentStreak={gamification.streak.current}
           longestStreak={gamification.streak.longest}
           isActiveToday={gamification.streak.isActiveToday}
           totalActiveDays={gamification.streak.totalActiveDays}
+          compact
         />
 
         <XpProgressBar
@@ -91,22 +80,32 @@ export const ProgressoTab = memo(function ProgressoTab() {
           nextLevelXP={gamification.xp.nextLevelXP}
           level={gamification.xp.level}
           totalXP={gamification.xp.total}
+          compact
         />
       </div>
 
-      {/* Badges Section */}
-      <div className="bg-slate-800/30 rounded-xl border border-slate-700 p-5">
-        <BadgeGrid
-          unlockedBadges={unlockedBadgesForGrid}
-          lockedBadges={lockedBadgesForGrid}
-          showLocked
+      {/* Trophies Section */}
+      <div className="bg-slate-800/30 rounded-xl border border-slate-700 p-3">
+        <TrophyGrid
+          trophies={gamification.trophies.all}
+          goldCount={gamification.trophies.goldCount}
+          silverCount={gamification.trophies.silverCount}
+          bronzeCount={gamification.trophies.bronzeCount}
+          trophyPoints={gamification.trophies.trophyPoints}
+          totalTiers={gamification.trophies.totalTiers}
+          unlockedTiers={gamification.trophies.unlockedTiers}
         />
+      </div>
+
+      {/* Unique Badges Section */}
+      <div className="bg-slate-800/30 rounded-xl border border-slate-700 p-3">
+        <UniqueBadgeGrid badges={uniqueBadgesForGrid} />
       </div>
 
       {/* Challenges and Goals Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
         {/* Challenges */}
-        <div className="bg-slate-800/30 rounded-xl border border-slate-700 p-5">
+        <div className="bg-slate-800/30 rounded-xl border border-slate-700 p-3">
           <ChallengeList
             dailyChallenges={gamification.challenges.daily}
             weeklyChallenges={gamification.challenges.weekly}
@@ -118,7 +117,7 @@ export const ProgressoTab = memo(function ProgressoTab() {
         </div>
 
         {/* Goals */}
-        <div className="bg-slate-800/30 rounded-xl border border-slate-700 p-5">
+        <div className="bg-slate-800/30 rounded-xl border border-slate-700 p-3">
           <GoalProgress
             activeGoals={gamification.goals.active}
             completedGoals={gamification.goals.completed}

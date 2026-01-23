@@ -7,8 +7,7 @@
 import { memo, useCallback } from 'react';
 import { User, Target, Heart, Dumbbell, Apple } from 'lucide-react';
 import type { UserPersonalInfo } from '../../types';
-import { TAB_WATERMARKS } from '../../constants';
-import { EditableField, EditableListField, WatermarkIcon } from '../shared';
+import { EditableField, EditableListField } from '../shared';
 
 type PersonalInfoTabProps = {
   personalInfo: UserPersonalInfo;
@@ -41,10 +40,7 @@ export const PersonalInfoTab = memo(function PersonalInfoTab({ personalInfo, onU
   }, [personalInfo, onUpdate]);
 
   return (
-    <div className="relative p-6 space-y-6 overflow-hidden">
-      {/* Tab Watermark */}
-      <WatermarkIcon src={TAB_WATERMARKS.personalInfo} size="lg" />
-
+    <div className="relative p-4 sm:p-6 space-y-4 sm:space-y-6 overflow-hidden pb-24 sm:pb-6">
       {/* Dados Pessoais */}
       <div className="bg-slate-800/50 rounded-xl p-5 border border-slate-700">
         <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">

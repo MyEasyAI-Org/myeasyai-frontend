@@ -2,7 +2,7 @@
  * GamificationService
  *
  * Service for managing gamification data persistence using D1 database.
- * Handles streaks, badges, challenges, goals, and XP.
+ * Handles streaks, badges, trophies, challenges, goals, and XP.
  */
 
 import {
@@ -18,6 +18,9 @@ import {
   type ActivityItem,
   DEFAULT_GAMIFICATION_STATE,
 } from '../types/gamification';
+import type { UserTrophy } from '../types/trophies';
+import type { UserUniqueBadge } from '../constants/uniqueBadges';
+import { applyMigration, initializeTrophies } from '../utils/migrateBadgesToTrophies';
 
 /**
  * Gets the current authenticated user's UUID
@@ -64,13 +67,16 @@ function calculateLevelData(totalXP: number): {
  */
 function mapD1ToGamificationState(data: D1FitnessGamification): GamificationState {
   const badges = JSON.parse(data.badges || '[]') as UserBadge[];
+  const trophies = JSON.parse(data.trophies || '[]') as UserTrophy[];
+  const uniqueBadges = JSON.parse(data.unique_badges || '[]') as UserUniqueBadge[];
   const challenges = JSON.parse(data.challenges || '[]') as Challenge[];
   const goals = JSON.parse(data.goals || '[]') as Goal[];
   const activities = JSON.parse(data.activities || '[]') as ActivityItem[];
+  const workoutModalities = JSON.parse(data.workout_modalities || '[]') as string[];
 
   const { currentLevel, xpInCurrentLevel, xpToNextLevel } = calculateLevelData(data.total_xp);
 
-  return {
+  let state: GamificationState = {
     streak: {
       currentStreak: data.current_streak,
       longestStreak: data.longest_streak,
@@ -84,6 +90,8 @@ function mapD1ToGamificationState(data: D1FitnessGamification): GamificationStat
       xpToNextLevel,
     },
     badges,
+    trophies,
+    uniqueBadges,
     challenges,
     goals,
     activities,
@@ -91,7 +99,20 @@ function mapD1ToGamificationState(data: D1FitnessGamification): GamificationStat
     totalWorkoutsCompleted: data.total_workouts_completed,
     perfectWeeks: data.perfect_weeks,
     perfectMonths: data.perfect_months,
+    earlyWorkouts: data.early_workouts || 0,
+    nightWorkouts: data.night_workouts || 0,
+    dietDaysFollowed: data.diet_days_followed || 0,
+    workoutModalities,
+    consecutivePerfectWeeks: data.consecutive_perfect_weeks || 0,
   };
+
+  // Apply migration if needed (converts old badges to trophies)
+  state = applyMigration(state);
+
+  // Initialize trophies for new users who don't have them yet
+  state = initializeTrophies(state);
+
+  return state;
 }
 
 /**
@@ -141,7 +162,16 @@ export const GamificationService = {
         total_workouts_completed: state.totalWorkoutsCompleted,
         perfect_weeks: state.perfectWeeks,
         perfect_months: state.perfectMonths,
+        // New stats for trophies
+        early_workouts: state.earlyWorkouts || 0,
+        night_workouts: state.nightWorkouts || 0,
+        diet_days_followed: state.dietDaysFollowed || 0,
+        workout_modalities: JSON.stringify(state.workoutModalities || []),
+        consecutive_perfect_weeks: state.consecutivePerfectWeeks || 0,
+        // JSON arrays
         badges: JSON.stringify(state.badges),
+        trophies: JSON.stringify(state.trophies || []),
+        unique_badges: JSON.stringify(state.uniqueBadges || []),
         challenges: JSON.stringify(state.challenges),
         goals: JSON.stringify(state.goals),
         activities: JSON.stringify(state.activities.slice(0, 50)), // Limit to 50 recent

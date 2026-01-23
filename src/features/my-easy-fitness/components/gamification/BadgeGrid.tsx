@@ -21,6 +21,8 @@ import {
   Stars,
   Award,
   Lock,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 import type { Badge, BadgeRarity } from '../../types/gamification';
 import { RARITY_COLORS } from '../../constants/gamification';
@@ -153,6 +155,8 @@ export const BadgeGrid = memo(function BadgeGrid({
   showLocked = true,
   compact = false,
 }: BadgeGridProps) {
+  const [expanded, setExpanded] = useState(false);
+
   // Group badges by rarity for display
   const groupedUnlocked = useMemo(() => {
     const groups: Record<BadgeRarity, Array<Badge & { unlockedAt: string }>> = {
@@ -272,10 +276,28 @@ export const BadgeGrid = memo(function BadgeGrid({
             Bloqueadas ({lockedBadges.length})
           </h4>
           <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
-            {lockedBadges.map((badge) => (
+            {(expanded ? lockedBadges : lockedBadges.slice(0, 6)).map((badge) => (
               <BadgeItem key={badge.id} badge={badge} isUnlocked={false} />
             ))}
           </div>
+          {lockedBadges.length > 6 && (
+            <button
+              onClick={() => setExpanded(!expanded)}
+              className="mt-4 w-full py-2 px-4 rounded-lg bg-slate-700/50 hover:bg-slate-700 border border-slate-600 text-slate-300 text-sm font-medium transition-all flex items-center justify-center gap-2"
+            >
+              {expanded ? (
+                <>
+                  <ChevronUp className="h-4 w-4" />
+                  Ver menos
+                </>
+              ) : (
+                <>
+                  <ChevronDown className="h-4 w-4" />
+                  Ver mais ({lockedBadges.length - 6})
+                </>
+              )}
+            </button>
+          )}
         </div>
       )}
 

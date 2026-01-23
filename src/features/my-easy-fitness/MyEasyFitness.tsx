@@ -11,12 +11,14 @@
  * - constants/ for configuration
  */
 
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, MessageSquare } from 'lucide-react';
 import { FitnessChatPanel } from './components/FitnessChatPanel';
 import { FitnessVisualizationPanel } from './components/FitnessVisualizationPanel';
 import { DemoProfilesButton } from './components/DemoProfilesButton';
 import { FitnessErrorBoundary } from './components/FitnessErrorBoundary';
+import { MobileDrawer, BottomNavigation, MoreMenuSheet } from './components/mobile';
 import { FitnessProvider, useFitnessContext } from './contexts';
+import { useMediaQuery } from './hooks';
 
 type MyEasyFitnessProps = {
   onBackToDashboard: () => void;
@@ -27,7 +29,14 @@ type MyEasyFitnessProps = {
  * Inner content component that uses the fitness context
  */
 function MyEasyFitnessContent({ onBackToDashboard }: { onBackToDashboard: () => void }) {
-  const { updatePersonalInfo } = useFitnessContext();
+  const {
+    updatePersonalInfo,
+    mobileUI,
+    setMobileChatDrawerOpen,
+    setMoreMenuOpen,
+    setActiveTab,
+  } = useFitnessContext();
+  const { isMobile } = useMediaQuery();
 
   const handleBack = () => {
     if (onBackToDashboard) {
@@ -72,14 +81,55 @@ function MyEasyFitnessContent({ onBackToDashboard }: { onBackToDashboard: () => 
         </div>
       </header>
 
-      {/* Main Content - Two Panels */}
+      {/* Main Content */}
       <main className="flex-1 flex overflow-hidden min-h-0 relative z-10">
-        {/* Left Panel - Chat */}
-        <FitnessChatPanel />
+        {/* Desktop/Tablet: Side-by-side chat panel */}
+        <div className="hidden sm:flex sm:w-[35%] lg:w-[28%] min-w-0 border-r border-slate-800">
+          <FitnessChatPanel />
+        </div>
 
         {/* Right Panel - Dashboard with Tabs */}
         <FitnessVisualizationPanel />
       </main>
+
+      {/* Mobile: Chat Drawer */}
+      {isMobile && (
+        <MobileDrawer
+          isOpen={mobileUI.isChatDrawerOpen}
+          onClose={() => setMobileChatDrawerOpen(false)}
+          title="Assistente"
+        >
+          <FitnessChatPanel />
+        </MobileDrawer>
+      )}
+
+      {/* Mobile: FAB for Chat */}
+      <button
+        onClick={() => setMobileChatDrawerOpen(true)}
+        className="sm:hidden fixed bottom-20 right-4 z-30 w-14 h-14 bg-lime-500 hover:bg-lime-400 active:bg-lime-600 rounded-full shadow-lg shadow-lime-500/30 flex items-center justify-center transition-colors"
+        aria-label="Abrir chat"
+      >
+        <MessageSquare className="w-6 h-6 text-slate-900" />
+      </button>
+
+      {/* Mobile: Bottom Navigation */}
+      {isMobile && (
+        <BottomNavigation
+          activeTab={mobileUI.activeTab}
+          onTabChange={setActiveTab}
+          onMoreClick={() => setMoreMenuOpen(true)}
+        />
+      )}
+
+      {/* Mobile: More Menu Sheet */}
+      {isMobile && (
+        <MoreMenuSheet
+          isOpen={mobileUI.isMoreMenuOpen}
+          onClose={() => setMoreMenuOpen(false)}
+          onNavigate={setActiveTab}
+          activeTab={mobileUI.activeTab}
+        />
+      )}
     </div>
   );
 }

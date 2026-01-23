@@ -214,8 +214,16 @@ export interface D1FitnessGamification {
   total_workouts_completed: number;
   perfect_weeks: number;
   perfect_months: number;
+  // New stats for trophies
+  early_workouts?: number;
+  night_workouts?: number;
+  diet_days_followed?: number;
+  workout_modalities?: string; // JSON array of strings
+  consecutive_perfect_weeks?: number;
   // JSON stringified arrays
-  badges: string; // JSON array of UserBadge
+  badges: string; // JSON array of UserBadge (legacy)
+  trophies?: string; // JSON array of UserTrophy
+  unique_badges?: string; // JSON array of UserUniqueBadge
   challenges: string; // JSON array of Challenge
   goals: string; // JSON array of Goal
   activities: string; // JSON array of ActivityItem (limited to recent 50)
@@ -1703,7 +1711,16 @@ export class D1Client {
     total_workouts_completed: number;
     perfect_weeks: number;
     perfect_months: number;
+    // New stats for trophies
+    early_workouts?: number;
+    night_workouts?: number;
+    diet_days_followed?: number;
+    workout_modalities?: string;
+    consecutive_perfect_weeks?: number;
+    // JSON stringified arrays
     badges: string;
+    trophies?: string;
+    unique_badges?: string;
     challenges: string;
     goals: string;
     activities: string;
