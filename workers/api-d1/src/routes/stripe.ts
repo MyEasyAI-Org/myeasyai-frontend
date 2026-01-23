@@ -50,6 +50,22 @@ function getPlanFromPriceId(priceId: string): string {
   return 'individual';
 }
 
+// Get billing period from Stripe price ID
+function getBillingPeriodFromPriceId(priceId: string): 'monthly' | 'annual' {
+  for (const [key, value] of Object.entries(PRICE_IDS)) {
+    if (value === priceId) {
+      // Key format: plan_currency_period (e.g., 'individual_brl_monthly', 'plus_brl_annual')
+      // USD keys don't have period suffix, they're always annual
+      if (key.endsWith('_monthly')) {
+        return 'monthly';
+      }
+      return 'annual';
+    }
+  }
+  // Default to annual if not found
+  return 'annual';
+}
+
 export const stripeRoutes = new Hono<{ Bindings: StripeEnv; Variables: Variables }>();
 
 /**
@@ -769,11 +785,9 @@ stripeRoutes.post('/update-subscription', async (c) => {
 
     // Determine the new price ID based on plan and country
     const currency = country === 'BR' ? 'brl' : 'usd';
-    // Use the same billing period as the current subscription (check current price)
+    // Use the same billing period as the current subscription
     const currentPriceId = subscription.items.data[0]?.price?.id || '';
-    const isMonthly = currentPriceId.includes('monthly') ||
-                      Object.entries(PRICE_IDS).some(([k, v]) => v === currentPriceId && k.includes('monthly'));
-    const billingPeriod = isMonthly ? 'monthly' : 'annual';
+    const billingPeriod = getBillingPeriodFromPriceId(currentPriceId);
     const newPriceId = getPriceId(newPlan, currency, billingPeriod);
 
     console.log('[Stripe] Updating subscription item:', subscriptionItemId, 'to price:', newPriceId, 'billing:', billingPeriod);
@@ -974,12 +988,13 @@ stripeRoutes.post('/preview-proration', async (c) => {
       current_period_start: number;
     };
 
-    // Determine the new price ID
+    // Determine the new price ID based on current subscription's billing period
     const currency = country === 'BR' ? 'brl' : 'usd';
     const currentPriceId = subscription.items.data[0]?.price?.id || '';
-    const isMonthly = currentPriceId.includes('monthly');
-    const billingPeriod = isMonthly ? 'monthly' : 'annual';
+    // Use the lookup function to correctly determine billing period from price ID
+    const billingPeriod = getBillingPeriodFromPriceId(currentPriceId);
     const newPriceId = getPriceId(newPlan, currency, billingPeriod);
+    console.log('[Stripe] Preview - Current price:', currentPriceId, 'Billing period:', billingPeriod);
 
     // Use Stripe's invoice preview to get exact proration amount
     const previewParams = new URLSearchParams();
