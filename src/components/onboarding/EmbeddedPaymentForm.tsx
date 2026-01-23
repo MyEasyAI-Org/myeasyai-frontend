@@ -20,6 +20,7 @@ interface EmbeddedPaymentFormProps {
   priceId: string;
   userId: string;
   plan: string;
+  countryCode: string;
 }
 
 export function EmbeddedPaymentForm({
@@ -31,6 +32,7 @@ export function EmbeddedPaymentForm({
   priceId,
   userId,
   plan,
+  countryCode,
 }: EmbeddedPaymentFormProps) {
   const { t } = useTranslation();
   const stripe = useStripe();
@@ -147,6 +149,13 @@ export function EmbeddedPaymentForm({
         <PaymentElement
           options={{
             layout: 'tabs',
+            defaultValues: {
+              billingDetails: {
+                address: {
+                  country: countryCode,
+                },
+              },
+            },
           }}
         />
       </div>
