@@ -1,21 +1,32 @@
-import { useState } from 'react';
-import { ArrowDownCircle, ArrowUpCircle, X, AlertTriangle, ExternalLink, CreditCard, Check } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { ArrowDownCircle, ArrowUpCircle, X, AlertTriangle, ExternalLink, CreditCard, Check, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { PLANS, getPlanByValue, getPlanChangeType, type SubscriptionPlan } from '../../constants/plans';
 import type { SubscriptionData } from '../../hooks/useUserData';
 import { PlanCard } from './PlanCard';
-import { stripeService } from '../../services/StripeService';
+import { stripeService, type ProrationPreviewResponse } from '../../services/StripeService';
 import { authService } from '../../services/AuthServiceV2';
 
 type SubscriptionTabProps = {
   subscription: SubscriptionData;
 };
 
+// Helper to format currency
+function formatCurrency(amount: number, currency: string): string {
+  const value = amount / 100; // Stripe uses cents
+  if (currency === 'brl') {
+    return `R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  }
+  return `$${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
 export function SubscriptionTab({ subscription }: SubscriptionTabProps) {
   const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan | null>(null);
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isLoadingPortal, setIsLoadingPortal] = useState(false);
+  const [isLoadingPreview, setIsLoadingPreview] = useState(false);
+  const [prorationPreview, setProrationPreview] = useState<ProrationPreviewResponse | null>(null);
 
   console.log('🟡 [SubscriptionTab] Current subscription:', subscription);
 
@@ -42,6 +53,37 @@ export function SubscriptionTab({ subscription }: SubscriptionTabProps) {
     }
   };
 
+  // Fetch proration preview when plan is selected
+  useEffect(() => {
+    if (!selectedPlan || !isConfirmModalOpen) {
+      setProrationPreview(null);
+      return;
+    }
+
+    const fetchPreview = async () => {
+      const user = authService.getUser();
+      if (!user?.uuid) return;
+
+      setIsLoadingPreview(true);
+      try {
+        const preview = await stripeService.previewProration({
+          userId: user.uuid,
+          newPlan: selectedPlan,
+          country: 'BR', // TODO: Get from user profile
+        });
+        setProrationPreview(preview);
+        console.log('🟢 [SubscriptionTab] Proration preview:', preview);
+      } catch (error) {
+        console.error('[SubscriptionTab] Error fetching proration preview:', error);
+        // Don't show error toast, just log it - user can still proceed
+      } finally {
+        setIsLoadingPreview(false);
+      }
+    };
+
+    fetchPreview();
+  }, [selectedPlan, isConfirmModalOpen]);
+
   const handleSelectPlan = (newPlan: SubscriptionPlan) => {
     console.log('🟢 [SubscriptionTab] handleSelectPlan called:', { newPlan, currentPlan: subscription.plan });
     if (newPlan === subscription.plan) {
@@ -49,6 +91,7 @@ export function SubscriptionTab({ subscription }: SubscriptionTabProps) {
       return;
     }
     console.log('🟢 [SubscriptionTab] Opening modal for plan:', newPlan);
+    setProrationPreview(null);
     setSelectedPlan(newPlan);
     setIsConfirmModalOpen(true);
   };
@@ -199,43 +242,94 @@ export function SubscriptionTab({ subscription }: SubscriptionTabProps) {
 
             {/* Comparison */}
             <div className="space-y-4">
-              {/* From */}
-              <div className="bg-slate-800/50 rounded-xl p-4">
-                <p className="text-xs text-slate-500 uppercase tracking-wide mb-2">Plano Atual</p>
-                <div className="flex items-center justify-between">
-                  <span className="text-lg font-semibold text-slate-300">{currentPlanData.name}</span>
-                  <span className="text-slate-400">{currentPlanData.price}/mês</span>
-                </div>
-                <p className="text-sm text-slate-500 mt-1">
-                  {currentPlanData.limits.maxSites === -1 ? 'Sites ilimitados' : `${currentPlanData.limits.maxSites} site${currentPlanData.limits.maxSites > 1 ? 's' : ''}`}
-                </p>
-              </div>
+              {(() => {
+                // Determine billing period: from preview, subscription data, or default to annual
+                const billingPeriod = prorationPreview?.billingPeriod
+                  || (subscription.billing_cycle === 'monthly' ? 'monthly' : 'annual');
+                const isAnnual = billingPeriod === 'annual';
 
-              {/* Arrow */}
-              <div className="flex justify-center">
-                {changeType === 'upgrade' ? (
-                  <ArrowUpCircle className="h-8 w-8 text-green-400" />
-                ) : (
-                  <ArrowDownCircle className="h-8 w-8 text-orange-400" />
-                )}
-              </div>
+                return (
+                  <>
+                    {/* From */}
+                    <div className="bg-slate-800/50 rounded-xl p-4">
+                      <p className="text-xs text-slate-500 uppercase tracking-wide mb-2">Plano Atual</p>
+                      <div className="flex items-center justify-between">
+                        <span className="text-lg font-semibold text-slate-300">{currentPlanData.name}</span>
+                        <span className="text-slate-400">
+                          {isAnnual
+                            ? `${currentPlanData.fullPrice}/ano`
+                            : `12x ${currentPlanData.installmentPrice}`}
+                        </span>
+                      </div>
+                      <p className="text-sm text-slate-500 mt-1">
+                        {currentPlanData.limits.maxSites === -1 ? 'Sites ilimitados' : `${currentPlanData.limits.maxSites} site${currentPlanData.limits.maxSites > 1 ? 's' : ''}`}
+                      </p>
+                    </div>
 
-              {/* To */}
-              <div className={`rounded-xl p-4 ${changeType === 'upgrade' ? 'bg-green-900/20 border border-green-500/30' : 'bg-orange-900/20 border border-orange-500/30'}`}>
-                <p className="text-xs text-slate-500 uppercase tracking-wide mb-2">Novo Plano</p>
-                <div className="flex items-center justify-between">
-                  <span className={`text-lg font-semibold ${changeType === 'upgrade' ? 'text-green-400' : 'text-orange-400'}`}>
-                    {selectedPlanData.name}
-                  </span>
-                  <span className={changeType === 'upgrade' ? 'text-green-300' : 'text-orange-300'}>
-                    {selectedPlanData.price}/mês
-                  </span>
-                </div>
-                <p className="text-sm text-slate-400 mt-1">
-                  {selectedPlanData.limits.maxSites === -1 ? 'Sites ilimitados' : `${selectedPlanData.limits.maxSites} site${selectedPlanData.limits.maxSites > 1 ? 's' : ''}`}
-                </p>
-              </div>
+                    {/* Arrow */}
+                    <div className="flex justify-center">
+                      {changeType === 'upgrade' ? (
+                        <ArrowUpCircle className="h-8 w-8 text-green-400" />
+                      ) : (
+                        <ArrowDownCircle className="h-8 w-8 text-orange-400" />
+                      )}
+                    </div>
+
+                    {/* To */}
+                    <div className={`rounded-xl p-4 ${changeType === 'upgrade' ? 'bg-green-900/20 border border-green-500/30' : 'bg-orange-900/20 border border-orange-500/30'}`}>
+                      <p className="text-xs text-slate-500 uppercase tracking-wide mb-2">Novo Plano</p>
+                      <div className="flex items-center justify-between">
+                        <span className={`text-lg font-semibold ${changeType === 'upgrade' ? 'text-green-400' : 'text-orange-400'}`}>
+                          {selectedPlanData.name}
+                        </span>
+                        <span className={changeType === 'upgrade' ? 'text-green-300' : 'text-orange-300'}>
+                          {isAnnual
+                            ? `${selectedPlanData.fullPrice}/ano`
+                            : `12x ${selectedPlanData.installmentPrice}`}
+                        </span>
+                      </div>
+                      <p className="text-sm text-slate-400 mt-1">
+                        {selectedPlanData.limits.maxSites === -1 ? 'Sites ilimitados' : `${selectedPlanData.limits.maxSites} site${selectedPlanData.limits.maxSites > 1 ? 's' : ''}`}
+                      </p>
+                    </div>
+                  </>
+                );
+              })()}
             </div>
+
+            {/* Proration Preview */}
+            {isLoadingPreview ? (
+              <div className="flex items-center justify-center gap-2 py-4 text-slate-400">
+                <Loader2 className="h-5 w-5 animate-spin" />
+                <span>Calculando diferença...</span>
+              </div>
+            ) : prorationPreview && prorationPreview.amountDue > 0 ? (
+              <div className={`rounded-xl p-4 ${changeType === 'upgrade' ? 'bg-blue-900/20 border border-blue-500/30' : 'bg-slate-800/50 border border-slate-600'}`}>
+                <p className="text-xs text-slate-500 uppercase tracking-wide mb-2">Valor a Pagar Agora</p>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-slate-400">Diferença proporcional</span>
+                  <span className="text-xl font-bold text-blue-400">
+                    {formatCurrency(prorationPreview.amountDue, prorationPreview.currency)}
+                  </span>
+                </div>
+                <p className="text-xs text-slate-500 mt-2">
+                  Esse valor é calculado proporcionalmente ao tempo restante do seu período atual.
+                </p>
+              </div>
+            ) : prorationPreview && prorationPreview.amountDue <= 0 ? (
+              <div className="rounded-xl p-4 bg-slate-800/50 border border-slate-600">
+                <p className="text-xs text-slate-500 uppercase tracking-wide mb-2">Crédito</p>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-slate-400">Você receberá crédito de</span>
+                  <span className="text-xl font-bold text-green-400">
+                    {formatCurrency(Math.abs(prorationPreview.amountDue), prorationPreview.currency)}
+                  </span>
+                </div>
+                <p className="text-xs text-slate-500 mt-2">
+                  Esse crédito será aplicado nas suas próximas faturas.
+                </p>
+              </div>
+            ) : null}
 
             {/* Warning for downgrade */}
             {changeType === 'downgrade' && (
@@ -264,7 +358,7 @@ export function SubscriptionTab({ subscription }: SubscriptionTabProps) {
               </button>
               <button
                 onClick={handleConfirmChange}
-                disabled={isProcessing}
+                disabled={isProcessing || isLoadingPreview}
                 className={`flex-1 px-4 py-3 rounded-xl font-semibold transition-colors disabled:opacity-50 flex items-center justify-center gap-2 ${
                   changeType === 'upgrade'
                     ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white hover:from-green-600 hover:to-emerald-700'
@@ -279,7 +373,11 @@ export function SubscriptionTab({ subscription }: SubscriptionTabProps) {
                 ) : (
                   <>
                     <Check className="h-5 w-5" />
-                    <span>Confirmar {changeType === 'upgrade' ? 'Upgrade' : 'Mudança'}</span>
+                    <span>
+                      {prorationPreview && prorationPreview.amountDue > 0
+                        ? `Pagar ${formatCurrency(prorationPreview.amountDue, prorationPreview.currency)}`
+                        : `Confirmar ${changeType === 'upgrade' ? 'Upgrade' : 'Mudança'}`}
+                    </span>
                   </>
                 )}
               </button>
