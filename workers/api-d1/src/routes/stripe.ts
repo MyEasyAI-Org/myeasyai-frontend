@@ -66,6 +66,25 @@ function getBillingPeriodFromPriceId(priceId: string): 'monthly' | 'annual' {
   return 'annual';
 }
 
+// Price amounts in centavos (BRL) or cents (USD) - for PaymentIntent
+// These are the ANNUAL prices (à vista)
+const PRICE_AMOUNTS = {
+  // BRL - Annual prices in centavos (R$ 297,00 = 29700)
+  individual_brl: 29700,
+  plus_brl: 49700,
+  premium_brl: 99700,
+  // USD - Annual prices in cents ($59 = 5900)
+  individual_usd: 5900,
+  plus_usd: 9900,
+  premium_usd: 19900,
+};
+
+// Get price amount in minor units (centavos/cents) for PaymentIntent
+function getPriceAmount(plan: string, currency: 'brl' | 'usd'): number {
+  const key = `${plan}_${currency}` as keyof typeof PRICE_AMOUNTS;
+  return PRICE_AMOUNTS[key] || PRICE_AMOUNTS.individual_brl;
+}
+
 export const stripeRoutes = new Hono<{ Bindings: StripeEnv; Variables: Variables }>();
 
 /**
@@ -491,6 +510,10 @@ stripeRoutes.get('/debug', async (c) => {
  * POST /stripe/create-subscription
  * Creates a Stripe Subscription with embedded payment (for Stripe Elements)
  * Returns client_secret for confirming payment in the frontend
+ *
+ * For Brazil + Annual (à vista): Uses PaymentIntent with PIX + Card options (one-time payment)
+ * For Brazil + Monthly (12x): Uses SetupIntent with Card only (recurring subscription)
+ * For Other countries: Uses SetupIntent with Card only (recurring subscription)
  */
 stripeRoutes.post('/create-subscription', async (c) => {
   try {
@@ -546,8 +569,64 @@ stripeRoutes.post('/create-subscription', async (c) => {
         .where(eq(users.uuid, userId));
     }
 
-    // Create a SetupIntent first to collect payment method, then create subscription
-    // This is the recommended approach for Stripe Elements with subscriptions
+    // BRAZIL + ANNUAL (À VISTA): Use PaymentIntent with PIX + Card
+    // This allows one-time payment via PIX or Card
+    const isBrazilAnnual = country === 'BR' && period === 'annual';
+
+    if (isBrazilAnnual) {
+      // Get the price amount from our constants
+      const priceAmount = getPriceAmount(plan, 'brl');
+
+      console.log(`[Stripe] Creating PaymentIntent for Brazil annual (PIX enabled): ${plan} = ${priceAmount} BRL`);
+
+      // Create PaymentIntent with both card and pix
+      const paymentIntentParams = new URLSearchParams();
+      paymentIntentParams.append('amount', priceAmount.toString());
+      paymentIntentParams.append('currency', 'brl');
+      paymentIntentParams.append('customer', customerId);
+      paymentIntentParams.append('payment_method_types[0]', 'card');
+      paymentIntentParams.append('payment_method_types[1]', 'pix');
+      paymentIntentParams.append('metadata[userId]', userId);
+      paymentIntentParams.append('metadata[plan]', plan);
+      paymentIntentParams.append('metadata[priceId]', priceId);
+      paymentIntentParams.append('metadata[isAnnualBrazil]', 'true');
+      paymentIntentParams.append('description', `MyEasyAI ${plan} - Plano Anual`);
+
+      const paymentIntentResponse = await fetch('https://api.stripe.com/v1/payment_intents', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${STRIPE_SECRET_KEY}`,
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: paymentIntentParams.toString(),
+      });
+
+      if (!paymentIntentResponse.ok) {
+        const error = await paymentIntentResponse.text();
+        console.error('[Stripe] Failed to create payment intent:', error);
+        return c.json({ error: 'Failed to create payment intent', details: error }, 500);
+      }
+
+      const paymentIntent = await paymentIntentResponse.json() as {
+        id: string;
+        client_secret: string;
+        status: string;
+      };
+
+      console.log(`[Stripe] PaymentIntent created: ${paymentIntent.id} for user ${userId} (PIX enabled)`);
+
+      return c.json({
+        paymentIntentId: paymentIntent.id,
+        clientSecret: paymentIntent.client_secret,
+        customerId: customerId,
+        priceId: priceId,
+        status: paymentIntent.status,
+        intentType: 'payment_intent', // Frontend needs to know this is a PaymentIntent
+        pixEnabled: true,
+      });
+    }
+
+    // OTHER CASES: Use SetupIntent with Card only (for recurring subscriptions)
     const setupIntentResponse = await fetch('https://api.stripe.com/v1/setup_intents', {
       method: 'POST',
       headers: {
@@ -578,9 +657,6 @@ stripeRoutes.post('/create-subscription', async (c) => {
 
     console.log(`[Stripe] SetupIntent created: ${setupIntent.id} for user ${userId}`);
 
-    // Store the pending subscription info so webhook can create it after payment method is confirmed
-    // For now, we'll create the subscription after frontend confirms the SetupIntent
-
     return c.json({
       setupIntentId: setupIntent.id,
       clientSecret: setupIntent.client_secret,
@@ -588,6 +664,7 @@ stripeRoutes.post('/create-subscription', async (c) => {
       priceId: priceId,
       status: setupIntent.status,
       intentType: 'setup_intent',
+      pixEnabled: false,
     });
   } catch (error) {
     console.error('[Stripe] Error creating subscription:', error);
@@ -709,6 +786,102 @@ stripeRoutes.post('/confirm-subscription', async (c) => {
     });
   } catch (error) {
     console.error('[Stripe] Error confirming subscription:', error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    return c.json({ error: 'Internal server error', details: errorMessage }, 500);
+  }
+});
+
+/**
+ * POST /stripe/confirm-pix-payment
+ * Confirms a PIX/Card payment for Brazil annual plans (one-time payment)
+ * Activates user subscription for 1 year without creating a recurring Stripe subscription
+ */
+stripeRoutes.post('/confirm-pix-payment', async (c) => {
+  try {
+    const body = await c.req.json();
+    const { paymentIntentId, userId, plan } = body;
+
+    console.log('[Stripe] confirm-pix-payment called with:', { paymentIntentId, userId, plan });
+
+    if (!paymentIntentId || !userId) {
+      return c.json({ error: 'Missing required fields: paymentIntentId, userId' }, 400);
+    }
+
+    const STRIPE_SECRET_KEY = c.env.STRIPE_SECRET_KEY;
+    if (!STRIPE_SECRET_KEY) {
+      return c.json({ error: 'Stripe not configured' }, 500);
+    }
+
+    // Verify the PaymentIntent status
+    const piResponse = await fetch(`https://api.stripe.com/v1/payment_intents/${paymentIntentId}`, {
+      headers: {
+        'Authorization': `Bearer ${STRIPE_SECRET_KEY}`,
+      },
+    });
+
+    if (!piResponse.ok) {
+      const error = await piResponse.text();
+      console.error('[Stripe] Failed to get payment intent:', error);
+      return c.json({ error: 'Failed to verify payment' }, 500);
+    }
+
+    const paymentIntent = await piResponse.json() as {
+      id: string;
+      status: string;
+      metadata: {
+        userId?: string;
+        plan?: string;
+      };
+    };
+
+    console.log('[Stripe] PaymentIntent status:', paymentIntent.status);
+
+    // Check if payment was successful
+    if (paymentIntent.status !== 'succeeded') {
+      console.log('[Stripe] Payment not yet succeeded:', paymentIntent.status);
+      return c.json({
+        success: false,
+        status: paymentIntent.status,
+        message: paymentIntent.status === 'processing' ? 'Pagamento em processamento' : 'Pagamento não confirmado',
+      });
+    }
+
+    // Payment succeeded! Activate user's subscription for 1 year
+    const db = c.get('db');
+    const existingUser = await db.select().from(users).where(eq(users.uuid, userId)).get();
+
+    if (!existingUser) {
+      console.error('[Stripe] User not found:', userId);
+      return c.json({ error: 'User not found' }, 404);
+    }
+
+    // Calculate 1 year from now
+    const periodEndDate = new Date();
+    periodEndDate.setFullYear(periodEndDate.getFullYear() + 1);
+
+    const finalPlan = plan || paymentIntent.metadata.plan || 'individual';
+
+    // Update user with 1-year subscription
+    await db.update(users)
+      .set({
+        subscription_status: 'active',
+        subscription_plan: finalPlan,
+        subscription_period_end: periodEndDate.toISOString(),
+        billing_cycle: 'annual',
+        // Note: No stripe_subscription_id because this is a one-time payment, not a recurring subscription
+      })
+      .where(eq(users.uuid, userId));
+
+    console.log(`[Stripe] PIX/Card annual payment confirmed for user ${userId}, plan: ${finalPlan}, expires: ${periodEndDate.toISOString()}`);
+
+    return c.json({
+      success: true,
+      status: 'active',
+      plan: finalPlan,
+      periodEnd: periodEndDate.toISOString(),
+    });
+  } catch (error) {
+    console.error('[Stripe] Error confirming PIX payment:', error);
     const errorMessage = error instanceof Error ? error.message : String(error);
     return c.json({ error: 'Internal server error', details: errorMessage }, 500);
   }
