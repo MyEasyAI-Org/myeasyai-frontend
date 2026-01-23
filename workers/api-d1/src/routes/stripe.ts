@@ -920,14 +920,15 @@ stripeRoutes.post('/update-subscription', async (c) => {
       return c.json({ error: 'User not found' }, 404);
     }
 
-    // Check if user is a PIX user (has active subscription but no stripe_subscription_id)
+    // Check if user paid "à vista" (one-time payment without recurring subscription)
+    // This includes both PIX and Card payments for Brazil annual plans
     if (!existingUser.stripe_subscription_id) {
-      // PIX users cannot change plans mid-subscription
+      // À vista users cannot change plans mid-subscription (no Stripe subscription to modify)
       if (existingUser.subscription_status === 'active') {
-        console.log('[Stripe] PIX user trying to change plan:', userId);
+        console.log('[Stripe] À vista user trying to change plan:', userId, '(no stripe_subscription_id)');
         return c.json({
-          error: 'Você pagou à vista via PIX. Mudança de plano estará disponível na renovação.',
-          code: 'PIX_NO_MIDTERM_CHANGE',
+          error: 'Você pagou à vista. Mudança de plano estará disponível na renovação.',
+          code: 'UPFRONT_NO_MIDTERM_CHANGE',
           periodEnd: existingUser.subscription_period_end,
         }, 400);
       }
@@ -1160,14 +1161,15 @@ stripeRoutes.post('/preview-proration', async (c) => {
       return c.json({ error: 'User not found' }, 404);
     }
 
-    // Check if user is a PIX user (has active subscription but no stripe_subscription_id)
+    // Check if user paid "à vista" (one-time payment without recurring subscription)
+    // This includes both PIX and Card payments for Brazil annual plans
     if (!existingUser.stripe_subscription_id || !existingUser.stripe_customer_id) {
-      // PIX users cannot change plans mid-subscription
+      // À vista users cannot change plans mid-subscription (no Stripe subscription to modify)
       if (existingUser.subscription_status === 'active') {
-        console.log('[Stripe] PIX user trying to preview proration:', userId);
+        console.log('[Stripe] À vista user trying to preview proration:', userId, '(no stripe_subscription_id)');
         return c.json({
-          error: 'Você pagou à vista via PIX. Mudança de plano estará disponível na renovação.',
-          code: 'PIX_NO_MIDTERM_CHANGE',
+          error: 'Você pagou à vista. Mudança de plano estará disponível na renovação.',
+          code: 'UPFRONT_NO_MIDTERM_CHANGE',
           periodEnd: existingUser.subscription_period_end,
         }, 400);
       }

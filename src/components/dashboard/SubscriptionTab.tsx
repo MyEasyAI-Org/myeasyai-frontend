@@ -27,7 +27,7 @@ export function SubscriptionTab({ subscription }: SubscriptionTabProps) {
   const [isLoadingPortal, setIsLoadingPortal] = useState(false);
   const [isLoadingPreview, setIsLoadingPreview] = useState(false);
   const [prorationPreview, setProrationPreview] = useState<ProrationPreviewResponse | null>(null);
-  const [pixBlockedError, setPixBlockedError] = useState<{ message: string; periodEnd?: string } | null>(null);
+  const [upfrontBlockedError, setUpfrontBlockedError] = useState<{ message: string; periodEnd?: string } | null>(null);
 
   console.log('🟡 [SubscriptionTab] Current subscription:', subscription);
 
@@ -58,7 +58,7 @@ export function SubscriptionTab({ subscription }: SubscriptionTabProps) {
   useEffect(() => {
     if (!selectedPlan || !isConfirmModalOpen) {
       setProrationPreview(null);
-      setPixBlockedError(null);
+      setUpfrontBlockedError(null);
       return;
     }
 
@@ -67,7 +67,7 @@ export function SubscriptionTab({ subscription }: SubscriptionTabProps) {
       if (!user?.uuid) return;
 
       setIsLoadingPreview(true);
-      setPixBlockedError(null);
+      setUpfrontBlockedError(null);
       try {
         const preview = await stripeService.previewProration({
           userId: user.uuid,
@@ -78,11 +78,11 @@ export function SubscriptionTab({ subscription }: SubscriptionTabProps) {
         console.log('🟢 [SubscriptionTab] Proration preview:', preview);
       } catch (error) {
         console.error('[SubscriptionTab] Error fetching proration preview:', error);
-        // Check if this is a PIX user error
+        // Check if this is an upfront payment user (PIX or Card à vista)
         const errorMessage = error instanceof Error ? error.message : String(error);
-        if (errorMessage.includes('PIX') || errorMessage.includes('à vista')) {
+        if (errorMessage.includes('à vista')) {
           // Extract period end if available from subscription data
-          setPixBlockedError({
+          setUpfrontBlockedError({
             message: errorMessage,
             periodEnd: subscription.end_date || undefined,
           });
@@ -309,21 +309,21 @@ export function SubscriptionTab({ subscription }: SubscriptionTabProps) {
               })()}
             </div>
 
-            {/* PIX User Blocked Message */}
-            {pixBlockedError && (
+            {/* Upfront Payment User Blocked Message (PIX or Card à vista) */}
+            {upfrontBlockedError && (
               <div className="rounded-xl p-4 bg-amber-900/20 border border-amber-500/30">
                 <div className="flex items-start gap-3">
                   <AlertTriangle className="h-5 w-5 text-amber-400 flex-shrink-0 mt-0.5" />
                   <div>
                     <p className="text-sm text-amber-300 font-medium">Mudança de plano não disponível</p>
                     <p className="text-xs text-amber-400/70 mt-1">
-                      {pixBlockedError.message}
+                      {upfrontBlockedError.message}
                     </p>
-                    {pixBlockedError.periodEnd && (
+                    {upfrontBlockedError.periodEnd && (
                       <p className="text-xs text-slate-400 mt-2">
                         Renovação em:{' '}
                         <span className="font-medium text-slate-300">
-                          {new Date(pixBlockedError.periodEnd).toLocaleDateString('pt-BR', {
+                          {new Date(upfrontBlockedError.periodEnd).toLocaleDateString('pt-BR', {
                             day: '2-digit',
                             month: 'long',
                             year: 'numeric',
@@ -342,7 +342,7 @@ export function SubscriptionTab({ subscription }: SubscriptionTabProps) {
                 <Loader2 className="h-5 w-5 animate-spin" />
                 <span>Calculando diferença...</span>
               </div>
-            ) : !pixBlockedError && prorationPreview && prorationPreview.amountDue > 0 ? (
+            ) : !upfrontBlockedError && prorationPreview && prorationPreview.amountDue > 0 ? (
               <div className={`rounded-xl p-4 ${changeType === 'upgrade' ? 'bg-blue-900/20 border border-blue-500/30' : 'bg-slate-800/50 border border-slate-600'}`}>
                 <p className="text-xs text-slate-500 uppercase tracking-wide mb-2">Valor a Pagar Agora</p>
                 <div className="flex items-center justify-between">
@@ -355,7 +355,7 @@ export function SubscriptionTab({ subscription }: SubscriptionTabProps) {
                   Esse valor é calculado proporcionalmente ao tempo restante do seu período atual.
                 </p>
               </div>
-            ) : !pixBlockedError && prorationPreview && prorationPreview.amountDue <= 0 ? (
+            ) : !upfrontBlockedError && prorationPreview && prorationPreview.amountDue <= 0 ? (
               <div className="rounded-xl p-4 bg-slate-800/50 border border-slate-600">
                 <p className="text-xs text-slate-500 uppercase tracking-wide mb-2">Crédito</p>
                 <div className="flex items-center justify-between">
@@ -385,13 +385,13 @@ export function SubscriptionTab({ subscription }: SubscriptionTabProps) {
 
             {/* Buttons */}
             <div className="flex gap-3">
-              {pixBlockedError ? (
-                // PIX users can only close the modal
+              {upfrontBlockedError ? (
+                // Upfront payment users (PIX or Card à vista) can only close the modal
                 <button
                   onClick={() => {
                     setIsConfirmModalOpen(false);
                     setSelectedPlan(null);
-                    setPixBlockedError(null);
+                    setUpfrontBlockedError(null);
                   }}
                   className="flex-1 px-4 py-3 rounded-xl border border-slate-600 text-slate-300 hover:bg-slate-800 transition-colors"
                 >
