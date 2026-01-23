@@ -888,7 +888,7 @@ function AppContent() {
                 onComplete={handleOnboardingComplete}
                 user={user}
                 disableClose={needsOnboarding || needsPayment}
-                initialStep={needsPayment && !needsOnboarding ? 3 : 0}
+                initialStep={needsPayment && !needsOnboarding ? 2 : 0}
               />
             )}
 

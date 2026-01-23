@@ -1,6 +1,7 @@
 import type { User } from '@supabase/supabase-js';
 import { Home, LogOut, Settings, User as UserIcon } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useModalState } from '../hooks/useModalState';
 import { useNotifications } from '../hooks/useNotifications';
 import type { Notification } from '../types/Notification';
@@ -36,6 +37,7 @@ export default function NavBar({
   onLogoClick,
   isCheckingAuth = false,
 }: NavBarProps) {
+  const { t } = useTranslation();
   const dropdownModal = useModalState({ disableScrollLock: true });
   const notificationModal = useModalState({ disableScrollLock: true });
   const [selectedNotification, setSelectedNotification] =
@@ -234,7 +236,7 @@ export default function NavBar({
                       {getAvatarContent()}
                     </div>
                     <span className="text-sm font-medium text-slate-200">
-                      Olá,{' '}
+                      {t('nav.hello')},{' '}
                       {userName === 'Usuário' ? (
                         <span className="loading-dots">
                           <span>.</span>
@@ -274,7 +276,7 @@ export default function NavBar({
                           className="flex w-full items-center space-x-3 rounded-lg px-3 py-2.5 text-left text-slate-200 transition-colors hover:bg-slate-700 cursor-pointer"
                         >
                           <UserIcon className="h-4 w-4" />
-                          <span className="text-sm">Perfil</span>
+                          <span className="text-sm">{t('settings.profile.title')}</span>
                         </button>
                         <button
                           onClick={() => {
@@ -284,7 +286,7 @@ export default function NavBar({
                           className="flex w-full items-center space-x-3 rounded-lg px-3 py-2.5 text-left text-slate-200 transition-colors hover:bg-slate-700 cursor-pointer"
                         >
                           <Settings className="h-4 w-4" />
-                          <span className="text-sm">Configurações</span>
+                          <span className="text-sm">{t('nav.settings')}</span>
                         </button>
                         <button
                           onClick={() => {
@@ -294,7 +296,7 @@ export default function NavBar({
                           className="flex w-full items-center space-x-3 rounded-lg px-3 py-2.5 text-left text-slate-200 transition-colors hover:bg-slate-700 cursor-pointer"
                         >
                           <Home className="h-4 w-4" />
-                          <span className="text-sm">Dashboard</span>
+                          <span className="text-sm">{t('nav.dashboard')}</span>
                         </button>
                       </div>
 
@@ -307,7 +309,7 @@ export default function NavBar({
                           className="flex w-full items-center space-x-3 rounded-lg px-3 py-2.5 text-left text-red-400 transition-colors hover:bg-red-500/10 cursor-pointer"
                         >
                           <LogOut className="h-4 w-4" />
-                          <span className="text-sm font-medium">Sair</span>
+                          <span className="text-sm font-medium">{t('nav.logout')}</span>
                         </button>
                       </div>
                     </div>
@@ -327,11 +329,10 @@ export default function NavBar({
               // User not logged in - show Sign up and Login
               <>
                 <Button variant="ghostNav" onClick={onSignupClick}>
-                  <span className="hidden sm:inline">Inscreva-se</span>
-                  <span className="sm:hidden">Cadastrar</span>
+                  {t('nav.signup')}
                 </Button>
                 <Button variant="nav" onClick={onLoginClick}>
-                  Login
+                  {t('nav.login')}
                 </Button>
               </>
             )}

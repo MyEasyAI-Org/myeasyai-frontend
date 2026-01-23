@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { authService } from '../services/AuthServiceV2';
 import { translateAuthError, validateFormFields } from '../utils/authErrors';
@@ -18,6 +19,7 @@ export function LoginModal({
   onClose,
   onSwitchToSignup,
 }: LoginModalProps) {
+  const { t } = useTranslation();
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [isFacebookLoading, setIsFacebookLoading] = useState(false);
 
@@ -124,14 +126,14 @@ export function LoginModal({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="Bem-vindo de volta"
-      description="Entre e continue criando experiencias incriveis com a MyEasyAI."
+      title={t('auth.login.title')}
+      description={t('auth.login.subtitle')}
       contentClassName="space-y-6"
     >
       <form className="space-y-4" onSubmit={handleEmailLogin}>
         <label className="block text-left">
           <span className="mb-1 block text-sm font-medium text-slate-300">
-            Seu e-mail
+            {t('auth.login.email')}
           </span>
           <DSInput
             type="email"
@@ -145,12 +147,12 @@ export function LoginModal({
 
         <label className="block text-left">
           <span className="mb-1 block text-sm font-medium text-slate-300">
-            Senha secreta
+            {t('auth.login.password')}
           </span>
           <DSInput
             type="password"
             name="password"
-            placeholder="Digite sua senha"
+            placeholder="********"
             required
             inputSize="md"
             className="w-full"
@@ -179,14 +181,14 @@ export function LoginModal({
           )} */}
 
           <DSButton variant="primary" className="w-full mt-4">
-            Entrar
+            {t('nav.login')}
           </DSButton>
         </div>
       </form>
 
       <div>
         <span className="mb-3 block text-center text-xs font-semibold uppercase tracking-wide text-slate-500">
-          ou acesse com
+          {t('auth.login.continueWith')}
         </span>
 
         <div className="space-y-3">
@@ -303,13 +305,13 @@ export function LoginModal({
 
       {onSwitchToSignup ? (
         <p className="text-center text-sm text-slate-400">
-          Ainda nao faz parte da comunidade?{' '}
+          {t('auth.login.noAccount')}{' '}
           <button
             type="button"
             onClick={onSwitchToSignup}
             className="font-medium text-purple-400 transition-colors hover:text-purple-300 cursor-pointer"
           >
-            Crie sua conta agora
+            {t('auth.login.signupLink')}
           </button>
         </p>
       ) : null}

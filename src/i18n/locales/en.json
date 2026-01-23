@@ -1,0 +1,353 @@
+{
+  "common": {
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "close": "Close",
+    "back": "Back",
+    "next": "Next",
+    "previous": "Previous",
+    "search": "Search",
+    "select": "Select",
+    "yes": "Yes",
+    "no": "No",
+    "or": "or",
+    "and": "and",
+    "required": "Required",
+    "optional": "Optional"
+  },
+
+  "nav": {
+    "home": "Home",
+    "dashboard": "Dashboard",
+    "products": "Products",
+    "subscription": "Subscription",
+    "settings": "Settings",
+    "support": "Support",
+    "logout": "Logout",
+    "login": "Login",
+    "signup": "Sign Up",
+    "hello": "Hello"
+  },
+
+  "auth": {
+    "login": {
+      "title": "Welcome back!",
+      "subtitle": "Sign in to your account to continue",
+      "email": "Email",
+      "password": "Password",
+      "forgotPassword": "Forgot password?",
+      "noAccount": "Don't have an account?",
+      "signupLink": "Sign up",
+      "continueWith": "Or continue with",
+      "google": "Continue with Google",
+      "submitting": "Signing in..."
+    },
+    "signup": {
+      "title": "Create your account",
+      "subtitle": "Start your journey with MyEasyAI",
+      "name": "Full name",
+      "email": "Email",
+      "password": "Password",
+      "confirmPassword": "Confirm password",
+      "hasAccount": "Already have an account?",
+      "loginLink": "Sign in",
+      "continueWith": "Or continue with",
+      "google": "Continue with Google",
+      "submitting": "Creating account...",
+      "passwordRequirements": "Minimum 8 characters"
+    },
+    "errors": {
+      "invalidEmail": "Invalid email",
+      "invalidPassword": "Invalid password",
+      "passwordMismatch": "Passwords don't match",
+      "emailInUse": "This email is already in use",
+      "weakPassword": "Password is too weak",
+      "networkError": "Connection error. Please try again.",
+      "generic": "An error occurred. Please try again."
+    }
+  },
+
+  "onboarding": {
+    "title": "Complete your profile",
+    "subtitle": "For a personalized experience, we need some information.",
+    "step": "Step",
+    "of": "of",
+    "completed": "completed",
+
+    "steps": {
+      "personal": {
+        "title": "Personal Data",
+        "description": "Let's start with your basic information"
+      },
+      "contact": {
+        "title": "Contact",
+        "description": "How can we reach you?"
+      },
+      "plan": {
+        "title": "Plan",
+        "description": "Choose the ideal plan for you"
+      }
+    },
+
+    "fields": {
+      "fullName": "Your full name",
+      "fullNamePlaceholder": "E.g.: John Smith",
+      "fullNameError": "Enter first and last name",
+      "preferredName": "What should we call you?",
+      "preferredNamePlaceholder": "E.g.: John, Johnny, JS...",
+      "preferredNameHint": "Write a friendly name for us to use with you",
+      "language": "Preferred language",
+      "searchLanguage": "Search language...",
+      "phone": "Phone / WhatsApp",
+      "phoneIncomplete": "Incomplete phone number",
+      "searchCountry": "Search country...",
+      "state": "State",
+      "selectState": "Select your state",
+      "searchState": "Search state...",
+      "city": "City",
+      "selectCity": "Select your city",
+      "selectStateFirst": "Select state first",
+      "searchCity": "Search city...",
+      "noCityFound": "No city found"
+    },
+
+    "terms": {
+      "accept": "I have read and accept the",
+      "termsOfUse": "Terms of Use"
+    },
+
+    "buttons": {
+      "previous": "Previous",
+      "next": "Next",
+      "saving": "Saving..."
+    },
+
+    "errors": {
+      "saveError": "Error saving information",
+      "tryAgain": "Please try again.",
+      "unexpectedError": "Unexpected error"
+    }
+  },
+
+  "plans": {
+    "title": "Choose your plan",
+    "subtitle": "Select the plan that best fits your needs",
+    "monthly": "Monthly",
+    "annual": "Annual",
+    "perMonth": "/month",
+    "perYear": "/year",
+    "installments": "12x of",
+    "mostPopular": "Most Popular",
+    "currentPlan": "Current Plan",
+    "select": "Select",
+    "selected": "Selected",
+    "subscribe": "Subscribe",
+    "features": "Features included",
+
+    "individual": {
+      "name": "Individual",
+      "description": "Perfect to get started"
+    },
+    "plus": {
+      "name": "Plus",
+      "description": "For those who want more"
+    },
+    "premium": {
+      "name": "Premium",
+      "description": "Full access"
+    },
+
+    "limits": {
+      "sites": "site | sites",
+      "unlimitedSites": "Unlimited sites",
+      "storage": "of storage",
+      "support": "Priority support",
+      "api": "API access"
+    },
+
+    "backToPlans": "Back to plans",
+    "payUpfront": "Pay Upfront",
+    "pay12x": "12x on Card",
+    "continueWith": "Continue with",
+    "securityNote": "Secure payment via Stripe. Cancel anytime.",
+    "selectedPlan": "Selected plan"
+  },
+
+  "subscription": {
+    "title": "Your Subscription",
+    "status": {
+      "active": "Active",
+      "inactive": "Inactive",
+      "pastDue": "Payment Pending",
+      "cancelled": "Cancelled",
+      "trialing": "Trial Period"
+    },
+    "nextBilling": "Next billing",
+    "manage": "Manage Subscription",
+    "openPortal": "Open Payment Portal",
+    "changePlan": "Change Plan",
+    "upgrade": "Upgrade",
+    "downgrade": "Downgrade",
+
+    "modal": {
+      "upgradeTitle": "Confirm Upgrade",
+      "downgradeTitle": "Confirm Change",
+      "currentPlan": "Current Plan",
+      "newPlan": "New Plan",
+      "amountDue": "Amount Due Now",
+      "prorationNote": "This amount is calculated proportionally to the remaining time in your current period.",
+      "credit": "Credit",
+      "creditNote": "This credit will be applied to your future invoices.",
+      "downgradeWarning": "Attention when downgrading",
+      "downgradeWarningText": "You may lose access to some features. Make sure your sites and data are within the limits of the new plan.",
+      "processing": "Processing...",
+      "confirmUpgrade": "Confirm Upgrade",
+      "confirmChange": "Confirm Change"
+    }
+  },
+
+  "dashboard": {
+    "welcome": "Welcome",
+    "overview": "Overview",
+    "recentActivity": "Recent Activity",
+    "quickActions": "Quick Actions",
+
+    "tabs": {
+      "overview": "Overview",
+      "products": "Products",
+      "subscription": "Subscription",
+      "settings": "Settings"
+    },
+
+    "stats": {
+      "totalSites": "Sites Created",
+      "activeProducts": "Active Products",
+      "storageUsed": "Storage Used"
+    }
+  },
+
+  "products": {
+    "title": "Our Products",
+    "subtitle": "AI tools to boost your business",
+    "explore": "Explore",
+    "comingSoon": "Coming Soon",
+    "new": "New",
+
+    "myeasywebsite": {
+      "name": "MyEasy Website",
+      "description": "Create professional websites in minutes with AI"
+    },
+    "businessguru": {
+      "name": "Business Guru",
+      "description": "Business consulting with artificial intelligence"
+    },
+    "myeasycrm": {
+      "name": "MyEasy CRM",
+      "description": "Manage your customers and sales intelligently"
+    },
+    "myeasypricing": {
+      "name": "MyEasy Pricing",
+      "description": "Calculate prices and profit margins automatically"
+    },
+    "myeasycontent": {
+      "name": "MyEasy Content",
+      "description": "Generate social media content with AI"
+    },
+    "myeasyavatar": {
+      "name": "MyEasy Avatar",
+      "description": "Create your personalized 3D avatar"
+    },
+    "myeasycode": {
+      "name": "MyEasy Code",
+      "description": "Develop applications with AI assistance"
+    },
+    "myeasyresume": {
+      "name": "MyEasy Resume",
+      "description": "Professional resumes in seconds"
+    },
+    "myeasylearning": {
+      "name": "MyEasy Learning",
+      "description": "Learn new skills with AI"
+    }
+  },
+
+  "settings": {
+    "title": "Settings",
+    "profile": {
+      "title": "Profile",
+      "name": "Name",
+      "email": "Email",
+      "phone": "Phone",
+      "avatar": "Profile Picture",
+      "changeAvatar": "Change Photo"
+    },
+    "preferences": {
+      "title": "Preferences",
+      "language": "Language",
+      "theme": "Theme",
+      "notifications": "Notifications"
+    },
+    "security": {
+      "title": "Security",
+      "changePassword": "Change Password",
+      "twoFactor": "Two-Factor Authentication"
+    },
+    "danger": {
+      "title": "Danger Zone",
+      "deleteAccount": "Delete Account",
+      "deleteWarning": "This action cannot be undone."
+    }
+  },
+
+  "support": {
+    "title": "Support",
+    "subtitle": "How can we help?",
+    "newTicket": "New Ticket",
+    "myTickets": "My Tickets",
+    "faq": "FAQ",
+    "contact": "Contact",
+    "status": {
+      "open": "Open",
+      "inProgress": "In Progress",
+      "resolved": "Resolved",
+      "closed": "Closed"
+    }
+  },
+
+  "footer": {
+    "rights": "All rights reserved",
+    "terms": "Terms of Use",
+    "privacy": "Privacy Policy",
+    "contact": "Contact"
+  },
+
+  "errors": {
+    "notFound": "Page not found",
+    "unauthorized": "Unauthorized access",
+    "serverError": "Server error",
+    "networkError": "Connection error",
+    "tryAgain": "Try again",
+    "goHome": "Go to home"
+  },
+
+  "notifications": {
+    "success": {
+      "saved": "Saved successfully!",
+      "deleted": "Deleted successfully!",
+      "updated": "Updated successfully!",
+      "copied": "Copied to clipboard!"
+    },
+    "error": {
+      "generic": "An error occurred. Please try again.",
+      "save": "Error saving.",
+      "delete": "Error deleting.",
+      "load": "Error loading data."
+    }
+  }
+}
