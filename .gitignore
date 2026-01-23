@@ -53,3 +53,4 @@ red-purple-amora/
 
 # Claude
 .claude/
+.env.test
