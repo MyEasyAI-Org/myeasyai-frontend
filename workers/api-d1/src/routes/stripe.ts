@@ -779,11 +779,11 @@ stripeRoutes.post('/update-subscription', async (c) => {
     console.log('[Stripe] Updating subscription item:', subscriptionItemId, 'to price:', newPriceId, 'billing:', billingPeriod);
 
     // Update the subscription with proration
-    // proration_behavior: 'create_prorations' will charge/credit the difference
+    // proration_behavior: 'always_invoice' will charge/credit immediately
     const updateParams = new URLSearchParams();
     updateParams.append('items[0][id]', subscriptionItemId);
     updateParams.append('items[0][price]', newPriceId);
-    updateParams.append('proration_behavior', 'create_prorations');
+    updateParams.append('proration_behavior', 'always_invoice');
     updateParams.append('metadata[plan]', newPlan);
     updateParams.append('metadata[userId]', userId);
 
