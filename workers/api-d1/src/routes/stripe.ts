@@ -928,11 +928,13 @@ stripeRoutes.post('/confirm-pix-payment', async (c) => {
       return c.json({ error: 'User not found' }, 404);
     }
 
-    // CRITICAL: If user paid with a card, explicitly attach it to the customer for future use
-    // This is necessary because `setup_future_usage` doesn't always work with multiple payment method types
+    // CRITICAL: Detect payment method type (card vs pix) and attach card if needed
+    // This determines whether user can upgrade mid-cycle (card yes, pix no)
+    let detectedPaymentMethodType: 'card' | 'pix' = 'pix'; // Default to pix if we can't determine
+
     if (paymentIntent.payment_method && existingUser.stripe_customer_id) {
       try {
-        // First, get the payment method to check if it's a card
+        // Get the payment method to check if it's a card or pix
         const pmResponse = await fetch(`https://api.stripe.com/v1/payment_methods/${paymentIntent.payment_method}`, {
           headers: {
             'Authorization': `Bearer ${STRIPE_SECRET_KEY}`,
@@ -942,6 +944,9 @@ stripeRoutes.post('/confirm-pix-payment', async (c) => {
         if (pmResponse.ok) {
           const paymentMethod = await pmResponse.json() as { id: string; type: string; customer: string | null };
           console.log('[Stripe] Payment method type:', paymentMethod.type, 'already attached to customer:', paymentMethod.customer);
+
+          // Store the detected payment method type
+          detectedPaymentMethodType = paymentMethod.type === 'card' ? 'card' : 'pix';
 
           // Only attach if it's a card and not already attached to this customer
           if (paymentMethod.type === 'card' && paymentMethod.customer !== existingUser.stripe_customer_id) {
@@ -969,16 +974,18 @@ stripeRoutes.post('/confirm-pix-payment', async (c) => {
           } else if (paymentMethod.type === 'card' && paymentMethod.customer === existingUser.stripe_customer_id) {
             console.log('[Stripe] Card already attached to customer, skipping attachment');
           } else {
-            console.log('[Stripe] Payment method is not a card (', paymentMethod.type, '), skipping attachment');
+            console.log('[Stripe] Payment method is PIX, no card to attach');
           }
         } else {
           console.error('[Stripe] Failed to get payment method details');
         }
       } catch (attachError) {
-        console.error('[Stripe] Error attaching payment method:', attachError);
+        console.error('[Stripe] Error processing payment method:', attachError);
         // Don't fail the request, continue with subscription activation
       }
     }
+
+    console.log('[Stripe] Detected payment method type:', detectedPaymentMethodType);
 
     // Calculate 1 year from now
     const periodEndDate = new Date();
@@ -986,18 +993,19 @@ stripeRoutes.post('/confirm-pix-payment', async (c) => {
 
     const finalPlan = plan || paymentIntent.metadata.plan || 'individual';
 
-    // Update user with 1-year subscription
+    // Update user with 1-year subscription AND save the payment method type
     await db.update(users)
       .set({
         subscription_status: 'active',
         subscription_plan: finalPlan,
         subscription_period_end: periodEndDate.toISOString(),
         billing_cycle: 'annual',
+        payment_method_type: detectedPaymentMethodType, // IMPORTANT: Save whether they paid with card or pix
         // Note: No stripe_subscription_id because this is a one-time payment, not a recurring subscription
       })
       .where(eq(users.uuid, userId));
 
-    console.log(`[Stripe] PIX/Card annual payment confirmed for user ${userId}, plan: ${finalPlan}, expires: ${periodEndDate.toISOString()}`);
+    console.log(`[Stripe] Payment confirmed for user ${userId}, plan: ${finalPlan}, method: ${detectedPaymentMethodType}, expires: ${periodEndDate.toISOString()}`);
 
     return c.json({
       success: true,
@@ -1049,11 +1057,26 @@ stripeRoutes.post('/update-subscription', async (c) => {
     if (!existingUser.stripe_subscription_id) {
       // Check if user has an active subscription and a customer ID
       if (existingUser.subscription_status === 'active' && existingUser.stripe_customer_id) {
-        // User paid à vista - check if they have a saved card
-        const { hasCard, paymentMethodId } = await getCustomerPaymentMethods(
-          existingUser.stripe_customer_id,
-          STRIPE_SECRET_KEY
-        );
+        // Check payment method type from database first (more reliable)
+        const paidWithCard = existingUser.payment_method_type === 'card';
+
+        console.log('[Stripe] À vista user payment_method_type:', existingUser.payment_method_type);
+
+        // If payment_method_type is not set (legacy users), fall back to checking saved cards
+        let hasCard = paidWithCard;
+        let paymentMethodId: string | null = null;
+
+        if (!existingUser.payment_method_type) {
+          // Legacy user - check Stripe for saved cards
+          const cardCheck = await getCustomerPaymentMethods(existingUser.stripe_customer_id, STRIPE_SECRET_KEY);
+          hasCard = cardCheck.hasCard;
+          paymentMethodId = cardCheck.paymentMethodId;
+          console.log('[Stripe] Legacy user - hasCard from Stripe:', hasCard);
+        } else if (paidWithCard) {
+          // Get the payment method ID for charging
+          const cardCheck = await getCustomerPaymentMethods(existingUser.stripe_customer_id, STRIPE_SECRET_KEY);
+          paymentMethodId = cardCheck.paymentMethodId;
+        }
 
         if (hasCard && paymentMethodId && existingUser.subscription_period_end && existingUser.subscription_plan) {
           // User has a saved card - process upgrade with PaymentIntent
@@ -1140,10 +1163,10 @@ stripeRoutes.post('/update-subscription', async (c) => {
           });
         }
 
-        // User paid with PIX (no card saved) - cannot upgrade
-        console.log('[Stripe] PIX user trying to change plan:', userId, '(no saved card)');
+        // User paid with PIX or has no card - cannot upgrade mid-cycle
+        console.log('[Stripe] PIX user trying to change plan:', userId, '(payment_method_type:', existingUser.payment_method_type, ')');
         return c.json({
-          error: 'Você pagou via PIX. Mudança de plano estará disponível na renovação.',
+          error: 'Você pagou à vista via PIX. Mudança de plano estará disponível na renovação.',
           code: 'PIX_NO_MIDTERM_CHANGE',
           periodEnd: existingUser.subscription_period_end,
         }, 400);
@@ -1381,11 +1404,27 @@ stripeRoutes.post('/preview-proration', async (c) => {
     if (!existingUser.stripe_subscription_id) {
       // Check if user has an active subscription and a customer ID
       if (existingUser.subscription_status === 'active' && existingUser.stripe_customer_id) {
-        // User paid à vista - check if they have a saved card
-        const { hasCard, paymentMethodId } = await getCustomerPaymentMethods(
-          existingUser.stripe_customer_id,
-          STRIPE_SECRET_KEY
-        );
+        // Check payment method type from database first (more reliable)
+        const paidWithCard = existingUser.payment_method_type === 'card';
+        const paidWithPix = existingUser.payment_method_type === 'pix';
+
+        console.log('[Stripe] À vista user payment_method_type:', existingUser.payment_method_type);
+
+        // If payment_method_type is not set (legacy users), fall back to checking saved cards
+        let hasCard = paidWithCard;
+        let paymentMethodId: string | null = null;
+
+        if (!existingUser.payment_method_type) {
+          // Legacy user - check Stripe for saved cards
+          const cardCheck = await getCustomerPaymentMethods(existingUser.stripe_customer_id, STRIPE_SECRET_KEY);
+          hasCard = cardCheck.hasCard;
+          paymentMethodId = cardCheck.paymentMethodId;
+          console.log('[Stripe] Legacy user - hasCard from Stripe:', hasCard);
+        } else if (paidWithCard) {
+          // Get the payment method ID for charging
+          const cardCheck = await getCustomerPaymentMethods(existingUser.stripe_customer_id, STRIPE_SECRET_KEY);
+          paymentMethodId = cardCheck.paymentMethodId;
+        }
 
         if (hasCard && existingUser.subscription_period_end && existingUser.subscription_plan) {
           // User has a saved card - calculate manual proration for upgrade
@@ -1423,10 +1462,10 @@ stripeRoutes.post('/preview-proration', async (c) => {
           });
         }
 
-        // User paid with PIX (no card saved) - cannot upgrade
-        console.log('[Stripe] PIX user trying to preview proration:', userId, '(no saved card)');
+        // User paid with PIX or has no card - cannot upgrade mid-cycle
+        console.log('[Stripe] PIX user trying to preview proration:', userId, '(payment_method_type:', existingUser.payment_method_type, ')');
         return c.json({
-          error: 'Você pagou via PIX. Mudança de plano estará disponível na renovação.',
+          error: 'Você pagou à vista via PIX. Mudança de plano estará disponível na renovação.',
           code: 'PIX_NO_MIDTERM_CHANGE',
           periodEnd: existingUser.subscription_period_end,
         }, 400);
