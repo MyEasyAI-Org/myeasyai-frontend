@@ -21,6 +21,8 @@ interface EmbeddedPaymentFormProps {
   userId: string;
   plan: string;
   countryCode: string;
+  intentType: 'setup_intent' | 'payment_intent';
+  paymentIntentId?: string;
 }
 
 export function EmbeddedPaymentForm({
@@ -33,6 +35,8 @@ export function EmbeddedPaymentForm({
   userId,
   plan,
   countryCode,
+  intentType,
+  paymentIntentId,
 }: EmbeddedPaymentFormProps) {
   const { t } = useTranslation();
   const stripe = useStripe();
@@ -51,7 +55,67 @@ export function EmbeddedPaymentForm({
     setPaymentError(null);
 
     try {
-      // Step 1: Confirm the SetupIntent (collects and saves payment method)
+      // PAYMENT INTENT FLOW (PIX/Card for Brazil annual - one-time payment)
+      if (intentType === 'payment_intent') {
+        console.log('[EmbeddedPaymentForm] Using PaymentIntent flow (PIX enabled)');
+
+        const { error, paymentIntent } = await stripe.confirmPayment({
+          elements,
+          confirmParams: {
+            return_url: `${window.location.origin}/checkout/success`,
+          },
+          redirect: 'if_required',
+        });
+
+        if (error) {
+          console.error('[EmbeddedPaymentForm] Payment error:', error);
+          const errorMessage = error.message || 'Erro ao processar pagamento';
+          setPaymentError(errorMessage);
+          onError(errorMessage);
+          return;
+        }
+
+        if (paymentIntent) {
+          console.log('[EmbeddedPaymentForm] PaymentIntent status:', paymentIntent.status);
+
+          if (paymentIntent.status === 'succeeded') {
+            // Payment succeeded! Confirm with backend to activate subscription
+            try {
+              const result = await stripeService.confirmPixPayment({
+                paymentIntentId: paymentIntent.id,
+                userId,
+                plan,
+              });
+
+              if (result.success) {
+                console.log('[EmbeddedPaymentForm] PIX payment confirmed, subscription active');
+                onSuccess();
+              } else {
+                setPaymentError(result.message || 'Erro ao confirmar pagamento');
+                onError(result.message || 'Erro ao confirmar pagamento');
+              }
+            } catch (confirmError) {
+              console.error('[EmbeddedPaymentForm] Confirm error:', confirmError);
+              const errorMessage = confirmError instanceof Error ? confirmError.message : 'Erro ao confirmar pagamento';
+              setPaymentError(errorMessage);
+              onError(errorMessage);
+            }
+          } else if (paymentIntent.status === 'processing') {
+            // PIX payments may take a moment to process
+            setPaymentError('Pagamento PIX em processamento. Aguarde a confirmação...');
+          } else if (paymentIntent.status === 'requires_action') {
+            // User needs to complete action (e.g., scan QR code for PIX)
+            setPaymentError('Complete o pagamento no seu aplicativo bancário.');
+          } else {
+            setPaymentError(`Status do pagamento: ${paymentIntent.status}`);
+          }
+        }
+        return;
+      }
+
+      // SETUP INTENT FLOW (Card for recurring subscriptions)
+      console.log('[EmbeddedPaymentForm] Using SetupIntent flow (recurring subscription)');
+
       const { error, setupIntent } = await stripe.confirmSetup({
         elements,
         confirmParams: {

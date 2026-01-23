@@ -39,6 +39,8 @@ export function PlanSelectionStep({
   const [subscriptionData, setSubscriptionData] = useState<{
     customerId: string;
     priceId: string;
+    intentType: 'setup_intent' | 'payment_intent';
+    paymentIntentId?: string;
   } | null>(null);
 
   const currency = getCurrencyForCountry(countryCode);
@@ -138,6 +140,8 @@ export function PlanSelectionStep({
       setSubscriptionData({
         customerId: response.customerId,
         priceId: response.priceId,
+        intentType: response.intentType,
+        paymentIntentId: response.paymentIntentId,
       });
       setPhase('payment');
     } catch (err) {
@@ -218,6 +222,8 @@ export function PlanSelectionStep({
             userId={userId}
             plan={selectedPlan}
             countryCode={countryCode}
+            intentType={subscriptionData?.intentType || 'setup_intent'}
+            paymentIntentId={subscriptionData?.paymentIntentId}
           />
         </Elements>
       </div>

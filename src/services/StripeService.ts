@@ -26,17 +26,27 @@ export interface PortalSessionResponse {
 }
 
 export interface CreateSubscriptionResponse {
-  setupIntentId: string;
+  setupIntentId?: string;
+  paymentIntentId?: string;
   clientSecret: string;
   customerId: string;
   priceId: string;
   status: string;
-  intentType: 'setup_intent';
+  intentType: 'setup_intent' | 'payment_intent';
+  pixEnabled?: boolean;
 }
 
 export interface ConfirmSubscriptionResponse {
   subscriptionId: string;
   status: string;
+}
+
+export interface ConfirmPixPaymentResponse {
+  success: boolean;
+  status: string;
+  plan?: string;
+  periodEnd?: string;
+  message?: string;
 }
 
 export interface UpdateSubscriptionResponse {
@@ -224,6 +234,31 @@ class StripeService {
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.error || 'Failed to confirm subscription');
+    }
+
+    return response.json();
+  }
+
+  /**
+   * Confirm PIX payment for Brazil annual plans (one-time payment)
+   * Activates subscription for 1 year without recurring Stripe subscription
+   */
+  async confirmPixPayment(params: {
+    paymentIntentId: string;
+    userId: string;
+    plan: string;
+  }): Promise<ConfirmPixPaymentResponse> {
+    const response = await fetch(`${this.baseUrl}/confirm-pix-payment`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(params),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to confirm PIX payment');
     }
 
     return response.json();
