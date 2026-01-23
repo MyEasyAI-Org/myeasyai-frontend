@@ -84,7 +84,7 @@ export function SubscriptionTab({ subscription }: SubscriptionTabProps) {
           // Extract period end if available from subscription data
           setPixBlockedError({
             message: errorMessage,
-            periodEnd: subscription.periodEnd || undefined,
+            periodEnd: subscription.end_date || undefined,
           });
         }
         // Don't show error toast, handle in UI
@@ -94,7 +94,7 @@ export function SubscriptionTab({ subscription }: SubscriptionTabProps) {
     };
 
     fetchPreview();
-  }, [selectedPlan, isConfirmModalOpen, subscription.periodEnd]);
+  }, [selectedPlan, isConfirmModalOpen, subscription.end_date]);
 
   const handleSelectPlan = (newPlan: SubscriptionPlan) => {
     console.log('🟢 [SubscriptionTab] handleSelectPlan called:', { newPlan, currentPlan: subscription.plan });
