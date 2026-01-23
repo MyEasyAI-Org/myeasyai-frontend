@@ -31,6 +31,7 @@ export const users = sqliteTable('users', {
   subscription_period_end: text('subscription_period_end'),
   subscription_cancel_at_period_end: integer('subscription_cancel_at_period_end', { mode: 'boolean' }).default(false),
   billing_cycle: text('billing_cycle'), // 'monthly' | 'annual'
+  payment_method_type: text('payment_method_type'), // 'card' | 'pix' | null (for legacy/subscription users)
 });
 
 /**
