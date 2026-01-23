@@ -900,13 +900,14 @@ stripeRoutes.post('/confirm-pix-payment', async (c) => {
     const paymentIntent = await piResponse.json() as {
       id: string;
       status: string;
+      payment_method: string | null;
       metadata: {
         userId?: string;
         plan?: string;
       };
     };
 
-    console.log('[Stripe] PaymentIntent status:', paymentIntent.status);
+    console.log('[Stripe] PaymentIntent status:', paymentIntent.status, 'payment_method:', paymentIntent.payment_method);
 
     // Check if payment was successful
     if (paymentIntent.status !== 'succeeded') {
@@ -918,13 +919,65 @@ stripeRoutes.post('/confirm-pix-payment', async (c) => {
       });
     }
 
-    // Payment succeeded! Activate user's subscription for 1 year
+    // Payment succeeded! Get user from database
     const db = c.get('db');
     const existingUser = await db.select().from(users).where(eq(users.uuid, userId)).get();
 
     if (!existingUser) {
       console.error('[Stripe] User not found:', userId);
       return c.json({ error: 'User not found' }, 404);
+    }
+
+    // CRITICAL: If user paid with a card, explicitly attach it to the customer for future use
+    // This is necessary because `setup_future_usage` doesn't always work with multiple payment method types
+    if (paymentIntent.payment_method && existingUser.stripe_customer_id) {
+      try {
+        // First, get the payment method to check if it's a card
+        const pmResponse = await fetch(`https://api.stripe.com/v1/payment_methods/${paymentIntent.payment_method}`, {
+          headers: {
+            'Authorization': `Bearer ${STRIPE_SECRET_KEY}`,
+          },
+        });
+
+        if (pmResponse.ok) {
+          const paymentMethod = await pmResponse.json() as { id: string; type: string; customer: string | null };
+          console.log('[Stripe] Payment method type:', paymentMethod.type, 'already attached to customer:', paymentMethod.customer);
+
+          // Only attach if it's a card and not already attached to this customer
+          if (paymentMethod.type === 'card' && paymentMethod.customer !== existingUser.stripe_customer_id) {
+            console.log('[Stripe] Attaching card to customer:', existingUser.stripe_customer_id);
+
+            const attachResponse = await fetch(`https://api.stripe.com/v1/payment_methods/${paymentIntent.payment_method}/attach`, {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${STRIPE_SECRET_KEY}`,
+                'Content-Type': 'application/x-www-form-urlencoded',
+              },
+              body: new URLSearchParams({
+                customer: existingUser.stripe_customer_id,
+              }).toString(),
+            });
+
+            if (attachResponse.ok) {
+              console.log('[Stripe] Card attached successfully to customer');
+            } else {
+              const attachError = await attachResponse.text();
+              console.error('[Stripe] Failed to attach card:', attachError);
+              // Don't fail the request, just log the error
+              // The subscription will still be activated
+            }
+          } else if (paymentMethod.type === 'card' && paymentMethod.customer === existingUser.stripe_customer_id) {
+            console.log('[Stripe] Card already attached to customer, skipping attachment');
+          } else {
+            console.log('[Stripe] Payment method is not a card (', paymentMethod.type, '), skipping attachment');
+          }
+        } else {
+          console.error('[Stripe] Failed to get payment method details');
+        }
+      } catch (attachError) {
+        console.error('[Stripe] Error attaching payment method:', attachError);
+        // Don't fail the request, continue with subscription activation
+      }
     }
 
     // Calculate 1 year from now
