@@ -27,6 +27,7 @@ export function SubscriptionTab({ subscription }: SubscriptionTabProps) {
   const [isLoadingPortal, setIsLoadingPortal] = useState(false);
   const [isLoadingPreview, setIsLoadingPreview] = useState(false);
   const [prorationPreview, setProrationPreview] = useState<ProrationPreviewResponse | null>(null);
+  const [pixBlockedError, setPixBlockedError] = useState<{ message: string; periodEnd?: string } | null>(null);
 
   console.log('🟡 [SubscriptionTab] Current subscription:', subscription);
 
@@ -57,6 +58,7 @@ export function SubscriptionTab({ subscription }: SubscriptionTabProps) {
   useEffect(() => {
     if (!selectedPlan || !isConfirmModalOpen) {
       setProrationPreview(null);
+      setPixBlockedError(null);
       return;
     }
 
@@ -65,6 +67,7 @@ export function SubscriptionTab({ subscription }: SubscriptionTabProps) {
       if (!user?.uuid) return;
 
       setIsLoadingPreview(true);
+      setPixBlockedError(null);
       try {
         const preview = await stripeService.previewProration({
           userId: user.uuid,
@@ -75,14 +78,23 @@ export function SubscriptionTab({ subscription }: SubscriptionTabProps) {
         console.log('🟢 [SubscriptionTab] Proration preview:', preview);
       } catch (error) {
         console.error('[SubscriptionTab] Error fetching proration preview:', error);
-        // Don't show error toast, just log it - user can still proceed
+        // Check if this is a PIX user error
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        if (errorMessage.includes('PIX') || errorMessage.includes('à vista')) {
+          // Extract period end if available from subscription data
+          setPixBlockedError({
+            message: errorMessage,
+            periodEnd: subscription.periodEnd || undefined,
+          });
+        }
+        // Don't show error toast, handle in UI
       } finally {
         setIsLoadingPreview(false);
       }
     };
 
     fetchPreview();
-  }, [selectedPlan, isConfirmModalOpen]);
+  }, [selectedPlan, isConfirmModalOpen, subscription.periodEnd]);
 
   const handleSelectPlan = (newPlan: SubscriptionPlan) => {
     console.log('🟢 [SubscriptionTab] handleSelectPlan called:', { newPlan, currentPlan: subscription.plan });
@@ -297,13 +309,40 @@ export function SubscriptionTab({ subscription }: SubscriptionTabProps) {
               })()}
             </div>
 
+            {/* PIX User Blocked Message */}
+            {pixBlockedError && (
+              <div className="rounded-xl p-4 bg-amber-900/20 border border-amber-500/30">
+                <div className="flex items-start gap-3">
+                  <AlertTriangle className="h-5 w-5 text-amber-400 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-sm text-amber-300 font-medium">Mudança de plano não disponível</p>
+                    <p className="text-xs text-amber-400/70 mt-1">
+                      {pixBlockedError.message}
+                    </p>
+                    {pixBlockedError.periodEnd && (
+                      <p className="text-xs text-slate-400 mt-2">
+                        Renovação em:{' '}
+                        <span className="font-medium text-slate-300">
+                          {new Date(pixBlockedError.periodEnd).toLocaleDateString('pt-BR', {
+                            day: '2-digit',
+                            month: 'long',
+                            year: 'numeric',
+                          })}
+                        </span>
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Proration Preview */}
             {isLoadingPreview ? (
               <div className="flex items-center justify-center gap-2 py-4 text-slate-400">
                 <Loader2 className="h-5 w-5 animate-spin" />
                 <span>Calculando diferença...</span>
               </div>
-            ) : prorationPreview && prorationPreview.amountDue > 0 ? (
+            ) : !pixBlockedError && prorationPreview && prorationPreview.amountDue > 0 ? (
               <div className={`rounded-xl p-4 ${changeType === 'upgrade' ? 'bg-blue-900/20 border border-blue-500/30' : 'bg-slate-800/50 border border-slate-600'}`}>
                 <p className="text-xs text-slate-500 uppercase tracking-wide mb-2">Valor a Pagar Agora</p>
                 <div className="flex items-center justify-between">
@@ -316,7 +355,7 @@ export function SubscriptionTab({ subscription }: SubscriptionTabProps) {
                   Esse valor é calculado proporcionalmente ao tempo restante do seu período atual.
                 </p>
               </div>
-            ) : prorationPreview && prorationPreview.amountDue <= 0 ? (
+            ) : !pixBlockedError && prorationPreview && prorationPreview.amountDue <= 0 ? (
               <div className="rounded-xl p-4 bg-slate-800/50 border border-slate-600">
                 <p className="text-xs text-slate-500 uppercase tracking-wide mb-2">Crédito</p>
                 <div className="flex items-center justify-between">
@@ -346,41 +385,57 @@ export function SubscriptionTab({ subscription }: SubscriptionTabProps) {
 
             {/* Buttons */}
             <div className="flex gap-3">
-              <button
-                onClick={() => {
-                  setIsConfirmModalOpen(false);
-                  setSelectedPlan(null);
-                }}
-                disabled={isProcessing}
-                className="flex-1 px-4 py-3 rounded-xl border border-slate-600 text-slate-300 hover:bg-slate-800 transition-colors disabled:opacity-50"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={handleConfirmChange}
-                disabled={isProcessing || isLoadingPreview}
-                className={`flex-1 px-4 py-3 rounded-xl font-semibold transition-colors disabled:opacity-50 flex items-center justify-center gap-2 ${
-                  changeType === 'upgrade'
-                    ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white hover:from-green-600 hover:to-emerald-700'
-                    : 'bg-gradient-to-r from-orange-500 to-amber-600 text-white hover:from-orange-600 hover:to-amber-700'
-                }`}
-              >
-                {isProcessing ? (
-                  <>
-                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    <span>Processando...</span>
-                  </>
-                ) : (
-                  <>
-                    <Check className="h-5 w-5" />
-                    <span>
-                      {prorationPreview && prorationPreview.amountDue > 0
-                        ? `Pagar ${formatCurrency(prorationPreview.amountDue, prorationPreview.currency)}`
-                        : `Confirmar ${changeType === 'upgrade' ? 'Upgrade' : 'Mudança'}`}
-                    </span>
-                  </>
-                )}
-              </button>
+              {pixBlockedError ? (
+                // PIX users can only close the modal
+                <button
+                  onClick={() => {
+                    setIsConfirmModalOpen(false);
+                    setSelectedPlan(null);
+                    setPixBlockedError(null);
+                  }}
+                  className="flex-1 px-4 py-3 rounded-xl border border-slate-600 text-slate-300 hover:bg-slate-800 transition-colors"
+                >
+                  Entendi
+                </button>
+              ) : (
+                <>
+                  <button
+                    onClick={() => {
+                      setIsConfirmModalOpen(false);
+                      setSelectedPlan(null);
+                    }}
+                    disabled={isProcessing}
+                    className="flex-1 px-4 py-3 rounded-xl border border-slate-600 text-slate-300 hover:bg-slate-800 transition-colors disabled:opacity-50"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    onClick={handleConfirmChange}
+                    disabled={isProcessing || isLoadingPreview}
+                    className={`flex-1 px-4 py-3 rounded-xl font-semibold transition-colors disabled:opacity-50 flex items-center justify-center gap-2 ${
+                      changeType === 'upgrade'
+                        ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white hover:from-green-600 hover:to-emerald-700'
+                        : 'bg-gradient-to-r from-orange-500 to-amber-600 text-white hover:from-orange-600 hover:to-amber-700'
+                    }`}
+                  >
+                    {isProcessing ? (
+                      <>
+                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        <span>Processando...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Check className="h-5 w-5" />
+                        <span>
+                          {prorationPreview && prorationPreview.amountDue > 0
+                            ? `Pagar ${formatCurrency(prorationPreview.amountDue, prorationPreview.currency)}`
+                            : `Confirmar ${changeType === 'upgrade' ? 'Upgrade' : 'Mudança'}`}
+                        </span>
+                      </>
+                    )}
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </div>
