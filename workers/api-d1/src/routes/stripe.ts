@@ -891,6 +891,9 @@ stripeRoutes.post('/confirm-pix-payment', async (c) => {
  * POST /stripe/update-subscription
  * Update an existing subscription to a new plan (upgrade/downgrade)
  * Handles proration automatically through Stripe
+ *
+ * For PIX users (no stripe_subscription_id): Not allowed - must wait for renewal
+ * For Stripe subscription users: Use Stripe proration
  */
 stripeRoutes.post('/update-subscription', async (c) => {
   try {
@@ -917,7 +920,17 @@ stripeRoutes.post('/update-subscription', async (c) => {
       return c.json({ error: 'User not found' }, 404);
     }
 
+    // Check if user is a PIX user (has active subscription but no stripe_subscription_id)
     if (!existingUser.stripe_subscription_id) {
+      // PIX users cannot change plans mid-subscription
+      if (existingUser.subscription_status === 'active') {
+        console.log('[Stripe] PIX user trying to change plan:', userId);
+        return c.json({
+          error: 'Você pagou à vista via PIX. Mudança de plano estará disponível na renovação.',
+          code: 'PIX_NO_MIDTERM_CHANGE',
+          periodEnd: existingUser.subscription_period_end,
+        }, 400);
+      }
       console.error('[Stripe] User has no subscription:', userId);
       return c.json({ error: 'User has no active subscription' }, 400);
     }
@@ -1119,6 +1132,9 @@ stripeRoutes.get('/check-price/:priceId', async (c) => {
  * POST /stripe/preview-proration
  * Preview the proration amount for a plan change
  * Returns the exact amount the user will be charged (or credited)
+ *
+ * For PIX users: Returns error with code PIX_NO_MIDTERM_CHANGE
+ * For Stripe subscription users: Returns Stripe proration preview
  */
 stripeRoutes.post('/preview-proration', async (c) => {
   try {
@@ -1144,7 +1160,17 @@ stripeRoutes.post('/preview-proration', async (c) => {
       return c.json({ error: 'User not found' }, 404);
     }
 
+    // Check if user is a PIX user (has active subscription but no stripe_subscription_id)
     if (!existingUser.stripe_subscription_id || !existingUser.stripe_customer_id) {
+      // PIX users cannot change plans mid-subscription
+      if (existingUser.subscription_status === 'active') {
+        console.log('[Stripe] PIX user trying to preview proration:', userId);
+        return c.json({
+          error: 'Você pagou à vista via PIX. Mudança de plano estará disponível na renovação.',
+          code: 'PIX_NO_MIDTERM_CHANGE',
+          periodEnd: existingUser.subscription_period_end,
+        }, 400);
+      }
       return c.json({ error: 'User has no active subscription' }, 400);
     }
 
