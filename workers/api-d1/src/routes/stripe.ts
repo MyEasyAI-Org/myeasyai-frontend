@@ -638,25 +638,26 @@ stripeRoutes.post('/create-subscription', async (c) => {
         .where(eq(users.uuid, userId));
     }
 
-    // BRAZIL + ANNUAL (À VISTA): Use PaymentIntent with PIX + Card
-    // This allows one-time payment via PIX or Card
+    // BRAZIL + ANNUAL (À VISTA): Use PaymentIntent with Card only
+    // Note: PIX is incompatible with setup_future_usage, so we only allow card for annual
+    // This ensures the card is saved for future upgrades
     const isBrazilAnnual = country === 'BR' && period === 'annual';
 
     if (isBrazilAnnual) {
       // Get the price amount from our constants
       const priceAmount = getPriceAmount(plan, 'brl');
 
-      console.log(`[Stripe] Creating PaymentIntent for Brazil annual (PIX enabled): ${plan} = ${priceAmount} BRL`);
+      console.log(`[Stripe] Creating PaymentIntent for Brazil annual (card only): ${plan} = ${priceAmount} BRL`);
 
-      // Create PaymentIntent with both card and pix
+      // Create PaymentIntent with card only (no PIX) so we can use setup_future_usage
       const paymentIntentParams = new URLSearchParams();
       paymentIntentParams.append('amount', priceAmount.toString());
       paymentIntentParams.append('currency', 'brl');
       paymentIntentParams.append('customer', customerId);
       paymentIntentParams.append('payment_method_types[0]', 'card');
-      paymentIntentParams.append('payment_method_types[1]', 'pix');
-      // Note: setup_future_usage is incompatible with PIX
-      // Cards are explicitly attached after payment in confirm-pix-payment endpoint
+      // IMPORTANT: setup_future_usage saves the card for future charges (upgrades)
+      // This is only possible when PIX is NOT in the payment_method_types
+      paymentIntentParams.append('setup_future_usage', 'off_session');
       paymentIntentParams.append('metadata[userId]', userId);
       paymentIntentParams.append('metadata[plan]', plan);
       paymentIntentParams.append('metadata[priceId]', priceId);
@@ -684,7 +685,7 @@ stripeRoutes.post('/create-subscription', async (c) => {
         status: string;
       };
 
-      console.log(`[Stripe] PaymentIntent created: ${paymentIntent.id} for user ${userId} (PIX enabled)`);
+      console.log(`[Stripe] PaymentIntent created: ${paymentIntent.id} for user ${userId} (card only, setup_future_usage enabled)`);
 
       return c.json({
         paymentIntentId: paymentIntent.id,
@@ -693,7 +694,7 @@ stripeRoutes.post('/create-subscription', async (c) => {
         priceId: priceId,
         status: paymentIntent.status,
         intentType: 'payment_intent', // Frontend needs to know this is a PaymentIntent
-        pixEnabled: true,
+        pixEnabled: false, // PIX disabled for annual - card only to enable setup_future_usage
       });
     }
 
