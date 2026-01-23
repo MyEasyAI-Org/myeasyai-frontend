@@ -46,6 +46,17 @@ export interface UpdateSubscriptionResponse {
   status: string;
 }
 
+export interface ProrationPreviewResponse {
+  amountDue: number;
+  prorationAmount: number;
+  creditAmount: number;
+  chargeAmount: number;
+  netAmount: number;
+  currency: string;
+  billingPeriod: 'monthly' | 'annual';
+  currentPeriodEnd: number;
+}
+
 class StripeService {
   private baseUrl: string;
 
@@ -213,6 +224,31 @@ class StripeService {
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.error || 'Failed to confirm subscription');
+    }
+
+    return response.json();
+  }
+
+  /**
+   * Preview proration for a plan change
+   * Returns the exact amount that will be charged or credited
+   */
+  async previewProration(params: {
+    userId: string;
+    newPlan: 'individual' | 'plus' | 'premium';
+    country?: string;
+  }): Promise<ProrationPreviewResponse> {
+    const response = await fetch(`${this.baseUrl}/preview-proration`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(params),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to preview proration');
     }
 
     return response.json();

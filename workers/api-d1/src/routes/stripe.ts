@@ -923,6 +923,130 @@ stripeRoutes.get('/check-price/:priceId', async (c) => {
   }
 });
 
+/**
+ * POST /stripe/preview-proration
+ * Preview the proration amount for a plan change
+ * Returns the exact amount the user will be charged (or credited)
+ */
+stripeRoutes.post('/preview-proration', async (c) => {
+  try {
+    const body = await c.req.json();
+    const { userId, newPlan, country } = body;
+
+    console.log('[Stripe] preview-proration called with:', { userId, newPlan, country });
+
+    if (!userId || !newPlan) {
+      return c.json({ error: 'Missing required fields: userId, newPlan' }, 400);
+    }
+
+    const STRIPE_SECRET_KEY = c.env.STRIPE_SECRET_KEY;
+    if (!STRIPE_SECRET_KEY) {
+      return c.json({ error: 'Stripe not configured' }, 500);
+    }
+
+    // Get user from database
+    const db = c.get('db');
+    const existingUser = await db.select().from(users).where(eq(users.uuid, userId)).get();
+
+    if (!existingUser) {
+      return c.json({ error: 'User not found' }, 404);
+    }
+
+    if (!existingUser.stripe_subscription_id || !existingUser.stripe_customer_id) {
+      return c.json({ error: 'User has no active subscription' }, 400);
+    }
+
+    // Get the current subscription from Stripe
+    const subResponse = await fetch(`https://api.stripe.com/v1/subscriptions/${existingUser.stripe_subscription_id}`, {
+      headers: {
+        'Authorization': `Bearer ${STRIPE_SECRET_KEY}`,
+      },
+    });
+
+    if (!subResponse.ok) {
+      return c.json({ error: 'Failed to get subscription from Stripe' }, 500);
+    }
+
+    const subscription = await subResponse.json() as {
+      id: string;
+      items: { data: Array<{ id: string; price: { id: string; unit_amount: number } }> };
+      current_period_end: number;
+      current_period_start: number;
+    };
+
+    // Determine the new price ID
+    const currency = country === 'BR' ? 'brl' : 'usd';
+    const currentPriceId = subscription.items.data[0]?.price?.id || '';
+    const isMonthly = currentPriceId.includes('monthly');
+    const billingPeriod = isMonthly ? 'monthly' : 'annual';
+    const newPriceId = getPriceId(newPlan, currency, billingPeriod);
+
+    // Use Stripe's invoice preview to get exact proration amount
+    const previewParams = new URLSearchParams();
+    previewParams.append('customer', existingUser.stripe_customer_id);
+    previewParams.append('subscription', existingUser.stripe_subscription_id);
+    previewParams.append('subscription_items[0][id]', subscription.items.data[0].id);
+    previewParams.append('subscription_items[0][price]', newPriceId);
+    previewParams.append('subscription_proration_behavior', 'always_invoice');
+
+    const previewResponse = await fetch(`https://api.stripe.com/v1/invoices/upcoming?${previewParams.toString()}`, {
+      headers: {
+        'Authorization': `Bearer ${STRIPE_SECRET_KEY}`,
+      },
+    });
+
+    if (!previewResponse.ok) {
+      const errorText = await previewResponse.text();
+      console.error('[Stripe] Failed to preview invoice:', errorText);
+      return c.json({ error: 'Failed to preview proration' }, 500);
+    }
+
+    const invoicePreview = await previewResponse.json() as {
+      amount_due: number;
+      subtotal: number;
+      total: number;
+      currency: string;
+      lines: {
+        data: Array<{
+          amount: number;
+          description: string;
+          proration: boolean;
+        }>;
+      };
+    };
+
+    // Calculate proration from line items
+    let prorationAmount = 0;
+    let creditAmount = 0;
+    let chargeAmount = 0;
+
+    for (const line of invoicePreview.lines.data) {
+      if (line.proration) {
+        if (line.amount < 0) {
+          creditAmount += Math.abs(line.amount);
+        } else {
+          chargeAmount += line.amount;
+        }
+        prorationAmount += line.amount;
+      }
+    }
+
+    return c.json({
+      amountDue: invoicePreview.amount_due,
+      prorationAmount,
+      creditAmount,
+      chargeAmount,
+      netAmount: invoicePreview.amount_due,
+      currency: invoicePreview.currency,
+      billingPeriod,
+      currentPeriodEnd: subscription.current_period_end,
+    });
+  } catch (error) {
+    console.error('[Stripe] Error previewing proration:', error);
+    return c.json({ error: 'Internal server error' }, 500);
+  }
+});
+
 // ============================================================================
 // Helper Functions
 // ============================================================================
