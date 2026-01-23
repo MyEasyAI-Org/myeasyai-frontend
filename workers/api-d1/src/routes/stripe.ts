@@ -779,13 +779,15 @@ stripeRoutes.post('/update-subscription', async (c) => {
     console.log('[Stripe] Updating subscription item:', subscriptionItemId, 'to price:', newPriceId, 'billing:', billingPeriod);
 
     // Update the subscription with proration
-    // proration_behavior: 'always_invoice' will charge/credit immediately
+    // proration_behavior: 'always_invoice' creates an invoice immediately
     const updateParams = new URLSearchParams();
     updateParams.append('items[0][id]', subscriptionItemId);
     updateParams.append('items[0][price]', newPriceId);
     updateParams.append('proration_behavior', 'always_invoice');
+    updateParams.append('payment_behavior', 'error_if_incomplete');
     updateParams.append('metadata[plan]', newPlan);
     updateParams.append('metadata[userId]', userId);
+    updateParams.append('expand[0]', 'latest_invoice');
 
     const updateResponse = await fetch(`https://api.stripe.com/v1/subscriptions/${subscription.id}`, {
       method: 'POST',
@@ -808,9 +810,37 @@ stripeRoutes.post('/update-subscription', async (c) => {
       id: string;
       status: string;
       current_period_end: number;
+      latest_invoice?: {
+        id: string;
+        status: string;
+        amount_due: number;
+      } | string;
     };
 
     console.log('[Stripe] Subscription updated successfully:', updatedSubscription.id);
+
+    // Pay the proration invoice if it's open
+    const latestInvoice = updatedSubscription.latest_invoice;
+    if (latestInvoice && typeof latestInvoice === 'object' && latestInvoice.status === 'open' && latestInvoice.amount_due > 0) {
+      console.log('[Stripe] Paying proration invoice:', latestInvoice.id, 'amount:', latestInvoice.amount_due);
+
+      const payResponse = await fetch(`https://api.stripe.com/v1/invoices/${latestInvoice.id}/pay`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${STRIPE_SECRET_KEY}`,
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+      });
+
+      if (!payResponse.ok) {
+        const payError = await payResponse.text();
+        console.error('[Stripe] Failed to pay invoice:', payError);
+        // Don't fail the whole request, just log the error
+        // The subscription was updated, payment can be retried
+      } else {
+        console.log('[Stripe] Invoice paid successfully');
+      }
+    }
 
     // Calculate period end date safely
     let periodEndDate: string | null = null;
