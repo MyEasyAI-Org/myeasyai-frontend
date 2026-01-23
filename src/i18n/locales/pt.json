@@ -1,0 +1,352 @@
+{
+  "common": {
+    "loading": "Carregando...",
+    "error": "Erro",
+    "success": "Sucesso",
+    "cancel": "Cancelar",
+    "confirm": "Confirmar",
+    "save": "Salvar",
+    "delete": "Excluir",
+    "edit": "Editar",
+    "close": "Fechar",
+    "back": "Voltar",
+    "next": "Proximo",
+    "previous": "Anterior",
+    "search": "Buscar",
+    "select": "Selecionar",
+    "yes": "Sim",
+    "no": "Nao",
+    "or": "ou",
+    "and": "e",
+    "required": "Obrigatorio",
+    "optional": "Opcional"
+  },
+
+  "nav": {
+    "home": "Inicio",
+    "dashboard": "Dashboard",
+    "products": "Produtos",
+    "subscription": "Assinatura",
+    "settings": "Configuracoes",
+    "support": "Suporte",
+    "logout": "Sair",
+    "login": "Entrar",
+    "signup": "Cadastrar",
+    "hello": "Ola"
+  },
+
+  "auth": {
+    "login": {
+      "title": "Bem-vindo de volta!",
+      "subtitle": "Entre na sua conta para continuar",
+      "email": "Email",
+      "password": "Senha",
+      "forgotPassword": "Esqueceu a senha?",
+      "noAccount": "Nao tem uma conta?",
+      "signupLink": "Cadastre-se",
+      "continueWith": "Ou continue com",
+      "google": "Continuar com Google",
+      "submitting": "Entrando..."
+    },
+    "signup": {
+      "title": "Crie sua conta",
+      "subtitle": "Comece sua jornada com a MyEasyAI",
+      "name": "Nome completo",
+      "email": "Email",
+      "password": "Senha",
+      "confirmPassword": "Confirmar senha",
+      "hasAccount": "Ja tem uma conta?",
+      "loginLink": "Entre aqui",
+      "continueWith": "Ou continue com",
+      "google": "Continuar com Google",
+      "submitting": "Criando conta...",
+      "passwordRequirements": "Minimo 8 caracteres"
+    },
+    "errors": {
+      "invalidEmail": "Email invalido",
+      "invalidPassword": "Senha invalida",
+      "passwordMismatch": "As senhas nao coincidem",
+      "emailInUse": "Este email ja esta em uso",
+      "weakPassword": "Senha muito fraca",
+      "networkError": "Erro de conexao. Tente novamente.",
+      "generic": "Ocorreu um erro. Tente novamente."
+    }
+  },
+
+  "onboarding": {
+    "title": "Complete seu perfil",
+    "subtitle": "Para uma experiencia personalizada, precisamos de algumas informacoes.",
+    "step": "Etapa",
+    "of": "de",
+    "completed": "concluido",
+
+    "steps": {
+      "personal": {
+        "title": "Dados Pessoais",
+        "description": "Vamos comecar com suas informacoes basicas"
+      },
+      "contact": {
+        "title": "Contato",
+        "description": "Como podemos entrar em contato com voce?"
+      },
+      "plan": {
+        "title": "Plano",
+        "description": "Escolha o plano ideal para voce"
+      }
+    },
+
+    "fields": {
+      "fullName": "Seu nome completo",
+      "fullNamePlaceholder": "Ex: Joao Silva Santos",
+      "fullNameError": "Digite nome e sobrenome",
+      "preferredName": "Como quer ser chamado?",
+      "preferredNamePlaceholder": "Ex: Joao, Joaozinho, JJ...",
+      "preferredNameHint": "Escreva um nome amigavel para usarmos com voce",
+      "language": "Idioma preferido",
+      "searchLanguage": "Buscar idioma...",
+      "phone": "Telefone / WhatsApp",
+      "phoneIncomplete": "Telefone incompleto",
+      "searchCountry": "Buscar pais...",
+      "state": "Estado",
+      "selectState": "Selecione seu estado",
+      "searchState": "Buscar estado...",
+      "city": "Cidade",
+      "selectCity": "Selecione sua cidade",
+      "selectStateFirst": "Selecione o estado primeiro",
+      "searchCity": "Buscar cidade...",
+      "noCityFound": "Nenhuma cidade encontrada"
+    },
+
+    "terms": {
+      "accept": "Li e aceito os",
+      "termsOfUse": "Termos de Uso"
+    },
+
+    "buttons": {
+      "previous": "Anterior",
+      "next": "Proximo",
+      "saving": "Salvando..."
+    },
+
+    "errors": {
+      "saveError": "Erro ao salvar informacoes",
+      "tryAgain": "Tente novamente.",
+      "unexpectedError": "Erro inesperado"
+    }
+  },
+
+  "plans": {
+    "title": "Escolha seu plano",
+    "subtitle": "Selecione o plano que melhor atende suas necessidades",
+    "monthly": "Mensal",
+    "annual": "Anual",
+    "perMonth": "/mes",
+    "perYear": "/ano",
+    "installments": "12x de",
+    "mostPopular": "Mais Popular",
+    "currentPlan": "Plano Atual",
+    "select": "Selecionar",
+    "selected": "Selecionado",
+    "subscribe": "Assinar",
+    "features": "Recursos inclusos",
+    "backToPlans": "Voltar para planos",
+    "payUpfront": "A Vista",
+    "pay12x": "12x no Cartao",
+    "continueWith": "Continuar com",
+    "securityNote": "Pagamento seguro via Stripe. Cancele quando quiser.",
+    "selectedPlan": "Plano selecionado",
+
+    "individual": {
+      "name": "Individual",
+      "description": "Perfeito para comecar"
+    },
+    "plus": {
+      "name": "Plus",
+      "description": "Para quem quer mais"
+    },
+    "premium": {
+      "name": "Premium",
+      "description": "Acesso completo"
+    },
+
+    "limits": {
+      "sites": "site | sites",
+      "unlimitedSites": "Sites ilimitados",
+      "storage": "de armazenamento",
+      "support": "Suporte prioritario",
+      "api": "Acesso a API"
+    }
+  },
+
+  "subscription": {
+    "title": "Sua Assinatura",
+    "status": {
+      "active": "Ativa",
+      "inactive": "Inativa",
+      "pastDue": "Pagamento Pendente",
+      "cancelled": "Cancelada",
+      "trialing": "Periodo de Teste"
+    },
+    "nextBilling": "Proxima cobranca",
+    "manage": "Gerenciar Assinatura",
+    "openPortal": "Abrir Portal de Pagamentos",
+    "changePlan": "Mudar Plano",
+    "upgrade": "Fazer Upgrade",
+    "downgrade": "Fazer Downgrade",
+
+    "modal": {
+      "upgradeTitle": "Confirmar Upgrade",
+      "downgradeTitle": "Confirmar Mudanca",
+      "currentPlan": "Plano Atual",
+      "newPlan": "Novo Plano",
+      "amountDue": "Valor a Pagar Agora",
+      "prorationNote": "Esse valor e calculado proporcionalmente ao tempo restante do seu periodo atual.",
+      "credit": "Credito",
+      "creditNote": "Esse credito sera aplicado nas suas proximas faturas.",
+      "downgradeWarning": "Atencao ao fazer downgrade",
+      "downgradeWarningText": "Voce pode perder acesso a alguns recursos. Verifique se seus sites e dados estao dentro dos limites do novo plano.",
+      "processing": "Processando...",
+      "confirmUpgrade": "Confirmar Upgrade",
+      "confirmChange": "Confirmar Mudanca"
+    }
+  },
+
+  "dashboard": {
+    "welcome": "Bem-vindo",
+    "overview": "Visao Geral",
+    "recentActivity": "Atividade Recente",
+    "quickActions": "Acoes Rapidas",
+
+    "tabs": {
+      "overview": "Visao Geral",
+      "products": "Produtos",
+      "subscription": "Assinatura",
+      "settings": "Configuracoes"
+    },
+
+    "stats": {
+      "totalSites": "Sites Criados",
+      "activeProducts": "Produtos Ativos",
+      "storageUsed": "Armazenamento Usado"
+    }
+  },
+
+  "products": {
+    "title": "Nossos Produtos",
+    "subtitle": "Ferramentas de IA para impulsionar seu negocio",
+    "explore": "Explorar",
+    "comingSoon": "Em Breve",
+    "new": "Novo",
+
+    "myeasywebsite": {
+      "name": "MyEasy Website",
+      "description": "Crie sites profissionais em minutos com IA"
+    },
+    "businessguru": {
+      "name": "Business Guru",
+      "description": "Consultoria de negocios com inteligencia artificial"
+    },
+    "myeasycrm": {
+      "name": "MyEasy CRM",
+      "description": "Gerencie seus clientes e vendas de forma inteligente"
+    },
+    "myeasypricing": {
+      "name": "MyEasy Pricing",
+      "description": "Calcule precos e margens de lucro automaticamente"
+    },
+    "myeasycontent": {
+      "name": "MyEasy Content",
+      "description": "Gere conteudo para redes sociais com IA"
+    },
+    "myeasyavatar": {
+      "name": "MyEasy Avatar",
+      "description": "Crie seu avatar 3D personalizado"
+    },
+    "myeasycode": {
+      "name": "MyEasy Code",
+      "description": "Desenvolva aplicacoes com assistencia de IA"
+    },
+    "myeasyresume": {
+      "name": "MyEasy Resume",
+      "description": "Curriculos profissionais em segundos"
+    },
+    "myeasylearning": {
+      "name": "MyEasy Learning",
+      "description": "Aprenda novas habilidades com IA"
+    }
+  },
+
+  "settings": {
+    "title": "Configuracoes",
+    "profile": {
+      "title": "Perfil",
+      "name": "Nome",
+      "email": "Email",
+      "phone": "Telefone",
+      "avatar": "Foto de Perfil",
+      "changeAvatar": "Alterar Foto"
+    },
+    "preferences": {
+      "title": "Preferencias",
+      "language": "Idioma",
+      "theme": "Tema",
+      "notifications": "Notificacoes"
+    },
+    "security": {
+      "title": "Seguranca",
+      "changePassword": "Alterar Senha",
+      "twoFactor": "Autenticacao em Dois Fatores"
+    },
+    "danger": {
+      "title": "Zona de Perigo",
+      "deleteAccount": "Excluir Conta",
+      "deleteWarning": "Esta acao nao pode ser desfeita."
+    }
+  },
+
+  "support": {
+    "title": "Suporte",
+    "subtitle": "Como podemos ajudar?",
+    "newTicket": "Novo Ticket",
+    "myTickets": "Meus Tickets",
+    "faq": "Perguntas Frequentes",
+    "contact": "Contato",
+    "status": {
+      "open": "Aberto",
+      "inProgress": "Em Andamento",
+      "resolved": "Resolvido",
+      "closed": "Fechado"
+    }
+  },
+
+  "footer": {
+    "rights": "Todos os direitos reservados",
+    "terms": "Termos de Uso",
+    "privacy": "Politica de Privacidade",
+    "contact": "Contato"
+  },
+
+  "errors": {
+    "notFound": "Pagina nao encontrada",
+    "unauthorized": "Acesso nao autorizado",
+    "serverError": "Erro no servidor",
+    "networkError": "Erro de conexao",
+    "tryAgain": "Tente novamente",
+    "goHome": "Voltar ao inicio"
+  },
+
+  "notifications": {
+    "success": {
+      "saved": "Salvo com sucesso!",
+      "deleted": "Excluido com sucesso!",
+      "updated": "Atualizado com sucesso!",
+      "copied": "Copiado para a area de transferencia!"
+    },
+    "error": {
+      "generic": "Ocorreu um erro. Tente novamente.",
+      "save": "Erro ao salvar.",
+      "delete": "Erro ao excluir.",
+      "load": "Erro ao carregar dados."
+    }
+  }
+}

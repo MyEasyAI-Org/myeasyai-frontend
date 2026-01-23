@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import type { SubscriptionPlan } from '../constants/plans';
 import { authService } from '../services/AuthServiceV2';
@@ -21,6 +22,7 @@ export function SignupModal({
   onSwitchToLogin,
   selectedPlan,
 }: SignupModalProps) {
+  const { t } = useTranslation();
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [isFacebookLoading, setIsFacebookLoading] = useState(false);
 
@@ -159,21 +161,14 @@ export function SignupModal({
   };
   const getModalTitle = () => {
     if (selectedPlan) {
-      const planNames: Record<SubscriptionPlan, string> = {
-        individual: 'Plano Individual',
-        plus: 'Plano Plus',
-        premium: 'Plano Premium',
-      };
-      return `Cadastre-se no ${planNames[selectedPlan]}`;
+      const planKey = `plans.${selectedPlan}.name`;
+      return `${t('auth.signup.title')} - ${t(planKey)}`;
     }
-    return 'Chega mais!';
+    return t('auth.signup.title');
   };
 
   const getModalDescription = () => {
-    if (selectedPlan) {
-      return `Crie sua conta para começar a usar o ${selectedPlan.toUpperCase()} e aproveitar todos os benefícios.`;
-    }
-    return 'Conta nova, possibilidades infinitas. Comece a criar seus assistentes em minutos.';
+    return t('auth.signup.subtitle');
   };
 
   return (
@@ -187,12 +182,12 @@ export function SignupModal({
       <form className="space-y-4" onSubmit={handleEmailSignup}>
         <label className="block text-left">
           <span className="mb-1 block text-sm font-medium text-slate-300">
-            Seu nome completo *
+            {t('auth.signup.name')} *
           </span>
           <DSInput
             type="text"
             name="fullName"
-            placeholder="Ex: João Silva Santos"
+            placeholder={t('onboarding.fields.fullNamePlaceholder')}
             required
             inputSize="md"
             className="w-full"
@@ -201,23 +196,23 @@ export function SignupModal({
 
         <label className="block text-left">
           <span className="mb-1 block text-sm font-medium text-slate-300">
-            Como quer ser chamado?
+            {t('onboarding.fields.preferredName')}
           </span>
           <DSInput
             type="text"
             name="preferredName"
-            placeholder="Ex: João, Joãozinho, JJ..."
+            placeholder={t('onboarding.fields.preferredNamePlaceholder')}
             inputSize="md"
             className="w-full"
           />
           <span className="text-xs text-slate-500 mt-1">
-            Escreva um nome amigável para usarmos com você 😊
+            {t('onboarding.fields.preferredNameHint')}
           </span>
         </label>
 
         <label className="block text-left">
           <span className="mb-1 block text-sm font-medium text-slate-300">
-            Seu e-mail
+            {t('auth.signup.email')}
           </span>
           <DSInput
             type="email"
@@ -231,26 +226,29 @@ export function SignupModal({
 
         <label className="block text-left">
           <span className="mb-1 block text-sm font-medium text-slate-300">
-            Senha secreta
+            {t('auth.signup.password')}
           </span>
           <DSInput
             type="password"
             name="password"
-            placeholder="Crie uma senha segura"
+            placeholder="********"
             required
             inputSize="md"
             className="w-full"
           />
+          <span className="text-xs text-slate-500 mt-1">
+            {t('auth.signup.passwordRequirements')}
+          </span>
         </label>
 
         <label className="block text-left">
           <span className="mb-1 block text-sm font-medium text-slate-300">
-            Confirme a senha
+            {t('auth.signup.confirmPassword')}
           </span>
           <DSInput
             type="password"
             name="confirmPassword"
-            placeholder="Repita sua senha"
+            placeholder="********"
             required
             inputSize="md"
             className="w-full"
@@ -279,14 +277,14 @@ export function SignupModal({
           )} */}
 
           <DSButton variant="primary" className="w-full mt-4">
-            Criar conta
+            {t('nav.signup')}
           </DSButton>
         </div>
       </form>
 
       <div>
         <span className="mb-3 block text-center text-xs font-semibold uppercase tracking-wide text-slate-500">
-          ou siga com
+          {t('auth.signup.continueWith')}
         </span>
 
         <div className="space-y-3">
@@ -403,13 +401,13 @@ export function SignupModal({
 
       {onSwitchToLogin ? (
         <p className="text-center text-sm text-slate-400">
-          Ja esta com a gente?{' '}
+          {t('auth.signup.hasAccount')}{' '}
           <button
             type="button"
             onClick={onSwitchToLogin}
             className="font-medium text-purple-400 transition-colors hover:text-purple-300 cursor-pointer"
           >
-            Entre por aqui
+            {t('auth.signup.loginLink')}
           </button>
         </p>
       ) : null}

@@ -2,6 +2,7 @@
 // Step 4: Select subscription plan and pay with embedded Stripe Elements
 
 import { useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements } from '@stripe/react-stripe-js';
 import { PLANS, getCurrencyForCountry, type PlanId } from '../../constants/stripe';
@@ -28,6 +29,7 @@ export function PlanSelectionStep({
   countryCode,
   onSuccess,
 }: PlanSelectionStepProps) {
+  const { t } = useTranslation();
   const [selectedPlan, setSelectedPlan] = useState<PlanId>('plus');
   const [billingPeriod, setBillingPeriod] = useState<BillingPeriod>('monthly');
   const [loading, setLoading] = useState(false);
@@ -41,6 +43,9 @@ export function PlanSelectionStep({
 
   const currency = getCurrencyForCountry(countryCode);
   const isBrazil = countryCode === 'BR';
+
+  // Debug logging for payment flow
+  console.log('[PlanSelectionStep] countryCode:', countryCode, 'currency:', currency, 'isBrazil:', isBrazil);
 
   // Calculate prices based on billing period for Brazil
   const getPriceDisplay = (plan: typeof PLANS[0]) => {
@@ -110,6 +115,14 @@ export function PlanSelectionStep({
     setError(null);
 
     try {
+      console.log('[PlanSelectionStep] Creating subscription with:', {
+        email: userEmail,
+        userId: userId,
+        plan: selectedPlan,
+        country: countryCode,
+        billingPeriod: isBrazil ? billingPeriod : 'annual',
+      });
+
       // Create SetupIntent and get client secret
       const response = await stripeService.createSubscription({
         email: userEmail,
@@ -118,6 +131,8 @@ export function PlanSelectionStep({
         country: countryCode,
         billingPeriod: isBrazil ? billingPeriod : 'annual',
       });
+
+      console.log('[PlanSelectionStep] Subscription created:', response);
 
       setClientSecret(response.clientSecret);
       setSubscriptionData({
@@ -174,7 +189,7 @@ export function PlanSelectionStep({
               d="M15 19l-7-7 7-7"
             />
           </svg>
-          Voltar para planos
+          {t('plans.backToPlans', 'Voltar para planos')}
         </button>
 
         {/* Error Message */}
@@ -222,8 +237,7 @@ export function PlanSelectionStep({
                 : 'text-slate-400 hover:text-slate-200'
             }`}
           >
-            À Vista
-
+            {t('plans.payUpfront', 'À Vista')}
           </button>
           <button
             type="button"
@@ -234,7 +248,7 @@ export function PlanSelectionStep({
                 : 'text-slate-400 hover:text-slate-200'
             }`}
           >
-            12x no Cartão
+            {t('plans.pay12x', '12x no Cartão')}
           </button>
         </div>
       )}
@@ -259,7 +273,7 @@ export function PlanSelectionStep({
               {/* Popular Badge */}
               {plan.popular && (
                 <span className="absolute -top-3 right-4 px-3 py-1 text-xs font-semibold bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-full">
-                  Mais Popular
+                  {t('plans.mostPopular')}
                 </span>
               )}
 
@@ -267,10 +281,10 @@ export function PlanSelectionStep({
                 <div className="flex-1">
                   {/* Plan Name & Description */}
                   <h3 className="text-lg font-semibold text-slate-100">
-                    {plan.name}
+                    {t(`plans.${plan.id}.name`, plan.name)}
                   </h3>
                   <p className="text-sm text-slate-400 mt-0.5">
-                    {plan.description}
+                    {t(`plans.${plan.id}.description`, plan.description)}
                   </p>
 
                   {/* Features */}
@@ -388,10 +402,10 @@ export function PlanSelectionStep({
                 d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
               />
             </svg>
-            Processando...
+            {t('common.loading')}
           </span>
         ) : (
-          `Continuar com ${PLANS.find((p) => p.id === selectedPlan)?.name}`
+          `${t('plans.continueWith', 'Continuar com')} ${t(`plans.${selectedPlan}.name`, PLANS.find((p) => p.id === selectedPlan)?.name || '')}`
         )}
       </button>
 
@@ -410,7 +424,7 @@ export function PlanSelectionStep({
             d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
           />
         </svg>
-        Pagamento seguro via Stripe. Cancele quando quiser.
+        {t('plans.securityNote', 'Pagamento seguro via Stripe. Cancele quando quiser.')}
       </p>
     </div>
   );

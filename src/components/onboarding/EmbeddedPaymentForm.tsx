@@ -3,6 +3,7 @@
 // Uses SetupIntent flow: collect payment method, then create subscription
 
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   PaymentElement,
   useStripe,
@@ -31,6 +32,7 @@ export function EmbeddedPaymentForm({
   userId,
   plan,
 }: EmbeddedPaymentFormProps) {
+  const { t } = useTranslation();
   const stripe = useStripe();
   const elements = useElements();
   const [isProcessing, setIsProcessing] = useState(false);
@@ -131,7 +133,7 @@ export function EmbeddedPaymentForm({
       <div className="p-4 rounded-lg bg-slate-800/60 border border-slate-700">
         <div className="flex justify-between items-center">
           <div>
-            <h4 className="text-sm font-medium text-slate-300">Plano selecionado</h4>
+            <h4 className="text-sm font-medium text-slate-300">{t('plans.selectedPlan', 'Plano selecionado')}</h4>
             <p className="text-lg font-semibold text-slate-100">{planName}</p>
           </div>
           <div className="text-right">
@@ -188,10 +190,10 @@ export function EmbeddedPaymentForm({
                 d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
               />
             </svg>
-            Processando...
+            {t('common.loading')}
           </span>
         ) : (
-          `Assinar ${planName}`
+          `${t('plans.subscribe', 'Assinar')} ${planName}`
         )}
       </button>
 
@@ -210,7 +212,7 @@ export function EmbeddedPaymentForm({
             d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
           />
         </svg>
-        Pagamento seguro via Stripe. Cancele quando quiser.
+        {t('plans.securityNote', 'Pagamento seguro via Stripe. Cancele quando quiser.')}
       </p>
     </form>
   );
