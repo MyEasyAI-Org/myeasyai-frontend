@@ -205,6 +205,7 @@ export function PlanSelectionStep({
           options={{
             clientSecret,
             appearance,
+            loader: 'auto',
           }}
         >
           <EmbeddedPaymentForm
@@ -216,6 +217,7 @@ export function PlanSelectionStep({
             priceId={subscriptionData?.priceId || ''}
             userId={userId}
             plan={selectedPlan}
+            countryCode={countryCode}
           />
         </Elements>
       </div>
