@@ -320,9 +320,9 @@ export function PlanSelectionStep({
                 </div>
               </div>
 
-              {/* Selection Indicator */}
+              {/* Selection Indicator - Bottom Right */}
               <div
-                className={`absolute top-4 left-4 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${
+                className={`absolute bottom-4 right-4 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${
                   isSelected
                     ? 'border-purple-500 bg-purple-500'
                     : 'border-slate-600 bg-transparent'
