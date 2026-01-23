@@ -50,6 +50,7 @@
     "@stripe/react-stripe-js": "^3.5.0",
     "@stripe/stripe-js": "^7.5.0",
     "@supabase/supabase-js": "^2.58.0",
+    "@tabler/icons-react": "^3.36.1",
     "@tailwindcss/vite": "^4.1.13",
     "@uiw/codemirror-theme-vscode": "^4.25.4",
     "@webcontainer/api": "^1.6.1-internal.1",

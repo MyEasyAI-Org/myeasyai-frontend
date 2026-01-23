@@ -30,6 +30,7 @@ type DashboardProps = {
   onGoToMyEasyResume?: () => void;
   onGoToMyEasyLearning?: () => void;
   onGoToSupport?: () => void;
+  onGoToMyEasyFitness?: () => void;
   onLoadingComplete?: () => void;
   initialTab?: 'overview' | 'subscription' | 'products' | 'usage' | 'settings' | 'profile';
 };
@@ -46,6 +47,7 @@ export function Dashboard({
   onGoToMyEasyResume,
   onGoToMyEasyLearning,
   onGoToSupport,
+  onGoToMyEasyFitness,
   onLoadingComplete,
   initialTab,
 }: DashboardProps = {}) {
@@ -67,7 +69,7 @@ export function Dashboard({
   } = useUserData();
 
   // Dashboard navigation hook (manages tabs and feature navigation)
-  const { activeTab, setActiveTab, navigateToProduct, goToCRM, goToContent, goToAvatar, goToCode, goToResume, goToLearning } =
+  const { activeTab, setActiveTab, navigateToProduct, goToCRM, goToContent, goToAvatar, goToCode, goToResume, goToLearning, goToFitness } =
     useDashboardNavigation({
       onGoHome,
       onGoToMyEasyWebsite,
@@ -79,6 +81,7 @@ export function Dashboard({
       onGoToMyEasyCode,
       onGoToMyEasyResume,
       onGoToMyEasyLearning,
+      onGoToMyEasyFitness,
       initialTab,
     });
 
@@ -169,6 +172,7 @@ export function Dashboard({
             onAccessProduct={navigateToProduct}
             onGoToCRM={goToCRM}
             onGoToMyEasyContent={goToContent}
+            onGoToMyEasyFitness={goToFitness}
             onGoToMyEasyAvatar={goToAvatar}
             onGoToMyEasyCode={goToCode}
             onGoToMyEasyResume={goToResume}

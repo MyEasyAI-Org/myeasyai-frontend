@@ -1,0 +1,534 @@
+{
+  "supino-reto": {
+    "apiId": "0025",
+    "name": "barbell bench press",
+    "gifUrl": "https://v2.exercisedb.io/image/0025",
+    "target": "pectorals",
+    "bodyPart": "chest"
+  },
+  "crucifixo": {
+    "apiId": "0308",
+    "name": "dumbbell fly",
+    "gifUrl": "https://v2.exercisedb.io/image/0308",
+    "target": "pectorals",
+    "bodyPart": "chest"
+  },
+  "flexao": {
+    "apiId": "0492",
+    "name": "incline push up depth jump",
+    "gifUrl": "https://v2.exercisedb.io/image/0492",
+    "target": "pectorals",
+    "bodyPart": "chest"
+  },
+  "puxada-frontal": {
+    "apiId": "0673",
+    "name": "reverse grip machine lat pulldown",
+    "gifUrl": "https://v2.exercisedb.io/image/0673",
+    "target": "lats",
+    "bodyPart": "back"
+  },
+  "remada-curvada": {
+    "apiId": "0027",
+    "name": "barbell bent over row",
+    "gifUrl": "https://v2.exercisedb.io/image/0027",
+    "target": "upper back",
+    "bodyPart": "back"
+  },
+  "remada-baixa": {
+    "apiId": "0861",
+    "name": "cable seated row",
+    "gifUrl": "https://v2.exercisedb.io/image/0861",
+    "target": "upper back",
+    "bodyPart": "back"
+  },
+  "levantamento-terra": {
+    "apiId": "0032",
+    "name": "barbell deadlift",
+    "gifUrl": "https://v2.exercisedb.io/image/0032",
+    "target": "glutes",
+    "bodyPart": "upper legs"
+  },
+  "barra-fixa": {
+    "apiId": "0651",
+    "name": "pull up (neutral grip)",
+    "gifUrl": "https://v2.exercisedb.io/image/0651",
+    "target": "lats",
+    "bodyPart": "back"
+  },
+  "pullover": {
+    "apiId": "0375",
+    "name": "dumbbell pullover",
+    "gifUrl": "https://v2.exercisedb.io/image/0375",
+    "target": "pectorals",
+    "bodyPart": "chest"
+  },
+  "remada-cavalinho": {
+    "apiId": "0606",
+    "name": "lever t bar row",
+    "gifUrl": "https://v2.exercisedb.io/image/0606",
+    "target": "upper back",
+    "bodyPart": "back"
+  },
+  "face-pull": {
+    "apiId": "0076",
+    "name": "barbell rear delt row",
+    "gifUrl": "https://v2.exercisedb.io/image/0076",
+    "target": "delts",
+    "bodyPart": "shoulders"
+  },
+  "hiperextensao": {
+    "apiId": "0573",
+    "name": "lever back extension",
+    "gifUrl": "https://v2.exercisedb.io/image/0573",
+    "target": "spine",
+    "bodyPart": "back"
+  },
+  "elevacao-lateral": {
+    "apiId": "0334",
+    "name": "dumbbell lateral raise",
+    "gifUrl": "https://v2.exercisedb.io/image/0334",
+    "target": "delts",
+    "bodyPart": "shoulders"
+  },
+  "elevacao-frontal": {
+    "apiId": "0309",
+    "name": "dumbbell front raise v. 2",
+    "gifUrl": "https://v2.exercisedb.io/image/0309",
+    "target": "delts",
+    "bodyPart": "shoulders"
+  },
+  "elevacao-posterior": {
+    "apiId": "0379",
+    "name": "dumbbell rear lateral raise (support head)",
+    "gifUrl": "https://v2.exercisedb.io/image/0379",
+    "target": "delts",
+    "bodyPart": "shoulders"
+  },
+  "desenvolvimento-arnold": {
+    "apiId": "0287",
+    "name": "dumbbell arnold press v. 2",
+    "gifUrl": "https://v2.exercisedb.io/image/0287",
+    "target": "delts",
+    "bodyPart": "shoulders"
+  },
+  "encolhimento": {
+    "apiId": "0095",
+    "name": "barbell shrug",
+    "gifUrl": "https://v2.exercisedb.io/image/0095",
+    "target": "traps",
+    "bodyPart": "back"
+  },
+  "remada-alta": {
+    "apiId": "0119",
+    "name": "barbell upright row v. 2",
+    "gifUrl": "https://v2.exercisedb.io/image/0119",
+    "target": "delts",
+    "bodyPart": "shoulders"
+  },
+  "pike-pushup": {
+    "apiId": "1296",
+    "name": "exercise ball pike push up",
+    "gifUrl": "https://v2.exercisedb.io/image/1296",
+    "target": "pectorals",
+    "bodyPart": "chest"
+  },
+  "rosca-direta": {
+    "apiId": "0031",
+    "name": "barbell curl",
+    "gifUrl": "https://v2.exercisedb.io/image/0031",
+    "target": "biceps",
+    "bodyPart": "upper arms"
+  },
+  "rosca-alternada": {
+    "apiId": "0285",
+    "name": "dumbbell alternate biceps curl",
+    "gifUrl": "https://v2.exercisedb.io/image/0285",
+    "target": "biceps",
+    "bodyPart": "upper arms"
+  },
+  "rosca-martelo": {
+    "apiId": "0312",
+    "name": "dumbbell hammer curl v. 2",
+    "gifUrl": "https://v2.exercisedb.io/image/0312",
+    "target": "biceps",
+    "bodyPart": "upper arms"
+  },
+  "rosca-concentrada": {
+    "apiId": "0297",
+    "name": "dumbbell concentration curl",
+    "gifUrl": "https://v2.exercisedb.io/image/0297",
+    "target": "biceps",
+    "bodyPart": "upper arms"
+  },
+  "rosca-scott": {
+    "apiId": "0070",
+    "name": "barbell preacher curl",
+    "gifUrl": "https://v2.exercisedb.io/image/0070",
+    "target": "biceps",
+    "bodyPart": "upper arms"
+  },
+  "rosca-cabo": {
+    "apiId": "0868",
+    "name": "cable curl",
+    "gifUrl": "https://v2.exercisedb.io/image/0868",
+    "target": "biceps",
+    "bodyPart": "upper arms"
+  },
+  "triceps-pulley": {
+    "apiId": "0199",
+    "name": "cable pushdown (straight arm) v. 2",
+    "gifUrl": "https://v2.exercisedb.io/image/0199",
+    "target": "lats",
+    "bodyPart": "back"
+  },
+  "triceps-testa": {
+    "apiId": "0060",
+    "name": "barbell lying triceps extension skull crusher",
+    "gifUrl": "https://v2.exercisedb.io/image/0060",
+    "target": "triceps",
+    "bodyPart": "upper arms"
+  },
+  "mergulho-triceps": {
+    "apiId": "0129",
+    "name": "bench dip (knees bent)",
+    "gifUrl": "https://v2.exercisedb.io/image/0129",
+    "target": "triceps",
+    "bodyPart": "upper arms"
+  },
+  "dips-paralelas": {
+    "apiId": "0019",
+    "name": "assisted triceps dip (kneeling)",
+    "gifUrl": "https://v2.exercisedb.io/image/0019",
+    "target": "triceps",
+    "bodyPart": "upper arms"
+  },
+  "triceps-coice": {
+    "apiId": "0333",
+    "name": "dumbbell kickback",
+    "gifUrl": "https://v2.exercisedb.io/image/0333",
+    "target": "triceps",
+    "bodyPart": "upper arms"
+  },
+  "agachamento": {
+    "apiId": "0102",
+    "name": "barbell squat (on knees)",
+    "gifUrl": "https://v2.exercisedb.io/image/0102",
+    "target": "quads",
+    "bodyPart": "upper legs"
+  },
+  "leg-press": {
+    "apiId": "0739",
+    "name": "sled 45° leg press",
+    "gifUrl": "https://v2.exercisedb.io/image/0739",
+    "target": "glutes",
+    "bodyPart": "upper legs"
+  },
+  "extensora": {
+    "apiId": "0585",
+    "name": "lever leg extension",
+    "gifUrl": "https://v2.exercisedb.io/image/0585",
+    "target": "quads",
+    "bodyPart": "upper legs"
+  },
+  "flexora": {
+    "apiId": "0496",
+    "name": "inverse leg curl (bench support)",
+    "gifUrl": "https://v2.exercisedb.io/image/0496",
+    "target": "hamstrings",
+    "bodyPart": "upper legs"
+  },
+  "stiff": {
+    "apiId": "0085",
+    "name": "barbell romanian deadlift",
+    "gifUrl": "https://v2.exercisedb.io/image/0085",
+    "target": "glutes",
+    "bodyPart": "upper legs"
+  },
+  "afundo": {
+    "apiId": "0336",
+    "name": "dumbbell lunge",
+    "gifUrl": "https://v2.exercisedb.io/image/0336",
+    "target": "glutes",
+    "bodyPart": "upper legs"
+  },
+  "panturrilha": {
+    "apiId": "0417",
+    "name": "dumbbell standing calf raise",
+    "gifUrl": "https://v2.exercisedb.io/image/0417",
+    "target": "calves",
+    "bodyPart": "lower legs"
+  },
+  "panturrilha-sentado": {
+    "apiId": "0088",
+    "name": "barbell seated calf raise",
+    "gifUrl": "https://v2.exercisedb.io/image/0088",
+    "target": "calves",
+    "bodyPart": "lower legs"
+  },
+  "hack-squat": {
+    "apiId": "0046",
+    "name": "barbell hack squat",
+    "gifUrl": "https://v2.exercisedb.io/image/0046",
+    "target": "glutes",
+    "bodyPart": "upper legs"
+  },
+  "adutora": {
+    "apiId": "0168",
+    "name": "cable hip adduction",
+    "gifUrl": "https://v2.exercisedb.io/image/0168",
+    "target": "adductors",
+    "bodyPart": "upper legs"
+  },
+  "abdutora": {
+    "apiId": "0597",
+    "name": "lever seated hip abduction",
+    "gifUrl": "https://v2.exercisedb.io/image/0597",
+    "target": "abductors",
+    "bodyPart": "upper legs"
+  },
+  "prancha": {
+    "apiId": "0464",
+    "name": "front plank with twist",
+    "gifUrl": "https://v2.exercisedb.io/image/0464",
+    "target": "abs",
+    "bodyPart": "waist"
+  },
+  "abdominal-crunch": {
+    "apiId": "0175",
+    "name": "cable kneeling crunch",
+    "gifUrl": "https://v2.exercisedb.io/image/0175",
+    "target": "abs",
+    "bodyPart": "waist"
+  },
+  "prancha-lateral": {
+    "apiId": "0664",
+    "name": "push-up to side plank",
+    "gifUrl": "https://v2.exercisedb.io/image/0664",
+    "target": "abs",
+    "bodyPart": "waist"
+  },
+  "russian-twist": {
+    "apiId": "0014",
+    "name": "assisted motion russian twist",
+    "gifUrl": "https://v2.exercisedb.io/image/0014",
+    "target": "abs",
+    "bodyPart": "waist"
+  },
+  "leg-raise": {
+    "apiId": "0012",
+    "name": "assisted lying leg raise with lateral throw down",
+    "gifUrl": "https://v2.exercisedb.io/image/0012",
+    "target": "abs",
+    "bodyPart": "waist"
+  },
+  "mountain-climber": {
+    "apiId": "0630",
+    "name": "mountain climber",
+    "gifUrl": "https://v2.exercisedb.io/image/0630",
+    "target": "cardiovascular system",
+    "bodyPart": "cardio"
+  },
+  "abdominal-bicicleta": {
+    "apiId": "0972",
+    "name": "band bicycle crunch",
+    "gifUrl": "https://v2.exercisedb.io/image/0972",
+    "target": "abs",
+    "bodyPart": "waist"
+  },
+  "burpee": {
+    "apiId": "0501",
+    "name": "jack burpee",
+    "gifUrl": "https://v2.exercisedb.io/image/0501",
+    "target": "cardiovascular system",
+    "bodyPart": "cardio"
+  },
+  "box-jump": {
+    "apiId": "1374",
+    "name": "box jump down with one leg stabilization",
+    "gifUrl": "https://v2.exercisedb.io/image/1374",
+    "target": "calves",
+    "bodyPart": "lower legs"
+  },
+  "kettlebell-swing": {
+    "apiId": "0549",
+    "name": "kettlebell swing",
+    "gifUrl": "https://v2.exercisedb.io/image/0549",
+    "target": "glutes",
+    "bodyPart": "upper legs"
+  },
+  "agachamento-salto": {
+    "apiId": "0053",
+    "name": "barbell jump squat",
+    "gifUrl": "https://v2.exercisedb.io/image/0053",
+    "target": "glutes",
+    "bodyPart": "upper legs"
+  },
+  "skater": {
+    "apiId": "3361",
+    "name": "skater hops",
+    "gifUrl": "https://v2.exercisedb.io/image/3361",
+    "target": "cardiovascular system",
+    "bodyPart": "cardio"
+  },
+  "thruster": {
+    "apiId": "3305",
+    "name": "barbell thruster",
+    "gifUrl": "https://v2.exercisedb.io/image/3305",
+    "target": "delts",
+    "bodyPart": "shoulders"
+  },
+  "corrida-esteira": {
+    "apiId": "0175",
+    "name": "cable kneeling crunch",
+    "gifUrl": "https://v2.exercisedb.io/image/0175",
+    "target": "abs",
+    "bodyPart": "waist"
+  },
+  "muscle-up": {
+    "apiId": "0558",
+    "name": "kipping muscle up",
+    "gifUrl": "https://v2.exercisedb.io/image/0558",
+    "target": "lats",
+    "bodyPart": "back"
+  },
+  "pistol-squat": {
+    "apiId": "0544",
+    "name": "kettlebell pistol squat",
+    "gifUrl": "https://v2.exercisedb.io/image/0544",
+    "target": "glutes",
+    "bodyPart": "upper legs"
+  },
+  "l-sit": {
+    "apiId": "2799",
+    "name": "barbell sitted alternate leg raise",
+    "gifUrl": "https://v2.exercisedb.io/image/2799",
+    "target": "abs",
+    "bodyPart": "waist"
+  },
+  "flexao-archer": {
+    "apiId": "3294",
+    "name": "archer push up",
+    "gifUrl": "https://v2.exercisedb.io/image/3294",
+    "target": "pectorals",
+    "bodyPart": "chest"
+  },
+  "toes-to-bar": {
+    "apiId": "0472",
+    "name": "hanging leg raise",
+    "gifUrl": "https://v2.exercisedb.io/image/0472",
+    "target": "abs",
+    "bodyPart": "waist"
+  },
+  "supino-inclinado": {
+    "apiId": "0047",
+    "name": "barbell incline bench press",
+    "gifUrl": "https://v2.exercisedb.io/image/0047",
+    "target": "pectorals",
+    "bodyPart": "chest"
+  },
+  "supino-declinado": {
+    "apiId": "0033",
+    "name": "barbell decline bench press",
+    "gifUrl": "https://v2.exercisedb.io/image/0033",
+    "target": "pectorals",
+    "bodyPart": "chest"
+  },
+  "flexao-inclinada": {
+    "apiId": "0172",
+    "name": "cable incline pushdown",
+    "gifUrl": "https://v2.exercisedb.io/image/0172",
+    "target": "lats",
+    "bodyPart": "back"
+  },
+  "remada-unilateral": {
+    "apiId": "0541",
+    "name": "kettlebell one arm row",
+    "gifUrl": "https://v2.exercisedb.io/image/0541",
+    "target": "upper back",
+    "bodyPart": "back"
+  },
+  "desenvolvimento": {
+    "apiId": "0091",
+    "name": "barbell seated overhead press",
+    "gifUrl": "https://v2.exercisedb.io/image/0091",
+    "target": "delts",
+    "bodyPart": "shoulders"
+  },
+  "triceps-frances": {
+    "apiId": "0092",
+    "name": "barbell seated overhead triceps extension",
+    "gifUrl": "https://v2.exercisedb.io/image/0092",
+    "target": "triceps",
+    "bodyPart": "upper arms"
+  },
+  "agachamento-bulgaro": {
+    "apiId": "0097",
+    "name": "barbell side split squat v. 2",
+    "gifUrl": "https://v2.exercisedb.io/image/0097",
+    "target": "quads",
+    "bodyPart": "upper legs"
+  },
+  "hollow-body": {
+    "apiId": "0276",
+    "name": "dead bug",
+    "gifUrl": "https://v2.exercisedb.io/image/0276",
+    "target": "abs",
+    "bodyPart": "waist"
+  },
+  "jumping-jack": {
+    "apiId": "3223",
+    "name": "star jump (male)",
+    "gifUrl": "https://v2.exercisedb.io/image/3223",
+    "target": "cardiovascular system",
+    "bodyPart": "cardio"
+  },
+  "handstand": {
+    "apiId": "0471",
+    "name": "handstand push-up",
+    "gifUrl": "https://v2.exercisedb.io/image/0471",
+    "target": "triceps",
+    "bodyPart": "upper arms"
+  },
+  "chin-up": {
+    "apiId": "0253",
+    "name": "chin-ups (narrow parallel grip)",
+    "gifUrl": "https://v2.exercisedb.io/image/0253",
+    "target": "upper back",
+    "bodyPart": "back"
+  },
+  "dragon-flag": {
+    "apiId": "0010",
+    "name": "assisted hanging knee raise with throw down",
+    "gifUrl": "https://v2.exercisedb.io/image/0010",
+    "target": "abs",
+    "bodyPart": "waist"
+  },
+  "crossover": {
+    "apiId": "0227",
+    "name": "cable standing fly",
+    "gifUrl": "https://v2.exercisedb.io/image/0227",
+    "target": "pectorals",
+    "bodyPart": "chest"
+  },
+  "peck-deck": {
+    "apiId": "0576",
+    "name": "lever chest press",
+    "gifUrl": "https://v2.exercisedb.io/image/0576",
+    "target": "pectorals",
+    "bodyPart": "chest"
+  },
+  "rope-battle": {
+    "apiId": "0128",
+    "name": "battling ropes",
+    "gifUrl": "https://v2.exercisedb.io/image/0128",
+    "target": "delts",
+    "bodyPart": "shoulders"
+  },
+  "wall-ball": {
+    "apiId": "0640",
+    "name": "one arm slam (with medicine ball)",
+    "gifUrl": "https://v2.exercisedb.io/image/0640",
+    "target": "abs",
+    "bodyPart": "waist"
+  }
+}

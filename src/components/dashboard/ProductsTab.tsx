@@ -1,4 +1,4 @@
-import { Briefcase, Code2, DollarSign, ExternalLink, GraduationCap, HelpCircle, Package, PenTool, Target, User } from 'lucide-react';
+import { Briefcase, Code2, DollarSign, Dumbbell, ExternalLink, GraduationCap, HelpCircle, Package, PenTool, Target, User } from 'lucide-react';
 import type { UserProduct } from '../../hooks/useUserData';
 import { ProductCard } from './ProductCard';
 
@@ -8,6 +8,7 @@ type ProductsTabProps = {
   onAccessProduct: (productName: string) => void;
   onGoToCRM?: () => void;
   onGoToMyEasyContent?: () => void;
+  onGoToMyEasyFitness?: () => void;
   onGoToMyEasyAvatar?: () => void;
   onGoToMyEasyCode?: () => void;
   onGoToMyEasyResume?: () => void;
@@ -22,6 +23,7 @@ export function ProductsTab({
   onAccessProduct,
   onGoToCRM,
   onGoToMyEasyContent,
+  onGoToMyEasyFitness,
   onGoToMyEasyAvatar,
   onGoToMyEasyCode,
   onGoToMyEasyResume,
@@ -179,6 +181,44 @@ export function ProductsTab({
                 <button
                   onClick={onGoToMyEasyContent}
                   className="flex-1 rounded-lg bg-orange-600 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-700 transition-colors flex items-center justify-center space-x-2"
+                >
+                  <ExternalLink className="h-4 w-4" />
+                  <span>Acessar</span>
+                </button>
+                <button className="rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-sm text-white hover:bg-slate-700 transition-colors">
+                  Gerenciar
+                </button>
+              </div>
+            </div>
+
+            {/* MyEasyFitness Card - Always visible */}
+            <div className="rounded-lg border border-slate-800 bg-slate-900/50 p-6 hover:border-lime-500 transition-colors">
+              <div className="flex items-start justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="rounded-lg bg-lime-500/20 p-3">
+                    <Dumbbell className="h-6 w-6 text-lime-400" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-white">
+                      MyEasyFitness
+                    </h3>
+                    <span className="inline-block mt-1 rounded-full bg-lime-500/20 text-lime-400 px-2 py-1 text-xs font-semibold">
+                      Ativo
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-4 space-y-2 text-sm">
+                <p className="text-slate-400">
+                  Treinos, dietas, calorias, suplementos, mobilidade e esportes com IA.
+                </p>
+              </div>
+
+              <div className="mt-6 flex space-x-2">
+                <button
+                  onClick={onGoToMyEasyFitness}
+                  className="flex-1 rounded-lg bg-lime-600 px-4 py-2 text-sm font-semibold text-white hover:bg-lime-500 transition-colors flex items-center justify-center space-x-2"
                 >
                   <ExternalLink className="h-4 w-4" />
                   <span>Acessar</span>
@@ -350,8 +390,8 @@ export function ProductsTab({
             <div className="mt-4 grid gap-4 md:grid-cols-3">
               <div className="text-center">
                 <p className="text-3xl font-bold text-white">
-                  {/* Count userProducts + 9 hard-coded products */}
-                  {userProducts.filter((p) => p.product_status === 'active').length + 9}
+                  {/* Count userProducts + 8 hard-coded products */}
+                  {userProducts.filter((p) => p.product_status === 'active').length + 8}
                 </p>
                 <p className="mt-1 text-sm text-slate-400">
                   Produtos Ativos

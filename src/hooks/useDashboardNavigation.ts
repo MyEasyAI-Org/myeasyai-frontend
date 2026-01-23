@@ -35,6 +35,8 @@ export type UseDashboardNavigationOptions = {
   onGoToMyEasyCRM?: () => void;
   /** Callback function to navigate to MyEasyContent feature */
   onGoToMyEasyContent?: () => void;
+  /** Callback function to navigate to MyEasyFitness feature */
+  onGoToMyEasyFitness?: () => void;
   /** Callback function to navigate to MyEasyAvatar feature */
   onGoToMyEasyAvatar?: () => void;
   /** Callback function to navigate to MyEasyCode feature */
@@ -96,6 +98,7 @@ export function useDashboardNavigation(
     onGoToMyEasyPricing,
     onGoToMyEasyCRM,
     onGoToMyEasyContent,
+    onGoToMyEasyFitness,
     onGoToMyEasyAvatar,
     onGoToMyEasyCode,
     onGoToMyEasyResume,
@@ -239,6 +242,22 @@ export function useDashboardNavigation(
   }, [onGoToMyEasyContent, navigate]);
 
   /**
+   * Navigate to MyEasyFitness feature
+   * @description
+   * Attempts to use the provided callback. If not available, uses React Router
+   * to navigate to the MyEasyFitness route.
+   *
+   * @returns {void}
+   */
+  const goToFitness = useCallback(() => {
+    if (onGoToMyEasyFitness) {
+      onGoToMyEasyFitness();
+    } else {
+      navigate(ROUTES.MY_EASY_FITNESS);
+    }
+  }, [onGoToMyEasyFitness, navigate]);
+
+  /**
    * Navigate to MyEasyAvatar feature
    * @description
    * Attempts to use the provided callback. If not available, uses React Router
@@ -311,6 +330,7 @@ export function useDashboardNavigation(
    * - Names containing "pricing" or "preco" → MyEasyPricing
    * - Names containing "crm" → MyEasyCRM
    * - Names containing "content" → MyEasyContent
+   * - Names containing "fitness" → MyEasyFitness
    * - Names containing "avatar" → MyEasyAvatar
    * - Names containing "code" → MyEasyCode
    * - Names containing "resume" or "curriculo" → MyEasyResume
@@ -334,6 +354,8 @@ export function useDashboardNavigation(
         goToCRM();
       } else if (name.includes('content')) {
         goToContent();
+      } else if (name.includes('fitness')) {
+        goToFitness();
       } else if (name.includes('avatar')) {
         goToAvatar();
       } else if (name.includes('code')) {
@@ -346,7 +368,7 @@ export function useDashboardNavigation(
         goToHome();
       }
     },
-    [goToWebsite, goToGuru, goToPricing, goToCRM, goToContent, goToAvatar, goToCode, goToResume, goToLearning, goToHome],
+    [goToWebsite, goToGuru, goToPricing, goToCRM, goToContent, goToFitness, goToAvatar, goToCode, goToResume, goToLearning, goToHome],
   );
 
   // ============================================================================
@@ -363,6 +385,7 @@ export function useDashboardNavigation(
     goToPricing,
     goToCRM,
     goToContent,
+    goToFitness,
     goToAvatar,
     goToCode,
     goToResume,
