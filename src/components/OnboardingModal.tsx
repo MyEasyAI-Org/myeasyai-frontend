@@ -16,6 +16,7 @@ type OnboardingModalProps = {
   onComplete: () => void;
   user: User;
   disableClose?: boolean;
+  initialStep?: number; // Start on a specific step (0-3), used for payment-only flow
 };
 
 type FormData = {
@@ -70,8 +71,17 @@ export function OnboardingModal({
   onComplete,
   user,
   disableClose = false,
+  initialStep = 0,
 }: OnboardingModalProps) {
-  const [currentStep, setCurrentStep] = useState(0);
+  const [currentStep, setCurrentStep] = useState(initialStep);
+
+  // Update currentStep when initialStep changes (e.g., when re-opening for payment)
+  useEffect(() => {
+    if (isOpen) {
+      setCurrentStep(initialStep);
+    }
+  }, [initialStep, isOpen]);
+
   const [formData, setFormData] = useState<FormData>({
     name: '',
     preferred_name: '',

@@ -686,6 +686,10 @@ stripeRoutes.post('/confirm-subscription', async (c) => {
     }
     console.log('[Stripe] Period end:', subscription.current_period_end, '→', periodEndDate);
 
+    // Determine billing cycle from price ID
+    const billingCycle = getBillingPeriodFromPriceId(priceId);
+    console.log('[Stripe] Billing cycle determined from price:', priceId, '→', billingCycle);
+
     // Update the user
     const updateResult = await db.update(users)
       .set({
@@ -693,10 +697,11 @@ stripeRoutes.post('/confirm-subscription', async (c) => {
         subscription_plan: plan || 'individual',
         stripe_subscription_id: subscription.id,
         subscription_period_end: periodEndDate,
+        billing_cycle: billingCycle,
       })
       .where(eq(users.uuid, userId));
 
-    console.log('[Stripe] Database update result for user:', userId, 'Plan:', plan, 'Status:', subscription.status);
+    console.log('[Stripe] Database update result for user:', userId, 'Plan:', plan, 'Status:', subscription.status, 'Billing:', billingCycle);
 
     return c.json({
       subscriptionId: subscription.id,

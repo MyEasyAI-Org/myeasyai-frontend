@@ -30,6 +30,7 @@ export const users = sqliteTable('users', {
   stripe_subscription_id: text('stripe_subscription_id'),
   subscription_period_end: text('subscription_period_end'),
   subscription_cancel_at_period_end: integer('subscription_cancel_at_period_end', { mode: 'boolean' }).default(false),
+  billing_cycle: text('billing_cycle'), // 'monthly' | 'annual'
 });
 
 /**

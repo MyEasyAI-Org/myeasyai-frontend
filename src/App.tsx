@@ -80,11 +80,15 @@ function authUserToUser(authUser: AuthUser | null): User | null {
  * IMPORTANT: During auth check (isLoading=true), we render children to:
  * 1. Show the Dashboard's LoadingScreen instead of a blank page
  * 2. Keep the user on the same URL so they stay on the same page after F5
+ *
+ * PAYMENT BLOCKING: If needsPayment is true, user cannot access protected routes
+ * They are redirected to home and the onboarding modal opens for payment step
  */
 function ProtectedRoute({
   children,
   user,
   needsOnboarding,
+  needsPayment,
   onOpenOnboarding,
   isLoading,
   isCheckingAuth,
@@ -92,19 +96,30 @@ function ProtectedRoute({
   children: React.ReactNode;
   user: User | null;
   needsOnboarding: boolean;
+  needsPayment: boolean;
   onOpenOnboarding: () => void;
   isLoading: boolean;
   isCheckingAuth: boolean;
 }) {
   const location = useLocation();
 
-  // If we have a user, render children immediately
-  // The Dashboard component has its own LoadingScreen with progress bar
+  // If we have a user, check additional requirements
   if (user) {
+    // If needs onboarding, redirect to home and open onboarding modal
     if (needsOnboarding) {
       onOpenOnboarding();
       return <Navigate to={ROUTES.HOME} replace />;
     }
+
+    // If needs payment (no active subscription), redirect to home and open onboarding for payment
+    // This blocks access when: no subscription, past_due, cancelled, or inactive
+    if (needsPayment) {
+      console.log('🚫 [ProtectedRoute] Blocking access - payment required');
+      onOpenOnboarding();
+      return <Navigate to={ROUTES.HOME} replace />;
+    }
+
+    // User has active subscription - allow access
     return <>{children}</>;
   }
 
@@ -154,6 +169,9 @@ function AppContent() {
     'overview' | 'subscription' | 'products' | 'usage' | 'settings' | 'profile'
   >('overview');
   const isUserActionRef = useRef(false);
+  // Subscription status for payment blocking
+  const [subscriptionStatus, setSubscriptionStatus] = useState<string | null>(null);
+  const [needsPayment, setNeedsPayment] = useState(false);
   const wasPageHiddenRef = useRef(false);
   const ignoreNextAuthEventRef = useRef(false);
 
@@ -168,6 +186,32 @@ function AppContent() {
     signupModal.open();
   };
   const closeSignup = () => signupModal.close();
+
+  // Function to check subscription status and determine if payment is needed
+  const checkSubscriptionStatus = async (userEmail: string): Promise<{ status: string | null; needsPayment: boolean }> => {
+    try {
+      const result = await userManagementServiceV2.getUserProfile(userEmail);
+      if (!result.success || !result.data) {
+        console.log('🔴 [APP] Could not fetch subscription status');
+        return { status: null, needsPayment: true }; // Block if we can't verify
+      }
+
+      const status = result.data.subscription_status;
+      console.log('💳 [APP] Subscription status:', status);
+
+      // User needs payment if:
+      // - No status (never subscribed)
+      // - inactive (no active subscription)
+      // - past_due (payment failed)
+      // - cancelled (subscription cancelled)
+      const needsPaymentCheck = !status || status === 'inactive' || status === 'past_due' || status === 'cancelled';
+
+      return { status, needsPayment: needsPaymentCheck };
+    } catch (error) {
+      console.error('🔴 [APP] Error checking subscription status:', error);
+      return { status: null, needsPayment: true }; // Block if error
+    }
+  };
 
   // Function to fetch user data from database (D1 Primary + Supabase Fallback)
   const fetchUserData = async (userEmail: string) => {
@@ -439,10 +483,18 @@ function AppContent() {
             authUserToUser(authUser)!
           );
 
+        // Check subscription status (only if doesn't need onboarding)
+        let paymentCheck = { status: null as string | null, needsPayment: false };
+        if (!needsOnboardingCheck && authUser.email) {
+          paymentCheck = await checkSubscriptionStatus(authUser.email);
+        }
+
         // NOW set all states together to prevent partial renders
         setUserName(userData.name);
         setUser(authUserToUser(authUser));
         setNeedsOnboarding(needsOnboardingCheck);
+        setSubscriptionStatus(paymentCheck.status);
+        setNeedsPayment(paymentCheck.needsPayment);
         setLoading(false);
         setIsCheckingAuth(false);
         return;
@@ -462,9 +514,22 @@ function AppContent() {
             userData = await fetchUserData(session.user.email);
           }
 
+          // Check onboarding
+          const needsOnboardingCheck =
+            await userManagementServiceV2.checkUserNeedsOnboarding(session.user);
+
+          // Check subscription status (only if doesn't need onboarding)
+          let paymentCheck = { status: null as string | null, needsPayment: false };
+          if (!needsOnboardingCheck && session.user.email) {
+            paymentCheck = await checkSubscriptionStatus(session.user.email);
+          }
+
           // NOW set all states together
           setUserName(userData.name);
           setUser(session.user);
+          setNeedsOnboarding(needsOnboardingCheck);
+          setSubscriptionStatus(paymentCheck.status);
+          setNeedsPayment(paymentCheck.needsPayment);
         } else {
           setUser(null);
         }
@@ -518,7 +583,21 @@ function AppContent() {
               );
             setNeedsOnboarding(needsOnboardingCheck);
 
-            if (needsOnboardingCheck) {
+            // Check subscription status (only if doesn't need onboarding)
+            if (!needsOnboardingCheck && authUser.email) {
+              const paymentCheck = await checkSubscriptionStatus(authUser.email);
+              setSubscriptionStatus(paymentCheck.status);
+              setNeedsPayment(paymentCheck.needsPayment);
+
+              // If needs payment, redirect to home and open onboarding for payment step
+              if (paymentCheck.needsPayment) {
+                console.log('💳 [APP] User needs payment, redirecting to onboarding...');
+                navigate(ROUTES.HOME);
+                setTimeout(() => {
+                  onboardingModal.open();
+                }, 100);
+              }
+            } else if (needsOnboardingCheck) {
               navigate(ROUTES.HOME);
               setTimeout(() => {
                 onboardingModal.open();
@@ -539,6 +618,8 @@ function AppContent() {
           setUser(null);
           setUserName('Usuário');
           setUserAvatarUrl(undefined);
+          setSubscriptionStatus(null);
+          setNeedsPayment(false);
         }
 
         setLoading(false);
@@ -679,8 +760,22 @@ function AppContent() {
           setUserName(userData.name);
           setNeedsOnboarding(needsOnboardingCheck);
 
-          // If needs onboarding, stay on home and show onboarding modal
-          if (needsOnboardingCheck) {
+          // Check subscription status (only if doesn't need onboarding)
+          if (!needsOnboardingCheck && session.user.email) {
+            const paymentCheck = await checkSubscriptionStatus(session.user.email);
+            setSubscriptionStatus(paymentCheck.status);
+            setNeedsPayment(paymentCheck.needsPayment);
+
+            // If needs payment, redirect to home and open onboarding for payment step
+            if (paymentCheck.needsPayment) {
+              console.log('💳 [APP] User needs payment, redirecting to onboarding...');
+              navigate(ROUTES.HOME);
+              setTimeout(() => {
+                onboardingModal.open();
+              }, 100);
+            }
+          } else if (needsOnboardingCheck) {
+            // If needs onboarding, stay on home and show onboarding modal
             navigate(ROUTES.HOME);
             setTimeout(() => {
               onboardingModal.open();
@@ -704,6 +799,8 @@ function AppContent() {
         setUserName('Usuário');
         setUserAvatarUrl(undefined);
         setNeedsOnboarding(false);
+        setSubscriptionStatus(null);
+        setNeedsPayment(false);
         onboardingModal.close();
         loginModal.close();
         signupModal.close();
@@ -790,7 +887,8 @@ function AppContent() {
                 onClose={closeOnboarding}
                 onComplete={handleOnboardingComplete}
                 user={user}
-                disableClose={needsOnboarding}
+                disableClose={needsOnboarding || needsPayment}
+                initialStep={needsPayment && !needsOnboarding ? 3 : 0}
               />
             )}
 
@@ -813,6 +911,7 @@ function AppContent() {
           <ProtectedRoute
             user={user}
             needsOnboarding={needsOnboarding}
+            needsPayment={needsPayment}
             onOpenOnboarding={() => onboardingModal.open()}
             isLoading={loading}
             isCheckingAuth={isCheckingAuth}
@@ -849,6 +948,7 @@ function AppContent() {
           <ProtectedRoute
             user={user}
             needsOnboarding={needsOnboarding}
+            needsPayment={needsPayment}
             onOpenOnboarding={() => onboardingModal.open()}
             isLoading={loading}
             isCheckingAuth={isCheckingAuth}
@@ -867,6 +967,7 @@ function AppContent() {
           <ProtectedRoute
             user={user}
             needsOnboarding={needsOnboarding}
+            needsPayment={needsPayment}
             onOpenOnboarding={() => onboardingModal.open()}
             isLoading={loading}
             isCheckingAuth={isCheckingAuth}
@@ -882,6 +983,7 @@ function AppContent() {
           <ProtectedRoute
             user={user}
             needsOnboarding={needsOnboarding}
+            needsPayment={needsPayment}
             onOpenOnboarding={() => onboardingModal.open()}
             isLoading={loading}
             isCheckingAuth={isCheckingAuth}
@@ -902,6 +1004,7 @@ function AppContent() {
           <ProtectedRoute
             user={user}
             needsOnboarding={needsOnboarding}
+            needsPayment={needsPayment}
             onOpenOnboarding={() => onboardingModal.open()}
             isLoading={loading}
             isCheckingAuth={isCheckingAuth}
@@ -917,6 +1020,7 @@ function AppContent() {
           <ProtectedRoute
             user={user}
             needsOnboarding={needsOnboarding}
+            needsPayment={needsPayment}
             onOpenOnboarding={() => onboardingModal.open()}
             isLoading={loading}
             isCheckingAuth={isCheckingAuth}
@@ -932,6 +1036,7 @@ function AppContent() {
           <ProtectedRoute
             user={user}
             needsOnboarding={needsOnboarding}
+            needsPayment={needsPayment}
             onOpenOnboarding={() => onboardingModal.open()}
             isLoading={loading}
             isCheckingAuth={isCheckingAuth}
@@ -947,6 +1052,7 @@ function AppContent() {
           <ProtectedRoute
             user={user}
             needsOnboarding={needsOnboarding}
+            needsPayment={needsPayment}
             onOpenOnboarding={() => onboardingModal.open()}
             isLoading={loading}
             isCheckingAuth={isCheckingAuth}
@@ -962,6 +1068,7 @@ function AppContent() {
           <ProtectedRoute
             user={user}
             needsOnboarding={needsOnboarding}
+            needsPayment={needsPayment}
             onOpenOnboarding={() => onboardingModal.open()}
             isLoading={loading}
             isCheckingAuth={isCheckingAuth}
@@ -977,6 +1084,7 @@ function AppContent() {
           <ProtectedRoute
             user={user}
             needsOnboarding={needsOnboarding}
+            needsPayment={needsPayment}
             onOpenOnboarding={() => onboardingModal.open()}
             isLoading={loading}
             isCheckingAuth={isCheckingAuth}
@@ -992,6 +1100,7 @@ function AppContent() {
           <ProtectedRoute
             user={user}
             needsOnboarding={needsOnboarding}
+            needsPayment={needsPayment}
             onOpenOnboarding={() => onboardingModal.open()}
             isLoading={loading}
             isCheckingAuth={isCheckingAuth}
@@ -1007,6 +1116,7 @@ function AppContent() {
           <ProtectedRoute
             user={user}
             needsOnboarding={needsOnboarding}
+            needsPayment={needsPayment}
             onOpenOnboarding={() => onboardingModal.open()}
             isLoading={loading}
             isCheckingAuth={isCheckingAuth}
@@ -1022,6 +1132,7 @@ function AppContent() {
           <ProtectedRoute
             user={user}
             needsOnboarding={needsOnboarding}
+            needsPayment={needsPayment}
             onOpenOnboarding={() => onboardingModal.open()}
             isLoading={loading}
             isCheckingAuth={isCheckingAuth}
