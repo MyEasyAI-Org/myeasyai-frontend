@@ -31,7 +31,8 @@ export function PlanSelectionStep({
 }: PlanSelectionStepProps) {
   const { t } = useTranslation();
   const [selectedPlan, setSelectedPlan] = useState<PlanId>('plus');
-  const [billingPeriod, setBillingPeriod] = useState<BillingPeriod>('monthly');
+  // Default to 'annual' (À Vista) for Brazil - PIX is only available for annual payments
+  const [billingPeriod, setBillingPeriod] = useState<BillingPeriod>('annual');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [phase, setPhase] = useState<StepPhase>('select-plan');
