@@ -655,9 +655,8 @@ stripeRoutes.post('/create-subscription', async (c) => {
       paymentIntentParams.append('customer', customerId);
       paymentIntentParams.append('payment_method_types[0]', 'card');
       paymentIntentParams.append('payment_method_types[1]', 'pix');
-      // IMPORTANT: Save the card for future use (upgrades)
-      // This attaches the payment method to the customer after successful payment
-      paymentIntentParams.append('setup_future_usage', 'off_session');
+      // Note: setup_future_usage is incompatible with PIX
+      // Cards are explicitly attached after payment in confirm-pix-payment endpoint
       paymentIntentParams.append('metadata[userId]', userId);
       paymentIntentParams.append('metadata[plan]', plan);
       paymentIntentParams.append('metadata[priceId]', priceId);
