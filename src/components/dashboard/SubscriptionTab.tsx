@@ -78,10 +78,10 @@ export function SubscriptionTab({ subscription }: SubscriptionTabProps) {
         console.log('🟢 [SubscriptionTab] Proration preview:', preview);
       } catch (error) {
         console.error('[SubscriptionTab] Error fetching proration preview:', error);
-        // Check if this is an upfront payment user (PIX or Card à vista)
+        // Check if this is a blocked user (PIX or downgrade for upfront)
         const errorMessage = error instanceof Error ? error.message : String(error);
-        if (errorMessage.includes('à vista')) {
-          // Extract period end if available from subscription data
+        // Block: PIX users or downgrade for upfront users
+        if (errorMessage.includes('PIX') || errorMessage.includes('Downgrade não disponível')) {
           setUpfrontBlockedError({
             message: errorMessage,
             periodEnd: subscription.end_date || undefined,
@@ -130,9 +130,12 @@ export function SubscriptionTab({ subscription }: SubscriptionTabProps) {
       });
 
       if (result.success) {
-        toast.success('Plano alterado com sucesso!', {
-          description: `Você agora está no plano ${selectedPlan.toUpperCase()}. A cobrança proporcional foi aplicada.`,
-        });
+        // Check if this was an upfront payment upgrade
+        const description = result.amountCharged && result.currency
+          ? `Você agora está no plano ${selectedPlan.toUpperCase()}. Cobrança de ${formatCurrency(result.amountCharged, result.currency)} aplicada.`
+          : `Você agora está no plano ${selectedPlan.toUpperCase()}. A cobrança proporcional foi aplicada.`;
+
+        toast.success('Plano alterado com sucesso!', { description });
         // Refresh the page to show updated plan
         window.location.reload();
       } else {
@@ -352,7 +355,11 @@ export function SubscriptionTab({ subscription }: SubscriptionTabProps) {
                   </span>
                 </div>
                 <p className="text-xs text-slate-500 mt-2">
-                  Esse valor é calculado proporcionalmente ao tempo restante do seu período atual.
+                  {prorationPreview.isUpfrontPayment && prorationPreview.daysRemaining ? (
+                    <>Calculado para {prorationPreview.daysRemaining} dias restantes. Seu cartão será cobrado automaticamente.</>
+                  ) : (
+                    <>Esse valor é calculado proporcionalmente ao tempo restante do seu período atual.</>
+                  )}
                 </p>
               </div>
             ) : !upfrontBlockedError && prorationPreview && prorationPreview.amountDue <= 0 ? (

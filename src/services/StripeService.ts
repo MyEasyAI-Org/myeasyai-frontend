@@ -51,9 +51,13 @@ export interface ConfirmPixPaymentResponse {
 
 export interface UpdateSubscriptionResponse {
   success: boolean;
-  subscriptionId: string;
+  subscriptionId?: string;
   newPlan: string;
-  status: string;
+  status?: string;
+  // For upfront payment users (card à vista)
+  amountCharged?: number;
+  currency?: string;
+  paymentIntentId?: string;
 }
 
 export interface ProrationPreviewResponse {
@@ -65,6 +69,10 @@ export interface ProrationPreviewResponse {
   currency: string;
   billingPeriod: 'monthly' | 'annual';
   currentPeriodEnd: number;
+  // For upfront payment users (card à vista)
+  daysRemaining?: number;
+  isUpfrontPayment?: boolean;
+  paymentMethodId?: string;
 }
 
 class StripeService {

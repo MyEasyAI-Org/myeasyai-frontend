@@ -85,6 +85,75 @@ function getPriceAmount(plan: string, currency: 'brl' | 'usd'): number {
   return PRICE_AMOUNTS[key] || PRICE_AMOUNTS.individual_brl;
 }
 
+// Helper: Get customer's saved payment methods
+async function getCustomerPaymentMethods(
+  customerId: string,
+  stripeSecretKey: string
+): Promise<{ hasCard: boolean; paymentMethodId: string | null }> {
+  try {
+    const response = await fetch(
+      `https://api.stripe.com/v1/payment_methods?customer=${customerId}&type=card`,
+      {
+        headers: {
+          'Authorization': `Bearer ${stripeSecretKey}`,
+        },
+      }
+    );
+
+    if (!response.ok) {
+      console.error('[Stripe] Failed to get payment methods');
+      return { hasCard: false, paymentMethodId: null };
+    }
+
+    const data = await response.json() as { data: Array<{ id: string }> };
+    const hasCard = data.data && data.data.length > 0;
+    const paymentMethodId = hasCard ? data.data[0].id : null;
+
+    console.log('[Stripe] Customer payment methods:', customerId, 'hasCard:', hasCard);
+    return { hasCard, paymentMethodId };
+  } catch (error) {
+    console.error('[Stripe] Error getting payment methods:', error);
+    return { hasCard: false, paymentMethodId: null };
+  }
+}
+
+// Helper: Calculate manual proration for upfront payment users
+function calculateManualProration(
+  currentPlan: string,
+  newPlan: string,
+  currency: 'brl' | 'usd',
+  periodEndDate: string
+): { amountDue: number; daysRemaining: number; totalDays: number } {
+  const currentPrice = getPriceAmount(currentPlan, currency);
+  const newPrice = getPriceAmount(newPlan, currency);
+
+  // Calculate days remaining in subscription
+  const now = new Date();
+  const periodEnd = new Date(periodEndDate);
+  const daysRemaining = Math.max(0, Math.ceil((periodEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)));
+
+  // Total days in a year
+  const totalDays = 365;
+
+  // Calculate prorated difference
+  // (newPrice - currentPrice) * (daysRemaining / totalDays)
+  const priceDifference = newPrice - currentPrice;
+  const prorationFactor = daysRemaining / totalDays;
+  const amountDue = Math.ceil(priceDifference * prorationFactor);
+
+  console.log('[Stripe] Manual proration:', {
+    currentPlan,
+    newPlan,
+    currentPrice,
+    newPrice,
+    daysRemaining,
+    prorationFactor,
+    amountDue,
+  });
+
+  return { amountDue, daysRemaining, totalDays };
+}
+
 export const stripeRoutes = new Hono<{ Bindings: StripeEnv; Variables: Variables }>();
 
 /**
@@ -921,14 +990,105 @@ stripeRoutes.post('/update-subscription', async (c) => {
     }
 
     // Check if user paid "à vista" (one-time payment without recurring subscription)
-    // This includes both PIX and Card payments for Brazil annual plans
     if (!existingUser.stripe_subscription_id) {
-      // À vista users cannot change plans mid-subscription (no Stripe subscription to modify)
-      if (existingUser.subscription_status === 'active') {
-        console.log('[Stripe] À vista user trying to change plan:', userId, '(no stripe_subscription_id)');
+      // Check if user has an active subscription and a customer ID
+      if (existingUser.subscription_status === 'active' && existingUser.stripe_customer_id) {
+        // User paid à vista - check if they have a saved card
+        const { hasCard, paymentMethodId } = await getCustomerPaymentMethods(
+          existingUser.stripe_customer_id,
+          STRIPE_SECRET_KEY
+        );
+
+        if (hasCard && paymentMethodId && existingUser.subscription_period_end && existingUser.subscription_plan) {
+          // User has a saved card - process upgrade with PaymentIntent
+          console.log('[Stripe] À vista user with card - processing upgrade:', userId, 'from', existingUser.subscription_plan, 'to', newPlan);
+
+          const currency = country === 'BR' ? 'brl' : 'usd';
+          const proration = calculateManualProration(
+            existingUser.subscription_plan,
+            newPlan,
+            currency,
+            existingUser.subscription_period_end
+          );
+
+          // Only allow upgrades (not downgrades) for à vista users
+          if (proration.amountDue <= 0) {
+            return c.json({
+              error: 'Downgrade não disponível para pagamentos à vista. Seu plano será alterado na renovação.',
+              code: 'UPFRONT_NO_DOWNGRADE',
+              periodEnd: existingUser.subscription_period_end,
+            }, 400);
+          }
+
+          // Create PaymentIntent and charge the saved card
+          const paymentIntentParams = new URLSearchParams();
+          paymentIntentParams.append('amount', proration.amountDue.toString());
+          paymentIntentParams.append('currency', currency);
+          paymentIntentParams.append('customer', existingUser.stripe_customer_id);
+          paymentIntentParams.append('payment_method', paymentMethodId);
+          paymentIntentParams.append('confirm', 'true');
+          paymentIntentParams.append('off_session', 'true');
+          paymentIntentParams.append('metadata[userId]', userId);
+          paymentIntentParams.append('metadata[oldPlan]', existingUser.subscription_plan);
+          paymentIntentParams.append('metadata[newPlan]', newPlan);
+          paymentIntentParams.append('metadata[upgradeType]', 'upfront_card');
+          paymentIntentParams.append('description', `Upgrade de ${existingUser.subscription_plan} para ${newPlan} - MyEasyAI`);
+
+          const paymentIntentResponse = await fetch('https://api.stripe.com/v1/payment_intents', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${STRIPE_SECRET_KEY}`,
+              'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: paymentIntentParams.toString(),
+          });
+
+          const piText = await paymentIntentResponse.text();
+          console.log('[Stripe] PaymentIntent response:', paymentIntentResponse.status);
+
+          if (!paymentIntentResponse.ok) {
+            console.error('[Stripe] Failed to create/charge PaymentIntent:', piText);
+            const errorData = JSON.parse(piText) as { error?: { message?: string } };
+            return c.json({
+              error: errorData.error?.message || 'Falha ao processar pagamento do upgrade',
+              code: 'PAYMENT_FAILED',
+            }, 400);
+          }
+
+          const paymentIntent = JSON.parse(piText) as { id: string; status: string };
+          console.log('[Stripe] PaymentIntent succeeded:', paymentIntent.id, 'status:', paymentIntent.status);
+
+          if (paymentIntent.status !== 'succeeded') {
+            return c.json({
+              error: 'Pagamento não confirmado. Tente novamente.',
+              code: 'PAYMENT_NOT_CONFIRMED',
+              status: paymentIntent.status,
+            }, 400);
+          }
+
+          // Payment succeeded! Update user's plan in database
+          await db.update(users)
+            .set({
+              subscription_plan: newPlan,
+            })
+            .where(eq(users.uuid, userId));
+
+          console.log('[Stripe] À vista upgrade successful:', userId, 'new plan:', newPlan, 'charged:', proration.amountDue);
+
+          return c.json({
+            success: true,
+            newPlan,
+            amountCharged: proration.amountDue,
+            currency,
+            paymentIntentId: paymentIntent.id,
+          });
+        }
+
+        // User paid with PIX (no card saved) - cannot upgrade
+        console.log('[Stripe] PIX user trying to change plan:', userId, '(no saved card)');
         return c.json({
-          error: 'Você pagou à vista. Mudança de plano estará disponível na renovação.',
-          code: 'UPFRONT_NO_MIDTERM_CHANGE',
+          error: 'Você pagou via PIX. Mudança de plano estará disponível na renovação.',
+          code: 'PIX_NO_MIDTERM_CHANGE',
           periodEnd: existingUser.subscription_period_end,
         }, 400);
       }
@@ -1162,18 +1322,64 @@ stripeRoutes.post('/preview-proration', async (c) => {
     }
 
     // Check if user paid "à vista" (one-time payment without recurring subscription)
-    // This includes both PIX and Card payments for Brazil annual plans
-    if (!existingUser.stripe_subscription_id || !existingUser.stripe_customer_id) {
-      // À vista users cannot change plans mid-subscription (no Stripe subscription to modify)
-      if (existingUser.subscription_status === 'active') {
-        console.log('[Stripe] À vista user trying to preview proration:', userId, '(no stripe_subscription_id)');
+    if (!existingUser.stripe_subscription_id) {
+      // Check if user has an active subscription and a customer ID
+      if (existingUser.subscription_status === 'active' && existingUser.stripe_customer_id) {
+        // User paid à vista - check if they have a saved card
+        const { hasCard, paymentMethodId } = await getCustomerPaymentMethods(
+          existingUser.stripe_customer_id,
+          STRIPE_SECRET_KEY
+        );
+
+        if (hasCard && existingUser.subscription_period_end && existingUser.subscription_plan) {
+          // User has a saved card - calculate manual proration for upgrade
+          console.log('[Stripe] À vista user with card - calculating manual proration:', userId);
+
+          const currency = country === 'BR' ? 'brl' : 'usd';
+          const proration = calculateManualProration(
+            existingUser.subscription_plan,
+            newPlan,
+            currency,
+            existingUser.subscription_period_end
+          );
+
+          // Only allow upgrades (not downgrades) for à vista users
+          if (proration.amountDue <= 0) {
+            return c.json({
+              error: 'Downgrade não disponível para pagamentos à vista. Seu plano será alterado na renovação.',
+              code: 'UPFRONT_NO_DOWNGRADE',
+              periodEnd: existingUser.subscription_period_end,
+            }, 400);
+          }
+
+          return c.json({
+            amountDue: proration.amountDue,
+            prorationAmount: proration.amountDue,
+            creditAmount: 0,
+            chargeAmount: proration.amountDue,
+            netAmount: proration.amountDue,
+            currency,
+            billingPeriod: 'annual',
+            currentPeriodEnd: Math.floor(new Date(existingUser.subscription_period_end).getTime() / 1000),
+            daysRemaining: proration.daysRemaining,
+            isUpfrontPayment: true, // Flag to indicate this is a manual proration
+            paymentMethodId,
+          });
+        }
+
+        // User paid with PIX (no card saved) - cannot upgrade
+        console.log('[Stripe] PIX user trying to preview proration:', userId, '(no saved card)');
         return c.json({
-          error: 'Você pagou à vista. Mudança de plano estará disponível na renovação.',
-          code: 'UPFRONT_NO_MIDTERM_CHANGE',
+          error: 'Você pagou via PIX. Mudança de plano estará disponível na renovação.',
+          code: 'PIX_NO_MIDTERM_CHANGE',
           periodEnd: existingUser.subscription_period_end,
         }, 400);
       }
       return c.json({ error: 'User has no active subscription' }, 400);
+    }
+
+    if (!existingUser.stripe_customer_id) {
+      return c.json({ error: 'User has no Stripe customer' }, 400);
     }
 
     // Get the current subscription from Stripe
