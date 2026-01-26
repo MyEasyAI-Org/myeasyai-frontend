@@ -54,6 +54,32 @@ export function getFileNameWithoutExtension(filename: string): string {
 // =============================================
 
 /**
+ * Retorna o label curto do tipo de arquivo para exibição em lista
+ */
+export function getFileTypeLabel(mimeType: string): string {
+  // Extrai a parte após o /
+  const parts = mimeType.split('/');
+  if (parts.length === 2) {
+    const subtype = parts[1];
+
+    // Casos especiais
+    if (subtype.includes('wordprocessingml')) return 'DOCX';
+    if (subtype.includes('spreadsheetml')) return 'XLSX';
+    if (subtype.includes('presentationml')) return 'PPTX';
+    if (subtype === 'msword') return 'DOC';
+    if (subtype === 'vnd.ms-excel') return 'XLS';
+    if (subtype === 'vnd.ms-powerpoint') return 'PPT';
+    if (subtype === 'plain') return 'TXT';
+    if (subtype === 'markdown') return 'MD';
+
+    // Retorna uppercase do subtipo
+    return subtype.toUpperCase();
+  }
+
+  return 'Arquivo';
+}
+
+/**
  * Retorna uma descrição amigável do tipo de arquivo
  */
 export function getFileType(mimeType: string): string {
