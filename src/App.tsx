@@ -35,6 +35,7 @@ import { MyEasyFitness } from './features/my-easy-fitness';
 import { MyEasyWebsite } from './features/my-easy-website/MyEasyWebsite';
 import { MyEasyResume } from './features/my-easy-resume/MyEasyResume';
 import { MyEasyLearning } from './features/my-easy-learning/MyEasyLearning';
+import { MyEasyDocs } from './features/my-easy-docs';
 import { SupportPage } from './pages/SupportPage';
 import { CreateTicketPage } from './pages/CreateTicketPage';
 import { MyTicketsPage } from './pages/MyTicketsPage';
@@ -391,6 +392,10 @@ function AppContent() {
 
   const goToMyEasyLearning = () => {
     navigate(ROUTES.MY_EASY_LEARNING);
+  };
+
+  const goToMyEasyDocs = () => {
+    navigate(ROUTES.MY_EASY_DOCS);
   };
 
   const goToSupport = () => {
@@ -936,6 +941,7 @@ function AppContent() {
                 onGoToMyEasyCode={goToMyEasyCode}
                 onGoToMyEasyResume={goToMyEasyResume}
                 onGoToMyEasyLearning={goToMyEasyLearning}
+                onGoToMyEasyDocs={goToMyEasyDocs}
                 onGoToSupport={goToSupport}
                 initialTab={dashboardInitialTab}
                 onLoadingComplete={() => {
@@ -1112,6 +1118,22 @@ function AppContent() {
             isCheckingAuth={isCheckingAuth}
           >
             <MyEasyLearning onBackToDashboard={goToDashboardProducts} />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path={ROUTES.MY_EASY_DOCS}
+        element={
+          <ProtectedRoute
+            user={user}
+            needsOnboarding={needsOnboarding}
+            needsPayment={needsPayment}
+            onOpenOnboarding={() => onboardingModal.open()}
+            isLoading={loading}
+            isCheckingAuth={isCheckingAuth}
+          >
+            <MyEasyDocs onBackToDashboard={goToDashboardProducts} />
           </ProtectedRoute>
         }
       />

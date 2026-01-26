@@ -45,6 +45,8 @@ export type UseDashboardNavigationOptions = {
   onGoToMyEasyResume?: () => void;
   /** Callback function to navigate to MyEasyLearning feature */
   onGoToMyEasyLearning?: () => void;
+  /** Callback function to navigate to MyEasyDocs feature */
+  onGoToMyEasyDocs?: () => void;
   /** Initial active tab (default: 'overview') */
   initialTab?: DashboardTab;
 };
@@ -103,6 +105,7 @@ export function useDashboardNavigation(
     onGoToMyEasyCode,
     onGoToMyEasyResume,
     onGoToMyEasyLearning,
+    onGoToMyEasyDocs,
     initialTab = DEFAULT_INITIAL_TAB,
   } = options;
 
@@ -322,6 +325,22 @@ export function useDashboardNavigation(
   }, [onGoToMyEasyLearning, navigate]);
 
   /**
+   * Navigate to MyEasyDocs feature
+   * @description
+   * Attempts to use the provided callback. If not available, uses React Router
+   * to navigate to the MyEasyDocs route.
+   *
+   * @returns {void}
+   */
+  const goToDocs = useCallback(() => {
+    if (onGoToMyEasyDocs) {
+      onGoToMyEasyDocs();
+    } else {
+      navigate(ROUTES.MY_EASY_DOCS);
+    }
+  }, [onGoToMyEasyDocs, navigate]);
+
+  /**
    * Navigate to a feature based on product name
    * @description
    * Smart routing that analyzes the product name and navigates to the appropriate feature:
@@ -335,6 +354,7 @@ export function useDashboardNavigation(
    * - Names containing "code" → MyEasyCode
    * - Names containing "resume" or "curriculo" → MyEasyResume
    * - Names containing "learning" or "aprendizado" or "estudo" → MyEasyLearning
+   * - Names containing "docs" or "documentos" or "arquivos" → MyEasyDocs
    * - Other names → Home
    *
    * @param {string} productName - Name of the product to access
@@ -364,11 +384,13 @@ export function useDashboardNavigation(
         goToResume();
       } else if (name.includes('learning') || name.includes('aprendizado') || name.includes('estudo')) {
         goToLearning();
+      } else if (name.includes('docs') || name.includes('documentos') || name.includes('arquivos')) {
+        goToDocs();
       } else {
         goToHome();
       }
     },
-    [goToWebsite, goToGuru, goToPricing, goToCRM, goToContent, goToFitness, goToAvatar, goToCode, goToResume, goToLearning, goToHome],
+    [goToWebsite, goToGuru, goToPricing, goToCRM, goToContent, goToFitness, goToAvatar, goToCode, goToResume, goToLearning, goToDocs, goToHome],
   );
 
   // ============================================================================
@@ -390,5 +412,6 @@ export function useDashboardNavigation(
     goToCode,
     goToResume,
     goToLearning,
+    goToDocs,
   };
 }
