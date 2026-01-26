@@ -30,6 +30,7 @@ export const ROUTES = {
   MY_EASY_CODE: '/myeasycode',
   MY_EASY_RESUME: '/myeasyresume',
   MY_EASY_LEARNING: '/myeasylearning',
+  MY_EASY_DOCS: '/myeasydocs',
 } as const;
 
 export type RouteKey = keyof typeof ROUTES;

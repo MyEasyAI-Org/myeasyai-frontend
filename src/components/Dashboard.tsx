@@ -29,6 +29,7 @@ type DashboardProps = {
   onGoToMyEasyCode?: () => void;
   onGoToMyEasyResume?: () => void;
   onGoToMyEasyLearning?: () => void;
+  onGoToMyEasyDocs?: () => void;
   onGoToSupport?: () => void;
   onGoToMyEasyFitness?: () => void;
   onLoadingComplete?: () => void;
@@ -46,6 +47,7 @@ export function Dashboard({
   onGoToMyEasyCode,
   onGoToMyEasyResume,
   onGoToMyEasyLearning,
+  onGoToMyEasyDocs,
   onGoToSupport,
   onGoToMyEasyFitness,
   onLoadingComplete,
@@ -69,7 +71,7 @@ export function Dashboard({
   } = useUserData();
 
   // Dashboard navigation hook (manages tabs and feature navigation)
-  const { activeTab, setActiveTab, navigateToProduct, goToCRM, goToContent, goToAvatar, goToCode, goToResume, goToLearning, goToFitness } =
+  const { activeTab, setActiveTab, navigateToProduct, goToCRM, goToContent, goToAvatar, goToCode, goToResume, goToLearning, goToFitness, goToDocs } =
     useDashboardNavigation({
       onGoHome,
       onGoToMyEasyWebsite,
@@ -81,6 +83,7 @@ export function Dashboard({
       onGoToMyEasyCode,
       onGoToMyEasyResume,
       onGoToMyEasyLearning,
+      onGoToMyEasyDocs,
       onGoToMyEasyFitness,
       initialTab,
     });
@@ -177,6 +180,7 @@ export function Dashboard({
             onGoToMyEasyCode={goToCode}
             onGoToMyEasyResume={goToResume}
             onGoToMyEasyLearning={goToLearning}
+            onGoToMyEasyDocs={goToDocs}
             onGoToSupport={onGoToSupport}
             accountCreatedAt={cadastralInfo.created_at}
           />

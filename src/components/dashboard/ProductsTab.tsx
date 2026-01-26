@@ -1,4 +1,4 @@
-import { Briefcase, Code2, DollarSign, Dumbbell, ExternalLink, GraduationCap, HelpCircle, Package, PenTool, Target, User } from 'lucide-react';
+import { Briefcase, Code2, DollarSign, Dumbbell, ExternalLink, FolderOpen, GraduationCap, HelpCircle, Package, PenTool, Target, User } from 'lucide-react';
 import type { UserProduct } from '../../hooks/useUserData';
 import { ProductCard } from './ProductCard';
 
@@ -13,6 +13,7 @@ type ProductsTabProps = {
   onGoToMyEasyCode?: () => void;
   onGoToMyEasyResume?: () => void;
   onGoToMyEasyLearning?: () => void;
+  onGoToMyEasyDocs?: () => void;
   onGoToSupport?: () => void;
   accountCreatedAt?: string;
 };
@@ -28,6 +29,7 @@ export function ProductsTab({
   onGoToMyEasyCode,
   onGoToMyEasyResume,
   onGoToMyEasyLearning,
+  onGoToMyEasyDocs,
   onGoToSupport,
   accountCreatedAt,
 }: ProductsTabProps) {
@@ -380,6 +382,44 @@ export function ProductsTab({
                 </button>
               </div>
             </div>
+
+            {/* MyEasyDocs Card - Always visible */}
+            <div className="rounded-lg border border-slate-800 bg-slate-900/50 p-6 hover:border-teal-500 transition-colors">
+              <div className="flex items-start justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="rounded-lg bg-teal-500/20 p-3">
+                    <FolderOpen className="h-6 w-6 text-teal-400" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-white">
+                      MyEasyDocs
+                    </h3>
+                    <span className="inline-block mt-1 rounded-full bg-teal-500/20 text-teal-400 px-2 py-1 text-xs font-semibold">
+                      Ativo
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-4 space-y-2 text-sm">
+                <p className="text-slate-400">
+                  Gerencie documentos, organize em pastas e converse com seus arquivos usando IA.
+                </p>
+              </div>
+
+              <div className="mt-6 flex space-x-2">
+                <button
+                  onClick={onGoToMyEasyDocs}
+                  className="flex-1 rounded-lg bg-teal-600 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-700 transition-colors flex items-center justify-center space-x-2"
+                >
+                  <ExternalLink className="h-4 w-4" />
+                  <span>Acessar</span>
+                </button>
+                <button className="rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-sm text-white hover:bg-slate-700 transition-colors">
+                  Gerenciar
+                </button>
+              </div>
+            </div>
           </div>
 
           {/* Summary Card - always show (includes hard-coded products) */}
@@ -390,8 +430,8 @@ export function ProductsTab({
             <div className="mt-4 grid gap-4 md:grid-cols-3">
               <div className="text-center">
                 <p className="text-3xl font-bold text-white">
-                  {/* Count userProducts + 8 hard-coded products */}
-                  {userProducts.filter((p) => p.product_status === 'active').length + 8}
+                  {/* Count userProducts + 9 hard-coded products */}
+                  {userProducts.filter((p) => p.product_status === 'active').length + 9}
                 </p>
                 <p className="mt-1 text-sm text-slate-400">
                   Produtos Ativos
