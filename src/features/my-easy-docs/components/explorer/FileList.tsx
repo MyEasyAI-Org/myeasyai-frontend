@@ -18,6 +18,9 @@ interface FileListProps {
   onOpenFolder: (folderId: string) => void;
   onSelectDocument: (documentId: string) => void;
   onOpenDocument?: (documentId: string) => void;
+  onRenameItem?: (item: DocsFolder | DocsDocument, type: 'folder' | 'document') => void;
+  onDeleteItem?: (item: DocsFolder | DocsDocument, type: 'folder' | 'document') => void;
+  onMoveItem?: (item: DocsFolder | DocsDocument, type: 'folder' | 'document') => void;
 }
 
 interface ColumnConfig {
@@ -48,6 +51,9 @@ export const FileList = memo(function FileList({
   onOpenFolder,
   onSelectDocument,
   onOpenDocument,
+  onRenameItem,
+  onDeleteItem,
+  onMoveItem,
 }: FileListProps) {
   const [sortField, setSortField] = useState<DocsSortField>('name');
   const [sortOrder, setSortOrder] = useState<DocsSortOrder>('asc');
@@ -92,6 +98,8 @@ export const FileList = memo(function FileList({
     return sortField === 'name' && sortOrder === 'desc' ? -comparison : comparison;
   });
 
+  const hasContextMenu = onRenameItem || onDeleteItem || onMoveItem;
+
   return (
     <div className="bg-slate-900/30 border border-slate-800 rounded-xl overflow-hidden">
       <table className="w-full">
@@ -121,6 +129,11 @@ export const FileList = memo(function FileList({
                 )}
               </th>
             ))}
+            {hasContextMenu && (
+              <th className="px-4 py-3 text-right text-xs font-medium text-slate-400 uppercase tracking-wider w-16">
+                Ações
+              </th>
+            )}
           </tr>
         </thead>
         <tbody className="divide-y divide-slate-800">
@@ -131,6 +144,9 @@ export const FileList = memo(function FileList({
               item={folder}
               type="folder"
               onOpen={onOpenFolder}
+              onRename={onRenameItem}
+              onDelete={onDeleteItem}
+              onMove={onMoveItem}
             />
           ))}
 
@@ -143,6 +159,9 @@ export const FileList = memo(function FileList({
               isSelected={selectedDocumentId === doc.id}
               onOpen={onOpenDocument ?? onSelectDocument}
               onSelect={onSelectDocument}
+              onRename={onRenameItem}
+              onDelete={onDeleteItem}
+              onMove={onMoveItem}
             />
           ))}
         </tbody>

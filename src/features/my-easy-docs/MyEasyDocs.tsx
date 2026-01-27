@@ -7,13 +7,19 @@
 
 import { useState, useCallback, useMemo } from 'react';
 import { MessageSquare, ArrowLeft } from 'lucide-react';
-import type { DocsDocument, DocsViewMode, BreadcrumbItem } from './types';
+import type { DocsDocument, DocsFolder, DocsViewMode, BreadcrumbItem } from './types';
 import { MOCK_FOLDERS, MOCK_DOCUMENTS } from './mockData';
 import { DocsSidebar } from './components/layout/DocsSidebar';
 import { DocsHeader } from './components/layout/DocsHeader';
 import { FileGrid } from './components/explorer/FileGrid';
 import { FileList } from './components/explorer/FileList';
 import { EmptyState } from './components/explorer/EmptyState';
+import {
+  CreateFolderModal,
+  RenameModal,
+  DeleteConfirmModal,
+  MoveItemModal,
+} from './components/modals';
 
 // =============================================
 // PROPS
@@ -37,6 +43,18 @@ export function MyEasyDocs({ onBackToDashboard }: MyEasyDocsProps) {
 
   // Sidebar state
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
+
+  // Modal states
+  const [createFolderModalOpen, setCreateFolderModalOpen] = useState(false);
+  const [renameModalOpen, setRenameModalOpen] = useState(false);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [moveModalOpen, setMoveModalOpen] = useState(false);
+
+  // Item being edited (for modals)
+  const [itemToEdit, setItemToEdit] = useState<{
+    item: DocsFolder | DocsDocument;
+    type: 'folder' | 'document';
+  } | null>(null);
 
   // Get current path for breadcrumb
   const breadcrumb = useMemo((): BreadcrumbItem[] => {
@@ -129,15 +147,100 @@ export function MyEasyDocs({ onBackToDashboard }: MyEasyDocsProps) {
     }
   }, []);
 
+  // Get current folder name for breadcrumb
+  const currentFolderName = useMemo(() => {
+    if (!currentFolderId) return 'Meus Documentos';
+    const folder = MOCK_FOLDERS.find((f) => f.id === currentFolderId);
+    return folder?.name || 'Meus Documentos';
+  }, [currentFolderId]);
+
   // Handlers for sidebar actions
   const handleCreateFolder = useCallback(() => {
-    // TODO: Open create folder modal
-    console.log('Create folder');
+    setCreateFolderModalOpen(true);
   }, []);
 
   const handleUpload = useCallback(() => {
     // TODO: Open upload modal
     console.log('Upload');
+  }, []);
+
+  // Modal action handlers
+  const handleCreateFolderSubmit = useCallback((name: string) => {
+    // TODO: Implement with real service
+    console.log('Create folder:', name, 'in:', currentFolderId);
+    setCreateFolderModalOpen(false);
+  }, [currentFolderId]);
+
+  // Context menu handlers for items
+  const handleRenameItem = useCallback(
+    (item: DocsFolder | DocsDocument, type: 'folder' | 'document') => {
+      setItemToEdit({ item, type });
+      setRenameModalOpen(true);
+    },
+    []
+  );
+
+  const handleRenameSubmit = useCallback((newName: string) => {
+    if (!itemToEdit) return;
+    // TODO: Implement with real service
+    console.log('Rename:', itemToEdit.item.id, 'to:', newName);
+    setRenameModalOpen(false);
+    setItemToEdit(null);
+  }, [itemToEdit]);
+
+  const handleDeleteItem = useCallback(
+    (item: DocsFolder | DocsDocument, type: 'folder' | 'document') => {
+      setItemToEdit({ item, type });
+      setDeleteModalOpen(true);
+    },
+    []
+  );
+
+  const handleDeleteConfirm = useCallback(() => {
+    if (!itemToEdit) return;
+    // TODO: Implement with real service
+    console.log('Delete:', itemToEdit.item.id);
+    setDeleteModalOpen(false);
+    setItemToEdit(null);
+  }, [itemToEdit]);
+
+  const handleMoveItem = useCallback(
+    (item: DocsFolder | DocsDocument, type: 'folder' | 'document') => {
+      setItemToEdit({ item, type });
+      setMoveModalOpen(true);
+    },
+    []
+  );
+
+  const handleMoveSubmit = useCallback(
+    (destinationFolderId: string | null) => {
+      if (!itemToEdit) return;
+      // TODO: Implement with real service
+      console.log('Move:', itemToEdit.item.id, 'to:', destinationFolderId);
+      setMoveModalOpen(false);
+      setItemToEdit(null);
+    },
+    [itemToEdit]
+  );
+
+  // Close modal handlers
+  const handleCloseCreateFolderModal = useCallback(() => {
+    setCreateFolderModalOpen(false);
+  }, []);
+
+  const handleCloseRenameModal = useCallback(() => {
+    setRenameModalOpen(false);
+    setItemToEdit(null);
+  }, []);
+
+  const handleCloseDeleteModal = useCallback(() => {
+    setDeleteModalOpen(false);
+    setItemToEdit(null);
+  }, []);
+
+  const handleCloseMoveModal = useCallback(() => {
+    setMoveModalOpen(false);
+    setItemToEdit(null);
   }, []);
 
   const handleViewFavorites = useCallback(() => {
@@ -214,6 +317,9 @@ export function MyEasyDocs({ onBackToDashboard }: MyEasyDocsProps) {
                 onOpenFolder={handleNavigateToFolder}
                 onSelectDocument={handleSelectDocument}
                 onOpenDocument={handleOpenDocument}
+                onRenameItem={handleRenameItem}
+                onDeleteItem={handleDeleteItem}
+                onMoveItem={handleMoveItem}
               />
             ) : (
               <FileList
@@ -223,6 +329,9 @@ export function MyEasyDocs({ onBackToDashboard }: MyEasyDocsProps) {
                 onOpenFolder={handleNavigateToFolder}
                 onSelectDocument={handleSelectDocument}
                 onOpenDocument={handleOpenDocument}
+                onRenameItem={handleRenameItem}
+                onDeleteItem={handleDeleteItem}
+                onMoveItem={handleMoveItem}
               />
             )}
           </div>
@@ -230,7 +339,7 @@ export function MyEasyDocs({ onBackToDashboard }: MyEasyDocsProps) {
 
         {/* Chat Drawer (placeholder) */}
         {chatOpen && (
-          <aside className="w-[400px] flex-shrink-0 bg-slate-900/50 border-l border-slate-800 flex flex-col">
+          <aside className="w-[400px] shrink-0 bg-slate-900/50 border-l border-slate-800 flex flex-col">
             <div className="p-4 border-b border-slate-800 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <MessageSquare className="w-5 h-5 text-blue-400" />
@@ -272,6 +381,50 @@ export function MyEasyDocs({ onBackToDashboard }: MyEasyDocsProps) {
           </aside>
         )}
       </div>
+
+      {/* Modals */}
+      <CreateFolderModal
+        isOpen={createFolderModalOpen}
+        parentFolderName={currentFolderName}
+        onClose={handleCloseCreateFolderModal}
+        onCreate={handleCreateFolderSubmit}
+      />
+
+      <RenameModal
+        isOpen={renameModalOpen}
+        currentName={itemToEdit?.item.name || ''}
+        itemType={itemToEdit?.type || 'document'}
+        onClose={handleCloseRenameModal}
+        onRename={handleRenameSubmit}
+      />
+
+      <DeleteConfirmModal
+        isOpen={deleteModalOpen}
+        itemName={itemToEdit?.item.name || ''}
+        itemType={itemToEdit?.type || 'document'}
+        hasChildren={
+          itemToEdit?.type === 'folder'
+            ? MOCK_FOLDERS.some((f) => f.parent_id === itemToEdit.item.id) ||
+              MOCK_DOCUMENTS.some((d) => d.folder_id === itemToEdit.item.id)
+            : false
+        }
+        onClose={handleCloseDeleteModal}
+        onConfirm={handleDeleteConfirm}
+      />
+
+      <MoveItemModal
+        isOpen={moveModalOpen}
+        item={itemToEdit?.item || null}
+        itemType={itemToEdit?.type || 'document'}
+        folders={MOCK_FOLDERS}
+        currentFolderId={
+          itemToEdit?.type === 'folder'
+            ? (itemToEdit.item as DocsFolder).parent_id
+            : (itemToEdit?.item as DocsDocument)?.folder_id ?? null
+        }
+        onClose={handleCloseMoveModal}
+        onMove={handleMoveSubmit}
+      />
     </div>
   );
 }

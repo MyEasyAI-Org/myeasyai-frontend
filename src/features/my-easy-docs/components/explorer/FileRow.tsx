@@ -2,8 +2,8 @@
 // FileRow - Row component for list view
 // =============================================
 
-import { memo, useCallback } from 'react';
-import { Folder, Star } from 'lucide-react';
+import { memo, useCallback, useState, useRef, useEffect } from 'react';
+import { Folder, Star, MoreVertical, Pencil, Trash2, FolderInput } from 'lucide-react';
 import type { DocsFolder, DocsDocument } from '../../types';
 import { formatFileSize, formatRelativeTime, getFileTypeLabel } from '../../utils';
 import { FileIcon } from '../shared/FileIcon';
@@ -18,6 +18,9 @@ interface FileRowProps {
   isSelected?: boolean;
   onOpen: (id: string) => void;
   onSelect?: (id: string) => void;
+  onRename?: (item: DocsFolder | DocsDocument, type: 'folder' | 'document') => void;
+  onDelete?: (item: DocsFolder | DocsDocument, type: 'folder' | 'document') => void;
+  onMove?: (item: DocsFolder | DocsDocument, type: 'folder' | 'document') => void;
 }
 
 // =============================================
@@ -30,7 +33,27 @@ export const FileRow = memo(function FileRow({
   isSelected = false,
   onOpen,
   onSelect,
+  onRename,
+  onDelete,
+  onMove,
 }: FileRowProps) {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setMenuOpen(false);
+      }
+    };
+
+    if (menuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [menuOpen]);
+
   const handleClick = useCallback(() => {
     if (type === 'folder') {
       onOpen(item.id);
@@ -43,17 +66,51 @@ export const FileRow = memo(function FileRow({
     onOpen(item.id);
   }, [item.id, onOpen]);
 
+  const handleMenuClick = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    setMenuOpen((prev) => !prev);
+  }, []);
+
+  const handleRename = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      setMenuOpen(false);
+      onRename?.(item, type);
+    },
+    [item, type, onRename]
+  );
+
+  const handleDelete = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      setMenuOpen(false);
+      onDelete?.(item, type);
+    },
+    [item, type, onDelete]
+  );
+
+  const handleMove = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      setMenuOpen(false);
+      onMove?.(item, type);
+    },
+    [item, type, onMove]
+  );
+
+  const hasContextMenu = onRename || onDelete || onMove;
+
   if (type === 'folder') {
     const folder = item as DocsFolder;
 
     return (
       <tr
         onClick={handleClick}
-        className="hover:bg-slate-800/50 cursor-pointer transition-colors"
+        className="hover:bg-slate-800/50 cursor-pointer transition-colors group"
       >
         <td className="px-4 py-3">
           <div className="flex items-center gap-3">
-            <Folder className="w-5 h-5 text-yellow-500 flex-shrink-0" />
+            <Folder className="w-5 h-5 text-yellow-500 shrink-0" />
             <span className="text-sm text-slate-200 truncate">{folder.name}</span>
           </div>
         </td>
@@ -62,6 +119,50 @@ export const FileRow = memo(function FileRow({
         <td className="px-4 py-3 text-sm text-slate-500">
           {formatRelativeTime(folder.updated_at)}
         </td>
+        {hasContextMenu && (
+          <td className="px-4 py-3 text-right relative">
+            <div ref={menuRef} className="inline-block">
+              <button
+                onClick={handleMenuClick}
+                className="p-1.5 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-slate-700 transition-all"
+              >
+                <MoreVertical className="w-4 h-4 text-slate-400" />
+              </button>
+
+              {menuOpen && (
+                <div className="absolute right-4 top-full mt-1 w-40 bg-slate-800 border border-slate-700 rounded-lg shadow-xl z-10 py-1">
+                  {onRename && (
+                    <button
+                      onClick={handleRename}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-300 hover:bg-slate-700 transition-colors"
+                    >
+                      <Pencil className="w-4 h-4" />
+                      Renomear
+                    </button>
+                  )}
+                  {onMove && (
+                    <button
+                      onClick={handleMove}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-300 hover:bg-slate-700 transition-colors"
+                    >
+                      <FolderInput className="w-4 h-4" />
+                      Mover
+                    </button>
+                  )}
+                  {onDelete && (
+                    <button
+                      onClick={handleDelete}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-400 hover:bg-slate-700 transition-colors"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      Excluir
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+          </td>
+        )}
       </tr>
     );
   }
@@ -73,7 +174,7 @@ export const FileRow = memo(function FileRow({
     <tr
       onClick={handleClick}
       onDoubleClick={handleDoubleClick}
-      className={`cursor-pointer transition-colors ${
+      className={`cursor-pointer transition-colors group ${
         isSelected ? 'bg-blue-500/10' : 'hover:bg-slate-800/50'
       }`}
     >
@@ -82,13 +183,57 @@ export const FileRow = memo(function FileRow({
           <FileIcon mimeType={doc.mime_type} size="md" />
           <span className="text-sm text-slate-200 truncate">{doc.name}</span>
           {doc.is_favorite && (
-            <Star className="w-4 h-4 text-yellow-500 fill-yellow-500 flex-shrink-0" />
+            <Star className="w-4 h-4 text-yellow-500 fill-yellow-500 shrink-0" />
           )}
         </div>
       </td>
       <td className="px-4 py-3 text-sm text-slate-500">{formatFileSize(doc.size)}</td>
       <td className="px-4 py-3 text-sm text-slate-500">{getFileTypeLabel(doc.mime_type)}</td>
       <td className="px-4 py-3 text-sm text-slate-500">{formatRelativeTime(doc.updated_at)}</td>
+      {hasContextMenu && (
+        <td className="px-4 py-3 text-right relative">
+          <div ref={menuRef} className="inline-block">
+            <button
+              onClick={handleMenuClick}
+              className="p-1.5 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-slate-700 transition-all"
+            >
+              <MoreVertical className="w-4 h-4 text-slate-400" />
+            </button>
+
+            {menuOpen && (
+              <div className="absolute right-4 top-full mt-1 w-40 bg-slate-800 border border-slate-700 rounded-lg shadow-xl z-10 py-1">
+                {onRename && (
+                  <button
+                    onClick={handleRename}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-300 hover:bg-slate-700 transition-colors"
+                  >
+                    <Pencil className="w-4 h-4" />
+                    Renomear
+                  </button>
+                )}
+                {onMove && (
+                  <button
+                    onClick={handleMove}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-300 hover:bg-slate-700 transition-colors"
+                  >
+                    <FolderInput className="w-4 h-4" />
+                    Mover
+                  </button>
+                )}
+                {onDelete && (
+                  <button
+                    onClick={handleDelete}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-400 hover:bg-slate-700 transition-colors"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    Excluir
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        </td>
+      )}
     </tr>
   );
 });
