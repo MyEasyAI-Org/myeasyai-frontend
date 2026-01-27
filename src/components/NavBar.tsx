@@ -149,19 +149,19 @@ export default function NavBar({
 
   return (
     <nav className="fixed top-0 z-50 w-full border-b border-slate-800 bg-black-main/95 backdrop-blur-sm">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-7xl px-2 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between">
           <div className="flex items-center space-x-4">
             <button
               onClick={onLogoClick}
-              className="flex items-center gap-3 cursor-pointer"
+              className="flex items-center gap-2 sm:gap-3 cursor-pointer"
             >
               <img
                 src="/bone-logo.png"
                 alt="MyEasyAI Logo"
-                className="h-12 w-12 object-contain"
+                className="h-10 w-10 sm:h-12 sm:w-12 object-contain"
               />
-              <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-xl font-bold text-transparent">
+              <span className="nav-logo-text bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-xl font-bold text-transparent">
                 MyEasyAI
               </span>
             </button>
@@ -205,7 +205,7 @@ export default function NavBar({
             </a>
           </div>
 
-          <div className="flex space-x-2 sm:space-x-3">
+          <div className="flex space-x-1 sm:space-x-3">
             {user ? (
               // Logged in user - show notification bell and dropdown menu
               <div className="flex items-center space-x-3">

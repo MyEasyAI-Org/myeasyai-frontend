@@ -89,3 +89,14 @@
 .animate-shimmer {
   animation: shimmer 1.5s ease-in-out infinite;
 }
+
+/* Hide logo text on small screens (Z Flip, small phones) */
+.nav-logo-text {
+  display: none;
+}
+
+@media (min-width: 480px) {
+  .nav-logo-text {
+    display: inline;
+  }
+}
