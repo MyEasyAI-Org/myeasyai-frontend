@@ -163,3 +163,52 @@ export interface DocsSort {
   field: DocsSortField;
   order: DocsSortOrder;
 }
+
+// =============================================
+// TIPOS DE CRIAÇÃO E ATUALIZAÇÃO (SERVICES)
+// =============================================
+
+/**
+ * Dados para criar um novo documento
+ */
+export interface CreateDocumentData {
+  folder_id?: string | null;
+  name: string;
+  original_name: string;
+  mime_type: string;
+  size: number;
+  r2_key: string;
+  r2_url?: string;
+}
+
+/**
+ * Dados para atualizar um documento
+ */
+export interface UpdateDocumentData {
+  name?: string;
+  folder_id?: string | null;
+  r2_url?: string;
+  text_extraction_status?: TextExtractionStatus;
+  is_favorite?: boolean;
+}
+
+/**
+ * Resultado de validação de arquivo
+ */
+export interface FileValidationResult {
+  valid: boolean;
+  error?: string;
+}
+
+/**
+ * Resultado de upload processado
+ */
+export interface ProcessedUploadResult {
+  documentId: string;
+  r2Key: string;
+}
+
+/**
+ * Callback de progresso de upload
+ */
+export type ProgressCallback = (progress: number) => void;
