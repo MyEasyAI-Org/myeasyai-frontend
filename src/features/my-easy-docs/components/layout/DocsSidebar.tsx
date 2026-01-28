@@ -3,7 +3,7 @@
 // =============================================
 
 import { memo } from 'react';
-import { ArrowLeft, FolderOpen, Upload, Plus, Star, Clock } from 'lucide-react';
+import { ArrowLeft, FolderOpen, Upload, Plus, FilePlus, Star, Clock } from 'lucide-react';
 import type { DocsFolder, DocsDocument } from '../../types';
 import { SIDEBAR_WIDTH } from '../../constants';
 import { FolderTree } from '../explorer/FolderTree';
@@ -17,10 +17,13 @@ interface DocsSidebarProps {
   currentFolderId: string | null;
   expandedFolders: Set<string>;
   documents: DocsDocument[];
+  selectedDocumentId?: string | null;
   onNavigate: (folderId: string | null) => void;
   onToggleExpand: (folderId: string) => void;
   onCreateFolder: () => void;
+  onCreateFile: () => void;
   onUpload: () => void;
+  onSelectDocument?: (documentId: string) => void;
   onBackToDashboard?: () => void;
   onViewFavorites?: () => void;
   onViewRecent?: () => void;
@@ -35,10 +38,13 @@ export const DocsSidebar = memo(function DocsSidebar({
   currentFolderId,
   expandedFolders,
   documents,
+  selectedDocumentId,
   onNavigate,
   onToggleExpand,
   onCreateFolder,
+  onCreateFile,
   onUpload,
+  onSelectDocument,
   onBackToDashboard,
   onViewFavorites,
   onViewRecent,
@@ -67,22 +73,32 @@ export const DocsSidebar = memo(function DocsSidebar({
         </div>
 
         {/* Action Buttons */}
-        <div className="flex gap-2">
+        <div className="flex flex-col gap-2">
           <button
             onClick={onUpload}
-            className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm font-medium text-white transition-colors"
+            className="flex items-center justify-center gap-2 px-3 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm font-medium text-white transition-colors"
           >
             <Upload className="w-4 h-4" />
             Upload
           </button>
-          <button
-            onClick={onCreateFolder}
-            className="flex items-center justify-center gap-2 px-3 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-sm font-medium text-white transition-colors"
-            title="Nova Pasta"
-          >
-            <Plus className="w-4 h-4" />
-            Pasta
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={onCreateFolder}
+              className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-sm font-medium text-white transition-colors"
+              title="Nova Pasta"
+            >
+              <Plus className="w-4 h-4" />
+              Pasta
+            </button>
+            <button
+              onClick={onCreateFile}
+              className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-sm font-medium text-white transition-colors"
+              title="Novo Arquivo"
+            >
+              <FilePlus className="w-4 h-4" />
+              Arquivo
+            </button>
+          </div>
         </div>
       </div>
 
@@ -93,8 +109,10 @@ export const DocsSidebar = memo(function DocsSidebar({
           currentFolderId={currentFolderId}
           expandedFolders={expandedFolders}
           documents={documents}
+          selectedDocumentId={selectedDocumentId}
           onNavigate={onNavigate}
           onToggleExpand={onToggleExpand}
+          onSelectDocument={onSelectDocument}
         />
       </div>
 

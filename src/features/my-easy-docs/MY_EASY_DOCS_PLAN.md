@@ -13,13 +13,29 @@
 
 ---
 
+# STATUS DE IMPLEMENTAÇÃO
+
+| Fase | Descrição | Status |
+|------|-----------|--------|
+| 1-11 | Componentes Visuais | ✅ CONCLUÍDO |
+| 12 | Migration do Banco de Dados | ⏳ Pendente |
+| 13 | D1 Client - Métodos de Dados | ⏳ Pendente |
+| 14 | Services de Lógica de Negócio | ⏳ Pendente |
+| 15 | Hooks de Estado | ⏳ Pendente |
+| 16 | Conectar UI com Dados Reais | ⏳ Pendente |
+| 17 | Extração de Texto | ⏳ Pendente |
+| 18 | Busca e IA | ⏳ Pendente |
+| 19 | Testes e Polimento | ⏳ Pendente |
+
+---
+
 # FASES DE IMPLEMENTAÇÃO
 
 > Ordem: Visual primeiro, backend depois
 
 ---
 
-## FASE 1: Estrutura de Pastas e Arquivos Base
+## FASE 1: Estrutura de Pastas e Arquivos Base ✅
 
 ### 1.1 Criar estrutura de pastas
 Criar a seguinte estrutura em `src/features/my-easy-docs/`:
@@ -66,7 +82,7 @@ Criar `src/features/my-easy-docs/utils/index.ts` com:
 
 ---
 
-## FASE 2: Componente Principal e Layout Base
+## FASE 2: Componente Principal e Layout Base ✅
 
 ### 2.1 Criar MyEasyDocs.tsx
 Criar `src/features/my-easy-docs/MyEasyDocs.tsx`:
@@ -95,7 +111,7 @@ MY_EASY_DOCS: '/myeasydocs',
 
 ---
 
-## FASE 3: Sidebar e Navegação
+## FASE 3: Sidebar e Navegação ✅
 
 ### 3.1 Criar DocsSidebar
 Criar `src/features/my-easy-docs/components/layout/DocsSidebar.tsx`:
@@ -125,7 +141,7 @@ Criar `src/features/my-easy-docs/components/explorer/FolderTreeItem.tsx`:
 
 ---
 
-## FASE 4: Header e Toolbar
+## FASE 4: Header e Toolbar ✅
 
 ### 4.1 Criar DocsHeader
 Criar `src/features/my-easy-docs/components/layout/DocsHeader.tsx`:
@@ -150,7 +166,7 @@ Criar `src/features/my-easy-docs/components/shared/SearchInput.tsx`:
 
 ---
 
-## FASE 5: Grid e Lista de Arquivos
+## FASE 5: Grid e Lista de Arquivos ✅
 
 ### 5.1 Criar FileGrid
 Criar `src/features/my-easy-docs/components/explorer/FileGrid.tsx`:
@@ -202,7 +218,7 @@ Criar `src/features/my-easy-docs/components/explorer/EmptyState.tsx`:
 
 ---
 
-## FASE 6: Modais Básicos
+## FASE 6: Modais Básicos ✅
 
 ### 6.1 Criar CreateFolderModal
 Criar `src/features/my-easy-docs/components/modals/CreateFolderModal.tsx`:
@@ -236,7 +252,7 @@ Criar `src/features/my-easy-docs/components/modals/MoveItemModal.tsx`:
 
 ---
 
-## FASE 7: Preview de Arquivos
+## FASE 7: Preview de Arquivos ✅
 
 ### 7.1 Criar FilePreview
 Criar `src/features/my-easy-docs/components/preview/FilePreview.tsx`:
@@ -275,7 +291,7 @@ Criar `src/features/my-easy-docs/components/preview/UnsupportedPreview.tsx`:
 
 ---
 
-## FASE 8: Upload UI
+## FASE 8: Upload UI ✅
 
 ### 8.1 Criar DropZone
 Criar `src/features/my-easy-docs/components/upload/DropZone.tsx`:
@@ -311,7 +327,7 @@ Criar `src/features/my-easy-docs/components/upload/UploadProgressItem.tsx`:
 
 ---
 
-## FASE 9: Chat UI (Interface Visual)
+## FASE 9: Chat UI (Interface Visual) ✅
 
 ### 9.1 Criar DocsChatDrawer
 Criar `src/features/my-easy-docs/components/chat/DocsChatDrawer.tsx`:
@@ -347,7 +363,7 @@ Criar `src/features/my-easy-docs/components/chat/DocumentSources.tsx`:
 
 ---
 
-## FASE 10: Editor de Texto
+## FASE 10: Editor de Texto ✅
 
 ### 10.1 Criar TextEditor
 Criar `src/features/my-easy-docs/components/preview/TextEditor.tsx`:
@@ -359,7 +375,7 @@ Criar `src/features/my-easy-docs/components/preview/TextEditor.tsx`:
 
 ---
 
-## FASE 11: Integração Visual Completa
+## FASE 11: Integração Visual Completa ✅
 
 ### 11.1 Integrar todos os componentes no MyEasyDocs
 Atualizar `MyEasyDocs.tsx` para usar todos os componentes:
@@ -386,6 +402,98 @@ Atualizar `Dashboard.tsx`:
 - Testar toggle grid/list
 - Testar abertura do chat drawer
 - Verificar responsividade básica
+
+---
+
+## MELHORIAS EXTRAS IMPLEMENTADAS ✅
+
+> Componentes adicionais criados além do plano original
+
+### VideoPreview.tsx
+**Arquivo**: `components/preview/VideoPreview.tsx`
+- Player HTML5 de vídeo com controles customizados
+- Props: `url`, `name`
+- Funcionalidades: play/pause, seek bar, volume, fullscreen
+- Suporta: mp4, webm, ogg
+
+### AudioPreview.tsx
+**Arquivo**: `components/preview/AudioPreview.tsx`
+- Player HTML5 de áudio com interface visual
+- Props: `url`, `name`
+- Funcionalidades: play/pause, seek bar, volume, skip 10s
+- Arte placeholder com ícone de música
+- Exibe duração e tempo atual
+
+### CodePreview.tsx
+**Arquivo**: `components/preview/CodePreview.tsx`
+- Preview de código com syntax highlighting
+- Props: `content`, `language`, `name`
+- Usa `prism-react-renderer` com tema `vsDark`
+- Detecta linguagem automaticamente pela extensão
+- Suporta: js, ts, jsx, tsx, py, java, c, cpp, go, rust, json, yaml, xml, html, css, sql, sh, md
+
+### TextEditorModal.tsx
+**Arquivo**: `components/modals/TextEditorModal.tsx`
+- Editor fullscreen em modal overlay
+- Props: `isOpen`, `onClose`, `document`, `content`, `onSave`
+- Funcionalidades:
+  - Textarea monospace com altura total
+  - Botão salvar (Save) e fechar (X)
+  - Indicador de alterações não salvas
+  - Confirmação antes de fechar se houver alterações
+
+### CreateFileModal.tsx
+**Arquivo**: `components/modals/CreateFileModal.tsx`
+- Modal para criar novos arquivos de texto
+- Props: `isOpen`, `onClose`, `onCreate`, `parentFolderName`
+- Funcionalidades:
+  - Input para nome do arquivo
+  - Seletor de extensão (.txt ou .md)
+  - Validação de nome não vazio
+  - Cria documento vazio na pasta atual
+
+### DocumentTreeItem.tsx
+**Arquivo**: `components/explorer/DocumentTreeItem.tsx`
+- Item de documento na árvore do sidebar
+- Props: `document`, `level`, `isSelected`, `onSelect`
+- Funcionalidades:
+  - Ícone baseado no tipo de arquivo (FileIcon)
+  - Indentação por nível (como pastas)
+  - Estado selecionado destacado
+  - Clique para selecionar documento
+
+### Atualizações em Componentes Existentes
+
+**FolderTree.tsx** (atualizado):
+- Agora renderiza documentos dentro de cada pasta
+- Usa `DocumentTreeItem` para cada documento
+- Documentos aparecem após as subpastas
+- Props adicionais: `documents`, `selectedDocumentId`, `onSelectDocument`
+
+**DocsSidebar.tsx** (atualizado):
+- Novo botão "Arquivo" ao lado de "Pasta"
+- Props adicionais: `documents`, `selectedDocumentId`, `onCreateFile`, `onSelectDocument`
+- Passa documentos para FolderTree
+
+### Novas Funções Utilitárias
+
+**utils/index.ts** (atualizado):
+```typescript
+// Verifica se é arquivo de código
+isCode(mimeType: string): boolean
+
+// Verifica se é vídeo
+isVideo(mimeType: string): boolean
+
+// Verifica se é áudio
+isAudio(mimeType: string): boolean
+
+// Retorna linguagem do código pela extensão
+getCodeLanguage(filename: string): string
+
+// Constante: extensões de código suportadas
+CODE_EXTENSIONS: Record<string, string>
+```
 
 ---
 
@@ -518,11 +626,13 @@ Criar `src/features/my-easy-docs/services/DocumentService.ts`:
 - `getAll(userId)`
 - `getByFolder(userId, folderId)`
 - `getById(id)`
-- `create(data)`
+- `create(data)` - **Suporta criar documentos vazios para .txt/.md (CreateFileModal)**
 - `update(id, data)`
 - `move(id, newFolderId)`
 - `toggleFavorite(id)`
 - `delete(id)` - deleta também do R2
+- `getContent(id)` - retorna conteúdo texto do documento
+- `saveContent(id, content)` - salva conteúdo texto (para TextEditorModal)
 
 ### 14.3 Criar UploadService
 Criar `src/features/my-easy-docs/services/UploadService.ts`:
@@ -649,10 +759,19 @@ npm run build
 1. CRUD de pastas
 2. Upload de arquivos (vários tipos)
 3. Extração de texto (PDF, DOCX, TXT)
-4. Preview de arquivos
-5. Editor de texto
-6. Chat IA com perguntas
-7. Busca de documentos
+4. Preview de arquivos:
+   - Imagens (jpg, png, gif, webp, svg)
+   - PDF
+   - Texto (.txt, .md)
+   - **Vídeo (mp4, webm, ogg)** - VideoPreview
+   - **Áudio (mp3, wav, ogg)** - AudioPreview
+   - **Código (js, ts, py, etc.)** - CodePreview com syntax highlight
+5. Editor de texto:
+   - Editor inline (TextEditor)
+   - **Editor fullscreen (TextEditorModal)**
+6. **Criar arquivo vazio (.txt/.md)** - CreateFileModal
+7. Chat IA com perguntas
+8. Busca de documentos
 
 ### 19.3 Ajustes finais
 - Loading states em todas as operações
@@ -665,39 +784,43 @@ npm run build
 
 # Resumo de Arquivos por Fase
 
-| Fase | Foco | Arquivos Principais |
-|------|------|---------------------|
-| 1 | Base | types/, constants/, utils/ |
-| 2 | Componente principal | MyEasyDocs.tsx, index.ts, routes.ts, App.tsx |
-| 3 | Sidebar | DocsSidebar, FolderTree, FolderTreeItem |
-| 4 | Header | DocsHeader, Breadcrumb, SearchInput |
-| 5 | Grid/Lista | FileGrid, FileList, FileCard, FileRow, FileIcon, EmptyState |
-| 6 | Modais | CreateFolderModal, RenameModal, DeleteConfirmModal, MoveItemModal |
-| 7 | Preview | FilePreview, ImagePreview, PdfPreview, TextPreview, UnsupportedPreview |
-| 8 | Upload UI | DropZone, UploadModal, UploadProgressList, UploadProgressItem |
-| 9 | Chat UI | DocsChatDrawer, DocsChatMessage, DocsChatInput, DocumentSources |
-| 10 | Editor | TextEditor |
-| 11 | Integração visual | MyEasyDocs completo, Dashboard card |
-| 12 | DB | migration SQL |
-| 13 | D1 Client | métodos no d1-client.ts |
-| 14 | Services | FolderService, DocumentService, UploadService |
-| 15 | Hooks | useFolders, useDocuments, useFileUpload |
-| 16 | Conectar UI | MyEasyDocs com dados reais |
-| 17 | Extração | TextExtractionService, textChunker |
-| 18 | IA | DocsSearchService, DocsAIService, useDocsChat |
-| 19 | Testes | Ajustes finais |
+| Fase | Foco | Arquivos Principais | Status |
+|------|------|---------------------|--------|
+| 1 | Base | types/, constants/, utils/ | ✅ |
+| 2 | Componente principal | MyEasyDocs.tsx, index.ts, routes.ts, App.tsx | ✅ |
+| 3 | Sidebar | DocsSidebar, FolderTree, FolderTreeItem | ✅ |
+| 4 | Header | DocsHeader, Breadcrumb, SearchInput | ✅ |
+| 5 | Grid/Lista | FileGrid, FileList, FileCard, FileRow, FileIcon, EmptyState | ✅ |
+| 6 | Modais | CreateFolderModal, RenameModal, DeleteConfirmModal, MoveItemModal | ✅ |
+| 7 | Preview | FilePreview, ImagePreview, PdfPreview, TextPreview, UnsupportedPreview | ✅ |
+| 8 | Upload UI | DropZone, UploadModal, UploadProgressList, UploadProgressItem | ✅ |
+| 9 | Chat UI | DocsChatDrawer, DocsChatMessage, DocsChatInput, DocumentSources | ✅ |
+| 10 | Editor | TextEditor | ✅ |
+| 11 | Integração visual | MyEasyDocs completo, Dashboard card | ✅ |
+| **Extras** | **Melhorias** | **VideoPreview, AudioPreview, CodePreview, TextEditorModal, CreateFileModal, DocumentTreeItem** | ✅ |
+| 12 | DB | migration SQL | ⏳ |
+| 13 | D1 Client | métodos no d1-client.ts | ⏳ |
+| 14 | Services | FolderService, DocumentService, UploadService | ⏳ |
+| 15 | Hooks | useFolders, useDocuments, useFileUpload | ⏳ |
+| 16 | Conectar UI | MyEasyDocs com dados reais | ⏳ |
+| 17 | Extração | TextExtractionService, textChunker | ⏳ |
+| 18 | IA | DocsSearchService, DocsAIService, useDocsChat | ⏳ |
+| 19 | Testes | Ajustes finais | ⏳ |
 
 ---
 
 # Verificação Final
 
-Após completar todas as fases:
+## Fases 1-11 (Visual) - CONCLUÍDAS ✅
 
-1. **Build sem erros**: `npm run build`
-2. **Visual completo**: Todas as telas renderizam corretamente
-3. **CRUD funciona**: Criar, renomear, mover, deletar
-4. **Upload funciona**: Arquivo vai para R2 e aparece na lista
-5. **Extração funciona**: PDFs/DOCX/TXT são indexados
-6. **Preview funciona**: PDF, imagem e texto renderizam
-7. **Editor funciona**: Salvar alterações em TXT/MD
-8. **Chat funciona**: IA responde sobre documentos
+1. ✅ **Build sem erros**: `npm run build` passa
+2. ✅ **Visual completo**: Todas as telas renderizam corretamente
+3. ✅ **Preview funciona**: PDF, imagem, texto, vídeo, áudio e código renderizam
+4. ✅ **Editor funciona**: Editor inline e fullscreen funcionam
+
+## Fases 12-19 (Backend) - PENDENTES ⏳
+
+5. ⏳ **CRUD funciona**: Criar, renomear, mover, deletar (precisa backend)
+6. ⏳ **Upload funciona**: Arquivo vai para R2 e aparece na lista (precisa backend)
+7. ⏳ **Extração funciona**: PDFs/DOCX/TXT são indexados (precisa backend)
+8. ⏳ **Chat funciona**: IA responde sobre documentos (precisa backend)
