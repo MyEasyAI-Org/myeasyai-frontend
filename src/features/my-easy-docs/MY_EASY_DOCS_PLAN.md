@@ -18,8 +18,8 @@
 | Fase | Descrição | Status |
 |------|-----------|--------|
 | 1-11 | Componentes Visuais | ✅ CONCLUÍDO |
-| 12 | Migration do Banco de Dados | ⏳ Pendente |
-| 13 | D1 Client - Métodos de Dados | ⏳ Pendente |
+| 12 | Migration do Banco de Dados | ✅ CONCLUÍDO |
+| 13 | D1 Client - Métodos de Dados | ✅ CONCLUÍDO |
 | 14 | Services de Lógica de Negócio | ⏳ Pendente |
 | 15 | Hooks de Estado | ⏳ Pendente |
 | 16 | Conectar UI com Dados Reais | ⏳ Pendente |
@@ -497,114 +497,64 @@ CODE_EXTENSIONS: Record<string, string>
 
 ---
 
-## FASE 12: Migration do Banco de Dados
+## FASE 12: Migration do Banco de Dados ✅
 
-### 12.1 Criar migration SQL
-Criar `workers/api-d1/migrations/XXX_add_docs_tables.sql`:
+### 12.1 Migration SQL Criada
+**Arquivo**: `workers/api-d1/migrations/016_add_docs_tables.sql`
 
-```sql
--- docs_folders
-CREATE TABLE IF NOT EXISTS docs_folders (
-  id TEXT PRIMARY KEY,
-  user_id TEXT NOT NULL,
-  parent_id TEXT,
-  name TEXT NOT NULL,
-  path TEXT NOT NULL,
-  created_at TEXT DEFAULT (datetime('now')),
-  updated_at TEXT DEFAULT (datetime('now'))
-);
-CREATE INDEX idx_docs_folders_user ON docs_folders(user_id);
-CREATE INDEX idx_docs_folders_parent ON docs_folders(parent_id);
+Tabelas criadas:
+- `docs_folders` - Estrutura hierárquica de pastas
+- `docs_documents` - Metadados dos arquivos
+- `docs_content` - Texto extraído dos documentos
+- `docs_chunks` - Chunks para busca IA
+- `docs_chunks_fts` - Tabela virtual FTS5 para busca full-text
 
--- docs_documents
-CREATE TABLE IF NOT EXISTS docs_documents (
-  id TEXT PRIMARY KEY,
-  user_id TEXT NOT NULL,
-  folder_id TEXT,
-  name TEXT NOT NULL,
-  original_name TEXT NOT NULL,
-  mime_type TEXT NOT NULL,
-  size INTEGER NOT NULL,
-  r2_key TEXT NOT NULL UNIQUE,
-  r2_url TEXT,
-  text_extraction_status TEXT DEFAULT 'pending',
-  is_favorite INTEGER DEFAULT 0,
-  created_at TEXT DEFAULT (datetime('now')),
-  updated_at TEXT DEFAULT (datetime('now'))
-);
-CREATE INDEX idx_docs_documents_user ON docs_documents(user_id);
-CREATE INDEX idx_docs_documents_folder ON docs_documents(folder_id);
+Triggers implementados:
+- `docs_chunks_ai` - Sincroniza inserções com FTS
+- `docs_chunks_ad` - Sincroniza deleções com FTS
+- `docs_chunks_au` - Sincroniza atualizações com FTS
 
--- docs_content
-CREATE TABLE IF NOT EXISTS docs_content (
-  id TEXT PRIMARY KEY,
-  document_id TEXT NOT NULL UNIQUE,
-  user_id TEXT NOT NULL,
-  text_content TEXT NOT NULL,
-  chunks_count INTEGER DEFAULT 0,
-  created_at TEXT DEFAULT (datetime('now'))
-);
-
--- docs_chunks
-CREATE TABLE IF NOT EXISTS docs_chunks (
-  id TEXT PRIMARY KEY,
-  document_id TEXT NOT NULL,
-  content_id TEXT NOT NULL,
-  user_id TEXT NOT NULL,
-  chunk_index INTEGER NOT NULL,
-  chunk_text TEXT NOT NULL,
-  created_at TEXT DEFAULT (datetime('now'))
-);
-CREATE INDEX idx_docs_chunks_user ON docs_chunks(user_id);
-CREATE INDEX idx_docs_chunks_document ON docs_chunks(document_id);
-
--- FTS5 para busca
-CREATE VIRTUAL TABLE IF NOT EXISTS docs_chunks_fts USING fts5(
-  chunk_text,
-  content='docs_chunks',
-  content_rowid='rowid'
-);
-
--- Triggers FTS
-CREATE TRIGGER docs_chunks_ai AFTER INSERT ON docs_chunks BEGIN
-  INSERT INTO docs_chunks_fts(rowid, chunk_text) VALUES (new.rowid, new.chunk_text);
-END;
-CREATE TRIGGER docs_chunks_ad AFTER DELETE ON docs_chunks BEGIN
-  INSERT INTO docs_chunks_fts(docs_chunks_fts, rowid, chunk_text) VALUES('delete', old.rowid, old.chunk_text);
-END;
-```
+Indexes criados para performance em todas as tabelas.
 
 ---
 
-## FASE 13: D1 Client - Métodos de Dados
+## FASE 13: D1 Client - Métodos de Dados ✅
 
-### 13.1 Adicionar tipos D1 para Docs
-Em `src/lib/api-clients/d1-client.ts` adicionar interfaces:
+### 13.1 Tipos D1 Adicionados
+Em `src/lib/api-clients/d1-client.ts`:
 - `D1DocsFolder`
 - `D1DocsDocument`
 - `D1DocsContent`
 - `D1DocsChunk`
+- `D1DocsSearchResult`
 
-### 13.2 Adicionar métodos de Folders
-- `getDocsFolders(userId)`
-- `getDocsFolderById(id)`
-- `createDocsFolder(data)`
-- `updateDocsFolder(id, data)`
-- `deleteDocsFolder(id)`
+### 13.2 Métodos de Folders Implementados
+- `getDocsFolders(userId)` - Lista todas as pastas
+- `getDocsFolderById(id)` - Busca pasta por ID
+- `getDocsFoldersByParent(userId, parentId)` - Lista pastas filhas
+- `createDocsFolder(data)` - Cria nova pasta
+- `updateDocsFolder(id, data)` - Atualiza pasta
+- `deleteDocsFolder(id)` - Deleta pasta
 
-### 13.3 Adicionar métodos de Documents
-- `getDocsDocuments(userId, folderId?)`
-- `getDocsDocumentById(id)`
-- `createDocsDocument(data)`
-- `updateDocsDocument(id, data)`
-- `deleteDocsDocument(id)`
+### 13.3 Métodos de Documents Implementados
+- `getDocsDocuments(userId, options?)` - Lista documentos com filtros
+- `getDocsDocumentById(id)` - Busca documento por ID
+- `getRecentDocsDocuments(userId, limit)` - Documentos recentes
+- `getFavoriteDocsDocuments(userId)` - Documentos favoritos
+- `createDocsDocument(data)` - Cria novo documento
+- `updateDocsDocument(id, data)` - Atualiza documento
+- `toggleDocsDocumentFavorite(id)` - Alterna favorito
+- `deleteDocsDocument(id)` - Deleta documento
 
-### 13.4 Adicionar métodos de Content e Chunks
-- `createDocsContent(data)`
-- `getDocsContentByDocument(documentId)`
-- `createDocsChunks(chunks)`
-- `searchDocsChunks(userId, query)` - usa FTS5
-- `deleteDocsChunksByDocument(documentId)`
+### 13.4 Métodos de Content e Chunks Implementados
+- `getDocsContent(documentId)` - Busca conteúdo extraído
+- `createDocsContent(data)` - Cria conteúdo
+- `deleteDocsContent(documentId)` - Deleta conteúdo
+- `getDocsChunks(documentId)` - Lista chunks
+- `createDocsChunks(chunks)` - Cria chunks em lote
+- `deleteDocsChunks(documentId)` - Deleta chunks
+- `searchDocsChunks(userId, query, limit)` - Busca FTS5
+- `getDocsStats(userId)` - Estatísticas do usuário
 
 ---
 
@@ -798,8 +748,8 @@ npm run build
 | 10 | Editor | TextEditor | ✅ |
 | 11 | Integração visual | MyEasyDocs completo, Dashboard card | ✅ |
 | **Extras** | **Melhorias** | **VideoPreview, AudioPreview, CodePreview, TextEditorModal, CreateFileModal, DocumentTreeItem** | ✅ |
-| 12 | DB | migration SQL | ⏳ |
-| 13 | D1 Client | métodos no d1-client.ts | ⏳ |
+| 12 | DB | 016_add_docs_tables.sql | ✅ |
+| 13 | D1 Client | tipos e métodos no d1-client.ts | ✅ |
 | 14 | Services | FolderService, DocumentService, UploadService | ⏳ |
 | 15 | Hooks | useFolders, useDocuments, useFileUpload | ⏳ |
 | 16 | Conectar UI | MyEasyDocs com dados reais | ⏳ |
@@ -818,9 +768,16 @@ npm run build
 3. ✅ **Preview funciona**: PDF, imagem, texto, vídeo, áudio e código renderizam
 4. ✅ **Editor funciona**: Editor inline e fullscreen funcionam
 
-## Fases 12-19 (Backend) - PENDENTES ⏳
+## Fases 12-13 (Database & API Client) - CONCLUÍDAS ✅
 
-5. ⏳ **CRUD funciona**: Criar, renomear, mover, deletar (precisa backend)
-6. ⏳ **Upload funciona**: Arquivo vai para R2 e aparece na lista (precisa backend)
-7. ⏳ **Extração funciona**: PDFs/DOCX/TXT são indexados (precisa backend)
-8. ⏳ **Chat funciona**: IA responde sobre documentos (precisa backend)
+5. ✅ **Migration criada**: `016_add_docs_tables.sql` com todas as tabelas
+6. ✅ **D1 Client completo**: Tipos e métodos para folders, documents, content, chunks
+
+## Fases 14-19 (Backend) - PENDENTES ⏳
+
+7. ⏳ **Services**: FolderService, DocumentService, UploadService
+8. ⏳ **Hooks**: useFolders, useDocuments, useFileUpload
+9. ⏳ **CRUD funciona**: Criar, renomear, mover, deletar
+10. ⏳ **Upload funciona**: Arquivo vai para R2 e aparece na lista
+11. ⏳ **Extração funciona**: PDFs/DOCX/TXT são indexados
+12. ⏳ **Chat funciona**: IA responde sobre documentos

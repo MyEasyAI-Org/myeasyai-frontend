@@ -408,6 +408,64 @@ export interface D1ContentCalendarEntry {
 }
 
 // =============================================================================
+// Docs Types (MyEasyDocs)
+// =============================================================================
+
+export interface D1DocsFolder {
+  id: string;
+  user_id: string;
+  parent_id: string | null;
+  name: string;
+  path: string;
+  created_at: string;
+  updated_at: string | null;
+}
+
+export interface D1DocsDocument {
+  id: string;
+  user_id: string;
+  folder_id: string | null;
+  name: string;
+  original_name: string;
+  mime_type: string;
+  size: number;
+  r2_key: string;
+  r2_url: string | null;
+  text_extraction_status: 'pending' | 'processing' | 'completed' | 'failed' | 'unsupported';
+  is_favorite: boolean;
+  created_at: string;
+  updated_at: string | null;
+}
+
+export interface D1DocsContent {
+  id: string;
+  document_id: string;
+  user_id: string;
+  text_content: string;
+  chunks_count: number;
+  created_at: string;
+}
+
+export interface D1DocsChunk {
+  id: string;
+  document_id: string;
+  content_id: string;
+  user_id: string;
+  chunk_index: number;
+  chunk_text: string;
+  created_at: string;
+}
+
+export interface D1DocsSearchResult {
+  chunk_id: string;
+  document_id: string;
+  document_name: string;
+  chunk_text: string;
+  chunk_index: number;
+  rank: number;
+}
+
+// =============================================================================
 // Resume Types (MyEasyResume)
 // =============================================================================
 
@@ -2229,6 +2287,257 @@ export class D1Client {
    */
   async deleteResume(id: string): Promise<D1ApiResponse<{ success: boolean }>> {
     return this.fetch(`/resume/library/${id}`, { method: 'DELETE' });
+  }
+
+  // ==================== DOCS ====================
+
+  // --- Folders ---
+
+  /**
+   * Lista pastas do usuário
+   */
+  async getDocsFolders(userId: string): Promise<D1ApiResponse<D1DocsFolder[]>> {
+    return this.fetch<D1DocsFolder[]>(`/docs/folders/user/${userId}`);
+  }
+
+  /**
+   * Busca pasta por ID
+   */
+  async getDocsFolderById(id: string): Promise<D1ApiResponse<D1DocsFolder>> {
+    return this.fetch<D1DocsFolder>(`/docs/folders/${id}`);
+  }
+
+  /**
+   * Lista pastas filhas de uma pasta
+   */
+  async getDocsFoldersByParent(
+    userId: string,
+    parentId: string | null
+  ): Promise<D1ApiResponse<D1DocsFolder[]>> {
+    const endpoint = parentId
+      ? `/docs/folders/user/${userId}/parent/${parentId}`
+      : `/docs/folders/user/${userId}/root`;
+    return this.fetch<D1DocsFolder[]>(endpoint);
+  }
+
+  /**
+   * Cria nova pasta
+   */
+  async createDocsFolder(folder: {
+    user_id: string;
+    name: string;
+    parent_id?: string | null;
+    path: string;
+  }): Promise<D1ApiResponse<D1DocsFolder>> {
+    return this.fetch<D1DocsFolder>('/docs/folders', {
+      method: 'POST',
+      body: JSON.stringify(folder),
+    });
+  }
+
+  /**
+   * Atualiza pasta
+   */
+  async updateDocsFolder(
+    id: string,
+    updates: Partial<{ name: string; parent_id: string | null; path: string }>
+  ): Promise<D1ApiResponse<D1DocsFolder>> {
+    return this.fetch<D1DocsFolder>(`/docs/folders/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(updates),
+    });
+  }
+
+  /**
+   * Deleta pasta (e todo conteúdo)
+   */
+  async deleteDocsFolder(id: string): Promise<D1ApiResponse<{ success: boolean }>> {
+    return this.fetch(`/docs/folders/${id}`, { method: 'DELETE' });
+  }
+
+  // --- Documents ---
+
+  /**
+   * Lista documentos do usuário
+   */
+  async getDocsDocuments(
+    userId: string,
+    options?: { folder_id?: string | null; is_favorite?: boolean }
+  ): Promise<D1ApiResponse<D1DocsDocument[]>> {
+    const params = new URLSearchParams();
+    if (options?.folder_id !== undefined) {
+      params.append('folder_id', options.folder_id || 'root');
+    }
+    if (options?.is_favorite !== undefined) {
+      params.append('is_favorite', String(options.is_favorite));
+    }
+    const query = params.toString() ? `?${params.toString()}` : '';
+    return this.fetch<D1DocsDocument[]>(`/docs/documents/user/${userId}${query}`);
+  }
+
+  /**
+   * Busca documento por ID
+   */
+  async getDocsDocumentById(id: string): Promise<D1ApiResponse<D1DocsDocument>> {
+    return this.fetch<D1DocsDocument>(`/docs/documents/${id}`);
+  }
+
+  /**
+   * Lista documentos recentes do usuário
+   */
+  async getRecentDocsDocuments(
+    userId: string,
+    limit = 10
+  ): Promise<D1ApiResponse<D1DocsDocument[]>> {
+    return this.fetch<D1DocsDocument[]>(`/docs/documents/user/${userId}/recent?limit=${limit}`);
+  }
+
+  /**
+   * Lista documentos favoritos do usuário
+   */
+  async getFavoriteDocsDocuments(userId: string): Promise<D1ApiResponse<D1DocsDocument[]>> {
+    return this.fetch<D1DocsDocument[]>(`/docs/documents/user/${userId}/favorites`);
+  }
+
+  /**
+   * Cria novo documento
+   */
+  async createDocsDocument(document: {
+    user_id: string;
+    folder_id?: string | null;
+    name: string;
+    original_name: string;
+    mime_type: string;
+    size: number;
+    r2_key: string;
+    r2_url?: string;
+  }): Promise<D1ApiResponse<D1DocsDocument>> {
+    return this.fetch<D1DocsDocument>('/docs/documents', {
+      method: 'POST',
+      body: JSON.stringify(document),
+    });
+  }
+
+  /**
+   * Atualiza documento
+   */
+  async updateDocsDocument(
+    id: string,
+    updates: Partial<{
+      name: string;
+      folder_id: string | null;
+      r2_url: string;
+      text_extraction_status: string;
+      is_favorite: boolean;
+    }>
+  ): Promise<D1ApiResponse<D1DocsDocument>> {
+    return this.fetch<D1DocsDocument>(`/docs/documents/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(updates),
+    });
+  }
+
+  /**
+   * Alterna favorito do documento
+   */
+  async toggleDocsDocumentFavorite(id: string): Promise<D1ApiResponse<D1DocsDocument>> {
+    return this.fetch<D1DocsDocument>(`/docs/documents/${id}/toggle-favorite`, {
+      method: 'PATCH',
+    });
+  }
+
+  /**
+   * Deleta documento
+   */
+  async deleteDocsDocument(id: string): Promise<D1ApiResponse<{ success: boolean; r2_key?: string }>> {
+    return this.fetch(`/docs/documents/${id}`, { method: 'DELETE' });
+  }
+
+  // --- Content & Chunks ---
+
+  /**
+   * Busca conteúdo extraído de um documento
+   */
+  async getDocsContent(documentId: string): Promise<D1ApiResponse<D1DocsContent | null>> {
+    return this.fetch<D1DocsContent | null>(`/docs/content/document/${documentId}`);
+  }
+
+  /**
+   * Cria conteúdo extraído
+   */
+  async createDocsContent(content: {
+    document_id: string;
+    user_id: string;
+    text_content: string;
+    chunks_count: number;
+  }): Promise<D1ApiResponse<D1DocsContent>> {
+    return this.fetch<D1DocsContent>('/docs/content', {
+      method: 'POST',
+      body: JSON.stringify(content),
+    });
+  }
+
+  /**
+   * Deleta conteúdo de um documento
+   */
+  async deleteDocsContent(documentId: string): Promise<D1ApiResponse<{ success: boolean }>> {
+    return this.fetch(`/docs/content/document/${documentId}`, { method: 'DELETE' });
+  }
+
+  /**
+   * Lista chunks de um documento
+   */
+  async getDocsChunks(documentId: string): Promise<D1ApiResponse<D1DocsChunk[]>> {
+    return this.fetch<D1DocsChunk[]>(`/docs/chunks/document/${documentId}`);
+  }
+
+  /**
+   * Cria múltiplos chunks
+   */
+  async createDocsChunks(chunks: Array<{
+    document_id: string;
+    content_id: string;
+    user_id: string;
+    chunk_index: number;
+    chunk_text: string;
+  }>): Promise<D1ApiResponse<{ created: number }>> {
+    return this.fetch('/docs/chunks/bulk', {
+      method: 'POST',
+      body: JSON.stringify({ chunks }),
+    });
+  }
+
+  /**
+   * Deleta chunks de um documento
+   */
+  async deleteDocsChunks(documentId: string): Promise<D1ApiResponse<{ success: boolean }>> {
+    return this.fetch(`/docs/chunks/document/${documentId}`, { method: 'DELETE' });
+  }
+
+  /**
+   * Busca full-text nos chunks do usuário
+   */
+  async searchDocsChunks(
+    userId: string,
+    query: string,
+    limit = 10
+  ): Promise<D1ApiResponse<D1DocsSearchResult[]>> {
+    return this.fetch<D1DocsSearchResult[]>(
+      `/docs/search/user/${userId}?q=${encodeURIComponent(query)}&limit=${limit}`
+    );
+  }
+
+  /**
+   * Estatísticas de documentos do usuário
+   */
+  async getDocsStats(userId: string): Promise<D1ApiResponse<{
+    total_documents: number;
+    total_folders: number;
+    total_size: number;
+    documents_by_type: Record<string, number>;
+    extraction_status: Record<string, number>;
+  }>> {
+    return this.fetch(`/docs/stats/user/${userId}`);
   }
 
   // ==================== HEALTH ====================
