@@ -56,3 +56,6 @@ red-purple-amora/
 
 # HTML templates (not used in React app)
 PROJETO HTML DO MYEASYWEBSITE/
+
+# Test environment
+.env.test

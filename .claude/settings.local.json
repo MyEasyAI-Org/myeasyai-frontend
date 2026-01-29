@@ -40,7 +40,12 @@
       "Bash(npm view:*)",
       "Bash(npm show:*)",
       "Bash(npm info:*)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Bash(npm audit:*)",
+      "Bash(npm ls:*)",
+      "Bash(npm outdated:*)",
+      "Bash(git check-ignore:*)",
+      "Bash(npm run:*)"
     ],
     "deny": [],
     "ask": []

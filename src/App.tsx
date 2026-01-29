@@ -31,9 +31,11 @@ import { MyEasyCode } from './features/my-easy-code';
 import { MyEasyContent } from './features/my-easy-content';
 import { MyEasyCRM } from './features/my-easy-crm';
 import { MyEasyPricing } from './features/my-easy-pricing/MyEasyPricing';
+import { MyEasyFitness } from './features/my-easy-fitness';
 import { MyEasyWebsite } from './features/my-easy-website/MyEasyWebsite';
 import { MyEasyResume } from './features/my-easy-resume/MyEasyResume';
 import { MyEasyLearning } from './features/my-easy-learning/MyEasyLearning';
+import { MyEasyDocs } from './features/my-easy-docs';
 import { SupportPage } from './pages/SupportPage';
 import { CreateTicketPage } from './pages/CreateTicketPage';
 import { MyTicketsPage } from './pages/MyTicketsPage';
@@ -380,12 +382,20 @@ function AppContent() {
     navigate(ROUTES.MY_EASY_CONTENT);
   };
 
+  const goToMyEasyFitness = () => {
+    navigate(ROUTES.MY_EASY_FITNESS);
+  };
+
   const goToMyEasyResume = () => {
     navigate(ROUTES.MY_EASY_RESUME);
   };
 
   const goToMyEasyLearning = () => {
     navigate(ROUTES.MY_EASY_LEARNING);
+  };
+
+  const goToMyEasyDocs = () => {
+    navigate(ROUTES.MY_EASY_DOCS);
   };
 
   const goToSupport = () => {
@@ -926,10 +936,12 @@ function AppContent() {
                 onGoToMyEasyPricing={goToMyEasyPricing}
                 onGoToMyEasyCRM={goToMyEasyCRM}
                 onGoToMyEasyContent={goToMyEasyContent}
+                onGoToMyEasyFitness={goToMyEasyFitness}
                 onGoToMyEasyAvatar={goToMyEasyAvatar}
                 onGoToMyEasyCode={goToMyEasyCode}
                 onGoToMyEasyResume={goToMyEasyResume}
                 onGoToMyEasyLearning={goToMyEasyLearning}
+                onGoToMyEasyDocs={goToMyEasyDocs}
                 onGoToSupport={goToSupport}
                 initialTab={dashboardInitialTab}
                 onLoadingComplete={() => {
@@ -1031,6 +1043,22 @@ function AppContent() {
       />
 
       <Route
+        path={ROUTES.MY_EASY_FITNESS}
+        element={
+          <ProtectedRoute
+            user={user}
+            needsOnboarding={needsOnboarding}
+            needsPayment={needsPayment}
+            onOpenOnboarding={() => onboardingModal.open()}
+            isLoading={loading}
+            isCheckingAuth={isCheckingAuth}
+          >
+            <MyEasyFitness onBackToDashboard={goToDashboardProducts} userName={userName} />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
         path={ROUTES.MY_EASY_AVATAR}
         element={
           <ProtectedRoute
@@ -1090,6 +1118,22 @@ function AppContent() {
             isCheckingAuth={isCheckingAuth}
           >
             <MyEasyLearning onBackToDashboard={goToDashboardProducts} />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path={ROUTES.MY_EASY_DOCS}
+        element={
+          <ProtectedRoute
+            user={user}
+            needsOnboarding={needsOnboarding}
+            needsPayment={needsPayment}
+            onOpenOnboarding={() => onboardingModal.open()}
+            isLoading={loading}
+            isCheckingAuth={isCheckingAuth}
+          >
+            <MyEasyDocs onBackToDashboard={goToDashboardProducts} />
           </ProtectedRoute>
         }
       />

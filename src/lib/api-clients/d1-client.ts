@@ -141,6 +141,98 @@ export interface D1PricingTaxItem {
 }
 
 // =============================================================================
+// Fitness Types
+// =============================================================================
+
+export interface D1FitnessProfile {
+  id: string;
+  user_uuid: string;
+  nome: string;
+  idade: number;
+  sexo: string;
+  peso: number;
+  altura: number;
+  objetivo: string;
+  nivel_atividade: string;
+  restricoes_medicas: string | null; // JSON array as string
+  lesoes: string | null; // JSON array as string
+  // Training preferences
+  dias_treino_semana: number | null;
+  tempo_treino_minutos: number | null;
+  preferencia_treino: string | null;
+  experiencia_treino: string | null;
+  local_treino: string | null;
+  modalidade: string | null;
+  // Diet preferences
+  restricoes_alimentares: string | null; // JSON array as string
+  comidas_favoritas: string | null; // JSON array as string
+  comidas_evitar: string | null; // JSON array as string
+  numero_refeicoes: number | null;
+  horario_treino: string | null;
+  // Gender
+  genero: string | null;
+  genero_outro: string | null;
+  // Timestamps
+  created_at: string;
+  updated_at: string | null;
+}
+
+export interface D1FitnessTreino {
+  id: string;
+  user_uuid: string;
+  nome: string;
+  dia_semana: string;
+  exercicios: string; // JSON array as string
+  created_at: string;
+  updated_at: string | null;
+}
+
+export interface D1FitnessDieta {
+  id: string;
+  user_uuid: string;
+  calorias: number;
+  proteinas: number;
+  carboidratos: number;
+  gorduras: number;
+  refeicoes: string; // JSON array as string
+  created_at: string;
+  updated_at: string | null;
+}
+
+export interface D1FitnessGamification {
+  id: string;
+  user_uuid: string;
+  // Streak data
+  current_streak: number;
+  longest_streak: number;
+  last_activity_date: string | null;
+  total_active_days: number;
+  // XP data
+  total_xp: number;
+  current_level: number;
+  // Stats
+  total_workouts_completed: number;
+  perfect_weeks: number;
+  perfect_months: number;
+  // New stats for trophies
+  early_workouts?: number;
+  night_workouts?: number;
+  diet_days_followed?: number;
+  workout_modalities?: string; // JSON array of strings
+  consecutive_perfect_weeks?: number;
+  // JSON stringified arrays
+  badges: string; // JSON array of UserBadge (legacy)
+  trophies?: string; // JSON array of UserTrophy
+  unique_badges?: string; // JSON array of UserUniqueBadge
+  challenges: string; // JSON array of Challenge
+  goals: string; // JSON array of Goal
+  activities: string; // JSON array of ActivityItem (limited to recent 50)
+  // Timestamps
+  created_at: string;
+  updated_at: string | null;
+}
+
+// =============================================================================
 // CRM Types
 // =============================================================================
 
@@ -1462,6 +1554,218 @@ export class D1Client {
     if (endDate) params.append('end_date', endDate);
     const query = params.toString() ? `?${params.toString()}` : '';
     return this.fetch(`/crm/activities/count/user/${userId}${query}`);
+  }
+
+  // ==================== FITNESS ====================
+
+  // --- Profile ---
+
+  /**
+   * Busca perfil fitness do usuário
+   */
+  async getFitnessProfile(userUuid: string): Promise<D1ApiResponse<D1FitnessProfile | null>> {
+    return this.fetch<D1FitnessProfile | null>(`/fitness/profile/user/${userUuid}`);
+  }
+
+  /**
+   * Cria ou atualiza perfil fitness
+   */
+  async upsertFitnessProfile(profile: {
+    user_uuid: string;
+    nome: string;
+    idade: number;
+    sexo: string;
+    peso: number;
+    altura: number;
+    objetivo: string;
+    nivel_atividade: string;
+    restricoes_medicas?: string[];
+    lesoes?: string[];
+    // Training preferences
+    dias_treino_semana?: number;
+    tempo_treino_minutos?: number;
+    preferencia_treino?: string;
+    experiencia_treino?: string;
+    local_treino?: string;
+    modalidade?: string;
+    // Diet preferences
+    restricoes_alimentares?: string[];
+    comidas_favoritas?: string[];
+    comidas_evitar?: string[];
+    numero_refeicoes?: number;
+    horario_treino?: string;
+    // Gender
+    genero?: string;
+    genero_outro?: string;
+  }): Promise<D1ApiResponse<D1FitnessProfile>> {
+    return this.fetch<D1FitnessProfile>('/fitness/profile', {
+      method: 'PUT',
+      body: JSON.stringify({
+        ...profile,
+        restricoes_medicas: JSON.stringify(profile.restricoes_medicas || []),
+        lesoes: JSON.stringify(profile.lesoes || []),
+        restricoes_alimentares: JSON.stringify(profile.restricoes_alimentares || []),
+        comidas_favoritas: JSON.stringify(profile.comidas_favoritas || []),
+        comidas_evitar: JSON.stringify(profile.comidas_evitar || []),
+      }),
+    });
+  }
+
+  // --- Treinos ---
+
+  /**
+   * Lista treinos do usuário
+   */
+  async getFitnessTreinos(userUuid: string): Promise<D1ApiResponse<D1FitnessTreino[]>> {
+    return this.fetch<D1FitnessTreino[]>(`/fitness/treinos/user/${userUuid}`);
+  }
+
+  /**
+   * Cria novo treino
+   */
+  async createFitnessTreino(treino: {
+    user_uuid: string;
+    nome: string;
+    dia_semana: string;
+    exercicios: any[];
+  }): Promise<D1ApiResponse<D1FitnessTreino>> {
+    return this.fetch<D1FitnessTreino>('/fitness/treinos', {
+      method: 'POST',
+      body: JSON.stringify({
+        ...treino,
+        exercicios: JSON.stringify(treino.exercicios),
+      }),
+    });
+  }
+
+  /**
+   * Atualiza treino
+   */
+  async updateFitnessTreino(
+    id: string,
+    updates: Partial<{
+      nome: string;
+      dia_semana: string;
+      exercicios: any[];
+    }>
+  ): Promise<D1ApiResponse<D1FitnessTreino>> {
+    const body: any = { ...updates };
+    if (updates.exercicios) {
+      body.exercicios = JSON.stringify(updates.exercicios);
+    }
+    return this.fetch<D1FitnessTreino>(`/fitness/treinos/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(body),
+    });
+  }
+
+  /**
+   * Deleta treino
+   */
+  async deleteFitnessTreino(id: string): Promise<D1ApiResponse<{ success: boolean }>> {
+    return this.fetch(`/fitness/treinos/${id}`, { method: 'DELETE' });
+  }
+
+  /**
+   * Substitui todos os treinos do usuário
+   */
+  async replaceFitnessTreinos(
+    userUuid: string,
+    treinos: Array<{
+      id?: string;
+      nome: string;
+      dia_semana: string;
+      exercicios: any[];
+    }>
+  ): Promise<D1ApiResponse<D1FitnessTreino[]>> {
+    return this.fetch<D1FitnessTreino[]>(`/fitness/treinos/user/${userUuid}/replace`, {
+      method: 'PUT',
+      body: JSON.stringify(
+        treinos.map((t) => ({
+          ...t,
+          exercicios: JSON.stringify(t.exercicios),
+        }))
+      ),
+    });
+  }
+
+  // --- Dieta ---
+
+  /**
+   * Busca dieta do usuário
+   */
+  async getFitnessDieta(userUuid: string): Promise<D1ApiResponse<D1FitnessDieta | null>> {
+    return this.fetch<D1FitnessDieta | null>(`/fitness/dieta/user/${userUuid}`);
+  }
+
+  /**
+   * Cria ou atualiza dieta
+   */
+  async upsertFitnessDieta(dieta: {
+    user_uuid: string;
+    calorias: number;
+    proteinas: number;
+    carboidratos: number;
+    gorduras: number;
+    refeicoes: any[];
+  }): Promise<D1ApiResponse<D1FitnessDieta>> {
+    return this.fetch<D1FitnessDieta>('/fitness/dieta', {
+      method: 'PUT',
+      body: JSON.stringify({
+        ...dieta,
+        refeicoes: JSON.stringify(dieta.refeicoes),
+      }),
+    });
+  }
+
+  /**
+   * Deleta dieta do usuário
+   */
+  async deleteFitnessDieta(userUuid: string): Promise<D1ApiResponse<{ success: boolean }>> {
+    return this.fetch(`/fitness/dieta/user/${userUuid}`, { method: 'DELETE' });
+  }
+
+  // --- Gamification ---
+
+  /**
+   * Busca dados de gamificação do usuário
+   */
+  async getFitnessGamification(userUuid: string): Promise<D1ApiResponse<D1FitnessGamification | null>> {
+    return this.fetch<D1FitnessGamification | null>(`/fitness/gamification/user/${userUuid}`);
+  }
+
+  /**
+   * Cria ou atualiza dados de gamificação
+   */
+  async upsertFitnessGamification(gamification: {
+    user_uuid: string;
+    current_streak: number;
+    longest_streak: number;
+    last_activity_date: string | null;
+    total_active_days: number;
+    total_xp: number;
+    current_level: number;
+    total_workouts_completed: number;
+    perfect_weeks: number;
+    perfect_months: number;
+    // New stats for trophies
+    early_workouts?: number;
+    night_workouts?: number;
+    diet_days_followed?: number;
+    workout_modalities?: string;
+    consecutive_perfect_weeks?: number;
+    // JSON stringified arrays
+    badges: string;
+    trophies?: string;
+    unique_badges?: string;
+    challenges: string;
+    goals: string;
+    activities: string;
+  }): Promise<D1ApiResponse<D1FitnessGamification>> {
+    return this.fetch<D1FitnessGamification>('/fitness/gamification', {
+      method: 'PUT',
+      body: JSON.stringify(gamification),
+    });
   }
 
   // ==================== CONTENT BUSINESS PROFILES ====================
