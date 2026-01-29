@@ -57,26 +57,25 @@ export function PlanSelectionStep({
 
     if (isBrazil) {
       if (billingPeriod === 'annual') {
-        // À vista com cartão - salva o cartão para upgrades
+        // À vista com cartão
         return {
           main: pricing.displayPrice,
           sub: 'à vista',
-          note: `Cartão salvo para upgrades`,
+          note: null,
         };
       } else if (billingPeriod === 'pix') {
-        // À vista com PIX - sem cartão salvo
+        // À vista com PIX
         return {
           main: pricing.displayPrice,
-          sub: 'à vista',
-          note: `Pagamento único via PIX`,
+          sub: 'à vista (PIX)',
+          note: null,
         };
       } else {
-        // Parcelado 12x (com 20% de juros)
-        const totalWithInterest = pricing.price * 1.2;
+        // Parcelado 12x
         return {
           main: pricing.installmentPrice || '',
           sub: 'por mês (12x)',
-          note: `Total: R$ ${totalWithInterest.toFixed(2).replace('.', ',')}`,
+          note: null,
         };
       }
     }
