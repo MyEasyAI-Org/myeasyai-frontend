@@ -52,36 +52,24 @@ export function FitnessVisualizationPanel() {
 
   return (
     <div className="flex-1 min-h-0 bg-slate-900/30 flex flex-col relative overflow-hidden">
-      {/* Background Silhouettes - Hidden on mobile, distributed uniformly on desktop */}
+      {/* Background Silhouettes - Hidden on mobile */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none z-0 hidden sm:block">
-        {/* Crossfit - top left */}
+        {/* Barbell Rack - left */}
         <img
-          src="/fitness-backgrounds/crossfit.svg"
-          className="absolute top-8 left-8 w-72 h-72 lg:w-96 lg:h-96 opacity-[0.14] object-contain"
-          alt=""
-        />
-        {/* Stretch - top right */}
-        <img
-          src="/fitness-backgrounds/stretch.svg"
-          className="absolute -top-20 -right-8 w-72 h-72 lg:w-96 lg:h-96 opacity-[0.14] object-contain"
+          src="/fitness-backgrounds/Barbell-Rack-Silhouette.svg"
+          className="absolute top-[55%] left-[10%] -translate-x-1/2 -translate-y-1/2 w-[26rem] h-[26rem] lg:w-[34rem] lg:h-[34rem] opacity-[0.14] object-contain"
           alt=""
         />
         {/* Running - center */}
         <img
           src="/fitness-backgrounds/running-silhouette.svg"
-          className="absolute top-[55%] left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 lg:w-104 lg:h-104 opacity-[0.12] object-contain"
+          className="absolute top-[55%] left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 lg:w-[28rem] lg:h-[28rem] opacity-[0.12] object-contain"
           alt=""
         />
-        {/* Barbell Rack - bottom left */}
+        {/* Squat - right */}
         <img
-          src="/fitness-backgrounds/Barbell-Rack-Silhouette.svg"
-          className="absolute -bottom-24 left-8 w-72 h-72 lg:w-96 lg:h-96 opacity-[0.14] object-contain"
-          alt=""
-        />
-        {/* Bodybuilding - bottom right */}
-        <img
-          src="/fitness-backgrounds/bodybuilding.svg"
-          className="absolute -bottom-12 -right-12 w-80 h-80 lg:w-104 lg:h-104 opacity-[0.14] object-contain"
+          src="/fitness-backgrounds/Squat-Silhouette-V2.svg"
+          className="absolute top-[55%] left-[85%] -translate-x-1/2 -translate-y-1/2 w-96 h-96 lg:w-[28rem] lg:h-[28rem] opacity-[0.14] object-contain"
           alt=""
         />
       </div>
