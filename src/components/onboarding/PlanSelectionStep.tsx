@@ -20,7 +20,8 @@ interface PlanSelectionStepProps {
   onSuccess?: () => void;
 }
 
-type BillingPeriod = 'annual' | 'monthly';
+// For Brazil: 'annual' = card à vista, 'pix' = PIX à vista, 'monthly' = 12x card
+type BillingPeriod = 'annual' | 'pix' | 'monthly';
 type StepPhase = 'select-plan' | 'payment';
 
 export function PlanSelectionStep({
@@ -56,19 +57,25 @@ export function PlanSelectionStep({
 
     if (isBrazil) {
       if (billingPeriod === 'annual') {
-        // À vista - desconto
+        // À vista com cartão
         return {
           main: pricing.displayPrice,
           sub: 'à vista',
-          note: `ou 12x de ${pricing.installmentPrice}`,
+          note: null,
+        };
+      } else if (billingPeriod === 'pix') {
+        // À vista com PIX
+        return {
+          main: pricing.displayPrice,
+          sub: 'à vista',
+          note: null,
         };
       } else {
-        // Parcelado 12x (com 20% de juros)
-        const totalWithInterest = pricing.price * 1.2;
+        // Parcelado 12x
         return {
           main: pricing.installmentPrice || '',
-          sub: 'por mês (12x)',
-          note: `Total: R$ ${totalWithInterest.toFixed(2).replace('.', ',')}`,
+          sub: 'por mês',
+          note: null,
         };
       }
     }
@@ -118,21 +125,30 @@ export function PlanSelectionStep({
     setError(null);
 
     try {
+      // Determine the billing period and payment method
+      // For Brazil: 'annual' = card, 'pix' = pix, 'monthly' = card subscription
+      const effectiveBillingPeriod = isBrazil
+        ? (billingPeriod === 'pix' ? 'annual' : billingPeriod) // PIX is annual but with different payment method
+        : 'annual';
+      const paymentMethod = isBrazil && billingPeriod === 'pix' ? 'pix' : 'card';
+
       console.log('[PlanSelectionStep] Creating subscription with:', {
         email: userEmail,
         userId: userId,
         plan: selectedPlan,
         country: countryCode,
-        billingPeriod: isBrazil ? billingPeriod : 'annual',
+        billingPeriod: effectiveBillingPeriod,
+        paymentMethod: paymentMethod,
       });
 
-      // Create SetupIntent and get client secret
+      // Create SetupIntent/PaymentIntent and get client secret
       const response = await stripeService.createSubscription({
         email: userEmail,
         userId: userId,
         plan: selectedPlan,
         country: countryCode,
-        billingPeriod: isBrazil ? billingPeriod : 'annual',
+        billingPeriod: effectiveBillingPeriod,
+        paymentMethod: paymentMethod,
       });
 
       console.log('[PlanSelectionStep] Subscription created:', response);
@@ -234,13 +250,13 @@ export function PlanSelectionStep({
   // Render plan selection phase
   return (
     <div className="space-y-6">
-      {/* Billing Period Toggle - Only for Brazil */}
+      {/* Billing Period Toggle - Only for Brazil (3 options) */}
       {isBrazil && (
-        <div className="flex justify-center gap-2 p-1 bg-slate-800/50 rounded-lg">
+        <div className="flex justify-center gap-1 p-1 bg-slate-800/50 rounded-lg">
           <button
             type="button"
             onClick={() => setBillingPeriod('annual')}
-            className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all ${
+            className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-all ${
               billingPeriod === 'annual'
                 ? 'bg-purple-500 text-white shadow-lg'
                 : 'text-slate-400 hover:text-slate-200'
@@ -250,8 +266,19 @@ export function PlanSelectionStep({
           </button>
           <button
             type="button"
+            onClick={() => setBillingPeriod('pix')}
+            className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-all ${
+              billingPeriod === 'pix'
+                ? 'bg-green-500 text-white shadow-lg'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            PIX
+          </button>
+          <button
+            type="button"
             onClick={() => setBillingPeriod('monthly')}
-            className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all ${
+            className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-all ${
               billingPeriod === 'monthly'
                 ? 'bg-purple-500 text-white shadow-lg'
                 : 'text-slate-400 hover:text-slate-200'
@@ -386,7 +413,7 @@ export function PlanSelectionStep({
         className={`w-full py-4 rounded-xl font-semibold text-lg transition-all ${
           loading || !selectedPlan
             ? 'bg-slate-700 text-slate-400 cursor-not-allowed'
-            : 'bg-gradient-to-r from-purple-500 to-blue-500 text-white hover:from-purple-600 hover:to-blue-600 shadow-lg hover:shadow-purple-500/25'
+            : 'bg-gradient-to-r from-purple-500 to-blue-500 text-white hover:from-purple-600 hover:to-blue-600 shadow-lg hover:shadow-purple-500/25 cursor-pointer'
         }`}
       >
         {loading ? (
