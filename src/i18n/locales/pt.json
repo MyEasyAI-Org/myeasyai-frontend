@@ -32,6 +32,7 @@
     "logout": "Sair",
     "login": "Entrar",
     "signup": "Cadastrar",
+    "loginOrSignup": "Entrar ou cadastrar",
     "hello": "Ola"
   },
 

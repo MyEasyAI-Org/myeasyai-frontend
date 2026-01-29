@@ -161,7 +161,7 @@ export default function NavBar({
                 alt="MyEasyAI Logo"
                 className="h-10 w-10 sm:h-12 sm:w-12 object-contain"
               />
-              <span className="nav-logo-text bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-xl font-bold text-transparent">
+              <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-base sm:text-xl font-bold text-transparent">
                 MyEasyAI
               </span>
             </button>
@@ -328,12 +328,21 @@ export default function NavBar({
             ) : (
               // User not logged in - show Sign up and Login
               <>
-                <Button variant="ghostNav" onClick={onSignupClick}>
-                  {t('nav.signup')}
-                </Button>
-                <Button variant="nav" onClick={onLoginClick}>
-                  {t('nav.login')}
-                </Button>
+                {/* Mobile: single button */}
+                <div className="sm:hidden">
+                  <Button variant="nav" onClick={onLoginClick}>
+                    {t('nav.loginOrSignup')}
+                  </Button>
+                </div>
+                {/* Desktop: two buttons */}
+                <div className="hidden sm:flex sm:space-x-3">
+                  <Button variant="ghostNav" onClick={onSignupClick}>
+                    {t('nav.signup')}
+                  </Button>
+                  <Button variant="nav" onClick={onLoginClick}>
+                    {t('nav.login')}
+                  </Button>
+                </div>
               </>
             )}
           </div>
