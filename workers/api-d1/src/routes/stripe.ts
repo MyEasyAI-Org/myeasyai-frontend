@@ -586,11 +586,14 @@ stripeRoutes.get('/debug', async (c) => {
  */
 stripeRoutes.post('/create-subscription', async (c) => {
   try {
-    const { email, userId, plan, country, billingPeriod } = await c.req.json();
+    const { email, userId, plan, country, billingPeriod, paymentMethod } = await c.req.json();
 
     if (!email || !userId || !plan) {
       return c.json({ error: 'Missing required fields: email, userId, plan' }, 400);
     }
+
+    // paymentMethod: 'card' (default) or 'pix' (Brazil only)
+    const preferredPaymentMethod = paymentMethod || 'card';
 
     const STRIPE_SECRET_KEY = c.env.STRIPE_SECRET_KEY;
     if (!STRIPE_SECRET_KEY) {
@@ -638,31 +641,41 @@ stripeRoutes.post('/create-subscription', async (c) => {
         .where(eq(users.uuid, userId));
     }
 
-    // BRAZIL + ANNUAL (À VISTA): Use PaymentIntent with Card only
-    // Note: PIX is incompatible with setup_future_usage, so we only allow card for annual
-    // This ensures the card is saved for future upgrades
+    // BRAZIL + ANNUAL (À VISTA): Use PaymentIntent
+    // - Card: Uses setup_future_usage to save card for upgrades
+    // - PIX: One-time payment only, no upgrades mid-cycle
     const isBrazilAnnual = country === 'BR' && period === 'annual';
 
     if (isBrazilAnnual) {
       // Get the price amount from our constants
       const priceAmount = getPriceAmount(plan, 'brl');
+      const isPix = preferredPaymentMethod === 'pix';
 
-      console.log(`[Stripe] Creating PaymentIntent for Brazil annual (card only): ${plan} = ${priceAmount} BRL`);
+      console.log(`[Stripe] Creating PaymentIntent for Brazil annual (${isPix ? 'PIX' : 'card'}): ${plan} = ${priceAmount} BRL`);
 
-      // Create PaymentIntent with card only (no PIX) so we can use setup_future_usage
+      // Create PaymentIntent with either card or PIX
       const paymentIntentParams = new URLSearchParams();
       paymentIntentParams.append('amount', priceAmount.toString());
       paymentIntentParams.append('currency', 'brl');
       paymentIntentParams.append('customer', customerId);
-      paymentIntentParams.append('payment_method_types[0]', 'card');
-      // IMPORTANT: setup_future_usage saves the card for future charges (upgrades)
-      // This is only possible when PIX is NOT in the payment_method_types
-      paymentIntentParams.append('setup_future_usage', 'off_session');
+
+      if (isPix) {
+        // PIX only - one-time payment, no card saved
+        paymentIntentParams.append('payment_method_types[0]', 'pix');
+        // Note: setup_future_usage is NOT compatible with PIX
+      } else {
+        // Card only - saves card for future upgrades
+        paymentIntentParams.append('payment_method_types[0]', 'card');
+        // IMPORTANT: setup_future_usage saves the card for future charges (upgrades)
+        paymentIntentParams.append('setup_future_usage', 'off_session');
+      }
+
       paymentIntentParams.append('metadata[userId]', userId);
       paymentIntentParams.append('metadata[plan]', plan);
       paymentIntentParams.append('metadata[priceId]', priceId);
       paymentIntentParams.append('metadata[isAnnualBrazil]', 'true');
-      paymentIntentParams.append('description', `MyEasyAI ${plan} - Plano Anual`);
+      paymentIntentParams.append('metadata[paymentMethod]', isPix ? 'pix' : 'card');
+      paymentIntentParams.append('description', `MyEasyAI ${plan} - Plano Anual${isPix ? ' (PIX)' : ''}`);
 
       const paymentIntentResponse = await fetch('https://api.stripe.com/v1/payment_intents', {
         method: 'POST',
@@ -685,7 +698,7 @@ stripeRoutes.post('/create-subscription', async (c) => {
         status: string;
       };
 
-      console.log(`[Stripe] PaymentIntent created: ${paymentIntent.id} for user ${userId} (card only, setup_future_usage enabled)`);
+      console.log(`[Stripe] PaymentIntent created: ${paymentIntent.id} for user ${userId} (${isPix ? 'PIX' : 'card + setup_future_usage'})`);
 
       return c.json({
         paymentIntentId: paymentIntent.id,
@@ -694,7 +707,7 @@ stripeRoutes.post('/create-subscription', async (c) => {
         priceId: priceId,
         status: paymentIntent.status,
         intentType: 'payment_intent', // Frontend needs to know this is a PaymentIntent
-        pixEnabled: false, // PIX disabled for annual - card only to enable setup_future_usage
+        pixEnabled: isPix, // True only for PIX payments
       });
     }
 
