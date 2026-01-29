@@ -67,14 +67,14 @@ export function PlanSelectionStep({
         // À vista com PIX
         return {
           main: pricing.displayPrice,
-          sub: 'à vista (PIX)',
+          sub: 'à vista',
           note: null,
         };
       } else {
         // Parcelado 12x
         return {
           main: pricing.installmentPrice || '',
-          sub: 'por mês (12x)',
+          sub: 'por mês',
           note: null,
         };
       }
