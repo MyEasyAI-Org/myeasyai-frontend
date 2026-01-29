@@ -4,7 +4,6 @@ compatibility_date = "2024-01-01"
 compatibility_flags = ["nodejs_compat"]
 
 # Custom Domain - connect.myeasyai.com
-# Usando route pattern (mais específico que wildcard CNAME)
 routes = [
   { pattern = "connect.myeasyai.com/*", zone_name = "myeasyai.com" }
 ]

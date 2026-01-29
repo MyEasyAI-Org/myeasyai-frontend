@@ -20,9 +20,10 @@
 | 1-11 | Componentes Visuais | ✅ CONCLUÍDO |
 | 12 | Migration do Banco de Dados | ✅ CONCLUÍDO |
 | 13 | D1 Client - Métodos de Dados | ✅ CONCLUÍDO |
-| 14 | Services de Lógica de Negócio | ⏳ Pendente |
-| 15 | Hooks de Estado | ⏳ Pendente |
-| 16 | Conectar UI com Dados Reais | ⏳ Pendente |
+| 13.5 | Worker API Routes | ✅ CONCLUÍDO |
+| 14 | Services de Lógica de Negócio | ✅ CONCLUÍDO |
+| 15 | Hooks de Estado | ✅ CONCLUÍDO |
+| 16 | Conectar UI com Dados Reais | ✅ CONCLUÍDO |
 | 17 | Extração de Texto | ⏳ Pendente |
 | 18 | Busca e IA | ⏳ Pendente |
 | 19 | Testes e Polimento | ⏳ Pendente |
@@ -558,83 +559,322 @@ Em `src/lib/api-clients/d1-client.ts`:
 
 ---
 
-## FASE 14: Services de Lógica de Negócio
+## FASE 13.5: Worker API Routes ✅
 
-### 14.1 Criar FolderService
-Criar `src/features/my-easy-docs/services/FolderService.ts`:
-- `getAll(userId)`
-- `getById(id)`
-- `getByParent(userId, parentId)`
-- `create(userId, name, parentId?)`
-- `rename(id, newName)`
-- `move(id, newParentId)`
-- `delete(id)`
-- `getPath(id)` - retorna breadcrumb
+### 13.5.1 Schema Drizzle Adicionado
+**Arquivo**: `workers/api-d1/src/db/schema.ts`
 
-### 14.2 Criar DocumentService
-Criar `src/features/my-easy-docs/services/DocumentService.ts`:
-- `getAll(userId)`
-- `getByFolder(userId, folderId)`
-- `getById(id)`
-- `create(data)` - **Suporta criar documentos vazios para .txt/.md (CreateFileModal)**
-- `update(id, data)`
-- `move(id, newFolderId)`
-- `toggleFavorite(id)`
-- `delete(id)` - deleta também do R2
-- `getContent(id)` - retorna conteúdo texto do documento
-- `saveContent(id, content)` - salva conteúdo texto (para TextEditorModal)
+Tabelas adicionadas ao schema Drizzle:
+```typescript
+// docs_folders - Pastas de documentos
+export const docsFolders = sqliteTable('docs_folders', {
+  id, user_id, parent_id, name, path, created_at, updated_at
+});
 
-### 14.3 Criar UploadService
-Criar `src/features/my-easy-docs/services/UploadService.ts`:
-- `validateFile(file)`
-- `generateR2Key(userId, docId, filename)`
-- `uploadToR2(file, key, onProgress)` - usa CloudflareClient
-- `getDownloadUrl(r2Key)`
+// docs_documents - Documentos
+export const docsDocuments = sqliteTable('docs_documents', {
+  id, user_id, folder_id, name, original_name, mime_type, size,
+  r2_key, r2_url, is_favorite, extraction_status, created_at, updated_at
+});
+
+// docs_content - Conteúdo extraído
+export const docsContent = sqliteTable('docs_content', {
+  id, document_id, raw_text, word_count, extracted_at
+});
+
+// docs_chunks - Chunks para busca IA
+export const docsChunks = sqliteTable('docs_chunks', {
+  id, document_id, user_id, chunk_index, content, created_at
+});
+```
+
+Types exportados:
+- `DocsFolder`, `NewDocsFolder`
+- `DocsDocument`, `NewDocsDocument`
+- `DocsContent`, `NewDocsContent`
+- `DocsChunk`, `NewDocsChunk`
+
+### 13.5.2 Rotas API Criadas
+**Arquivo**: `workers/api-d1/src/routes/docs.ts`
+
+#### Folders
+| Método | Endpoint | Descrição |
+|--------|----------|-----------|
+| GET | `/docs/folders/user/:userId` | Lista todas as pastas |
+| GET | `/docs/folders/:id` | Busca pasta por ID |
+| GET | `/docs/folders/user/:userId/root` | Lista pastas na raiz |
+| GET | `/docs/folders/user/:userId/parent/:parentId` | Lista pastas filhas |
+| POST | `/docs/folders` | Cria pasta |
+| PATCH | `/docs/folders/:id` | Atualiza pasta |
+| DELETE | `/docs/folders/:id` | Deleta pasta |
+
+#### Documents
+| Método | Endpoint | Descrição |
+|--------|----------|-----------|
+| GET | `/docs/documents/user/:userId` | Lista documentos (query: folder_id) |
+| GET | `/docs/documents/user/:userId/recent` | Lista recentes (query: limit) |
+| GET | `/docs/documents/user/:userId/favorites` | Lista favoritos |
+| GET | `/docs/documents/:id` | Busca documento por ID |
+| POST | `/docs/documents` | Cria documento |
+| PATCH | `/docs/documents/:id` | Atualiza documento |
+| PATCH | `/docs/documents/:id/favorite` | Toggle favorito |
+| DELETE | `/docs/documents/:id` | Deleta documento |
+
+#### Content
+| Método | Endpoint | Descrição |
+|--------|----------|-----------|
+| GET | `/docs/content/document/:documentId` | Busca conteúdo extraído |
+| POST | `/docs/content` | Cria/atualiza conteúdo |
+| DELETE | `/docs/content/document/:documentId` | Deleta conteúdo |
+
+#### Chunks
+| Método | Endpoint | Descrição |
+|--------|----------|-----------|
+| GET | `/docs/chunks/document/:documentId` | Lista chunks |
+| POST | `/docs/chunks/batch` | Cria múltiplos chunks |
+| DELETE | `/docs/chunks/document/:documentId` | Deleta chunks |
+| GET | `/docs/chunks/search` | Busca texto (query: user_id, query, limit) |
+
+#### Stats
+| Método | Endpoint | Descrição |
+|--------|----------|-----------|
+| GET | `/docs/stats/user/:userId` | Estatísticas do usuário |
+
+### 13.5.3 Registro no Index
+**Arquivo**: `workers/api-d1/src/index.ts`
+
+```typescript
+import { docsRoutes } from './routes/docs';
+// ...
+app.route('/docs', docsRoutes);
+```
 
 ---
 
-## FASE 15: Hooks de Estado
+## FASE 14: Services de Lógica de Negócio ✅
 
-### 15.1 Criar useFolders
-Criar `src/features/my-easy-docs/hooks/useFolders.ts`:
-- Estado: folders, currentFolder, currentPath, loading, error
-- Ações: load, createFolder, renameFolder, moveFolder, deleteFolder
-- navigateTo(folderId)
-- Integra com FolderService
+### 14.1 FolderService Implementado
+**Arquivo**: `src/features/my-easy-docs/services/FolderService.ts`
 
-### 15.2 Criar useDocuments
-Criar `src/features/my-easy-docs/hooks/useDocuments.ts`:
-- Estado: documents, selectedDocument, loading, error
-- Ações: load, updateDocument, moveDocument, toggleFavorite, deleteDocument
-- Filtrar por currentFolderId
-- Integra com DocumentService
+Métodos implementados:
+- `getAll()` - Lista todas as pastas do usuário
+- `getById(id)` - Busca pasta por ID
+- `getByParent(parentId)` - Lista pastas filhas
+- `create(name, parentId?)` - Cria nova pasta com path automático
+- `rename(id, newName)` - Renomeia pasta
+- `move(id, newParentId)` - Move pasta para outro parent
+- `delete(id)` - Deleta pasta (cascade via D1)
+- `getPath(folderId)` - Retorna breadcrumb array
+- `getDescendantIds(folderId)` - Lista IDs de subpastas (para deleção)
+- `count()` - Conta total de pastas
 
-### 15.3 Criar useFileUpload
-Criar `src/features/my-easy-docs/hooks/useFileUpload.ts`:
-- Estado: uploads (array de UploadProgress)
-- uploadFiles(files, folderId)
-- Gerencia progresso de cada arquivo
-- Integra com UploadService
+Helpers internos:
+- `getCurrentUserId()` - Obtém userId via authService
+- `mapD1ToFolder()` - Converte tipo D1 para frontend
+- `buildFolderPath()` - Constrói path hierárquico
+
+### 14.2 DocumentService Implementado
+**Arquivo**: `src/features/my-easy-docs/services/DocumentService.ts`
+
+Métodos implementados:
+- `getAll()` - Lista todos documentos
+- `getByFolder(folderId)` - Lista documentos da pasta
+- `getById(id)` - Busca documento por ID
+- `getRecent(limit?)` - Documentos recentes
+- `getFavorites()` - Documentos favoritos
+- `create(data)` - Cria registro de documento
+- `createEmpty(name, extension, folderId?)` - Cria arquivo .txt/.md vazio
+- `update(id, data)` - Atualiza metadados
+- `move(id, newFolderId)` - Move documento
+- `rename(id, newName)` - Renomeia documento
+- `toggleFavorite(id)` - Alterna favorito
+- `delete(id)` - Deleta documento + arquivo R2
+- `getContent(id)` - Obtém DocsContent completo
+- `getTextContent(id)` - Obtém apenas texto extraído
+- `saveContent(id, content)` - Salva conteúdo texto + atualiza R2
+- `count()` - Conta total de documentos
+- `getStats()` - Estatísticas do usuário
+
+### 14.3 UploadService Implementado
+**Arquivo**: `src/features/my-easy-docs/services/UploadService.ts`
+
+Métodos implementados:
+- `validateFile(file)` - Valida tamanho (100MB) e tipo
+- `generateDocumentId()` - Gera UUID para documento
+- `generateR2Key(documentId, filename)` - Gera chave R2 com userId/docId/filename
+- `uploadToR2(file, r2Key)` - Upload básico para R2
+- `uploadToR2WithProgress(file, r2Key, onProgress)` - Upload com callback de progresso
+- `getDownloadUrl(r2Key)` - Constrói URL pública do R2
+- `processUpload(file, onProgress?)` - Processo completo: valida + gera IDs + upload
+- `deleteFromR2(r2Key)` - Deleta arquivo do R2
+- `uploadTextContent(r2Key, content)` - Upload de conteúdo texto (para arquivos .txt/.md)
+
+### 14.4 Barrel Export
+**Arquivo**: `src/features/my-easy-docs/services/index.ts`
+```typescript
+export { FolderService } from './FolderService';
+export { DocumentService } from './DocumentService';
+export { UploadService } from './UploadService';
+```
+
+### 14.5 Tipos Auxiliares Adicionados
+Em `src/features/my-easy-docs/types/index.ts`:
+```typescript
+export interface CreateDocumentData { ... }
+export interface UpdateDocumentData { ... }
+export interface FileValidationResult { valid: boolean; error?: string; }
+export interface ProcessedUploadResult { documentId: string; r2Key: string; }
+export type ProgressCallback = (progress: number) => void;
+```
 
 ---
 
-## FASE 16: Conectar UI com Dados Reais
+## FASE 15: Hooks de Estado ✅
 
-### 16.1 Atualizar MyEasyDocs com hooks reais
-- Substituir dados mock por useFolders e useDocuments
-- Conectar ações dos modais aos services
-- Conectar upload real
-- Gerenciar loading states
+### 15.1 useFolders Implementado
+**Arquivo**: `src/features/my-easy-docs/hooks/useFolders.ts`
 
-### 16.2 Testar CRUD completo
-- Criar pasta
-- Renomear pasta
-- Mover pasta
-- Deletar pasta
-- Upload de arquivo
-- Renomear arquivo
-- Mover arquivo
-- Deletar arquivo
+Estado retornado:
+- `folders` - Array de todas as pastas
+- `currentFolderId` - ID da pasta atual (null = root)
+- `currentFolder` - Objeto da pasta atual
+- `currentPath` - Breadcrumb array
+- `childFolders` - Pastas filhas da atual
+- `isLoading` - Estado de carregamento
+- `error` - Mensagem de erro
+
+Ações:
+- `refresh()` - Recarrega todas as pastas
+- `navigateTo(folderId)` - Navega para pasta e atualiza breadcrumb
+- `createFolder(name, parentId?)` - Cria pasta
+- `renameFolder(id, newName)` - Renomeia pasta
+- `moveFolder(id, newParentId)` - Move pasta
+- `deleteFolder(id)` - Deleta pasta e navega para root se necessário
+
+Hook auxiliar: `useFolder(id)` - Carrega uma pasta específica
+
+### 15.2 useDocuments Implementado
+**Arquivo**: `src/features/my-easy-docs/hooks/useDocuments.ts`
+
+Estado retornado:
+- `documents` - Array de documentos
+- `selectedDocument` - Documento selecionado
+- `isLoading` - Estado de carregamento
+- `error` - Mensagem de erro
+- `totalCount` - Total de documentos
+
+Opções de filtro:
+- `folderId` - Filtrar por pasta
+- `favoritesOnly` - Apenas favoritos
+- `recentOnly` - Apenas recentes
+- `recentLimit` - Limite para recentes
+
+Ações:
+- `refresh()` - Recarrega documentos
+- `selectDocument(doc)` - Seleciona documento
+- `createDocument(data)` - Cria registro
+- `createEmptyFile(name, ext, folderId?)` - Cria arquivo vazio
+- `renameDocument(id, newName)` - Renomeia
+- `moveDocument(id, newFolderId)` - Move
+- `toggleFavorite(id)` - Alterna favorito
+- `deleteDocument(id)` - Deleta
+- `getContent(id)` - Obtém conteúdo
+- `saveContent(id, content)` - Salva conteúdo
+
+Hook auxiliar: `useDocument(id)` - Carrega um documento específico com conteúdo
+
+### 15.3 useFileUpload Implementado
+**Arquivo**: `src/features/my-easy-docs/hooks/useFileUpload.ts`
+
+Estado retornado:
+- `uploads` - Array de UploadProgress
+- `isUploading` - Se há upload em andamento
+
+Opções:
+- `folderId` - Pasta padrão para uploads
+- `onDocumentCreated` - Callback quando documento é criado
+- `onAllComplete` - Callback quando todos terminam
+- `onError` - Callback de erro
+
+Ações:
+- `uploadFiles(files, folderId?)` - Inicia upload de múltiplos arquivos
+- `cancelUpload(uploadId)` - Cancela upload específico
+- `clearCompleted()` - Limpa uploads finalizados
+- `clearAll()` - Limpa todos os uploads
+- `retryUpload(uploadId)` - Retenta upload com erro
+
+Hook auxiliar: `useDropZone(options)` - Suporte a drag-and-drop
+- Retorna `isDragging` e `dropZoneProps` para spread no elemento
+
+### 15.4 Barrel Export
+**Arquivo**: `src/features/my-easy-docs/hooks/index.ts`
+```typescript
+export { useFolders, useFolder } from './useFolders';
+export { useDocuments, useDocument } from './useDocuments';
+export { useFileUpload, useDropZone } from './useFileUpload';
+```
+
+---
+
+## FASE 16: Conectar UI com Dados Reais ✅
+
+### 16.1 MyEasyDocs Atualizado
+**Arquivo**: `src/features/my-easy-docs/MyEasyDocs.tsx`
+
+Mudanças realizadas:
+- Removidos imports de MOCK_FOLDERS e MOCK_DOCUMENTS
+- Adicionado import dos hooks reais: `useFolders`, `useDocuments`, `useFileUpload`
+
+Integração com useFolders:
+```typescript
+const {
+  folders, currentFolderId, currentFolder, currentPath, childFolders,
+  isLoading: isFoldersLoading, error: foldersError,
+  refresh: refreshFolders, navigateTo, createFolder, renameFolder, moveFolder, deleteFolder,
+} = useFolders();
+```
+
+Integração com useDocuments:
+```typescript
+const {
+  documents, selectedDocument, isLoading: isDocumentsLoading, error: documentsError,
+  refresh: refreshDocuments, selectDocument, createDocument, createEmptyFile,
+  renameDocument, moveDocument, toggleFavorite, deleteDocument, getContent, saveContent,
+} = useDocuments({ folderId: currentFolderId });
+```
+
+Integração com useFileUpload:
+```typescript
+const { isUploading, uploadFiles, clearCompleted } = useFileUpload({
+  folderId: currentFolderId,
+  onDocumentCreated: () => refreshDocuments(),
+});
+```
+
+### 16.2 Estados de Loading e Error
+- Loading state com spinner Loader2 centralizado
+- Error state com mensagem em vermelho
+- Combina estados de folders e documents
+
+### 16.3 Handlers Conectados
+Todos os handlers de modais agora são `async` e chamam os services via hooks:
+- `handleCreateFolderSubmit` → `createFolder()`
+- `handleCreateFileSubmit` → `createEmptyFile()`
+- `handleRenameSubmit` → `renameFolder()` ou `renameDocument()`
+- `handleMoveSubmit` → `moveFolder()` ou `moveDocument()`
+- `handleDeleteConfirm` → `deleteFolder()` ou `deleteDocument()`
+- `handleToggleFavorite` → `toggleFavorite()`
+- `handleUploadFiles` → `uploadFiles()`
+- `handleSaveContent` → `saveContent()`
+
+### 16.4 Auto-refresh após Upload
+```typescript
+useEffect(() => {
+  if (!isUploading) {
+    clearCompleted();
+  }
+}, [isUploading, clearCompleted]);
+```
 
 ---
 
@@ -750,9 +990,10 @@ npm run build
 | **Extras** | **Melhorias** | **VideoPreview, AudioPreview, CodePreview, TextEditorModal, CreateFileModal, DocumentTreeItem** | ✅ |
 | 12 | DB | 016_add_docs_tables.sql | ✅ |
 | 13 | D1 Client | tipos e métodos no d1-client.ts | ✅ |
-| 14 | Services | FolderService, DocumentService, UploadService | ⏳ |
-| 15 | Hooks | useFolders, useDocuments, useFileUpload | ⏳ |
-| 16 | Conectar UI | MyEasyDocs com dados reais | ⏳ |
+| 13.5 | Worker API | docs.ts routes, schema Drizzle | ✅ |
+| 14 | Services | FolderService, DocumentService, UploadService | ✅ |
+| 15 | Hooks | useFolders, useDocuments, useFileUpload | ✅ |
+| 16 | Conectar UI | MyEasyDocs com dados reais | ✅ |
 | 17 | Extração | TextExtractionService, textChunker | ⏳ |
 | 18 | IA | DocsSearchService, DocsAIService, useDocsChat | ⏳ |
 | 19 | Testes | Ajustes finais | ⏳ |
@@ -768,16 +1009,20 @@ npm run build
 3. ✅ **Preview funciona**: PDF, imagem, texto, vídeo, áudio e código renderizam
 4. ✅ **Editor funciona**: Editor inline e fullscreen funcionam
 
-## Fases 12-13 (Database & API Client) - CONCLUÍDAS ✅
+## Fases 12-13.5 (Database, API Client & Worker Routes) - CONCLUÍDAS ✅
 
 5. ✅ **Migration criada**: `016_add_docs_tables.sql` com todas as tabelas
 6. ✅ **D1 Client completo**: Tipos e métodos para folders, documents, content, chunks
+7. ✅ **Worker API Routes**: `docs.ts` com todas as rotas REST implementadas
 
-## Fases 14-19 (Backend) - PENDENTES ⏳
+## Fases 14-16 (Services, Hooks, UI) - CONCLUÍDAS ✅
 
-7. ⏳ **Services**: FolderService, DocumentService, UploadService
-8. ⏳ **Hooks**: useFolders, useDocuments, useFileUpload
-9. ⏳ **CRUD funciona**: Criar, renomear, mover, deletar
-10. ⏳ **Upload funciona**: Arquivo vai para R2 e aparece na lista
-11. ⏳ **Extração funciona**: PDFs/DOCX/TXT são indexados
-12. ⏳ **Chat funciona**: IA responde sobre documentos
+7. ✅ **Services**: FolderService, DocumentService, UploadService
+8. ✅ **Hooks**: useFolders, useDocuments, useFileUpload
+9. ✅ **UI Conectada**: MyEasyDocs usando hooks reais
+
+## Fases 17-19 (Extração, IA, Testes) - PENDENTES ⏳
+
+10. ⏳ **Extração funciona**: PDFs/DOCX/TXT são indexados
+11. ⏳ **Chat funciona**: IA responde sobre documentos
+12. ⏳ **Testes finais**: CRUD completo, upload, polimento

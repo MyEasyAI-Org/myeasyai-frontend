@@ -434,3 +434,82 @@ export type ContentLibraryItem = typeof contentLibrary.$inferSelect;
 export type NewContentLibraryItem = typeof contentLibrary.$inferInsert;
 export type ContentCalendarEntry = typeof contentCalendar.$inferSelect;
 export type NewContentCalendarEntry = typeof contentCalendar.$inferInsert;
+
+// =============================================================================
+// Docs Tables (MyEasyDocs)
+// =============================================================================
+
+/**
+ * Tabela de pastas de documentos
+ */
+export const docsFolders = sqliteTable('docs_folders', {
+  id: text('id').primaryKey(),
+  user_id: text('user_id')
+    .notNull()
+    .references(() => users.uuid, { onDelete: 'cascade' }),
+  parent_id: text('parent_id'),
+  name: text('name').notNull(),
+  path: text('path').notNull(),
+  created_at: text('created_at').default(sql`(datetime('now'))`),
+  updated_at: text('updated_at').default(sql`(datetime('now'))`),
+});
+
+/**
+ * Tabela de documentos
+ */
+export const docsDocuments = sqliteTable('docs_documents', {
+  id: text('id').primaryKey(),
+  user_id: text('user_id')
+    .notNull()
+    .references(() => users.uuid, { onDelete: 'cascade' }),
+  folder_id: text('folder_id').references(() => docsFolders.id, { onDelete: 'set null' }),
+  name: text('name').notNull(),
+  original_name: text('original_name').notNull(),
+  mime_type: text('mime_type').notNull(),
+  size: integer('size').notNull(),
+  r2_key: text('r2_key').notNull(),
+  r2_url: text('r2_url'),
+  is_favorite: integer('is_favorite', { mode: 'boolean' }).default(false),
+  extraction_status: text('extraction_status').default('pending'), // 'pending' | 'processing' | 'completed' | 'failed' | 'unsupported'
+  created_at: text('created_at').default(sql`(datetime('now'))`),
+  updated_at: text('updated_at').default(sql`(datetime('now'))`),
+});
+
+/**
+ * Tabela de conteúdo extraído dos documentos
+ */
+export const docsContent = sqliteTable('docs_content', {
+  id: text('id').primaryKey(),
+  document_id: text('document_id')
+    .notNull()
+    .references(() => docsDocuments.id, { onDelete: 'cascade' }),
+  raw_text: text('raw_text'),
+  word_count: integer('word_count').default(0),
+  extracted_at: text('extracted_at').default(sql`(datetime('now'))`),
+});
+
+/**
+ * Tabela de chunks para busca IA
+ */
+export const docsChunks = sqliteTable('docs_chunks', {
+  id: text('id').primaryKey(),
+  document_id: text('document_id')
+    .notNull()
+    .references(() => docsDocuments.id, { onDelete: 'cascade' }),
+  user_id: text('user_id')
+    .notNull()
+    .references(() => users.uuid, { onDelete: 'cascade' }),
+  chunk_index: integer('chunk_index').notNull(),
+  content: text('content').notNull(),
+  created_at: text('created_at').default(sql`(datetime('now'))`),
+});
+
+// Docs types
+export type DocsFolder = typeof docsFolders.$inferSelect;
+export type NewDocsFolder = typeof docsFolders.$inferInsert;
+export type DocsDocument = typeof docsDocuments.$inferSelect;
+export type NewDocsDocument = typeof docsDocuments.$inferInsert;
+export type DocsContent = typeof docsContent.$inferSelect;
+export type NewDocsContent = typeof docsContent.$inferInsert;
+export type DocsChunk = typeof docsChunks.$inferSelect;
+export type NewDocsChunk = typeof docsChunks.$inferInsert;

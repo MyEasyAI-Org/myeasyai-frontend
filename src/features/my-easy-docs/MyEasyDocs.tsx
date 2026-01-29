@@ -6,9 +6,9 @@
 // =============================================
 
 import { useState, useCallback, useMemo } from 'react';
-import type { DocsDocument, DocsFolder, DocsViewMode, BreadcrumbItem, DocsChatMessage } from './types';
-import { MOCK_FOLDERS, MOCK_DOCUMENTS } from './mockData';
+import type { DocsDocument, DocsFolder, DocsViewMode, DocsChatMessage } from './types';
 import { generateId } from './utils';
+import { useFolders, useDocuments, useFileUpload } from './hooks';
 import { DocsSidebar } from './components/layout/DocsSidebar';
 import { DocsHeader } from './components/layout/DocsHeader';
 import { FileGrid } from './components/explorer/FileGrid';
@@ -26,6 +26,7 @@ import {
   TextEditorModal,
 } from './components/modals';
 import { isCode, isTextFile } from './utils';
+import { Loader2 } from 'lucide-react';
 
 // =============================================
 // PROPS
@@ -38,10 +39,55 @@ interface MyEasyDocsProps {
 // MAIN COMPONENT
 // =============================================
 export function MyEasyDocs({ onBackToDashboard }: MyEasyDocsProps) {
-  // Navigation state
-  const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
-  const [selectedDocument, setSelectedDocument] = useState<DocsDocument | null>(null);
+  // =============================================
+  // HOOKS - Real data from services
+  // =============================================
+  const {
+    folders,
+    currentFolderId,
+    currentFolder,
+    currentPath,
+    childFolders,
+    isLoading: isFoldersLoading,
+    error: foldersError,
+    navigateTo,
+    createFolder,
+    renameFolder,
+    moveFolder,
+    deleteFolder,
+  } = useFolders();
 
+  const {
+    documents,
+    selectedDocument,
+    isLoading: isDocumentsLoading,
+    error: documentsError,
+    refresh: refreshDocuments,
+    selectDocument,
+    createDocument,
+    createEmptyFile,
+    renameDocument,
+    moveDocument,
+    toggleFavorite,
+    deleteDocument,
+    getContent,
+    saveContent,
+  } = useDocuments({ folderId: currentFolderId });
+
+  const {
+    isUploading,
+    uploadFiles,
+    clearCompleted,
+  } = useFileUpload({
+    folderId: currentFolderId,
+    onDocumentCreated: () => {
+      refreshDocuments();
+    },
+  });
+
+  // =============================================
+  // LOCAL STATE
+  // =============================================
   // View state
   const [viewMode, setViewMode] = useState<DocsViewMode>('grid');
   const [chatOpen, setChatOpen] = useState(false);
@@ -53,9 +99,8 @@ export function MyEasyDocs({ onBackToDashboard }: MyEasyDocsProps) {
   const [textContent, setTextContent] = useState<string | null>(null);
   const [isLoadingContent, setIsLoadingContent] = useState(false);
 
-  // Upload state
+  // Upload modal state
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
-  const [isUploading, setIsUploading] = useState(false);
 
   // Chat state
   const [chatMessages, setChatMessages] = useState<DocsChatMessage[]>([]);
@@ -79,61 +124,38 @@ export function MyEasyDocs({ onBackToDashboard }: MyEasyDocsProps) {
     type: 'folder' | 'document';
   } | null>(null);
 
-  // Get current path for breadcrumb
-  const breadcrumb = useMemo((): BreadcrumbItem[] => {
-    const items: BreadcrumbItem[] = [{ id: null, name: 'Meus Documentos' }];
-
-    if (currentFolderId) {
-      const folder = MOCK_FOLDERS.find((f) => f.id === currentFolderId);
-      if (folder) {
-        // Build full path by traversing up
-        const pathItems: BreadcrumbItem[] = [];
-        let currentFolder = folder;
-
-        while (currentFolder) {
-          pathItems.unshift({ id: currentFolder.id, name: currentFolder.name });
-          if (currentFolder.parent_id) {
-            const parent = MOCK_FOLDERS.find((f) => f.id === currentFolder.parent_id);
-            if (parent) {
-              currentFolder = parent;
-            } else {
-              break;
-            }
-          } else {
-            break;
-          }
-        }
-
-        items.push(...pathItems);
-      }
-    }
-
-    return items;
-  }, [currentFolderId]);
-
-  // Get items for current folder
-  const currentFolders = useMemo(() => {
-    return MOCK_FOLDERS.filter((f) => f.parent_id === currentFolderId);
-  }, [currentFolderId]);
-
-  const currentDocuments = useMemo(() => {
-    return MOCK_DOCUMENTS.filter((d) => d.folder_id === currentFolderId);
-  }, [currentFolderId]);
+  // =============================================
+  // COMPUTED VALUES
+  // =============================================
+  // Get current folder name for display
+  const currentFolderName = useMemo(() => {
+    if (!currentFolderId) return 'Meus Documentos';
+    return currentFolder?.name || 'Meus Documentos';
+  }, [currentFolderId, currentFolder]);
 
   // Count documents by folder for display
   const documentsCountByFolder = useMemo(() => {
     const map = new Map<string, number>();
-    for (const folder of currentFolders) {
-      const count = MOCK_DOCUMENTS.filter((d) => d.folder_id === folder.id).length;
+    // Get all documents to count (we need to fetch all for counting)
+    for (const folder of childFolders) {
+      const count = documents.filter((d) => d.folder_id === folder.id).length;
       map.set(folder.id, count);
     }
     return map;
-  }, [currentFolders]);
+  }, [childFolders, documents]);
+
+  // Check if loading
+  const isLoading = isFoldersLoading || isDocumentsLoading;
 
   // Check if current view is empty
-  const isEmpty = currentFolders.length === 0 && currentDocuments.length === 0;
+  const isEmpty = !isLoading && childFolders.length === 0 && documents.length === 0;
 
-  // Toggle folder expansion in sidebar
+  // Error message
+  const error = foldersError || documentsError;
+
+  // =============================================
+  // NAVIGATION HANDLERS
+  // =============================================
   const handleToggleFolderExpansion = useCallback((folderId: string) => {
     setExpandedFolders((prev) => {
       const next = new Set(prev);
@@ -146,25 +168,23 @@ export function MyEasyDocs({ onBackToDashboard }: MyEasyDocsProps) {
     });
   }, []);
 
-  // Navigate to folder
   const handleNavigateToFolder = useCallback((folderId: string | null) => {
-    setCurrentFolderId(folderId);
-    setSelectedDocument(null);
-  }, []);
+    navigateTo(folderId);
+    selectDocument(null);
+    setPreviewOpen(false);
+  }, [navigateTo, selectDocument]);
 
-  // Select document
   const handleSelectDocument = useCallback((documentId: string) => {
-    const doc = MOCK_DOCUMENTS.find((d) => d.id === documentId);
+    const doc = documents.find((d) => d.id === documentId);
     if (doc) {
-      setSelectedDocument(doc);
+      selectDocument(doc);
     }
-  }, []);
+  }, [documents, selectDocument]);
 
-  // Open document (preview)
-  const handleOpenDocument = useCallback((documentId: string) => {
-    const doc = MOCK_DOCUMENTS.find((d) => d.id === documentId);
+  const handleOpenDocument = useCallback(async (documentId: string) => {
+    const doc = documents.find((d) => d.id === documentId);
     if (doc) {
-      setSelectedDocument(doc);
+      selectDocument(doc);
       setPreviewOpen(true);
       setIsEditing(false);
 
@@ -172,29 +192,24 @@ export function MyEasyDocs({ onBackToDashboard }: MyEasyDocsProps) {
       const needsContent = isTextFile(doc.mime_type) || isCode(doc.mime_type, doc.name);
       if (needsContent) {
         setIsLoadingContent(true);
-        // TODO: Implement with real service to fetch content
-        setTimeout(() => {
-          // Example content based on file type
-          const sampleContent = isCode(doc.mime_type, doc.name)
-            ? `// ${doc.name}\n// Conteúdo de exemplo\n\nfunction helloWorld() {\n  console.log('Hello, World!');\n}\n\nhelloWorld();`
-            : 'Este é um conteúdo de exemplo para o arquivo.\n\nO conteúdo real será carregado do servidor.';
-          setTextContent(sampleContent);
+        try {
+          const content = await getContent(doc.id);
+          setTextContent(content);
+        } catch (err) {
+          console.error('Error loading content:', err);
+          setTextContent(null);
+        } finally {
           setIsLoadingContent(false);
-        }, 500);
+        }
       } else {
         setTextContent(null);
       }
     }
-  }, []);
+  }, [documents, selectDocument, getContent]);
 
-  // Get current folder name for breadcrumb
-  const currentFolderName = useMemo(() => {
-    if (!currentFolderId) return 'Meus Documentos';
-    const folder = MOCK_FOLDERS.find((f) => f.id === currentFolderId);
-    return folder?.name || 'Meus Documentos';
-  }, [currentFolderId]);
-
-  // Handlers for sidebar actions
+  // =============================================
+  // SIDEBAR ACTION HANDLERS
+  // =============================================
   const handleCreateFolder = useCallback(() => {
     setCreateFolderModalOpen(true);
   }, []);
@@ -207,47 +222,60 @@ export function MyEasyDocs({ onBackToDashboard }: MyEasyDocsProps) {
     setUploadModalOpen(true);
   }, []);
 
-  // Upload handlers
-  const handleUploadFiles = useCallback((files: File[], folderId: string | null) => {
-    setIsUploading(true);
-    // TODO: Implement with real service
-    console.log('Upload files:', files, 'to folder:', folderId);
-    setTimeout(() => {
-      setIsUploading(false);
-      setUploadModalOpen(false);
-    }, 2000);
+  const handleViewFavorites = useCallback(() => {
+    // TODO: Implement favorites view
+    console.log('View favorites');
   }, []);
+
+  const handleViewRecent = useCallback(() => {
+    // TODO: Implement recent view
+    console.log('View recent');
+  }, []);
+
+  // =============================================
+  // UPLOAD HANDLERS
+  // =============================================
+  const handleUploadFiles = useCallback(async (files: File[], folderId: string | null) => {
+    await uploadFiles(files, folderId);
+  }, [uploadFiles]);
 
   const handleCloseUploadModal = useCallback(() => {
     if (!isUploading) {
       setUploadModalOpen(false);
+      clearCompleted();
     }
-  }, [isUploading]);
+  }, [isUploading, clearCompleted]);
 
-  // Preview handlers
+  // =============================================
+  // PREVIEW HANDLERS
+  // =============================================
   const handleClosePreview = useCallback(() => {
     setPreviewOpen(false);
-    setSelectedDocument(null);
+    selectDocument(null);
     setTextContent(null);
     setIsEditing(false);
-  }, []);
+  }, [selectDocument]);
 
   const handleEditDocument = useCallback(() => {
     setEditorModalOpen(true);
     setIsEditing(true);
   }, []);
 
-  const handleSaveDocument = useCallback((content: string) => {
+  const handleSaveDocument = useCallback(async (content: string) => {
+    if (!selectedDocument) return;
+
     setIsSaving(true);
-    // TODO: Implement with real service
-    console.log('Save document:', selectedDocument?.id, content);
-    setTimeout(() => {
+    try {
+      await saveContent(selectedDocument.id, content);
       setTextContent(content);
-      setIsSaving(false);
       setEditorModalOpen(false);
       setIsEditing(false);
-    }, 500);
-  }, [selectedDocument]);
+    } catch (err) {
+      console.error('Error saving document:', err);
+    } finally {
+      setIsSaving(false);
+    }
+  }, [selectedDocument, saveContent]);
 
   const handleCloseEditorModal = useCallback(() => {
     setEditorModalOpen(false);
@@ -260,10 +288,14 @@ export function MyEasyDocs({ onBackToDashboard }: MyEasyDocsProps) {
     }
   }, [selectedDocument]);
 
-  const handleToggleFavorite = useCallback(() => {
-    // TODO: Implement with real service
-    console.log('Toggle favorite:', selectedDocument?.id);
-  }, [selectedDocument]);
+  const handleToggleFavorite = useCallback(async () => {
+    if (!selectedDocument) return;
+    try {
+      await toggleFavorite(selectedDocument.id);
+    } catch (err) {
+      console.error('Error toggling favorite:', err);
+    }
+  }, [selectedDocument, toggleFavorite]);
 
   const handleDeleteDocument = useCallback(() => {
     if (selectedDocument) {
@@ -279,7 +311,9 @@ export function MyEasyDocs({ onBackToDashboard }: MyEasyDocsProps) {
     }
   }, [selectedDocument]);
 
-  // Chat handlers
+  // =============================================
+  // CHAT HANDLERS
+  // =============================================
   const handleSendMessage = useCallback((content: string) => {
     const userMessage: DocsChatMessage = {
       id: generateId(),
@@ -290,13 +324,13 @@ export function MyEasyDocs({ onBackToDashboard }: MyEasyDocsProps) {
     setChatMessages((prev) => [...prev, userMessage]);
     setIsChatLoading(true);
 
-    // TODO: Implement with real AI service
+    // TODO: Implement with real AI service in Phase 18
     setTimeout(() => {
       const assistantMessage: DocsChatMessage = {
         id: generateId(),
         role: 'assistant',
-        content: 'Esta é uma resposta de exemplo. A integração com a IA será implementada em breve.',
-        sources: MOCK_DOCUMENTS.slice(0, 2).map((d) => ({
+        content: 'Esta é uma resposta de exemplo. A integração com a IA será implementada na Fase 18.',
+        sources: documents.slice(0, 2).map((d) => ({
           document_id: d.id,
           document_name: d.name,
         })),
@@ -305,56 +339,42 @@ export function MyEasyDocs({ onBackToDashboard }: MyEasyDocsProps) {
       setChatMessages((prev) => [...prev, assistantMessage]);
       setIsChatLoading(false);
     }, 1500);
-  }, []);
+  }, [documents]);
 
   const handleClearChat = useCallback(() => {
     setChatMessages([]);
   }, []);
 
   const handleOpenDocumentFromChat = useCallback((documentId: string) => {
-    const doc = MOCK_DOCUMENTS.find((d) => d.id === documentId);
-    if (doc) {
-      setSelectedDocument(doc);
-      setPreviewOpen(true);
-      setChatOpen(false);
+    handleOpenDocument(documentId);
+    setChatOpen(false);
+  }, [handleOpenDocument]);
+
+  // =============================================
+  // MODAL ACTION HANDLERS
+  // =============================================
+  const handleCreateFolderSubmit = useCallback(async (name: string) => {
+    try {
+      await createFolder(name);
+      setCreateFolderModalOpen(false);
+    } catch (err) {
+      console.error('Error creating folder:', err);
     }
-  }, []);
+  }, [createFolder]);
 
-  // Modal action handlers
-  const handleCreateFolderSubmit = useCallback((name: string) => {
-    // TODO: Implement with real service
-    console.log('Create folder:', name, 'in:', currentFolderId);
-    setCreateFolderModalOpen(false);
-  }, [currentFolderId]);
-
-  const handleCreateFileSubmit = useCallback((name: string, extension: 'txt' | 'md') => {
-    // TODO: Implement with real service
-    const fullName = `${name}.${extension}`;
-    console.log('Create file:', fullName, 'in:', currentFolderId);
-
-    // Create a mock document and open it for editing
-    const newDoc: DocsDocument = {
-      id: generateId(),
-      user_id: 'user-1',
-      folder_id: currentFolderId,
-      name: fullName,
-      original_name: fullName,
-      mime_type: extension === 'md' ? 'text/markdown' : 'text/plain',
-      size: 0,
-      r2_key: '',
-      r2_url: '',
-      text_extraction_status: 'pending',
-      is_favorite: false,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    };
-
-    setSelectedDocument(newDoc);
-    setTextContent('');
-    setCreateFileModalOpen(false);
-    setEditorModalOpen(true);
-    setIsEditing(true);
-  }, [currentFolderId]);
+  const handleCreateFileSubmit = useCallback(async (name: string, extension: 'txt' | 'md') => {
+    try {
+      const ext = extension === 'md' ? '.md' : '.txt';
+      const newDoc = await createEmptyFile(name, ext);
+      selectDocument(newDoc);
+      setTextContent('');
+      setCreateFileModalOpen(false);
+      setEditorModalOpen(true);
+      setIsEditing(true);
+    } catch (err) {
+      console.error('Error creating file:', err);
+    }
+  }, [createEmptyFile, selectDocument]);
 
   const handleCloseCreateFileModal = useCallback(() => {
     setCreateFileModalOpen(false);
@@ -369,13 +389,21 @@ export function MyEasyDocs({ onBackToDashboard }: MyEasyDocsProps) {
     []
   );
 
-  const handleRenameSubmit = useCallback((newName: string) => {
+  const handleRenameSubmit = useCallback(async (newName: string) => {
     if (!itemToEdit) return;
-    // TODO: Implement with real service
-    console.log('Rename:', itemToEdit.item.id, 'to:', newName);
-    setRenameModalOpen(false);
-    setItemToEdit(null);
-  }, [itemToEdit]);
+
+    try {
+      if (itemToEdit.type === 'folder') {
+        await renameFolder(itemToEdit.item.id, newName);
+      } else {
+        await renameDocument(itemToEdit.item.id, newName);
+      }
+      setRenameModalOpen(false);
+      setItemToEdit(null);
+    } catch (err) {
+      console.error('Error renaming:', err);
+    }
+  }, [itemToEdit, renameFolder, renameDocument]);
 
   const handleDeleteItem = useCallback(
     (item: DocsFolder | DocsDocument, type: 'folder' | 'document') => {
@@ -385,13 +413,24 @@ export function MyEasyDocs({ onBackToDashboard }: MyEasyDocsProps) {
     []
   );
 
-  const handleDeleteConfirm = useCallback(() => {
+  const handleDeleteConfirm = useCallback(async () => {
     if (!itemToEdit) return;
-    // TODO: Implement with real service
-    console.log('Delete:', itemToEdit.item.id);
-    setDeleteModalOpen(false);
-    setItemToEdit(null);
-  }, [itemToEdit]);
+
+    try {
+      if (itemToEdit.type === 'folder') {
+        await deleteFolder(itemToEdit.item.id);
+      } else {
+        await deleteDocument(itemToEdit.item.id);
+        if (selectedDocument?.id === itemToEdit.item.id) {
+          setPreviewOpen(false);
+        }
+      }
+      setDeleteModalOpen(false);
+      setItemToEdit(null);
+    } catch (err) {
+      console.error('Error deleting:', err);
+    }
+  }, [itemToEdit, deleteFolder, deleteDocument, selectedDocument]);
 
   const handleMoveItem = useCallback(
     (item: DocsFolder | DocsDocument, type: 'folder' | 'document') => {
@@ -402,14 +441,22 @@ export function MyEasyDocs({ onBackToDashboard }: MyEasyDocsProps) {
   );
 
   const handleMoveSubmit = useCallback(
-    (destinationFolderId: string | null) => {
+    async (destinationFolderId: string | null) => {
       if (!itemToEdit) return;
-      // TODO: Implement with real service
-      console.log('Move:', itemToEdit.item.id, 'to:', destinationFolderId);
-      setMoveModalOpen(false);
-      setItemToEdit(null);
+
+      try {
+        if (itemToEdit.type === 'folder') {
+          await moveFolder(itemToEdit.item.id, destinationFolderId);
+        } else {
+          await moveDocument(itemToEdit.item.id, destinationFolderId);
+        }
+        setMoveModalOpen(false);
+        setItemToEdit(null);
+      } catch (err) {
+        console.error('Error moving:', err);
+      }
     },
-    [itemToEdit]
+    [itemToEdit, moveFolder, moveDocument]
   );
 
   // Close modal handlers
@@ -432,16 +479,6 @@ export function MyEasyDocs({ onBackToDashboard }: MyEasyDocsProps) {
     setItemToEdit(null);
   }, []);
 
-  const handleViewFavorites = useCallback(() => {
-    // TODO: Switch to favorites view
-    console.log('View favorites');
-  }, []);
-
-  const handleViewRecent = useCallback(() => {
-    // TODO: Switch to recent view
-    console.log('View recent');
-  }, []);
-
   // Header handlers
   const handleSearchChange = useCallback((query: string) => {
     setSearchQuery(query);
@@ -456,15 +493,18 @@ export function MyEasyDocs({ onBackToDashboard }: MyEasyDocsProps) {
     setChatOpen((prev) => !prev);
   }, []);
 
+  // =============================================
+  // RENDER
+  // =============================================
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 to-slate-900 text-white">
       <div className="flex h-screen">
         {/* Sidebar */}
         <DocsSidebar
-          folders={MOCK_FOLDERS}
+          folders={folders}
           currentFolderId={currentFolderId}
           expandedFolders={expandedFolders}
-          documents={MOCK_DOCUMENTS}
+          documents={documents}
           selectedDocumentId={selectedDocument?.id}
           onNavigate={handleNavigateToFolder}
           onToggleExpand={handleToggleFolderExpansion}
@@ -481,7 +521,7 @@ export function MyEasyDocs({ onBackToDashboard }: MyEasyDocsProps) {
         <main className="flex-1 flex flex-col overflow-hidden">
           {/* Header */}
           <DocsHeader
-            breadcrumb={breadcrumb}
+            breadcrumb={currentPath}
             searchQuery={searchQuery}
             viewMode={viewMode}
             chatOpen={chatOpen}
@@ -495,17 +535,36 @@ export function MyEasyDocs({ onBackToDashboard }: MyEasyDocsProps) {
           <div className="flex-1 flex overflow-hidden">
             {/* File explorer */}
             <div className="flex-1 overflow-y-auto p-6">
-              {isEmpty ? (
+              {/* Loading State */}
+              {isLoading && (
+                <div className="flex items-center justify-center h-64">
+                  <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
+                </div>
+              )}
+
+              {/* Error State */}
+              {error && !isLoading && (
+                <div className="flex flex-col items-center justify-center h-64 text-center">
+                  <p className="text-red-400 mb-2">Erro ao carregar dados</p>
+                  <p className="text-slate-500 text-sm">{error}</p>
+                </div>
+              )}
+
+              {/* Empty State */}
+              {isEmpty && !error && (
                 <EmptyState
                   onUpload={handleUpload}
                   onCreateFolder={handleCreateFolder}
                   showUploadButton={true}
                   showCreateFolderButton={true}
                 />
-              ) : viewMode === 'grid' ? (
+              )}
+
+              {/* Grid View */}
+              {!isLoading && !error && !isEmpty && viewMode === 'grid' && (
                 <FileGrid
-                  folders={currentFolders}
-                  documents={currentDocuments}
+                  folders={childFolders}
+                  documents={documents}
                   selectedDocumentId={selectedDocument?.id}
                   documentsCountByFolder={documentsCountByFolder}
                   onOpenFolder={handleNavigateToFolder}
@@ -515,10 +574,13 @@ export function MyEasyDocs({ onBackToDashboard }: MyEasyDocsProps) {
                   onDeleteItem={handleDeleteItem}
                   onMoveItem={handleMoveItem}
                 />
-              ) : (
+              )}
+
+              {/* List View */}
+              {!isLoading && !error && !isEmpty && viewMode === 'list' && (
                 <FileList
-                  folders={currentFolders}
-                  documents={currentDocuments}
+                  folders={childFolders}
+                  documents={documents}
                   selectedDocumentId={selectedDocument?.id}
                   onOpenFolder={handleNavigateToFolder}
                   onSelectDocument={handleSelectDocument}
@@ -555,7 +617,7 @@ export function MyEasyDocs({ onBackToDashboard }: MyEasyDocsProps) {
         isOpen={chatOpen}
         messages={chatMessages}
         isLoading={isChatLoading}
-        hasDocuments={MOCK_DOCUMENTS.length > 0}
+        hasDocuments={documents.length > 0}
         onClose={() => setChatOpen(false)}
         onSend={handleSendMessage}
         onClear={handleClearChat}
@@ -594,8 +656,8 @@ export function MyEasyDocs({ onBackToDashboard }: MyEasyDocsProps) {
         itemType={itemToEdit?.type || 'document'}
         hasChildren={
           itemToEdit?.type === 'folder'
-            ? MOCK_FOLDERS.some((f) => f.parent_id === itemToEdit.item.id) ||
-              MOCK_DOCUMENTS.some((d) => d.folder_id === itemToEdit.item.id)
+            ? folders.some((f) => f.parent_id === itemToEdit.item.id) ||
+              documents.some((d) => d.folder_id === itemToEdit.item.id)
             : false
         }
         onClose={handleCloseDeleteModal}
@@ -606,7 +668,7 @@ export function MyEasyDocs({ onBackToDashboard }: MyEasyDocsProps) {
         isOpen={moveModalOpen}
         item={itemToEdit?.item || null}
         itemType={itemToEdit?.type || 'document'}
-        folders={MOCK_FOLDERS}
+        folders={folders}
         currentFolderId={
           itemToEdit?.type === 'folder'
             ? (itemToEdit.item as DocsFolder).parent_id
