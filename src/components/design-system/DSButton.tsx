@@ -20,7 +20,7 @@ export function DSButton({
 }: DSButtonProps) {
   return (
     <button
-      className={`btn btn-${variant} btn-${size} ${className}`}
+      className={`btn btn-${variant} btn-${size} cursor-pointer ${className}`}
       {...props}
     >
       {children}
