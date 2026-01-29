@@ -197,6 +197,7 @@ class StripeService {
     plan: 'individual' | 'plus' | 'premium';
     country: string;
     billingPeriod?: 'annual' | 'monthly';
+    paymentMethod?: 'card' | 'pix'; // For Brazil annual: card (saves for upgrades) or pix (one-time)
   }): Promise<CreateSubscriptionResponse> {
     const response = await fetch(`${this.baseUrl}/create-subscription`, {
       method: 'POST',
@@ -209,6 +210,7 @@ class StripeService {
         plan: params.plan,
         country: params.country,
         billingPeriod: params.billingPeriod || 'monthly',
+        paymentMethod: params.paymentMethod || 'card',
       }),
     });
 
