@@ -440,10 +440,9 @@ export interface D1DocsDocument {
 export interface D1DocsContent {
   id: string;
   document_id: string;
-  user_id: string;
-  text_content: string;
-  chunks_count: number;
-  created_at: string;
+  raw_text: string | null;
+  word_count: number;
+  extracted_at: string;
 }
 
 export interface D1DocsChunk {
@@ -2467,9 +2466,8 @@ export class D1Client {
    */
   async createDocsContent(content: {
     document_id: string;
-    user_id: string;
-    text_content: string;
-    chunks_count: number;
+    raw_text?: string | null;
+    word_count?: number;
   }): Promise<D1ApiResponse<D1DocsContent>> {
     return this.fetch<D1DocsContent>('/docs/content', {
       method: 'POST',

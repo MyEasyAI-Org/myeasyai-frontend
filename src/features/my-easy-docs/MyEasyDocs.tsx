@@ -117,6 +117,7 @@ export function MyEasyDocs({ onBackToDashboard }: MyEasyDocsProps) {
   const [moveModalOpen, setMoveModalOpen] = useState(false);
   const [editorModalOpen, setEditorModalOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isCreatingFile, setIsCreatingFile] = useState(false);
 
   // Item being edited (for modals)
   const [itemToEdit, setItemToEdit] = useState<{
@@ -363,6 +364,7 @@ export function MyEasyDocs({ onBackToDashboard }: MyEasyDocsProps) {
   }, [createFolder]);
 
   const handleCreateFileSubmit = useCallback(async (name: string, extension: 'txt' | 'md') => {
+    setIsCreatingFile(true);
     try {
       const ext = extension === 'md' ? '.md' : '.txt';
       const newDoc = await createEmptyFile(name, ext);
@@ -373,6 +375,9 @@ export function MyEasyDocs({ onBackToDashboard }: MyEasyDocsProps) {
       setIsEditing(true);
     } catch (err) {
       console.error('Error creating file:', err);
+      alert(`Erro ao criar arquivo: ${err instanceof Error ? err.message : 'Erro desconhecido'}`);
+    } finally {
+      setIsCreatingFile(false);
     }
   }, [createEmptyFile, selectDocument]);
 
@@ -681,6 +686,7 @@ export function MyEasyDocs({ onBackToDashboard }: MyEasyDocsProps) {
       <CreateFileModal
         isOpen={createFileModalOpen}
         parentFolderName={currentFolderName}
+        isCreating={isCreatingFile}
         onClose={handleCloseCreateFileModal}
         onCreate={handleCreateFileSubmit}
       />

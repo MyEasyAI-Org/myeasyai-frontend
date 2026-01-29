@@ -56,10 +56,9 @@ function mapD1ToContent(d1Content: D1DocsContent): DocsContent {
   return {
     id: d1Content.id,
     document_id: d1Content.document_id,
-    user_id: d1Content.user_id,
-    text_content: d1Content.text_content,
-    chunks_count: d1Content.chunks_count,
-    created_at: d1Content.created_at,
+    raw_text: d1Content.raw_text,
+    word_count: d1Content.word_count,
+    extracted_at: d1Content.extracted_at,
   };
 }
 
@@ -247,9 +246,8 @@ export const DocumentService = {
     // Create empty content record
     await d1Client.createDocsContent({
       document_id: result.data.id,
-      user_id: userId,
-      text_content: '',
-      chunks_count: 0,
+      raw_text: '',
+      word_count: 0,
     });
 
     // Mark as completed since it's empty text
@@ -363,7 +361,7 @@ export const DocumentService = {
    */
   async getTextContent(id: string): Promise<string | null> {
     const content = await this.getContent(id);
-    return content?.text_content ?? null;
+    return content?.raw_text ?? null;
   },
 
   /**
@@ -371,7 +369,6 @@ export const DocumentService = {
    * Usado para editar arquivos .txt e .md
    */
   async saveContent(id: string, content: string): Promise<void> {
-    const userId = await getCurrentUserId();
     const document = await this.getById(id);
 
     if (!document) {
@@ -390,22 +387,19 @@ export const DocumentService = {
       throw new Error('Failed to save document content');
     }
 
-    // Calculate new size
-    const newSize = new Blob([content]).size;
-
     // Delete existing content and chunks
     await d1Client.deleteDocsContent(id);
     await d1Client.deleteDocsChunks(id);
 
-    // Create new content record
+    // Create new content record with word count
+    const wordCount = content.split(/\s+/).filter(Boolean).length;
     await d1Client.createDocsContent({
       document_id: id,
-      user_id: userId,
-      text_content: content,
-      chunks_count: 0, // Will be updated by text extraction service if needed
+      raw_text: content,
+      word_count: wordCount,
     });
 
-    // Update document size
+    // Update document extraction status
     await d1Client.updateDocsDocument(id, {
       text_extraction_status: 'completed',
     });

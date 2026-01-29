@@ -102,10 +102,9 @@ export interface DocumentSource {
 export interface DocsContent {
   id: string;
   document_id: string;
-  user_id: string;
-  text_content: string;
-  chunks_count: number;
-  created_at: string;
+  raw_text: string | null;
+  word_count: number;
+  extracted_at: string;
 }
 
 export interface DocsChunk {

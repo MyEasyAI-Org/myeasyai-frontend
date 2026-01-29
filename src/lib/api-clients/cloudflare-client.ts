@@ -56,8 +56,13 @@ export class CloudflareClient {
       throw new Error(`R2 upload failed: ${response.status} - ${errorText}`);
     }
 
-    const result = await response.json();
-    console.log('✅ [CLOUDFLARE CLIENT] Upload complete:', result);
+    // Try to parse JSON response, but don't fail if it's not JSON
+    try {
+      const result = await response.json();
+      console.log('✅ [CLOUDFLARE CLIENT] Upload complete:', result);
+    } catch {
+      console.log('✅ [CLOUDFLARE CLIENT] Upload complete (no JSON response)');
+    }
   }
 
   /**
