@@ -963,7 +963,7 @@ export function OnboardingModal({
               className={`px-6 py-3 rounded-lg font-semibold transition-colors ${
                 currentStep === 0
                   ? 'bg-slate-700 text-slate-500 cursor-not-allowed'
-                  : 'bg-slate-600 text-slate-200 hover:bg-slate-500'
+                  : 'bg-slate-600 text-slate-200 hover:bg-slate-500 cursor-pointer'
               }`}
             >
               {t('onboarding.buttons.previous')}
@@ -975,7 +975,7 @@ export function OnboardingModal({
               className={`px-6 py-3 rounded-lg font-semibold transition-colors ${
                 !canProceed() || loading
                   ? 'bg-purple-400 text-white cursor-not-allowed opacity-50'
-                  : 'bg-gradient-to-r from-purple-500 to-blue-500 text-white hover:from-purple-600 hover:to-blue-600'
+                  : 'bg-gradient-to-r from-purple-500 to-blue-500 text-white hover:from-purple-600 hover:to-blue-600 cursor-pointer'
               }`}
             >
               {loading ? t('onboarding.buttons.saving') : t('onboarding.buttons.next')}

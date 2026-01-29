@@ -413,7 +413,7 @@ export function PlanSelectionStep({
         className={`w-full py-4 rounded-xl font-semibold text-lg transition-all ${
           loading || !selectedPlan
             ? 'bg-slate-700 text-slate-400 cursor-not-allowed'
-            : 'bg-gradient-to-r from-purple-500 to-blue-500 text-white hover:from-purple-600 hover:to-blue-600 shadow-lg hover:shadow-purple-500/25'
+            : 'bg-gradient-to-r from-purple-500 to-blue-500 text-white hover:from-purple-600 hover:to-blue-600 shadow-lg hover:shadow-purple-500/25 cursor-pointer'
         }`}
       >
         {loading ? (
