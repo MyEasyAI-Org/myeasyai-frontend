@@ -16,28 +16,28 @@ export const TROPHIES: Trophy[] = [
   // -------------------------------------------------------------------------
   {
     id: 'streak_fire',
-    name: 'Fogo Constante',
+    name: 'Energia Constante',
     category: 'streak',
     icon: 'Flame',
     metric: 'streak_days',
     tiers: [
       {
         tier: 'bronze',
-        name: 'Fogo Constante I',
+        name: 'Energia Constante I',
         description: '7 dias consecutivos de treino',
         requirement: 7,
         xpReward: 100,
       },
       {
         tier: 'silver',
-        name: 'Fogo Constante II',
+        name: 'Energia Constante II',
         description: '30 dias consecutivos de treino',
         requirement: 30,
         xpReward: 300,
       },
       {
         tier: 'gold',
-        name: 'Fogo Constante III',
+        name: 'Energia Constante III',
         description: '100 dias consecutivos de treino',
         requirement: 100,
         xpReward: 1000,
