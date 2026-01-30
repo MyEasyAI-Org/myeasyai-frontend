@@ -156,7 +156,6 @@
     "continueWith": "Continuar com",
     "securityNote": "Pagamento seguro via Stripe. Cancele quando quiser.",
     "selectedPlan": "Plano selecionado",
-    "linkOptionalNote": "A opcao de salvar seus dados com Link e totalmente opcional. Se preferir, deixe esses campos em branco e clique no botao abaixo para continuar com a compra normalmente.",
 
     "individual": {
       "name": "Individual",
