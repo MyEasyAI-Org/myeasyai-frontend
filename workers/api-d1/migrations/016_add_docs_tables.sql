@@ -27,7 +27,7 @@ CREATE TABLE IF NOT EXISTS docs_documents (
   size INTEGER NOT NULL,
   r2_key TEXT NOT NULL UNIQUE,
   r2_url TEXT,
-  text_extraction_status TEXT DEFAULT 'pending',
+  extraction_status TEXT DEFAULT 'pending',
   is_favorite INTEGER DEFAULT 0,
   created_at TEXT DEFAULT (datetime('now')),
   updated_at TEXT DEFAULT (datetime('now')),
