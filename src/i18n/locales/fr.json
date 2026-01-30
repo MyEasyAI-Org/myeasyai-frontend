@@ -177,7 +177,8 @@
     "pay12x": "12x sur Carte",
     "continueWith": "Continuer avec",
     "securityNote": "Paiement securise via Stripe. Annulez a tout moment.",
-    "selectedPlan": "Plan selectionne"
+    "selectedPlan": "Plan selectionne",
+    "linkOptionalNote": "Enregistrer vos informations avec Link est completement optionnel. Si vous preferez, laissez ces champs vides et cliquez sur le bouton ci-dessous pour continuer votre achat normalement."
   },
 
   "subscription": {
