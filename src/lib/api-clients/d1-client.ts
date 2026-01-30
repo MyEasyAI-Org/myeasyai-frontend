@@ -431,7 +431,7 @@ export interface D1DocsDocument {
   size: number;
   r2_key: string;
   r2_url: string | null;
-  text_extraction_status: 'pending' | 'processing' | 'completed' | 'failed' | 'unsupported';
+  extraction_status: 'pending' | 'processing' | 'completed' | 'failed' | 'unsupported';
   is_favorite: boolean;
   created_at: string;
   updated_at: string | null;
@@ -646,6 +646,16 @@ export class D1Client {
     return this.fetch<D1User & { created: boolean }>('/users/ensure', {
       method: 'POST',
       body: JSON.stringify(user),
+    });
+  }
+
+  /**
+   * Garante que o usuário existe no D1 (sincroniza do Supabase se necessário)
+   * Usado antes de criar documentos para evitar erro de foreign key
+   */
+  async syncEnsureUser(userId: string): Promise<D1ApiResponse<D1User & { synced: boolean }>> {
+    return this.fetch<D1User & { synced: boolean }>(`/sync/ensure-user/${userId}`, {
+      method: 'POST',
     });
   }
 
@@ -2365,7 +2375,7 @@ export class D1Client {
   ): Promise<D1ApiResponse<D1DocsDocument[]>> {
     const params = new URLSearchParams();
     if (options?.folder_id !== undefined) {
-      params.append('folder_id', options.folder_id || 'root');
+      params.append('folder_id', options.folder_id === null ? 'null' : options.folder_id);
     }
     if (options?.is_favorite !== undefined) {
       params.append('is_favorite', String(options.is_favorite));
@@ -2426,7 +2436,7 @@ export class D1Client {
       name: string;
       folder_id: string | null;
       r2_url: string;
-      text_extraction_status: string;
+      extraction_status: string;
       is_favorite: boolean;
     }>
   ): Promise<D1ApiResponse<D1DocsDocument>> {

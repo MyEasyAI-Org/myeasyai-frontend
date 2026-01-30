@@ -42,7 +42,7 @@ function mapD1ToDocument(d1Doc: D1DocsDocument): DocsDocument {
     size: d1Doc.size,
     r2_key: d1Doc.r2_key,
     r2_url: nullToUndefined(d1Doc.r2_url),
-    text_extraction_status: d1Doc.text_extraction_status,
+    text_extraction_status: d1Doc.extraction_status,
     is_favorite: d1Doc.is_favorite,
     created_at: d1Doc.created_at,
     updated_at: d1Doc.updated_at ?? new Date().toISOString(),
@@ -82,7 +82,7 @@ export interface UpdateDocumentData {
   name?: string;
   folder_id?: string | null;
   r2_url?: string;
-  text_extraction_status?: TextExtractionStatus;
+  extraction_status?: TextExtractionStatus;
   is_favorite?: boolean;
 }
 
@@ -175,6 +175,12 @@ export const DocumentService = {
   async create(data: CreateDocumentData): Promise<DocsDocument> {
     const userId = await getCurrentUserId();
 
+    // Garantir que o usuário existe no D1 (sincroniza do Supabase se necessário)
+    const ensureResult = await d1Client.syncEnsureUser(userId);
+    if (ensureResult.error && !ensureResult.error.includes('not found')) {
+      console.warn('[DocumentService] Could not ensure user in D1:', ensureResult.error);
+    }
+
     const result = await d1Client.createDocsDocument({
       user_id: userId,
       folder_id: data.folder_id ?? null,
@@ -206,6 +212,13 @@ export const DocumentService = {
     folderId?: string | null
   ): Promise<DocsDocument> {
     const userId = await getCurrentUserId();
+
+    // Garantir que o usuário existe no D1 (sincroniza do Supabase se necessário)
+    const ensureResult = await d1Client.syncEnsureUser(userId);
+    if (ensureResult.error && !ensureResult.error.includes('not found')) {
+      console.warn('[DocumentService] Could not ensure user in D1:', ensureResult.error);
+    }
+
     const fileName = `${name.trim()}${extension}`;
     const mimeType = extension === '.md' ? 'text/markdown' : 'text/plain';
 
@@ -252,12 +265,12 @@ export const DocumentService = {
 
     // Mark as completed since it's empty text
     await d1Client.updateDocsDocument(result.data.id, {
-      text_extraction_status: 'completed',
+      extraction_status: 'completed',
     });
 
     return mapD1ToDocument({
       ...result.data,
-      text_extraction_status: 'completed',
+      extraction_status: 'completed',
     });
   },
 
@@ -270,8 +283,8 @@ export const DocumentService = {
     if (data.name !== undefined) updates.name = data.name;
     if (data.folder_id !== undefined) updates.folder_id = data.folder_id;
     if (data.r2_url !== undefined) updates.r2_url = data.r2_url;
-    if (data.text_extraction_status !== undefined) {
-      updates.text_extraction_status = data.text_extraction_status;
+    if (data.extraction_status !== undefined) {
+      updates.extraction_status = data.extraction_status;
     }
     if (data.is_favorite !== undefined) updates.is_favorite = data.is_favorite;
 
@@ -401,7 +414,7 @@ export const DocumentService = {
 
     // Update document extraction status
     await d1Client.updateDocsDocument(id, {
-      text_extraction_status: 'completed',
+      extraction_status: 'completed',
     });
   },
 

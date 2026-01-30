@@ -3,6 +3,7 @@
 
 import { Hono } from 'hono';
 import { createClient } from '@supabase/supabase-js';
+import { eq } from 'drizzle-orm';
 import { users, sites, userProducts } from '../db/schema';
 import type { Env, Variables } from '../index';
 
@@ -50,6 +51,71 @@ syncRoutes.get('/status', async (c) => {
       },
     });
   } catch (error: any) {
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+/**
+ * POST /sync/ensure-user/:userId
+ * Garante que o usuário existe no D1, sincronizando do Supabase se necessário
+ * Usado antes de criar documentos para evitar erro de foreign key
+ */
+syncRoutes.post('/ensure-user/:userId', async (c) => {
+  const db = c.get('db');
+  const supabase = getSupabaseClient(c.env);
+  const userId = c.req.param('userId');
+
+  if (!supabase) {
+    return c.json({ error: 'Supabase not configured' }, 500);
+  }
+
+  try {
+    // Verificar se usuário já existe no D1
+    const existingUser = await db.query.users.findFirst({
+      where: eq(users.uuid, userId),
+    });
+
+    if (existingUser) {
+      return c.json({ data: existingUser, synced: false });
+    }
+
+    // Buscar no Supabase
+    const { data: supabaseUser, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('uuid', userId)
+      .single();
+
+    if (error || !supabaseUser) {
+      console.error('❌ [SYNC] User not found in Supabase:', userId);
+      return c.json({ error: 'User not found in Supabase' }, 404);
+    }
+
+    // Criar no D1
+    const result = await db
+      .insert(users)
+      .values({
+        uuid: supabaseUser.uuid,
+        email: supabaseUser.email,
+        name: supabaseUser.name,
+        preferred_name: supabaseUser.preferred_name,
+        mobile_phone: supabaseUser.mobile_phone,
+        country: supabaseUser.country,
+        postal_code: supabaseUser.postal_code,
+        address: supabaseUser.address,
+        avatar_url: supabaseUser.avatar_url,
+        preferred_language: supabaseUser.preferred_language || 'pt',
+        subscription_plan: supabaseUser.subscription_plan || 'individual',
+        subscription_status: supabaseUser.subscription_status || 'active',
+        created_at: supabaseUser.created_at,
+        last_online: supabaseUser.last_online,
+      })
+      .returning();
+
+    console.log(`✅ [SYNC] User synced to D1: ${supabaseUser.email}`);
+    return c.json({ data: result[0], synced: true }, 201);
+  } catch (error: any) {
+    console.error('❌ [SYNC] Error ensuring user:', error.message);
     return c.json({ error: error.message }, 500);
   }
 });

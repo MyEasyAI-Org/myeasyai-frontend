@@ -92,7 +92,7 @@ export function useFileUpload(options?: UseFileUploadOptions): UseFileUploadRetu
         // Update extraction status based on file type
         if (!canExtractText(file.type)) {
           await DocumentService.update(document.id, {
-            text_extraction_status: 'unsupported',
+            extraction_status: 'unsupported',
           });
         }
 

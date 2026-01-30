@@ -74,6 +74,12 @@ export function MyEasyDocs({ onBackToDashboard }: MyEasyDocsProps) {
     saveContent,
   } = useDocuments({ folderId: currentFolderId });
 
+  // All documents for sidebar folder count (no folder filter)
+  const {
+    documents: allDocuments,
+    refresh: refreshAllDocuments,
+  } = useDocuments();
+
   const {
     isUploading,
     uploadFiles,
@@ -82,6 +88,7 @@ export function MyEasyDocs({ onBackToDashboard }: MyEasyDocsProps) {
     folderId: currentFolderId,
     onDocumentCreated: () => {
       refreshDocuments();
+      refreshAllDocuments();
     },
   });
 
@@ -134,16 +141,15 @@ export function MyEasyDocs({ onBackToDashboard }: MyEasyDocsProps) {
     return currentFolder?.name || 'Meus Documentos';
   }, [currentFolderId, currentFolder]);
 
-  // Count documents by folder for display
+  // Count documents by folder for display (uses allDocuments for accurate count)
   const documentsCountByFolder = useMemo(() => {
     const map = new Map<string, number>();
-    // Get all documents to count (we need to fetch all for counting)
     for (const folder of childFolders) {
-      const count = documents.filter((d) => d.folder_id === folder.id).length;
+      const count = allDocuments.filter((d) => d.folder_id === folder.id).length;
       map.set(folder.id, count);
     }
     return map;
-  }, [childFolders, documents]);
+  }, [childFolders, allDocuments]);
 
   // Check if loading
   const isLoading = isFoldersLoading || isDocumentsLoading;
@@ -373,13 +379,14 @@ export function MyEasyDocs({ onBackToDashboard }: MyEasyDocsProps) {
       setCreateFileModalOpen(false);
       setEditorModalOpen(true);
       setIsEditing(true);
+      refreshAllDocuments();
     } catch (err) {
       console.error('Error creating file:', err);
       alert(`Erro ao criar arquivo: ${err instanceof Error ? err.message : 'Erro desconhecido'}`);
     } finally {
       setIsCreatingFile(false);
     }
-  }, [createEmptyFile, selectDocument]);
+  }, [createEmptyFile, selectDocument, refreshAllDocuments]);
 
   const handleCloseCreateFileModal = useCallback(() => {
     setCreateFileModalOpen(false);
@@ -432,10 +439,11 @@ export function MyEasyDocs({ onBackToDashboard }: MyEasyDocsProps) {
       }
       setDeleteModalOpen(false);
       setItemToEdit(null);
+      refreshAllDocuments();
     } catch (err) {
       console.error('Error deleting:', err);
     }
-  }, [itemToEdit, deleteFolder, deleteDocument, selectedDocument]);
+  }, [itemToEdit, deleteFolder, deleteDocument, selectedDocument, refreshAllDocuments]);
 
   const handleMoveItem = useCallback(
     (item: DocsFolder | DocsDocument, type: 'folder' | 'document') => {
@@ -457,11 +465,12 @@ export function MyEasyDocs({ onBackToDashboard }: MyEasyDocsProps) {
         }
         setMoveModalOpen(false);
         setItemToEdit(null);
+        refreshAllDocuments();
       } catch (err) {
         console.error('Error moving:', err);
       }
     },
-    [itemToEdit, moveFolder, moveDocument]
+    [itemToEdit, moveFolder, moveDocument, refreshAllDocuments]
   );
 
   // Close modal handlers
@@ -509,7 +518,7 @@ export function MyEasyDocs({ onBackToDashboard }: MyEasyDocsProps) {
           folders={folders}
           currentFolderId={currentFolderId}
           expandedFolders={expandedFolders}
-          documents={documents}
+          documents={allDocuments}
           selectedDocumentId={selectedDocument?.id}
           onNavigate={handleNavigateToFolder}
           onToggleExpand={handleToggleFolderExpansion}
