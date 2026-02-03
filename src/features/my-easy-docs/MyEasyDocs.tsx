@@ -106,8 +106,9 @@ export function MyEasyDocs({ onBackToDashboard }: MyEasyDocsProps) {
     isSearchActive,
     isSearching,
   } = useDocsSearch({
-    documents: allDocuments,
+    documents: documents, // Busca apenas no diretório atual
     searchInContent: true,
+    minQueryLength: 1, // Permite busca a partir de 1 caractere
   });
 
   // =============================================
@@ -242,11 +243,11 @@ export function MyEasyDocs({ onBackToDashboard }: MyEasyDocsProps) {
 
     // Normal mode
     if (isSearchActive) {
-      // When searching, show all documents that match from allDocuments
-      return allDocuments.filter((doc) => matchedDocumentIds.has(doc.id));
+      // When searching, show only documents from current folder that match
+      return documents.filter((doc) => matchedDocumentIds.has(doc.id));
     }
     return documents;
-  }, [isSearchActive, documents, allDocuments, matchedDocumentIds, specialViewMode]);
+  }, [isSearchActive, documents, matchedDocumentIds, specialViewMode]);
 
   const displayedFolders = useMemo(() => {
     // In special view modes, don't show folders
@@ -255,17 +256,12 @@ export function MyEasyDocs({ onBackToDashboard }: MyEasyDocsProps) {
     }
 
     if (isSearchActive) {
-      // When searching, show folders that contain matching documents
-      const foldersWithMatches = new Set<string>();
-      for (const doc of allDocuments) {
-        if (matchedDocumentIds.has(doc.id) && doc.folder_id) {
-          foldersWithMatches.add(doc.folder_id);
-        }
-      }
-      return folders.filter((f) => foldersWithMatches.has(f.id));
+      // When searching, show only child folders that match the search query
+      const queryLower = searchQuery.toLowerCase();
+      return childFolders.filter((f) => f.name.toLowerCase().includes(queryLower));
     }
     return childFolders;
-  }, [isSearchActive, childFolders, folders, allDocuments, matchedDocumentIds, specialViewMode]);
+  }, [isSearchActive, childFolders, searchQuery, specialViewMode]);
 
   // Check if current view is empty
   const isEmpty = !isLoading && !isSearchActive && specialViewMode === 'none' && childFolders.length === 0 && documents.length === 0;
@@ -299,17 +295,22 @@ export function MyEasyDocs({ onBackToDashboard }: MyEasyDocsProps) {
     selectDocument(null);
     setPreviewOpen(false);
     setSpecialViewMode('none'); // Reset special view when navigating
-  }, [navigateTo, selectDocument]);
+    setSearchQuery(''); // Limpa a busca ao navegar para evitar pasta dentro dela mesma
+  }, [navigateTo, selectDocument, setSearchQuery]);
 
   const handleSelectDocument = useCallback((documentId: string) => {
-    const doc = documents.find((d) => d.id === documentId);
+    // Busca primeiro na pasta atual, depois em todos os documentos
+    const doc = documents.find((d) => d.id === documentId)
+             || allDocuments.find((d) => d.id === documentId);
     if (doc) {
       selectDocument(doc);
     }
-  }, [documents, selectDocument]);
+  }, [documents, allDocuments, selectDocument]);
 
   const handleOpenDocument = useCallback(async (documentId: string) => {
-    const doc = documents.find((d) => d.id === documentId);
+    // Busca primeiro na pasta atual, depois em todos os documentos
+    const doc = documents.find((d) => d.id === documentId)
+             || allDocuments.find((d) => d.id === documentId);
     if (doc) {
       selectDocument(doc);
       setPreviewOpen(true);
@@ -332,7 +333,7 @@ export function MyEasyDocs({ onBackToDashboard }: MyEasyDocsProps) {
         setTextContent(null);
       }
     }
-  }, [documents, selectDocument, getContent]);
+  }, [documents, allDocuments, selectDocument, getContent]);
 
   // =============================================
   // SIDEBAR ACTION HANDLERS
@@ -421,21 +422,24 @@ export function MyEasyDocs({ onBackToDashboard }: MyEasyDocsProps) {
     if (!selectedDocument) return;
     try {
       await toggleFavorite(selectedDocument.id);
+      // Atualiza allDocuments para refletir na view de favoritos
+      refreshAllDocuments();
     } catch (err) {
       console.error('Error toggling favorite:', err);
     }
-  }, [selectedDocument, toggleFavorite]);
+  }, [selectedDocument, toggleFavorite, refreshAllDocuments]);
 
   const handleToggleFavoriteItem = useCallback(async (doc: DocsDocument) => {
     try {
       // Use toggleFavoriteAll to update the allDocuments state (used by favorites view)
       await toggleFavoriteAll(doc.id);
-      // Also refresh the current folder documents to keep UI in sync
+      // Refresh both current folder and all documents to keep UI in sync
       refreshDocuments();
+      refreshAllDocuments();
     } catch (err) {
       console.error('Error toggling favorite:', err);
     }
-  }, [toggleFavoriteAll, refreshDocuments]);
+  }, [toggleFavoriteAll, refreshDocuments, refreshAllDocuments]);
 
   const handleDeleteDocument = useCallback(() => {
     if (selectedDocument) {

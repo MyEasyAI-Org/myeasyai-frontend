@@ -42,7 +42,7 @@ export const FileGrid = memo(function FileGrid({
   onToggleFavorite,
 }: FileGridProps) {
   return (
-    <div className="grid grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-4">
+    <div className="grid grid-cols-[repeat(auto-fill,minmax(140px,170px))] gap-4">
       {/* Folders first */}
       {folders.map((folder) => (
         <FileCard
