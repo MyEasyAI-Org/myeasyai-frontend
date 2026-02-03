@@ -1,5 +1,6 @@
-import { ArrowRight, Check, Sparkles } from 'lucide-react';
+import { ArrowRight, Check, Sparkles, Lock } from 'lucide-react';
 import type { Plan, SubscriptionPlan } from '../../constants/plans';
+import { getPlanByValue } from '../../constants/plans';
 
 type PlanCardProps = {
   plan: Plan;
@@ -10,7 +11,14 @@ type PlanCardProps = {
 export function PlanCard({ plan, currentPlan, onSelectPlan }: PlanCardProps) {
   const isCurrentPlan = currentPlan === plan.value;
 
+  // Determine if this plan is a downgrade (lower price than current)
+  const currentPlanData = getPlanByValue(currentPlan);
+  const isDowngrade = currentPlanData ? plan.priceNumeric < currentPlanData.priceNumeric : false;
+  const isUpgrade = currentPlanData ? plan.priceNumeric > currentPlanData.priceNumeric : false;
+
   const handleSelectPlan = () => {
+    // Don't allow downgrade
+    if (isDowngrade) return;
     console.log('🔵 [PlanCard] Button clicked:', { planValue: plan.value, currentPlan, isCurrentPlan });
     onSelectPlan(plan.value);
   };
@@ -108,16 +116,30 @@ export function PlanCard({ plan, currentPlan, onSelectPlan }: PlanCardProps) {
       <button
         type="button"
         onClick={handleSelectPlan}
-        disabled={isCurrentPlan}
-        className={`mt-5 w-full rounded-lg px-4 py-2.5 font-semibold transition-all ${
+        disabled={isCurrentPlan || isDowngrade}
+        className={`mt-5 w-full rounded-lg px-4 py-2.5 font-semibold transition-all flex items-center justify-center gap-2 ${
           isCurrentPlan
-            ? 'bg-slate-700 text-slate-400 cursor-not-allowed'
-            : plan.recommended
-              ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600 shadow-lg shadow-purple-500/30'
-              : 'bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700'
+            ? 'bg-blue-600 text-white cursor-not-allowed'
+            : isDowngrade
+              ? 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700'
+              : plan.recommended
+                ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600 shadow-lg shadow-purple-500/30'
+                : 'bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700'
         }`}
       >
-        {isCurrentPlan ? 'Plano Atual' : plan.recommended ? 'Fazer Upgrade!' : 'Selecionar Plano'}
+        {isCurrentPlan ? (
+          <>
+            <Check className="h-4 w-4" />
+            Plano Atual
+          </>
+        ) : isDowngrade ? (
+          <>
+            <Lock className="h-4 w-4" />
+            Plano Inferior
+          </>
+        ) : (
+          'Fazer Upgrade'
+        )}
       </button>
     </div>
   );
