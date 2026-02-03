@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ArrowDownCircle, ArrowUpCircle, X, AlertTriangle, ExternalLink, CreditCard, Check, Loader2 } from 'lucide-react';
+import { ArrowUpCircle, X, AlertTriangle, ExternalLink, CreditCard, Check, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { PLANS, getPlanByValue, getPlanChangeType, type SubscriptionPlan } from '../../constants/plans';
 import type { SubscriptionData } from '../../hooks/useUserData';
@@ -183,17 +183,17 @@ export function SubscriptionTab({ subscription }: SubscriptionTabProps) {
 
       {/* Change Plan Section */}
       <div className="rounded-lg border border-slate-800 bg-slate-900/50 p-6">
-        <h2 className="text-xl font-bold text-white">Trocar de Plano</h2>
+        <h2 className="text-xl font-bold text-white">Fazer Upgrade</h2>
         <p className="mt-2 text-slate-400">
           Você está atualmente no plano{' '}
           <span className="font-semibold text-blue-400">
             {subscription.plan.toUpperCase()}
           </span>
-          . Selecione um novo plano acima para fazer upgrade ou downgrade.
+          . Selecione um plano superior acima para fazer upgrade e desbloquear mais recursos.
         </p>
         <div className="mt-4 flex items-center space-x-2 text-sm text-slate-400">
           <ArrowUpCircle className="h-5 w-5 text-green-400" />
-          <span>Alterações entram em vigor imediatamente</span>
+          <span>Upgrades entram em vigor imediatamente</span>
         </div>
       </div>
 
@@ -242,7 +242,7 @@ export function SubscriptionTab({ subscription }: SubscriptionTabProps) {
             {/* Header */}
             <div className="flex items-center justify-between">
               <h3 className="text-xl font-bold text-white">
-                {changeType === 'upgrade' ? 'Fazer Upgrade' : 'Alterar Plano'}
+                Fazer Upgrade
               </h3>
               <button
                 onClick={() => {
@@ -283,21 +283,17 @@ export function SubscriptionTab({ subscription }: SubscriptionTabProps) {
 
                     {/* Arrow */}
                     <div className="flex justify-center">
-                      {changeType === 'upgrade' ? (
-                        <ArrowUpCircle className="h-8 w-8 text-green-400" />
-                      ) : (
-                        <ArrowDownCircle className="h-8 w-8 text-orange-400" />
-                      )}
+                      <ArrowUpCircle className="h-8 w-8 text-green-400" />
                     </div>
 
                     {/* To */}
-                    <div className={`rounded-xl p-4 ${changeType === 'upgrade' ? 'bg-green-900/20 border border-green-500/30' : 'bg-orange-900/20 border border-orange-500/30'}`}>
+                    <div className="rounded-xl p-4 bg-green-900/20 border border-green-500/30">
                       <p className="text-xs text-slate-500 uppercase tracking-wide mb-2">Novo Plano</p>
                       <div className="flex items-center justify-between">
-                        <span className={`text-lg font-semibold ${changeType === 'upgrade' ? 'text-green-400' : 'text-orange-400'}`}>
+                        <span className="text-lg font-semibold text-green-400">
                           {selectedPlanData.name}
                         </span>
-                        <span className={changeType === 'upgrade' ? 'text-green-300' : 'text-orange-300'}>
+                        <span className="text-green-300">
                           {isAnnual
                             ? `${selectedPlanData.fullPrice}/ano`
                             : `12x ${selectedPlanData.installmentPrice}`}
@@ -307,6 +303,32 @@ export function SubscriptionTab({ subscription }: SubscriptionTabProps) {
                         {selectedPlanData.limits.maxSites === -1 ? 'Sites ilimitados' : `${selectedPlanData.limits.maxSites} site${selectedPlanData.limits.maxSites > 1 ? 's' : ''}`}
                       </p>
                     </div>
+
+                    {/* Price Difference Summary */}
+                    {(() => {
+                      const monthlyDiff = (selectedPlanData.priceNumeric - currentPlanData.priceNumeric) / 100;
+                      const annualDiff = monthlyDiff * 12;
+                      return (
+                        <div className="rounded-xl p-4 bg-purple-900/20 border border-purple-500/30">
+                          <p className="text-xs text-slate-500 uppercase tracking-wide mb-2">Diferença de Valor</p>
+                          {isAnnual ? (
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm text-slate-400">Por ano (à vista)</span>
+                              <span className="text-lg font-bold text-purple-400">
+                                +R$ {annualDiff.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                              </span>
+                            </div>
+                          ) : (
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm text-slate-400">Por mês (12x)</span>
+                              <span className="text-lg font-bold text-purple-400">
+                                +R$ {monthlyDiff.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()}
                   </>
                 );
               })()}
@@ -346,7 +368,7 @@ export function SubscriptionTab({ subscription }: SubscriptionTabProps) {
                 <span>Calculando diferença...</span>
               </div>
             ) : !upfrontBlockedError && prorationPreview && prorationPreview.amountDue > 0 ? (
-              <div className={`rounded-xl p-4 ${changeType === 'upgrade' ? 'bg-blue-900/20 border border-blue-500/30' : 'bg-slate-800/50 border border-slate-600'}`}>
+              <div className="rounded-xl p-4 bg-blue-900/20 border border-blue-500/30">
                 <p className="text-xs text-slate-500 uppercase tracking-wide mb-2">Valor a Pagar Agora</p>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-slate-400">Diferença proporcional</span>
@@ -362,33 +384,7 @@ export function SubscriptionTab({ subscription }: SubscriptionTabProps) {
                   )}
                 </p>
               </div>
-            ) : !upfrontBlockedError && prorationPreview && prorationPreview.amountDue <= 0 ? (
-              <div className="rounded-xl p-4 bg-slate-800/50 border border-slate-600">
-                <p className="text-xs text-slate-500 uppercase tracking-wide mb-2">Crédito</p>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-slate-400">Você receberá crédito de</span>
-                  <span className="text-xl font-bold text-green-400">
-                    {formatCurrency(Math.abs(prorationPreview.amountDue), prorationPreview.currency)}
-                  </span>
-                </div>
-                <p className="text-xs text-slate-500 mt-2">
-                  Esse crédito será aplicado nas suas próximas faturas.
-                </p>
-              </div>
             ) : null}
-
-            {/* Warning for downgrade */}
-            {changeType === 'downgrade' && (
-              <div className="flex items-start gap-3 bg-amber-900/20 border border-amber-500/30 rounded-xl p-4">
-                <AlertTriangle className="h-5 w-5 text-amber-400 flex-shrink-0 mt-0.5" />
-                <div>
-                  <p className="text-sm text-amber-300 font-medium">Atenção ao fazer downgrade</p>
-                  <p className="text-xs text-amber-400/70 mt-1">
-                    Você pode perder acesso a alguns recursos e sites se exceder o limite do novo plano.
-                  </p>
-                </div>
-              </div>
-            )}
 
             {/* Buttons */}
             <div className="flex gap-3">
@@ -419,11 +415,7 @@ export function SubscriptionTab({ subscription }: SubscriptionTabProps) {
                   <button
                     onClick={handleConfirmChange}
                     disabled={isProcessing || isLoadingPreview}
-                    className={`flex-1 px-4 py-3 rounded-xl font-semibold transition-colors disabled:opacity-50 flex items-center justify-center gap-2 ${
-                      changeType === 'upgrade'
-                        ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white hover:from-green-600 hover:to-emerald-700'
-                        : 'bg-gradient-to-r from-orange-500 to-amber-600 text-white hover:from-orange-600 hover:to-amber-700'
-                    }`}
+                    className="flex-1 px-4 py-3 rounded-xl font-semibold transition-colors disabled:opacity-50 flex items-center justify-center gap-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white hover:from-green-600 hover:to-emerald-700"
                   >
                     {isProcessing ? (
                       <>
@@ -436,7 +428,7 @@ export function SubscriptionTab({ subscription }: SubscriptionTabProps) {
                         <span>
                           {prorationPreview && prorationPreview.amountDue > 0
                             ? `Pagar ${formatCurrency(prorationPreview.amountDue, prorationPreview.currency)}`
-                            : `Confirmar ${changeType === 'upgrade' ? 'Upgrade' : 'Mudança'}`}
+                            : 'Confirmar Upgrade'}
                         </span>
                       </>
                     )}
