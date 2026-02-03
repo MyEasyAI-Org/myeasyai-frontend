@@ -18,6 +18,10 @@ interface DocsChatDrawerProps {
   messages: DocsChatMessageType[];
   isLoading?: boolean;
   hasDocuments?: boolean;
+  /** Avatar name to display in header and messages */
+  avatarName?: string;
+  /** Avatar selfie (base64) for header and messages */
+  avatarSelfie?: string | null;
   onClose: () => void;
   onSend: (message: string) => void;
   onClear?: () => void;
@@ -32,11 +36,14 @@ export function DocsChatDrawer({
   messages,
   isLoading = false,
   hasDocuments = true,
+  avatarName,
+  avatarSelfie,
   onClose,
   onSend,
   onClear,
   onOpenDocument,
 }: DocsChatDrawerProps) {
+  const displayName = avatarName || 'Assistente IA';
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Scroll to bottom when new messages arrive
@@ -81,11 +88,21 @@ export function DocsChatDrawer({
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-slate-700 bg-slate-800/50">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-lg">
-              <Sparkles className="w-5 h-5 text-purple-400" />
-            </div>
+            {avatarSelfie ? (
+              <div className="w-10 h-10 rounded-full overflow-hidden ring-2 ring-purple-500/30">
+                <img
+                  src={avatarSelfie}
+                  alt={displayName}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            ) : (
+              <div className="p-2 bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-lg">
+                <Sparkles className="w-5 h-5 text-purple-400" />
+              </div>
+            )}
             <div>
-              <h2 className="text-lg font-semibold text-white">Assistente IA</h2>
+              <h2 className="text-lg font-semibold text-white">{displayName}</h2>
               <p className="text-xs text-slate-400">Pergunte sobre seus documentos</p>
             </div>
           </div>
@@ -145,6 +162,8 @@ export function DocsChatDrawer({
             <DocsChatMessage
               key={message.id}
               message={message}
+              avatarName={avatarName}
+              avatarSelfie={avatarSelfie}
               onOpenDocument={onOpenDocument}
             />
           ))}
@@ -152,8 +171,12 @@ export function DocsChatDrawer({
           {/* Loading indicator */}
           {isLoading && (
             <div className="flex gap-3">
-              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
-                <Sparkles className="w-4 h-4 text-white" />
+              <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center overflow-hidden ${avatarSelfie ? '' : 'bg-gradient-to-br from-purple-500 to-pink-500'}`}>
+                {avatarSelfie ? (
+                  <img src={avatarSelfie} alt={displayName} className="w-full h-full object-cover" />
+                ) : (
+                  <Sparkles className="w-4 h-4 text-white" />
+                )}
               </div>
               <div className="bg-slate-800 rounded-2xl rounded-tl-sm px-4 py-3 border border-slate-700">
                 <div className="flex items-center gap-1">

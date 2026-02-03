@@ -21,6 +21,7 @@ interface FileGridProps {
   onRenameItem?: (item: DocsFolder | DocsDocument, type: 'folder' | 'document') => void;
   onDeleteItem?: (item: DocsFolder | DocsDocument, type: 'folder' | 'document') => void;
   onMoveItem?: (item: DocsFolder | DocsDocument, type: 'folder' | 'document') => void;
+  onToggleFavorite?: (item: DocsDocument) => void;
 }
 
 // =============================================
@@ -38,6 +39,7 @@ export const FileGrid = memo(function FileGrid({
   onRenameItem,
   onDeleteItem,
   onMoveItem,
+  onToggleFavorite,
 }: FileGridProps) {
   return (
     <div className="grid grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-4">
@@ -67,6 +69,7 @@ export const FileGrid = memo(function FileGrid({
           onRename={onRenameItem}
           onDelete={onDeleteItem}
           onMove={onMoveItem}
+          onToggleFavorite={onToggleFavorite}
         />
       ))}
     </div>

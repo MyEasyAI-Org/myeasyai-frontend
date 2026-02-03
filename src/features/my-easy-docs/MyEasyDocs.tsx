@@ -5,10 +5,10 @@
 // It manages file/folder navigation, preview, and AI chat.
 // =============================================
 
-import { useState, useCallback, useMemo } from 'react';
-import type { DocsDocument, DocsFolder, DocsViewMode, DocsChatMessage } from './types';
-import { generateId } from './utils';
-import { useFolders, useDocuments, useFileUpload } from './hooks';
+import { useState, useCallback, useMemo, useEffect } from 'react';
+import type { DocsDocument, DocsFolder, DocsViewMode } from './types';
+import { useFolders, useDocuments, useFileUpload, useDocsChat, useDocsSearch } from './hooks';
+import { avatarService } from '../my-easy-avatar/services/avatarService';
 import { DocsSidebar } from './components/layout/DocsSidebar';
 import { DocsHeader } from './components/layout/DocsHeader';
 import { FileGrid } from './components/explorer/FileGrid';
@@ -26,7 +26,7 @@ import {
   TextEditorModal,
 } from './components/modals';
 import { isCode, isTextFile } from './utils';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Star, Clock } from 'lucide-react';
 
 // =============================================
 // PROPS
@@ -78,6 +78,8 @@ export function MyEasyDocs({ onBackToDashboard }: MyEasyDocsProps) {
   const {
     documents: allDocuments,
     refresh: refreshAllDocuments,
+    removeDocumentsByFolderIds,
+    toggleFavorite: toggleFavoriteAll,
   } = useDocuments();
 
   const {
@@ -93,12 +95,28 @@ export function MyEasyDocs({ onBackToDashboard }: MyEasyDocsProps) {
   });
 
   // =============================================
+  // SEARCH HOOK
+  // =============================================
+  const {
+    query: searchQuery,
+    setQuery: setSearchQuery,
+    matchedDocumentsByName,
+    matchedDocumentsByContent,
+    matchedDocumentIds,
+    isSearchActive,
+    isSearching,
+  } = useDocsSearch({
+    documents: allDocuments,
+    searchInContent: true,
+  });
+
+  // =============================================
   // LOCAL STATE
   // =============================================
   // View state
   const [viewMode, setViewMode] = useState<DocsViewMode>('grid');
   const [chatOpen, setChatOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [specialViewMode, setSpecialViewMode] = useState<'none' | 'favorites' | 'recent'>('none');
 
   // Preview state
   const [previewOpen, setPreviewOpen] = useState(false);
@@ -109,9 +127,35 @@ export function MyEasyDocs({ onBackToDashboard }: MyEasyDocsProps) {
   // Upload modal state
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
 
-  // Chat state
-  const [chatMessages, setChatMessages] = useState<DocsChatMessage[]>([]);
-  const [isChatLoading, setIsChatLoading] = useState(false);
+  // Avatar state (from MyEasyAvatar)
+  const [avatarName, setAvatarName] = useState<string>('Assistente');
+  const [avatarSelfie, setAvatarSelfie] = useState<string | null>(null);
+
+  // Chat state (using useDocsChat hook)
+  const {
+    messages: chatMessages,
+    isLoading: isChatLoading,
+    sendMessage,
+    clearMessages: clearChat,
+  } = useDocsChat({ hasDocuments: documents.length > 0 });
+
+  // Load avatar data on mount
+  useEffect(() => {
+    const loadAvatarData = async () => {
+      try {
+        const { name, selfie } = await avatarService.getAvatarBasicInfo();
+        if (name) {
+          setAvatarName(name);
+        }
+        if (selfie) {
+          setAvatarSelfie(selfie);
+        }
+      } catch (err) {
+        console.warn('[MyEasyDocs] Could not load avatar data:', err);
+      }
+    };
+    loadAvatarData();
+  }, []);
 
   // Sidebar state
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
@@ -137,9 +181,28 @@ export function MyEasyDocs({ onBackToDashboard }: MyEasyDocsProps) {
   // =============================================
   // Get current folder name for display
   const currentFolderName = useMemo(() => {
+    if (specialViewMode === 'favorites') return 'Favoritos';
+    if (specialViewMode === 'recent') return 'Recentes';
     if (!currentFolderId) return 'Meus Documentos';
     return currentFolder?.name || 'Meus Documentos';
-  }, [currentFolderId, currentFolder]);
+  }, [currentFolderId, currentFolder, specialViewMode]);
+
+  // Custom breadcrumb for special view modes
+  const displayedBreadcrumb = useMemo(() => {
+    if (specialViewMode === 'favorites') {
+      return [
+        { id: null, name: 'Meus Documentos' },
+        { id: 'favorites', name: 'Favoritos' },
+      ];
+    }
+    if (specialViewMode === 'recent') {
+      return [
+        { id: null, name: 'Meus Documentos' },
+        { id: 'recent', name: 'Recentes' },
+      ];
+    }
+    return currentPath;
+  }, [specialViewMode, currentPath]);
 
   // Count documents by folder for display (uses allDocuments for accurate count)
   const documentsCountByFolder = useMemo(() => {
@@ -154,8 +217,64 @@ export function MyEasyDocs({ onBackToDashboard }: MyEasyDocsProps) {
   // Check if loading
   const isLoading = isFoldersLoading || isDocumentsLoading;
 
+  // Filter documents and folders based on search and special view mode
+  const displayedDocuments = useMemo(() => {
+    // Special view modes take priority
+    if (specialViewMode === 'favorites') {
+      const favoritesDocs = allDocuments.filter((doc) => doc.is_favorite);
+      // If searching within favorites
+      if (isSearchActive) {
+        return favoritesDocs.filter((doc) => matchedDocumentIds.has(doc.id));
+      }
+      return favoritesDocs;
+    }
+    if (specialViewMode === 'recent') {
+      // Sort by updated_at descending and take top 20
+      const recentDocs = [...allDocuments]
+        .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
+        .slice(0, 20);
+      // If searching within recent
+      if (isSearchActive) {
+        return recentDocs.filter((doc) => matchedDocumentIds.has(doc.id));
+      }
+      return recentDocs;
+    }
+
+    // Normal mode
+    if (isSearchActive) {
+      // When searching, show all documents that match from allDocuments
+      return allDocuments.filter((doc) => matchedDocumentIds.has(doc.id));
+    }
+    return documents;
+  }, [isSearchActive, documents, allDocuments, matchedDocumentIds, specialViewMode]);
+
+  const displayedFolders = useMemo(() => {
+    // In special view modes, don't show folders
+    if (specialViewMode === 'favorites' || specialViewMode === 'recent') {
+      return [];
+    }
+
+    if (isSearchActive) {
+      // When searching, show folders that contain matching documents
+      const foldersWithMatches = new Set<string>();
+      for (const doc of allDocuments) {
+        if (matchedDocumentIds.has(doc.id) && doc.folder_id) {
+          foldersWithMatches.add(doc.folder_id);
+        }
+      }
+      return folders.filter((f) => foldersWithMatches.has(f.id));
+    }
+    return childFolders;
+  }, [isSearchActive, childFolders, folders, allDocuments, matchedDocumentIds, specialViewMode]);
+
   // Check if current view is empty
-  const isEmpty = !isLoading && childFolders.length === 0 && documents.length === 0;
+  const isEmpty = !isLoading && !isSearchActive && specialViewMode === 'none' && childFolders.length === 0 && documents.length === 0;
+
+  // Check if special view is empty
+  const isSpecialViewEmpty = specialViewMode !== 'none' && !isLoading && displayedDocuments.length === 0;
+
+  // Check if search has no results
+  const isSearchEmpty = isSearchActive && !isSearching && displayedDocuments.length === 0 && displayedFolders.length === 0;
 
   // Error message
   const error = foldersError || documentsError;
@@ -179,6 +298,7 @@ export function MyEasyDocs({ onBackToDashboard }: MyEasyDocsProps) {
     navigateTo(folderId);
     selectDocument(null);
     setPreviewOpen(false);
+    setSpecialViewMode('none'); // Reset special view when navigating
   }, [navigateTo, selectDocument]);
 
   const handleSelectDocument = useCallback((documentId: string) => {
@@ -230,14 +350,16 @@ export function MyEasyDocs({ onBackToDashboard }: MyEasyDocsProps) {
   }, []);
 
   const handleViewFavorites = useCallback(() => {
-    // TODO: Implement favorites view
-    console.log('View favorites');
-  }, []);
+    setSpecialViewMode((prev) => prev === 'favorites' ? 'none' : 'favorites');
+    selectDocument(null);
+    setPreviewOpen(false);
+  }, [selectDocument]);
 
   const handleViewRecent = useCallback(() => {
-    // TODO: Implement recent view
-    console.log('View recent');
-  }, []);
+    setSpecialViewMode((prev) => prev === 'recent' ? 'none' : 'recent');
+    selectDocument(null);
+    setPreviewOpen(false);
+  }, [selectDocument]);
 
   // =============================================
   // UPLOAD HANDLERS
@@ -304,6 +426,17 @@ export function MyEasyDocs({ onBackToDashboard }: MyEasyDocsProps) {
     }
   }, [selectedDocument, toggleFavorite]);
 
+  const handleToggleFavoriteItem = useCallback(async (doc: DocsDocument) => {
+    try {
+      // Use toggleFavoriteAll to update the allDocuments state (used by favorites view)
+      await toggleFavoriteAll(doc.id);
+      // Also refresh the current folder documents to keep UI in sync
+      refreshDocuments();
+    } catch (err) {
+      console.error('Error toggling favorite:', err);
+    }
+  }, [toggleFavoriteAll, refreshDocuments]);
+
   const handleDeleteDocument = useCallback(() => {
     if (selectedDocument) {
       setItemToEdit({ item: selectedDocument, type: 'document' });
@@ -322,35 +455,12 @@ export function MyEasyDocs({ onBackToDashboard }: MyEasyDocsProps) {
   // CHAT HANDLERS
   // =============================================
   const handleSendMessage = useCallback((content: string) => {
-    const userMessage: DocsChatMessage = {
-      id: generateId(),
-      role: 'user',
-      content,
-      created_at: new Date().toISOString(),
-    };
-    setChatMessages((prev) => [...prev, userMessage]);
-    setIsChatLoading(true);
-
-    // TODO: Implement with real AI service in Phase 18
-    setTimeout(() => {
-      const assistantMessage: DocsChatMessage = {
-        id: generateId(),
-        role: 'assistant',
-        content: 'Esta é uma resposta de exemplo. A integração com a IA será implementada na Fase 18.',
-        sources: documents.slice(0, 2).map((d) => ({
-          document_id: d.id,
-          document_name: d.name,
-        })),
-        created_at: new Date().toISOString(),
-      };
-      setChatMessages((prev) => [...prev, assistantMessage]);
-      setIsChatLoading(false);
-    }, 1500);
-  }, [documents]);
+    sendMessage(content);
+  }, [sendMessage]);
 
   const handleClearChat = useCallback(() => {
-    setChatMessages([]);
-  }, []);
+    clearChat();
+  }, [clearChat]);
 
   const handleOpenDocumentFromChat = useCallback((documentId: string) => {
     handleOpenDocument(documentId);
@@ -430,7 +540,10 @@ export function MyEasyDocs({ onBackToDashboard }: MyEasyDocsProps) {
 
     try {
       if (itemToEdit.type === 'folder') {
-        await deleteFolder(itemToEdit.item.id);
+        // deleteFolder returns the IDs of deleted folders (including descendants)
+        const deletedFolderIds = await deleteFolder(itemToEdit.item.id);
+        // Remove documents that belonged to deleted folders from state (cascade delete)
+        removeDocumentsByFolderIds(deletedFolderIds);
       } else {
         await deleteDocument(itemToEdit.item.id);
         if (selectedDocument?.id === itemToEdit.item.id) {
@@ -443,7 +556,7 @@ export function MyEasyDocs({ onBackToDashboard }: MyEasyDocsProps) {
     } catch (err) {
       console.error('Error deleting:', err);
     }
-  }, [itemToEdit, deleteFolder, deleteDocument, selectedDocument, refreshAllDocuments]);
+  }, [itemToEdit, deleteFolder, deleteDocument, selectedDocument, refreshAllDocuments, removeDocumentsByFolderIds]);
 
   const handleMoveItem = useCallback(
     (item: DocsFolder | DocsDocument, type: 'folder' | 'document') => {
@@ -496,8 +609,7 @@ export function MyEasyDocs({ onBackToDashboard }: MyEasyDocsProps) {
   // Header handlers
   const handleSearchChange = useCallback((query: string) => {
     setSearchQuery(query);
-    // TODO: Implement search filtering
-  }, []);
+  }, [setSearchQuery]);
 
   const handleViewModeChange = useCallback((mode: DocsViewMode) => {
     setViewMode(mode);
@@ -520,6 +632,7 @@ export function MyEasyDocs({ onBackToDashboard }: MyEasyDocsProps) {
           expandedFolders={expandedFolders}
           documents={allDocuments}
           selectedDocumentId={selectedDocument?.id}
+          specialViewMode={specialViewMode}
           onNavigate={handleNavigateToFolder}
           onToggleExpand={handleToggleFolderExpansion}
           onCreateFolder={handleCreateFolder}
@@ -535,7 +648,7 @@ export function MyEasyDocs({ onBackToDashboard }: MyEasyDocsProps) {
         <main className="flex-1 flex flex-col overflow-hidden">
           {/* Header */}
           <DocsHeader
-            breadcrumb={currentPath}
+            breadcrumb={displayedBreadcrumb}
             searchQuery={searchQuery}
             viewMode={viewMode}
             chatOpen={chatOpen}
@@ -574,11 +687,86 @@ export function MyEasyDocs({ onBackToDashboard }: MyEasyDocsProps) {
                 />
               )}
 
+              {/* Search Results Header */}
+              {isSearchActive && !isLoading && (
+                <div className="mb-4 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="text-slate-400 text-sm">
+                      {isSearching ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin inline mr-2" />
+                          Buscando...
+                        </>
+                      ) : (
+                        <>
+                          {displayedDocuments.length} documento{displayedDocuments.length !== 1 ? 's' : ''} encontrado{displayedDocuments.length !== 1 ? 's' : ''}
+                          {matchedDocumentsByContent.length > 0 && (
+                            <span className="ml-1 text-blue-400">
+                              ({matchedDocumentsByContent.length} por conteúdo)
+                            </span>
+                          )}
+                        </>
+                      )}
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* Search Empty State */}
+              {isSearchEmpty && (
+                <div className="flex flex-col items-center justify-center h-64 text-center">
+                  <p className="text-slate-400 mb-2">Nenhum resultado encontrado</p>
+                  <p className="text-slate-500 text-sm">
+                    Tente buscar por outros termos ou verifique a ortografia
+                  </p>
+                </div>
+              )}
+
+              {/* Special View Empty State (Favorites/Recent) */}
+              {isSpecialViewEmpty && !isSearchEmpty && (
+                <div className="flex flex-col items-center justify-center h-64 text-center">
+                  {specialViewMode === 'favorites' ? (
+                    <>
+                      <Star className="w-16 h-16 text-slate-600 mb-4" />
+                      <p className="text-slate-400 mb-2">Nenhum favorito ainda</p>
+                      <p className="text-slate-500 text-sm">
+                        Clique no menu de um documento e selecione "Favoritar"
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <Clock className="w-16 h-16 text-slate-600 mb-4" />
+                      <p className="text-slate-400 mb-2">Nenhum documento recente</p>
+                      <p className="text-slate-500 text-sm">
+                        Os documentos acessados recentemente aparecerão aqui
+                      </p>
+                    </>
+                  )}
+                </div>
+              )}
+
+              {/* Special View Header */}
+              {specialViewMode !== 'none' && !isLoading && !isSpecialViewEmpty && (
+                <div className="mb-4 flex items-center gap-2">
+                  {specialViewMode === 'favorites' ? (
+                    <Star className="w-5 h-5 text-yellow-500 fill-yellow-500" />
+                  ) : (
+                    <Clock className="w-5 h-5 text-blue-400" />
+                  )}
+                  <span className="text-lg font-medium text-slate-200">
+                    {currentFolderName}
+                  </span>
+                  <span className="text-slate-500 text-sm">
+                    ({displayedDocuments.length} documento{displayedDocuments.length !== 1 ? 's' : ''})
+                  </span>
+                </div>
+              )}
+
               {/* Grid View */}
-              {!isLoading && !error && !isEmpty && viewMode === 'grid' && (
+              {!isLoading && !error && !isEmpty && !isSearchEmpty && !isSpecialViewEmpty && viewMode === 'grid' && (
                 <FileGrid
-                  folders={childFolders}
-                  documents={documents}
+                  folders={displayedFolders}
+                  documents={displayedDocuments}
                   selectedDocumentId={selectedDocument?.id}
                   documentsCountByFolder={documentsCountByFolder}
                   onOpenFolder={handleNavigateToFolder}
@@ -587,14 +775,15 @@ export function MyEasyDocs({ onBackToDashboard }: MyEasyDocsProps) {
                   onRenameItem={handleRenameItem}
                   onDeleteItem={handleDeleteItem}
                   onMoveItem={handleMoveItem}
+                  onToggleFavorite={handleToggleFavoriteItem}
                 />
               )}
 
               {/* List View */}
-              {!isLoading && !error && !isEmpty && viewMode === 'list' && (
+              {!isLoading && !error && !isEmpty && !isSearchEmpty && !isSpecialViewEmpty && viewMode === 'list' && (
                 <FileList
-                  folders={childFolders}
-                  documents={documents}
+                  folders={displayedFolders}
+                  documents={displayedDocuments}
                   selectedDocumentId={selectedDocument?.id}
                   onOpenFolder={handleNavigateToFolder}
                   onSelectDocument={handleSelectDocument}
@@ -602,6 +791,7 @@ export function MyEasyDocs({ onBackToDashboard }: MyEasyDocsProps) {
                   onRenameItem={handleRenameItem}
                   onDeleteItem={handleDeleteItem}
                   onMoveItem={handleMoveItem}
+                  onToggleFavorite={handleToggleFavoriteItem}
                 />
               )}
             </div>
@@ -632,6 +822,8 @@ export function MyEasyDocs({ onBackToDashboard }: MyEasyDocsProps) {
         messages={chatMessages}
         isLoading={isChatLoading}
         hasDocuments={documents.length > 0}
+        avatarName={avatarName}
+        avatarSelfie={avatarSelfie}
         onClose={() => setChatOpen(false)}
         onSend={handleSendMessage}
         onClear={handleClearChat}

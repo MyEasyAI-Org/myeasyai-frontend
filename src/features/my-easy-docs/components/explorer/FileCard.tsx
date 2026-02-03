@@ -22,6 +22,7 @@ interface FileCardProps {
   onRename?: (item: DocsFolder | DocsDocument, type: 'folder' | 'document') => void;
   onDelete?: (item: DocsFolder | DocsDocument, type: 'folder' | 'document') => void;
   onMove?: (item: DocsFolder | DocsDocument, type: 'folder' | 'document') => void;
+  onToggleFavorite?: (item: DocsDocument) => void;
 }
 
 // =============================================
@@ -46,6 +47,7 @@ export const FileCard = memo(function FileCard({
   onRename,
   onDelete,
   onMove,
+  onToggleFavorite,
 }: FileCardProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -115,7 +117,18 @@ export const FileCard = memo(function FileCard({
     [item, type, onMove]
   );
 
-  const hasContextMenu = onRename || onDelete || onMove;
+  const handleToggleFavorite = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      setMenuOpen(false);
+      if (type === 'document' && onToggleFavorite) {
+        onToggleFavorite(item as DocsDocument);
+      }
+    },
+    [item, type, onToggleFavorite]
+  );
+
+  const hasContextMenu = onRename || onDelete || onMove || (type === 'document' && onToggleFavorite);
 
   if (type === 'folder') {
     return (
@@ -185,21 +198,25 @@ export const FileCard = memo(function FileCard({
 
   return (
     <div className="relative group">
+      {/* Favorite indicator - top left corner of card */}
+      {doc.is_favorite && (
+        <div className="absolute top-2 left-2 z-10 p-1 bg-yellow-500/20 rounded-md border border-yellow-500/30">
+          <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
+        </div>
+      )}
+
       <button
         onClick={handleSingleClick}
         onDoubleClick={handleDoubleClick}
         className={`w-full flex flex-col items-center p-4 bg-slate-900/50 border rounded-xl transition-all ${
           isSelected
             ? 'border-blue-500 bg-blue-500/10'
-            : 'border-slate-800 hover:border-blue-500/50 hover:bg-slate-800/50'
+            : doc.is_favorite
+              ? 'border-yellow-500/30 hover:border-yellow-500/50 hover:bg-slate-800/50'
+              : 'border-slate-800 hover:border-blue-500/50 hover:bg-slate-800/50'
         }`}
       >
-        <div className="relative">
-          <FileIcon mimeType={doc.mime_type} size="xl" />
-          {doc.is_favorite && (
-            <Star className="absolute -top-1 -right-1 w-4 h-4 text-yellow-500 fill-yellow-500" />
-          )}
-        </div>
+        <FileIcon mimeType={doc.mime_type} size="xl" />
         <span className="text-sm font-medium text-slate-200 truncate w-full text-center mt-3">
           {doc.name}
         </span>
@@ -218,6 +235,15 @@ export const FileCard = memo(function FileCard({
 
           {menuOpen && (
             <div className="absolute right-0 top-full mt-1 w-40 bg-slate-800 border border-slate-700 rounded-lg shadow-xl z-10 py-1">
+              {onToggleFavorite && (
+                <button
+                  onClick={handleToggleFavorite}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-300 hover:bg-slate-700 transition-colors"
+                >
+                  <Star className={`w-4 h-4 ${doc.is_favorite ? 'text-yellow-500 fill-yellow-500' : ''}`} />
+                  {doc.is_favorite ? 'Remover favorito' : 'Favoritar'}
+                </button>
+              )}
               {onRename && (
                 <button
                   onClick={handleRename}

@@ -459,9 +459,8 @@ export interface D1DocsSearchResult {
   chunk_id: string;
   document_id: string;
   document_name: string;
-  chunk_text: string;
+  content: string;
   chunk_index: number;
-  rank: number;
 }
 
 // =============================================================================
@@ -2504,12 +2503,11 @@ export class D1Client {
    */
   async createDocsChunks(chunks: Array<{
     document_id: string;
-    content_id: string;
     user_id: string;
     chunk_index: number;
-    chunk_text: string;
-  }>): Promise<D1ApiResponse<{ created: number }>> {
-    return this.fetch('/docs/chunks/bulk', {
+    content: string;
+  }>): Promise<D1ApiResponse<{ success: boolean; count: number }>> {
+    return this.fetch('/docs/chunks/batch', {
       method: 'POST',
       body: JSON.stringify({ chunks }),
     });
@@ -2531,7 +2529,7 @@ export class D1Client {
     limit = 10
   ): Promise<D1ApiResponse<D1DocsSearchResult[]>> {
     return this.fetch<D1DocsSearchResult[]>(
-      `/docs/search/user/${userId}?q=${encodeURIComponent(query)}&limit=${limit}`
+      `/docs/chunks/search?user_id=${encodeURIComponent(userId)}&query=${encodeURIComponent(query)}&limit=${limit}`
     );
   }
 

@@ -534,7 +534,7 @@ docsRoutes.delete('/chunks/document/:documentId', async (c) => {
 
 /**
  * GET /docs/chunks/search
- * Busca chunks por texto (FTS)
+ * Busca chunks por texto - Multi-termo com OR
  * Query params: user_id, query, limit
  */
 docsRoutes.get('/chunks/search', async (c) => {
@@ -542,15 +542,28 @@ docsRoutes.get('/chunks/search', async (c) => {
   const userId = c.req.query('user_id');
   const query = c.req.query('query');
   const limitParam = c.req.query('limit');
-  const limit = limitParam ? parseInt(limitParam, 10) : 10;
+  const limit = limitParam ? parseInt(limitParam, 10) : 20;
 
   if (!userId || !query) {
     return c.json({ error: 'user_id and query are required' }, 400);
   }
 
-  // Busca simples por LIKE (FTS5 seria melhor mas requer setup adicional)
-  // TODO: Implementar busca FTS5 quando disponível
-  const searchPattern = `%${query}%`;
+  // Extrair palavras significativas (min 2 caracteres)
+  const words = query
+    .toLowerCase()
+    .split(/\s+/)
+    .filter((w: string) => w.length >= 2)
+    .slice(0, 10); // Max 10 palavras para evitar queries muito pesadas
+
+  if (words.length === 0) {
+    return c.json({ data: [] });
+  }
+
+  // Construir condições OR para cada palavra (case-insensitive)
+  // LOWER(content) LIKE '%word1%' OR LOWER(content) LIKE '%word2%' ...
+  const orConditions = words.map((word: string) =>
+    sql`LOWER(${docsChunks.content}) LIKE ${'%' + word + '%'}`
+  );
 
   const results = await db
     .select({
@@ -565,7 +578,7 @@ docsRoutes.get('/chunks/search', async (c) => {
     .where(
       and(
         eq(docsChunks.user_id, userId),
-        sql`${docsChunks.content} LIKE ${searchPattern}`
+        sql`(${sql.join(orConditions, sql` OR `)})`
       )
     )
     .limit(limit);

@@ -21,6 +21,7 @@ interface FileRowProps {
   onRename?: (item: DocsFolder | DocsDocument, type: 'folder' | 'document') => void;
   onDelete?: (item: DocsFolder | DocsDocument, type: 'folder' | 'document') => void;
   onMove?: (item: DocsFolder | DocsDocument, type: 'folder' | 'document') => void;
+  onToggleFavorite?: (item: DocsDocument) => void;
 }
 
 // =============================================
@@ -36,6 +37,7 @@ export const FileRow = memo(function FileRow({
   onRename,
   onDelete,
   onMove,
+  onToggleFavorite,
 }: FileRowProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -98,7 +100,18 @@ export const FileRow = memo(function FileRow({
     [item, type, onMove]
   );
 
-  const hasContextMenu = onRename || onDelete || onMove;
+  const handleToggleFavorite = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      setMenuOpen(false);
+      if (type === 'document' && onToggleFavorite) {
+        onToggleFavorite(item as DocsDocument);
+      }
+    },
+    [item, type, onToggleFavorite]
+  );
+
+  const hasContextMenu = onRename || onDelete || onMove || (type === 'document' && onToggleFavorite);
 
   if (type === 'folder') {
     const folder = item as DocsFolder;
@@ -175,15 +188,24 @@ export const FileRow = memo(function FileRow({
       onClick={handleClick}
       onDoubleClick={handleDoubleClick}
       className={`cursor-pointer transition-colors group ${
-        isSelected ? 'bg-blue-500/10' : 'hover:bg-slate-800/50'
+        isSelected
+          ? 'bg-blue-500/10'
+          : doc.is_favorite
+            ? 'bg-yellow-500/5 hover:bg-yellow-500/10'
+            : 'hover:bg-slate-800/50'
       }`}
     >
       <td className="px-4 py-3">
         <div className="flex items-center gap-3">
+          {doc.is_favorite && (
+            <div className="p-1 bg-yellow-500/20 rounded border border-yellow-500/30 shrink-0">
+              <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />
+            </div>
+          )}
           <FileIcon mimeType={doc.mime_type} size="md" />
           <span className="text-sm text-slate-200 truncate">{doc.name}</span>
           {doc.is_favorite && (
-            <Star className="w-4 h-4 text-yellow-500 fill-yellow-500 shrink-0" />
+            <span className="text-xs text-yellow-500/70 shrink-0">Favorito</span>
           )}
         </div>
       </td>
@@ -202,6 +224,15 @@ export const FileRow = memo(function FileRow({
 
             {menuOpen && (
               <div className="absolute right-4 top-full mt-1 w-40 bg-slate-800 border border-slate-700 rounded-lg shadow-xl z-10 py-1">
+                {onToggleFavorite && (
+                  <button
+                    onClick={handleToggleFavorite}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-300 hover:bg-slate-700 transition-colors"
+                  >
+                    <Star className={`w-4 h-4 ${doc.is_favorite ? 'text-yellow-500 fill-yellow-500' : ''}`} />
+                    {doc.is_favorite ? 'Remover favorito' : 'Favoritar'}
+                  </button>
+                )}
                 {onRename && (
                   <button
                     onClick={handleRename}

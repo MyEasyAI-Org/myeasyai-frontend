@@ -21,6 +21,7 @@ interface FileListProps {
   onRenameItem?: (item: DocsFolder | DocsDocument, type: 'folder' | 'document') => void;
   onDeleteItem?: (item: DocsFolder | DocsDocument, type: 'folder' | 'document') => void;
   onMoveItem?: (item: DocsFolder | DocsDocument, type: 'folder' | 'document') => void;
+  onToggleFavorite?: (item: DocsDocument) => void;
 }
 
 interface ColumnConfig {
@@ -54,6 +55,7 @@ export const FileList = memo(function FileList({
   onRenameItem,
   onDeleteItem,
   onMoveItem,
+  onToggleFavorite,
 }: FileListProps) {
   const [sortField, setSortField] = useState<DocsSortField>('name');
   const [sortOrder, setSortOrder] = useState<DocsSortOrder>('asc');
@@ -98,7 +100,7 @@ export const FileList = memo(function FileList({
     return sortField === 'name' && sortOrder === 'desc' ? -comparison : comparison;
   });
 
-  const hasContextMenu = onRenameItem || onDeleteItem || onMoveItem;
+  const hasContextMenu = onRenameItem || onDeleteItem || onMoveItem || onToggleFavorite;
 
   return (
     <div className="bg-slate-900/30 border border-slate-800 rounded-xl overflow-hidden">
@@ -162,6 +164,7 @@ export const FileList = memo(function FileList({
               onRename={onRenameItem}
               onDelete={onDeleteItem}
               onMove={onMoveItem}
+              onToggleFavorite={onToggleFavorite}
             />
           ))}
         </tbody>

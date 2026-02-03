@@ -2,6 +2,9 @@
 // MyEasyDocs - Utilitários
 // =============================================
 
+// Re-export text chunker utilities
+export * from './textChunker';
+
 import {
   FILE_TYPE_ICONS,
   EXTENSION_TO_MIME,

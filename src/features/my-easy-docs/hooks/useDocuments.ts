@@ -56,6 +56,8 @@ interface UseDocumentsReturn {
   toggleFavorite: (id: string) => Promise<DocsDocument>;
   /** Delete a document */
   deleteDocument: (id: string) => Promise<void>;
+  /** Remove documents from state by folder IDs (for cascade delete) */
+  removeDocumentsByFolderIds: (folderIds: string[]) => void;
   /** Get document text content */
   getContent: (id: string) => Promise<string | null>;
   /** Save document text content */
@@ -228,6 +230,24 @@ export function useDocuments(options?: UseDocumentsOptions): UseDocumentsReturn 
     [selectedDocument]
   );
 
+  // Remove documents from state by folder IDs (for cascade delete)
+  const removeDocumentsByFolderIds = useCallback(
+    (folderIds: string[]): void => {
+      const folderIdSet = new Set(folderIds);
+      setDocuments((prev) => {
+        const filtered = prev.filter((d) => !d.folder_id || !folderIdSet.has(d.folder_id));
+        setTotalCount(filtered.length);
+        return filtered;
+      });
+
+      // Deselect if document was in a deleted folder
+      if (selectedDocument?.folder_id && folderIdSet.has(selectedDocument.folder_id)) {
+        setSelectedDocument(null);
+      }
+    },
+    [selectedDocument]
+  );
+
   // Get content
   const getContent = useCallback(async (id: string): Promise<string | null> => {
     return DocumentService.getTextContent(id);
@@ -262,6 +282,7 @@ export function useDocuments(options?: UseDocumentsOptions): UseDocumentsReturn 
     moveDocument,
     toggleFavorite,
     deleteDocument,
+    removeDocumentsByFolderIds,
     getContent,
     saveContent,
   };

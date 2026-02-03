@@ -18,6 +18,7 @@ interface DocsSidebarProps {
   expandedFolders: Set<string>;
   documents: DocsDocument[];
   selectedDocumentId?: string | null;
+  specialViewMode?: 'none' | 'favorites' | 'recent';
   onNavigate: (folderId: string | null) => void;
   onToggleExpand: (folderId: string) => void;
   onCreateFolder: () => void;
@@ -39,6 +40,7 @@ export const DocsSidebar = memo(function DocsSidebar({
   expandedFolders,
   documents,
   selectedDocumentId,
+  specialViewMode = 'none',
   onNavigate,
   onToggleExpand,
   onCreateFolder,
@@ -121,16 +123,24 @@ export const DocsSidebar = memo(function DocsSidebar({
         {onViewFavorites && (
           <button
             onClick={onViewFavorites}
-            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-400 hover:text-slate-300 hover:bg-slate-800 rounded-lg transition-colors"
+            className={`w-full flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-colors ${
+              specialViewMode === 'favorites'
+                ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30'
+                : 'text-slate-400 hover:text-slate-300 hover:bg-slate-800'
+            }`}
           >
-            <Star className="w-4 h-4" />
+            <Star className={`w-4 h-4 ${specialViewMode === 'favorites' ? 'fill-yellow-500' : ''}`} />
             Favoritos
           </button>
         )}
         {onViewRecent && (
           <button
             onClick={onViewRecent}
-            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-400 hover:text-slate-300 hover:bg-slate-800 rounded-lg transition-colors"
+            className={`w-full flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-colors ${
+              specialViewMode === 'recent'
+                ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
+                : 'text-slate-400 hover:text-slate-300 hover:bg-slate-800'
+            }`}
           >
             <Clock className="w-4 h-4" />
             Recentes

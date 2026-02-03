@@ -229,6 +229,42 @@ export const avatarService = {
   },
 
   /**
+   * Get only avatar name and selfie (for use in other modules like MyEasyDocs)
+   */
+  async getAvatarBasicInfo(): Promise<{
+    name: string | null;
+    selfie: string | null;
+  }> {
+    const user = authService.getUser();
+
+    if (!user?.uuid) {
+      return { name: null, selfie: null };
+    }
+
+    try {
+      const result = await d1Client.getUserByUuid(user.uuid);
+
+      if (!result.data?.bio) {
+        return { name: null, selfie: null };
+      }
+
+      const bioData = JSON.parse(result.data.bio);
+      const avatarData = bioData.avatar || bioData;
+
+      if (avatarData.type !== 'avatar_customization') {
+        return { name: null, selfie: null };
+      }
+
+      return {
+        name: avatarData.name || null,
+        selfie: avatarData.selfie || null,
+      };
+    } catch {
+      return { name: null, selfie: null };
+    }
+  },
+
+  /**
    * Check if user is authenticated
    */
   isAuthenticated(): boolean {

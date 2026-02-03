@@ -24,8 +24,8 @@
 | 14 | Services de Lógica de Negócio | ✅ CONCLUÍDO |
 | 15 | Hooks de Estado | ✅ CONCLUÍDO |
 | 16 | Conectar UI com Dados Reais | ✅ CONCLUÍDO |
-| 17 | Extração de Texto | ⏳ Pendente |
-| 18 | Busca e IA | ⏳ Pendente |
+| 17 | Extração de Texto | ✅ CONCLUÍDO |
+| 18 | Busca e IA (com Avatar) | ✅ CONCLUÍDO |
 | 19 | Testes e Polimento | ⏳ Pendente |
 
 ---
@@ -498,24 +498,78 @@ CODE_EXTENSIONS: Record<string, string>
 
 ---
 
+## CORREÇÕES E MELHORIAS DE INFRAESTRUTURA ✅
+
+> Correções feitas durante a implementação para resolver problemas de integração
+
+### Sync Ensure User - Rota de Sincronização
+**Arquivo**: `workers/api-d1/src/routes/sync.ts`
+
+Nova rota adicionada para garantir que o usuário existe no D1 antes de criar documentos:
+
+| Método | Endpoint | Descrição |
+|--------|----------|-----------|
+| POST | `/sync/ensure-user/:userId` | Garante que usuário existe no D1, sincronizando do Supabase se necessário |
+
+**Comportamento**:
+- Verifica se o usuário já existe no D1
+- Se não existir, busca no Supabase e cria no D1
+- Retorna `{ data: user, synced: boolean }`
+- Evita erro de foreign key ao criar documentos
+
+### D1 Client - Método syncEnsureUser
+**Arquivo**: `src/lib/api-clients/d1-client.ts`
+
+Novo método adicionado:
+```typescript
+// Garante que o usuário existe no D1 antes de operações
+syncEnsureUser(userId: string): Promise<D1ApiResponse<D1User & { synced: boolean }>>
+```
+
+### CloudflareClient - Cliente R2 via Worker Proxy
+**Arquivo**: `src/lib/api-clients/cloudflare-client.ts`
+
+Cliente HTTP para integração com Cloudflare R2 via Worker proxy:
+- `uploadFile(key, content, contentType)` - Upload de arquivo para R2
+- `deleteFile(key)` - Deleção de arquivo do R2
+- `fileExists(key)` - Verifica se arquivo existe
+- `getSiteUrl(slug)` - Retorna URL pública do site
+
+### DocumentService - Integração com Sync
+**Arquivo**: `src/features/my-easy-docs/services/DocumentService.ts`
+
+Métodos `create()` e `createEmpty()` agora chamam `syncEnsureUser` antes de criar documentos:
+```typescript
+// Garantir que o usuário existe no D1 (sincroniza do Supabase se necessário)
+const ensureResult = await d1Client.syncEnsureUser(userId);
+```
+
+### Migration Corrigida (017)
+**Arquivo**: `workers/api-d1/migrations/017_add_docs_tables_fixed.sql`
+
+Nova migration que corrige a 016 para corresponder exatamente ao schema Drizzle:
+- Remove tabelas antigas com schema errado
+- Recria tabelas com schema correto
+- `docs_content`: `raw_text`, `word_count`, `extracted_at` (sem `user_id`)
+- `docs_chunks`: `content` (não `chunk_text`), sem `content_id`
+- Indexes para performance
+
+---
+
 ## FASE 12: Migration do Banco de Dados ✅
 
 ### 12.1 Migration SQL Criada
-**Arquivo**: `workers/api-d1/migrations/016_add_docs_tables.sql`
+**Arquivo**: `workers/api-d1/migrations/016_add_docs_tables.sql` (corrigida por `017_add_docs_tables_fixed.sql`)
 
 Tabelas criadas:
 - `docs_folders` - Estrutura hierárquica de pastas
 - `docs_documents` - Metadados dos arquivos
 - `docs_content` - Texto extraído dos documentos
 - `docs_chunks` - Chunks para busca IA
-- `docs_chunks_fts` - Tabela virtual FTS5 para busca full-text
-
-Triggers implementados:
-- `docs_chunks_ai` - Sincroniza inserções com FTS
-- `docs_chunks_ad` - Sincroniza deleções com FTS
-- `docs_chunks_au` - Sincroniza atualizações com FTS
 
 Indexes criados para performance em todas as tabelas.
+
+> **Nota**: A migration 016 original tinha schema incompatível com o Drizzle. A migration 017 corrige isso.
 
 ---
 
@@ -933,8 +987,266 @@ Criar `src/features/my-easy-docs/hooks/useDocsChat.ts`:
 - clearMessages()
 - Integra com DocsAIService
 
-### 18.4 Conectar chat UI com hook
-Atualizar DocsChatDrawer para usar useDocsChat real
+### 18.4 Adaptar Chat UI para usar Avatar do MyEasyAvatar
+
+> O chat IA do My Easy Docs usa o **nome e foto do myeasyavatar** mas com lógica de chat própria (focada em documentos).
+
+#### 18.4.1 Modificar DocsChatMessage.tsx
+Adicionar props para avatar:
+```typescript
+interface DocsChatMessageProps {
+  message: DocsChatMessage;
+  avatarName?: string;        // Nome do avatar
+  avatarSelfie?: string | null; // Foto do avatar (base64)
+  onOpenDocument?: (documentId: string) => void;
+}
+```
+
+Renderizar foto do avatar nas mensagens do assistente:
+```typescript
+{message.role === 'assistant' && (
+  avatarSelfie ? (
+    <img src={avatarSelfie} alt={avatarName} className="w-8 h-8 rounded-full object-cover" />
+  ) : (
+    <Sparkles className="w-4 h-4" />
+  )
+)}
+```
+
+#### 18.4.2 Modificar DocsChatDrawer.tsx
+Adicionar props:
+```typescript
+interface DocsChatDrawerProps {
+  // ... props existentes
+  avatarName?: string;
+  avatarSelfie?: string | null;
+}
+```
+
+Header com foto/nome do avatar:
+```typescript
+<div className="flex items-center gap-3">
+  {avatarSelfie ? (
+    <img src={avatarSelfie} alt={avatarName} className="w-8 h-8 rounded-full" />
+  ) : (
+    <Sparkles className="w-5 h-5 text-purple-400" />
+  )}
+  <span>{avatarName || 'Assistente IA'}</span>
+</div>
+```
+
+#### 18.4.3 Modificar MyEasyDocs.tsx
+Carregar dados do avatar via `avatarService`:
+```typescript
+import { avatarService } from '../my-easy-avatar/services/avatarService';
+
+const [avatarName, setAvatarName] = useState<string>('Assistente');
+const [avatarSelfie, setAvatarSelfie] = useState<string | null>(null);
+
+useEffect(() => {
+  const loadAvatarData = async () => {
+    const data = await avatarService.loadCustomization();
+    if (data) {
+      setAvatarName(data.name || 'Assistente');
+      setAvatarSelfie(data.selfie || null);
+    }
+  };
+  loadAvatarData();
+}, []);
+```
+
+Passar props para DocsChatDrawer:
+```typescript
+<DocsChatDrawer
+  avatarName={avatarName}
+  avatarSelfie={avatarSelfie}
+  // ... outras props
+/>
+```
+
+#### 18.4.4 Fluxo Visual do Chat
+```
+┌─────────────────────────────────────────┐
+│  DocsChatDrawer                         │
+│  ┌─────────────────────────────────┐    │
+│  │ [Avatar Photo] Nome do Avatar   │ X  │  ← Header com foto/nome
+│  └─────────────────────────────────┘    │
+│                                         │
+│  ┌─────────────────────────────────┐    │
+│  │ [Avatar] Mensagem do assistente │    │  ← Foto do avatar
+│  │ Fontes: [Doc1] [Doc2]           │    │
+│  └─────────────────────────────────┘    │
+│                                         │
+│  ┌─────────────────────────────────┐    │
+│  │ Mensagem do usuário      [User]│    │  ← Ícone de usuário
+│  └─────────────────────────────────┘    │
+│                                         │
+│  ┌─────────────────────────────────┐    │
+│  │ Pergunte sobre seus docs... [>]│    │
+│  └─────────────────────────────────┘    │
+└─────────────────────────────────────────┘
+```
+
+---
+
+## IMPLEMENTAÇÃO CONCLUÍDA - FASES 17 E 18 ✅
+
+### Fase 17: Extração de Texto - Arquivos Criados
+
+#### TextExtractionService.ts
+**Arquivo**: `src/features/my-easy-docs/services/TextExtractionService.ts`
+
+Service para extração de texto de diferentes tipos de arquivo:
+- `canExtract(mimeType)` - Verifica se tipo suporta extração
+- `extractFromPdf(blob)` - Extrai texto de PDF usando `unpdf`
+- `extractFromDocx(blob)` - Extrai texto de DOCX usando `mammoth`
+- `extractFromText(blob)` - Lê arquivos de texto puro
+- `extract(file, mimeType)` - Método unificado que retorna `{ text, wordCount }`
+- `extractFromUrl(url, mimeType)` - Extrai de URL (para arquivos no R2)
+
+Tipos suportados:
+- PDF (`application/pdf`)
+- DOCX (`application/vnd.openxmlformats-officedocument.wordprocessingml.document`)
+- Texto puro (`text/plain`, `text/markdown`, `text/csv`)
+- Código (`application/json`, `text/html`, `text/xml`)
+
+#### textChunker.ts
+**Arquivo**: `src/features/my-easy-docs/utils/textChunker.ts`
+
+Utilitário para dividir texto em chunks para indexação IA:
+- `chunkText(text, options)` - Divide texto em chunks com overlap
+- `chunkByParagraphs(text, options)` - Divide por parágrafos primeiro
+- `getChunkContents(chunks)` - Extrai apenas os conteúdos dos chunks
+
+Opções:
+- `chunkSize` - Tamanho alvo do chunk (default: 1000 chars)
+- `overlap` - Sobreposição entre chunks (default: 200 chars)
+- `minChunkSize` - Tamanho mínimo para incluir (default: 100 chars)
+
+#### Integração no Upload
+**Arquivo**: `src/features/my-easy-docs/hooks/useFileUpload.ts`
+
+Modificado para extrair texto automaticamente após upload:
+1. Verifica se tipo suporta extração (`canExtractText`)
+2. Extrai texto usando `TextExtractionService.extract()`
+3. Salva conteúdo no D1 via `d1Client.createDocsContent()`
+4. Cria chunks via `d1Client.createDocsChunks()`
+5. Atualiza `extraction_status` do documento
+
+---
+
+### Fase 18: Busca e IA - Arquivos Criados
+
+#### DocsSearchService.ts
+**Arquivo**: `src/features/my-easy-docs/services/DocsSearchService.ts`
+
+Service para busca em chunks indexados:
+- `searchChunks(query, limit)` - Busca chunks relevantes
+- `rankResults(chunks, query)` - Rankeia por relevância (termos + match exato)
+- `getDocumentContext(results, maxTokens)` - Formata contexto para IA
+- `searchAndGetContext(query, limit, maxTokens)` - Busca + contexto em uma chamada
+
+Retorna:
+```typescript
+interface DocumentContext {
+  text: string;  // Texto formatado para prompt
+  sources: Array<{ documentId: string; documentName: string }>;
+}
+```
+
+#### DocsAIService.ts
+**Arquivo**: `src/features/my-easy-docs/services/DocsAIService.ts`
+
+Service para chat IA sobre documentos:
+- `buildPrompt(question, context, history)` - Constrói prompt com contexto
+- `askQuestion(question, history)` - Faz pergunta e retorna resposta + sources
+- `getNoDocumentsResponse()` - Resposta quando não há documentos
+- `getSuggestions(documentNames)` - Gera sugestões de perguntas
+
+Usa Gemini API para gerar respostas.
+
+#### useDocsChat.ts
+**Arquivo**: `src/features/my-easy-docs/hooks/useDocsChat.ts`
+
+Hook para gerenciar estado do chat:
+```typescript
+const {
+  messages,      // Array de mensagens
+  isLoading,     // Se está processando
+  error,         // Erro se houver
+  sendMessage,   // Envia mensagem
+  clearMessages, // Limpa histórico
+  addSystemMessage, // Adiciona msg do sistema
+} = useDocsChat({ hasDocuments: true });
+```
+
+---
+
+### Fase 18.4: Integração do Avatar - Arquivos Modificados
+
+#### avatarService.ts
+**Arquivo**: `src/features/my-easy-avatar/services/avatarService.ts`
+
+Nova função adicionada:
+```typescript
+async getAvatarBasicInfo(): Promise<{
+  name: string | null;
+  selfie: string | null;
+}>
+```
+Obtém apenas nome e selfie do avatar (sem precisar dos assets).
+
+#### DocsChatMessage.tsx
+**Arquivo**: `src/features/my-easy-docs/components/chat/DocsChatMessage.tsx`
+
+Props adicionadas:
+- `avatarName?: string` - Nome do avatar
+- `avatarSelfie?: string | null` - Selfie base64
+
+Renderiza foto do avatar nas mensagens do assistente (fallback: ícone Sparkles).
+
+#### DocsChatDrawer.tsx
+**Arquivo**: `src/features/my-easy-docs/components/chat/DocsChatDrawer.tsx`
+
+Props adicionadas:
+- `avatarName?: string`
+- `avatarSelfie?: string | null`
+
+Mudanças:
+- Header mostra foto/nome do avatar
+- Passa props para cada `DocsChatMessage`
+- Loading indicator usa foto do avatar
+
+#### MyEasyDocs.tsx
+**Arquivo**: `src/features/my-easy-docs/MyEasyDocs.tsx`
+
+Mudanças:
+- Importa `avatarService` e `useDocsChat`
+- Estados `avatarName` e `avatarSelfie`
+- `useEffect` carrega dados do avatar no mount
+- Usa `useDocsChat` ao invés de estado local de chat
+- Passa props de avatar para `DocsChatDrawer`
+
+---
+
+### Dependências Instaladas
+
+```bash
+npm install unpdf mammoth
+```
+
+- `unpdf` - Extração de texto de PDF
+- `mammoth` - Extração de texto de DOCX
+
+---
+
+### Correções no D1 Client
+
+**Arquivo**: `src/lib/api-clients/d1-client.ts`
+
+1. `D1DocsSearchResult` - Corrigido para usar `content` (não `chunk_text`)
+2. `createDocsChunks` - Corrigido para usar `content` e rota `/docs/chunks/batch`
+3. `searchDocsChunks` - Corrigido para usar rota `/docs/chunks/search`
 
 ---
 
@@ -994,8 +1306,8 @@ npm run build
 | 14 | Services | FolderService, DocumentService, UploadService | ✅ |
 | 15 | Hooks | useFolders, useDocuments, useFileUpload | ✅ |
 | 16 | Conectar UI | MyEasyDocs com dados reais | ✅ |
-| 17 | Extração | TextExtractionService, textChunker | ⏳ |
-| 18 | IA | DocsSearchService, DocsAIService, useDocsChat | ⏳ |
+| 17 | Extração | TextExtractionService, textChunker | ✅ |
+| 18 | IA + Avatar | DocsSearchService, DocsAIService, useDocsChat, DocsChatDrawer (avatar), DocsChatMessage (avatar) | ✅ |
 | 19 | Testes | Ajustes finais | ⏳ |
 
 ---
@@ -1021,8 +1333,12 @@ npm run build
 8. ✅ **Hooks**: useFolders, useDocuments, useFileUpload
 9. ✅ **UI Conectada**: MyEasyDocs usando hooks reais
 
-## Fases 17-19 (Extração, IA, Testes) - PENDENTES ⏳
+## Fases 17-18 (Extração, IA) - CONCLUÍDAS ✅
 
-10. ⏳ **Extração funciona**: PDFs/DOCX/TXT são indexados
-11. ⏳ **Chat funciona**: IA responde sobre documentos
-12. ⏳ **Testes finais**: CRUD completo, upload, polimento
+10. ✅ **Extração funciona**: PDFs/DOCX/TXT são indexados automaticamente no upload
+11. ✅ **Chat funciona**: IA responde sobre documentos usando Gemini + busca em chunks
+12. ✅ **Avatar integrado**: Chat usa nome e foto do MyEasyAvatar (se configurado)
+
+## Fase 19 (Testes) - PENDENTE ⏳
+
+13. ⏳ **Testes finais**: CRUD completo, upload, polimento

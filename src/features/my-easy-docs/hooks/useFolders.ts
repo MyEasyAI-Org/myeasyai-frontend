@@ -31,8 +31,8 @@ interface UseFoldersReturn {
   renameFolder: (id: string, newName: string) => Promise<DocsFolder>;
   /** Move a folder to another parent */
   moveFolder: (id: string, newParentId: string | null) => Promise<DocsFolder>;
-  /** Delete a folder */
-  deleteFolder: (id: string) => Promise<void>;
+  /** Delete a folder (returns deleted folder IDs for cascade cleanup) */
+  deleteFolder: (id: string) => Promise<string[]>;
 }
 
 export function useFolders(): UseFoldersReturn {
@@ -135,21 +135,25 @@ export function useFolders(): UseFoldersReturn {
     []
   );
 
-  // Delete folder
+  // Delete folder (returns deleted folder IDs for cascade cleanup)
   const deleteFolder = useCallback(
-    async (id: string): Promise<void> => {
+    async (id: string): Promise<string[]> => {
+      // Get descendant IDs before deleting
+      const descendantIds = await FolderService.getDescendantIds(id);
+      const idsToRemove = [id, ...descendantIds];
+
       await FolderService.delete(id);
 
       // Remove folder and all descendants from state
-      const descendantIds = await FolderService.getDescendantIds(id);
-      const idsToRemove = new Set([id, ...descendantIds]);
-
-      setFolders((prev) => prev.filter((f) => !idsToRemove.has(f.id)));
+      const idsToRemoveSet = new Set(idsToRemove);
+      setFolders((prev) => prev.filter((f) => !idsToRemoveSet.has(f.id)));
 
       // If we're inside the deleted folder, navigate to root
       if (currentFolderId === id || descendantIds.includes(currentFolderId || '')) {
         await navigateTo(null);
       }
+
+      return idsToRemove;
     },
     [currentFolderId, navigateTo]
   );

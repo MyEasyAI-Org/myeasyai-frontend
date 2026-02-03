@@ -15,6 +15,10 @@ import { DocumentSources } from './DocumentSources';
 // =============================================
 interface DocsChatMessageProps {
   message: DocsChatMessageType;
+  /** Avatar name for assistant messages */
+  avatarName?: string;
+  /** Avatar selfie (base64) for assistant messages */
+  avatarSelfie?: string | null;
   onOpenDocument?: (documentId: string) => void;
 }
 
@@ -46,6 +50,8 @@ function renderMarkdown(text: string): string {
 // =============================================
 export const DocsChatMessage = memo(function DocsChatMessage({
   message,
+  avatarName,
+  avatarSelfie,
   onOpenDocument,
 }: DocsChatMessageProps) {
   const isUser = message.role === 'user';
@@ -55,12 +61,18 @@ export const DocsChatMessage = memo(function DocsChatMessage({
       {/* Avatar */}
       <div
         className={`
-          flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center
-          ${isUser ? 'bg-blue-600' : 'bg-gradient-to-br from-purple-500 to-pink-500'}
+          flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center overflow-hidden
+          ${isUser ? 'bg-blue-600' : avatarSelfie ? '' : 'bg-gradient-to-br from-purple-500 to-pink-500'}
         `}
       >
         {isUser ? (
           <User className="w-4 h-4 text-white" />
+        ) : avatarSelfie ? (
+          <img
+            src={avatarSelfie}
+            alt={avatarName || 'Assistente'}
+            className="w-full h-full object-cover"
+          />
         ) : (
           <Sparkles className="w-4 h-4 text-white" />
         )}

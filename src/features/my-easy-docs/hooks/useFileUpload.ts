@@ -3,9 +3,11 @@
 // =============================================
 
 import { useState, useCallback } from 'react';
-import { UploadService, DocumentService } from '../services';
+import { UploadService, DocumentService, TextExtractionService } from '../services';
 import type { UploadProgress, UploadStatus, DocsDocument } from '../types';
-import { generateId, canExtractText } from '../utils';
+import { generateId, canExtractText, chunkText, getChunkContents } from '../utils';
+import { d1Client } from '../../../lib/api-clients/d1-client';
+import { authService } from '../../../services/AuthServiceV2';
 
 interface UseFileUploadOptions {
   /** Default folder ID for uploads */
@@ -89,8 +91,59 @@ export function useFileUpload(options?: UseFileUploadOptions): UseFileUploadRetu
           r2_key: r2Key,
         });
 
-        // Update extraction status based on file type
-        if (!canExtractText(file.type)) {
+        // Process text extraction if supported
+        if (canExtractText(file.type)) {
+          try {
+            // Extract text
+            const { text, wordCount } = await TextExtractionService.extract(file, file.type);
+
+            if (text && text.length > 0) {
+              // Save content to D1
+              await d1Client.createDocsContent({
+                document_id: document.id,
+                raw_text: text,
+                word_count: wordCount,
+              });
+
+              // Create chunks for AI search
+              const chunks = chunkText(text);
+              if (chunks.length > 0) {
+                await authService.waitForInit();
+                const authUser = authService.getUser();
+                const userId = authUser?.uuid;
+
+                if (userId) {
+                  const chunkContents = getChunkContents(chunks);
+                  await d1Client.createDocsChunks(
+                    chunkContents.map((content, index) => ({
+                      document_id: document.id,
+                      user_id: userId,
+                      chunk_index: index,
+                      content,
+                    }))
+                  );
+                }
+              }
+
+              // Update extraction status to completed
+              await DocumentService.update(document.id, {
+                extraction_status: 'completed',
+              });
+            } else {
+              // No text found
+              await DocumentService.update(document.id, {
+                extraction_status: 'completed',
+              });
+            }
+          } catch (extractionError) {
+            console.error('[useFileUpload] Extraction error:', extractionError);
+            // Mark as failed but don't fail the upload
+            await DocumentService.update(document.id, {
+              extraction_status: 'failed',
+            });
+          }
+        } else {
+          // File type doesn't support extraction
           await DocumentService.update(document.id, {
             extraction_status: 'unsupported',
           });
