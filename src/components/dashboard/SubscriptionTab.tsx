@@ -303,6 +303,29 @@ export function SubscriptionTab({ subscription }: SubscriptionTabProps) {
                         {selectedPlanData.limits.maxSites === -1 ? 'Sites ilimitados' : `${selectedPlanData.limits.maxSites} site${selectedPlanData.limits.maxSites > 1 ? 's' : ''}`}
                       </p>
                     </div>
+
+                    {/* Price Difference Summary */}
+                    {(() => {
+                      const monthlyDiff = (selectedPlanData.priceNumeric - currentPlanData.priceNumeric) / 100;
+                      const annualDiff = monthlyDiff * 12;
+                      return (
+                        <div className="rounded-xl p-4 bg-purple-900/20 border border-purple-500/30">
+                          <p className="text-xs text-slate-500 uppercase tracking-wide mb-2">Diferença de Valor</p>
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm text-slate-400">Por mês</span>
+                            <span className="text-lg font-bold text-purple-400">
+                              +R$ {monthlyDiff.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between mt-1">
+                            <span className="text-sm text-slate-400">Por ano (à vista)</span>
+                            <span className="text-sm text-purple-300">
+                              +R$ {annualDiff.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })()}
                   </>
                 );
               })()}
