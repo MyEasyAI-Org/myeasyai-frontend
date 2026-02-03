@@ -311,18 +311,21 @@ export function SubscriptionTab({ subscription }: SubscriptionTabProps) {
                       return (
                         <div className="rounded-xl p-4 bg-purple-900/20 border border-purple-500/30">
                           <p className="text-xs text-slate-500 uppercase tracking-wide mb-2">Diferença de Valor</p>
-                          <div className="flex items-center justify-between">
-                            <span className="text-sm text-slate-400">Por mês</span>
-                            <span className="text-lg font-bold text-purple-400">
-                              +R$ {monthlyDiff.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                            </span>
-                          </div>
-                          <div className="flex items-center justify-between mt-1">
-                            <span className="text-sm text-slate-400">Por ano (à vista)</span>
-                            <span className="text-sm text-purple-300">
-                              +R$ {annualDiff.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                            </span>
-                          </div>
+                          {isAnnual ? (
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm text-slate-400">Por ano (à vista)</span>
+                              <span className="text-lg font-bold text-purple-400">
+                                +R$ {annualDiff.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                              </span>
+                            </div>
+                          ) : (
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm text-slate-400">Por mês (12x)</span>
+                              <span className="text-lg font-bold text-purple-400">
+                                +R$ {monthlyDiff.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                              </span>
+                            </div>
+                          )}
                         </div>
                       );
                     })()}
