@@ -13,7 +13,6 @@ import {
   FileSpreadsheet,
   FileArchive,
   Folder,
-  FileType,
 } from 'lucide-react';
 
 // =============================================
@@ -54,19 +53,19 @@ function getIconComponent(mimeType: string) {
     return { Icon: Folder, colorClass: 'text-yellow-500' };
   }
 
-  // Images
+  // Images (green-400 - mesmo padrão do painel esquerdo)
   if (mimeType.startsWith('image/')) {
-    return { Icon: FileImage, colorClass: 'text-purple-400' };
+    return { Icon: FileImage, colorClass: 'text-green-400' };
   }
 
-  // Videos
+  // Videos (purple-400 - mesmo padrão do painel esquerdo)
   if (mimeType.startsWith('video/')) {
-    return { Icon: FileVideo, colorClass: 'text-pink-400' };
+    return { Icon: FileVideo, colorClass: 'text-purple-400' };
   }
 
-  // Audio
+  // Audio (pink-400 - mesmo padrão do painel esquerdo)
   if (mimeType.startsWith('audio/')) {
-    return { Icon: FileAudio, colorClass: 'text-green-400' };
+    return { Icon: FileAudio, colorClass: 'text-pink-400' };
   }
 
   // PDF
@@ -118,9 +117,9 @@ function getIconComponent(mimeType: string) {
     return { Icon: FileCode, colorClass: 'text-cyan-400' };
   }
 
-  // Plain text and markdown
+  // Plain text and markdown (blue-400 - mesmo padrão do painel esquerdo)
   if (mimeType === 'text/plain' || mimeType === 'text/markdown') {
-    return { Icon: FileType, colorClass: 'text-slate-400' };
+    return { Icon: FileText, colorClass: 'text-blue-400' };
   }
 
   // Default

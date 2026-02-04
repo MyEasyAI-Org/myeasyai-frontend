@@ -129,7 +129,7 @@ export function MyEasyDocs({ onBackToDashboard }: MyEasyDocsProps) {
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
 
   // Avatar state (from MyEasyAvatar)
-  const [avatarName, setAvatarName] = useState<string>('Assistente');
+  const [avatarName, setAvatarName] = useState<string>('Assistente Concierge');
   const [avatarSelfie, setAvatarSelfie] = useState<string | null>(null);
 
   // Chat state (using useDocsChat hook)
@@ -386,10 +386,26 @@ export function MyEasyDocs({ onBackToDashboard }: MyEasyDocsProps) {
     setIsEditing(false);
   }, [selectDocument]);
 
-  const handleEditDocument = useCallback(() => {
+  // Open fullscreen editor
+  const handleFullscreenEdit = useCallback(() => {
     setEditorModalOpen(true);
     setIsEditing(true);
   }, []);
+
+  // Handle inline save from TextPreview
+  const handleInlineSaveDocument = useCallback(async (content: string) => {
+    if (!selectedDocument) return;
+
+    setIsSaving(true);
+    try {
+      await saveContent(selectedDocument.id, content);
+      setTextContent(content);
+    } catch (err) {
+      console.error('Error saving document:', err);
+    } finally {
+      setIsSaving(false);
+    }
+  }, [selectedDocument, saveContent]);
 
   const handleSaveDocument = useCallback(async (content: string) => {
     if (!selectedDocument) return;
@@ -582,12 +598,14 @@ export function MyEasyDocs({ onBackToDashboard }: MyEasyDocsProps) {
         }
         setMoveModalOpen(false);
         setItemToEdit(null);
+        // Refresh both current folder documents and all documents
+        refreshDocuments();
         refreshAllDocuments();
       } catch (err) {
         console.error('Error moving:', err);
       }
     },
-    [itemToEdit, moveFolder, moveDocument, refreshAllDocuments]
+    [itemToEdit, moveFolder, moveDocument, refreshDocuments, refreshAllDocuments]
   );
 
   // Close modal handlers
@@ -656,6 +674,8 @@ export function MyEasyDocs({ onBackToDashboard }: MyEasyDocsProps) {
             searchQuery={searchQuery}
             viewMode={viewMode}
             chatOpen={chatOpen}
+            avatarName={avatarName}
+            avatarSelfie={avatarSelfie}
             onNavigate={handleNavigateToFolder}
             onSearchChange={handleSearchChange}
             onViewModeChange={handleViewModeChange}
@@ -807,8 +827,10 @@ export function MyEasyDocs({ onBackToDashboard }: MyEasyDocsProps) {
                   document={selectedDocument}
                   textContent={textContent}
                   isLoadingContent={isLoadingContent}
+                  isSavingContent={isSaving}
                   onClose={handleClosePreview}
-                  onEdit={handleEditDocument}
+                  onFullscreen={handleFullscreenEdit}
+                  onSave={handleInlineSaveDocument}
                   onDownload={handleDownloadDocument}
                   onDelete={handleDeleteDocument}
                   onMove={handleMoveDocument}

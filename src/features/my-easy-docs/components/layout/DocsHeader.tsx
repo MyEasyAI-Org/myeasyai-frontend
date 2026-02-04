@@ -17,6 +17,8 @@ interface DocsHeaderProps {
   searchQuery: string;
   viewMode: DocsViewMode;
   chatOpen: boolean;
+  avatarName?: string;
+  avatarSelfie?: string | null;
   onNavigate: (folderId: string | null) => void;
   onSearchChange: (query: string) => void;
   onViewModeChange: (mode: DocsViewMode) => void;
@@ -32,6 +34,8 @@ export const DocsHeader = memo(function DocsHeader({
   searchQuery,
   viewMode,
   chatOpen,
+  avatarName,
+  avatarSelfie,
   onNavigate,
   onSearchChange,
   onViewModeChange,
@@ -69,8 +73,16 @@ export const DocsHeader = memo(function DocsHeader({
                   : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
               }`}
             >
-              <MessageSquare className="w-4 h-4" />
-              <span className="text-sm font-medium">Chat IA</span>
+              {avatarSelfie ? (
+                <img
+                  src={avatarSelfie}
+                  alt={avatarName || 'Assistente Concierge'}
+                  className="w-5 h-5 rounded-full object-cover"
+                />
+              ) : (
+                <MessageSquare className="w-4 h-4" />
+              )}
+              <span className="text-sm font-medium">{avatarName || 'Assistente Concierge'}</span>
             </button>
           </div>
         </div>

@@ -24,8 +24,10 @@ interface FilePreviewProps {
   document: DocsDocument;
   textContent?: string | null;
   isLoadingContent?: boolean;
+  isSavingContent?: boolean;
   onClose: () => void;
-  onEdit?: () => void;
+  onFullscreen?: () => void;
+  onSave?: (content: string) => Promise<void>;
   onDownload?: () => void;
   onDelete?: () => void;
   onMove?: () => void;
@@ -39,8 +41,10 @@ export function FilePreview({
   document,
   textContent = null,
   isLoadingContent = false,
+  isSavingContent = false,
   onClose,
-  onEdit,
+  onFullscreen,
+  onSave,
   onDownload,
   onDelete,
   onMove,
@@ -124,7 +128,9 @@ export function FilePreview({
           content={textContent}
           name={name}
           isLoading={isLoadingContent}
-          onEdit={isEditable(name) ? onEdit : undefined}
+          isSaving={isSavingContent}
+          onSave={isEditable(name) ? onSave : undefined}
+          onFullscreen={isEditable(name) ? onFullscreen : undefined}
         />
       );
     }
@@ -133,7 +139,7 @@ export function FilePreview({
     return <UnsupportedPreview document={document} onDownload={handleDownload} />;
   };
 
-  const canEdit = isEditable(document.name) && onEdit;
+  const canEdit = isEditable(document.name) && onFullscreen;
 
   return (
     <div className="flex flex-col h-full bg-slate-900 border-l border-slate-700">
@@ -173,12 +179,12 @@ export function FilePreview({
             <Download className="w-4 h-4" />
           </button>
 
-          {/* Edit button (for editable files) */}
+          {/* Fullscreen edit button (for editable files) */}
           {canEdit && (
             <button
-              onClick={onEdit}
+              onClick={onFullscreen}
               className="p-2 text-slate-400 hover:text-slate-300 hover:bg-slate-700 rounded-lg transition-colors"
-              title="Editar arquivo"
+              title="Editar em tela cheia"
             >
               <Edit3 className="w-4 h-4" />
             </button>

@@ -6,8 +6,8 @@
 // Basic markdown rendering for .md files.
 // =============================================
 
-import { useState, useEffect, useCallback } from 'react';
-import { FileText, Edit3, Copy, Check, Loader2 } from 'lucide-react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { FileText, Edit3, Maximize2, Save, X, Loader2 } from 'lucide-react';
 import { isEditable } from '../../utils';
 
 // =============================================
@@ -17,7 +17,9 @@ interface TextPreviewProps {
   content: string | null;
   name: string;
   isLoading?: boolean;
-  onEdit?: () => void;
+  isSaving?: boolean;
+  onSave?: (content: string) => Promise<void>;
+  onFullscreen?: () => void;
 }
 
 // =============================================
@@ -57,29 +59,96 @@ function renderMarkdown(text: string): string {
 // =============================================
 // COMPONENT
 // =============================================
-export function TextPreview({ content, name, isLoading = false, onEdit }: TextPreviewProps) {
-  const [copied, setCopied] = useState(false);
+export function TextPreview({
+  content,
+  name,
+  isLoading = false,
+  isSaving = false,
+  onSave,
+  onFullscreen
+}: TextPreviewProps) {
+  // Inline editing state
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedContent, setEditedContent] = useState(content || '');
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
   const isMarkdown = name.endsWith('.md') || name.endsWith('.markdown');
-  const canEdit = isEditable(name) && onEdit;
+  const canEdit = isEditable(name);
 
-  // Reset copied state after timeout
+  // Sync editedContent when content prop changes (and not editing)
   useEffect(() => {
-    if (copied) {
-      const timer = setTimeout(() => setCopied(false), 2000);
-      return () => clearTimeout(timer);
+    if (!isEditing && content !== null) {
+      setEditedContent(content);
     }
-  }, [copied]);
+  }, [content, isEditing]);
 
-  const handleCopy = useCallback(async () => {
-    if (content) {
+  // Focus textarea when entering edit mode
+  useEffect(() => {
+    if (isEditing && textareaRef.current) {
+      textareaRef.current.focus();
+      // Position cursor at end
+      textareaRef.current.selectionStart = textareaRef.current.value.length;
+      textareaRef.current.selectionEnd = textareaRef.current.value.length;
+    }
+  }, [isEditing]);
+
+  // Enter edit mode
+  const handleStartEditing = useCallback(() => {
+    setEditedContent(content || '');
+    setIsEditing(true);
+  }, [content]);
+
+  // Save changes
+  const handleSave = useCallback(async () => {
+    if (onSave && !isSaving) {
       try {
-        await navigator.clipboard.writeText(content);
-        setCopied(true);
+        await onSave(editedContent);
+        setIsEditing(false);
       } catch (err) {
-        console.error('Failed to copy text:', err);
+        console.error('Error saving:', err);
       }
     }
+  }, [editedContent, onSave, isSaving]);
+
+  // Cancel editing
+  const handleCancel = useCallback(() => {
+    setEditedContent(content || '');
+    setIsEditing(false);
   }, [content]);
+
+  // Handle textarea change
+  const handleContentChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setEditedContent(e.target.value);
+  }, []);
+
+  // Keyboard shortcuts for editing
+  useEffect(() => {
+    if (!isEditing) return;
+
+    const handleKeyDown = async (e: KeyboardEvent) => {
+      // Ctrl/Cmd + S to save
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault();
+        if (onSave && !isSaving) {
+          try {
+            await onSave(editedContent);
+            setIsEditing(false);
+          } catch (err) {
+            console.error('Error saving:', err);
+          }
+        }
+      }
+      // Escape to cancel
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        setEditedContent(content || '');
+        setIsEditing(false);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isEditing, editedContent, content, onSave, isSaving]);
 
   if (isLoading) {
     return (
@@ -115,53 +184,110 @@ export function TextPreview({ content, name, isLoading = false, onEdit }: TextPr
           )}
         </div>
         <div className="flex items-center gap-2">
-          <button
-            onClick={handleCopy}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm text-slate-300 hover:bg-slate-700 rounded-lg transition-colors"
-            title="Copiar conteúdo"
-          >
-            {copied ? (
-              <>
-                <Check className="w-4 h-4 text-green-400" />
-                <span className="text-green-400">Copiado</span>
-              </>
-            ) : (
-              <>
-                <Copy className="w-4 h-4" />
-                <span>Copiar</span>
-              </>
-            )}
-          </button>
-          {canEdit && (
-            <button
-              onClick={onEdit}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
-            >
-              <Edit3 className="w-4 h-4" />
-              <span>Editar</span>
-            </button>
+          {/* Non-editing mode buttons */}
+          {!isEditing && (
+            <>
+              {/* Fullscreen button - replaces Copy button */}
+              {onFullscreen && canEdit && (
+                <button
+                  onClick={onFullscreen}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm text-slate-300 hover:bg-slate-700 rounded-lg transition-colors"
+                  title="Abrir em tela cheia"
+                >
+                  <Maximize2 className="w-4 h-4" />
+                  <span>Tela cheia</span>
+                </button>
+              )}
+              {/* Edit button - now starts inline editing */}
+              {canEdit && onSave && (
+                <button
+                  onClick={handleStartEditing}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                >
+                  <Edit3 className="w-4 h-4" />
+                  <span>Editar</span>
+                </button>
+              )}
+            </>
+          )}
+          {/* Editing mode buttons */}
+          {isEditing && (
+            <>
+              <button
+                onClick={handleCancel}
+                disabled={isSaving}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm text-slate-300 hover:bg-slate-700 rounded-lg transition-colors disabled:opacity-50"
+              >
+                <X className="w-4 h-4" />
+                <span>Cancelar</span>
+              </button>
+              <button
+                onClick={handleSave}
+                disabled={isSaving}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors disabled:opacity-50"
+              >
+                {isSaving ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Salvando...</span>
+                  </>
+                ) : (
+                  <>
+                    <Save className="w-4 h-4" />
+                    <span>Salvar</span>
+                  </>
+                )}
+              </button>
+            </>
           )}
         </div>
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-auto p-4 bg-slate-900/50">
-        {isMarkdown ? (
-          <div
-            className="prose prose-invert max-w-none font-sans leading-relaxed"
-            dangerouslySetInnerHTML={{ __html: renderMarkdown(content) }}
+      <div className="flex-1 overflow-auto bg-slate-900/50">
+        {isEditing ? (
+          /* Editing mode - textarea */
+          <textarea
+            ref={textareaRef}
+            value={editedContent}
+            onChange={handleContentChange}
+            disabled={isSaving}
+            spellCheck={false}
+            className="w-full h-full p-4 bg-transparent text-slate-300 font-mono text-sm leading-relaxed resize-none focus:outline-none disabled:opacity-50"
+            style={{ tabSize: 2 }}
+            placeholder="Digite o conteúdo do arquivo..."
           />
         ) : (
-          <pre className="whitespace-pre-wrap font-mono text-sm text-slate-300 leading-relaxed">
-            {content}
-          </pre>
+          /* Read-only mode */
+          <div className="p-4">
+            {isMarkdown ? (
+              <div
+                className="prose prose-invert max-w-none font-sans leading-relaxed"
+                dangerouslySetInnerHTML={{ __html: renderMarkdown(content) }}
+              />
+            ) : (
+              <pre className="whitespace-pre-wrap font-mono text-sm text-slate-300 leading-relaxed">
+                {content}
+              </pre>
+            )}
+          </div>
         )}
       </div>
 
       {/* Footer with stats */}
       <div className="flex items-center justify-between px-4 py-2 border-t border-slate-700 bg-slate-800/30 text-xs text-slate-500">
-        <span>{content.length.toLocaleString()} caracteres</span>
-        <span>{content.split('\n').length.toLocaleString()} linhas</span>
+        <span>{(isEditing ? editedContent : content).length.toLocaleString()} caracteres</span>
+        <div className="flex items-center gap-4">
+          <span>{(isEditing ? editedContent : content).split('\n').length.toLocaleString()} linhas</span>
+          {isEditing && (
+            <div className="flex items-center gap-2 text-slate-400">
+              <kbd className="px-1.5 py-0.5 bg-slate-700 rounded text-[10px]">Ctrl+S</kbd>
+              <span>salvar</span>
+              <kbd className="px-1.5 py-0.5 bg-slate-700 rounded text-[10px] ml-2">Esc</kbd>
+              <span>cancelar</span>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
