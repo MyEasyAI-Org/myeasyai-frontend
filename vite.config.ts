@@ -31,11 +31,12 @@ export default defineConfig({
       '.ngrok-free.app',
       '.ngrok.io',
     ],
-    headers: {
-      // Required for WebContainer SharedArrayBuffer support
-      'Cross-Origin-Embedder-Policy': 'credentialless',
-      'Cross-Origin-Opener-Policy': 'same-origin',
-    },
+    // NOTE: COEP/COOP headers disabled for dev to allow Stripe iframe to load
+    // WebContainer features requiring SharedArrayBuffer won't work in dev mode
+    // headers: {
+    //   'Cross-Origin-Embedder-Policy': 'credentialless',
+    //   'Cross-Origin-Opener-Policy': 'same-origin',
+    // },
   },
   preview: {
     headers: {

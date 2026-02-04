@@ -586,7 +586,11 @@ stripeRoutes.get('/debug', async (c) => {
  */
 stripeRoutes.post('/create-subscription', async (c) => {
   try {
-    const { email, userId, plan, country, billingPeriod, paymentMethod } = await c.req.json();
+    const body = await c.req.json();
+    const { email, userId, plan, country, billingPeriod, paymentMethod } = body;
+
+    console.log('[Stripe] create-subscription received:', JSON.stringify(body, null, 2));
+    console.log('[Stripe] paymentMethod from request:', paymentMethod);
 
     if (!email || !userId || !plan) {
       return c.json({ error: 'Missing required fields: email, userId, plan' }, 400);
@@ -594,6 +598,7 @@ stripeRoutes.post('/create-subscription', async (c) => {
 
     // paymentMethod: 'card' (default) or 'pix' (Brazil only)
     const preferredPaymentMethod = paymentMethod || 'card';
+    console.log('[Stripe] preferredPaymentMethod:', preferredPaymentMethod, 'isPix:', preferredPaymentMethod === 'pix');
 
     const STRIPE_SECRET_KEY = c.env.STRIPE_SECRET_KEY;
     if (!STRIPE_SECRET_KEY) {

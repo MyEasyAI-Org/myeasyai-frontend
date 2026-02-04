@@ -11,7 +11,9 @@ import { EmbeddedPaymentForm } from './EmbeddedPaymentForm';
 
 // Initialize Stripe once
 const stripePublishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || '';
+console.log('[PlanSelectionStep] Stripe publishable key:', stripePublishableKey ? `${stripePublishableKey.substring(0, 20)}...` : 'NOT SET');
 const stripePromise = stripePublishableKey ? loadStripe(stripePublishableKey) : null;
+console.log('[PlanSelectionStep] Stripe promise created:', !!stripePromise);
 
 interface PlanSelectionStepProps {
   userEmail: string;
@@ -143,6 +145,7 @@ export function PlanSelectionStep({
         isBrazil: isBrazil,
         isPix: billingPeriod === 'pix',
       });
+      console.log('[PlanSelectionStep] PAYMENT METHOD BEING SENT:', paymentMethod, '(should be "pix" if PIX selected)');
 
       // Create SetupIntent/PaymentIntent and get client secret
       const response = await stripeService.createSubscription({
@@ -193,6 +196,11 @@ export function PlanSelectionStep({
 
   // Render payment phase
   if (phase === 'payment' && clientSecret && stripePromise) {
+    console.log('[PlanSelectionStep] Rendering payment phase with:', {
+      clientSecret: clientSecret.substring(0, 30) + '...',
+      intentType: subscriptionData?.intentType,
+      stripePromiseExists: !!stripePromise,
+    });
     return (
       <div className="space-y-4">
         {/* Back Button */}
@@ -259,7 +267,10 @@ export function PlanSelectionStep({
         <div className="flex justify-center gap-1 p-1 bg-slate-800/50 rounded-lg">
           <button
             type="button"
-            onClick={() => setBillingPeriod('annual')}
+            onClick={() => {
+              console.log('[PlanSelectionStep] Billing period changed to: annual (À Vista card)');
+              setBillingPeriod('annual');
+            }}
             className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-all ${
               billingPeriod === 'annual'
                 ? 'bg-purple-500 text-white shadow-lg'
@@ -270,7 +281,10 @@ export function PlanSelectionStep({
           </button>
           <button
             type="button"
-            onClick={() => setBillingPeriod('pix')}
+            onClick={() => {
+              console.log('[PlanSelectionStep] Billing period changed to: pix (PIX payment)');
+              setBillingPeriod('pix');
+            }}
             className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-all ${
               billingPeriod === 'pix'
                 ? 'bg-green-500 text-white shadow-lg'
@@ -281,7 +295,10 @@ export function PlanSelectionStep({
           </button>
           <button
             type="button"
-            onClick={() => setBillingPeriod('monthly')}
+            onClick={() => {
+              console.log('[PlanSelectionStep] Billing period changed to: monthly (12x card)');
+              setBillingPeriod('monthly');
+            }}
             className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-all ${
               billingPeriod === 'monthly'
                 ? 'bg-purple-500 text-white shadow-lg'
