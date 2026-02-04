@@ -12,7 +12,9 @@ export type Plan = {
   price: string;
   priceNumeric: number; // Preço numérico para comparação (em centavos)
   installmentPrice: string; // Preço da parcela (12x)
+  installmentPriceNumeric: number; // Preço da parcela em centavos (ex: 2970 = R$ 29,70)
   fullPrice: string; // Preço à vista anual
+  fullPriceNumeric: number; // Preço à vista anual em centavos (ex: 29700 = R$ 297,00)
   tokens: string;
   features: string[];
   limits: PlanLimits;
@@ -27,7 +29,9 @@ export const PLANS: Plan[] = [
     price: 'R$ 29',
     priceNumeric: 2900,
     installmentPrice: 'R$ 29,70',
+    installmentPriceNumeric: 2970,
     fullPrice: 'R$ 297,00',
+    fullPriceNumeric: 29700,
     tokens: '1.000',
     features: [
       'Acesso básico à plataforma',
@@ -47,7 +51,9 @@ export const PLANS: Plan[] = [
     price: 'R$ 49',
     priceNumeric: 4900,
     installmentPrice: 'R$ 49,70',
+    installmentPriceNumeric: 4970,
     fullPrice: 'R$ 497,00',
+    fullPriceNumeric: 49700,
     tokens: '10.000',
     features: [
       'Tudo do plano Individual',
@@ -70,7 +76,9 @@ export const PLANS: Plan[] = [
     price: 'R$ 149',
     priceNumeric: 14900,
     installmentPrice: 'R$ 99,70',
+    installmentPriceNumeric: 9970,
     fullPrice: 'R$ 997,00',
+    fullPriceNumeric: 99700,
     tokens: '50.000',
     features: [
       'Tudo do plano Plus',

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ArrowUpCircle, X, AlertTriangle, ExternalLink, CreditCard, Check, Loader2 } from 'lucide-react';
+import { ArrowUpCircle, X, AlertTriangle, ExternalLink, CreditCard, Check, Loader2, Zap, Sparkles, Shield } from 'lucide-react';
 import { toast } from 'sonner';
 import { PLANS, getPlanByValue, getPlanChangeType, type SubscriptionPlan } from '../../constants/plans';
 import type { SubscriptionData } from '../../hooks/useUserData';
@@ -160,13 +160,13 @@ export function SubscriptionTab({ subscription }: SubscriptionTabProps) {
   const changeType = selectedPlan ? getPlanChangeType(subscription.plan, selectedPlan) : 'same';
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <div>
         <h1 className="text-3xl font-bold text-white">
           Planos de Assinatura
         </h1>
-        <p className="mt-2 text-slate-400">
-          Escolha o plano ideal para suas necessidades.
+        <p className="mt-1 text-slate-400">
+          Escolha o plano ideal para suas necessidades
         </p>
       </div>
 
@@ -182,81 +182,120 @@ export function SubscriptionTab({ subscription }: SubscriptionTabProps) {
       </div>
 
       {/* Change Plan Section */}
-      <div className="rounded-lg border border-slate-800 bg-slate-900/50 p-6">
-        <h2 className="text-xl font-bold text-white">Fazer Upgrade</h2>
-        <p className="mt-2 text-slate-400">
-          Você está atualmente no plano{' '}
-          <span className="font-semibold text-blue-400">
-            {subscription.plan.toUpperCase()}
-          </span>
-          . Selecione um plano superior acima para fazer upgrade e desbloquear mais recursos.
-        </p>
-        <div className="mt-4 flex items-center space-x-2 text-sm text-slate-400">
-          <ArrowUpCircle className="h-5 w-5 text-green-400" />
-          <span>Upgrades entram em vigor imediatamente</span>
+      <div className="relative overflow-hidden rounded-2xl border border-purple-500/20 bg-gradient-to-br from-purple-900/20 via-slate-900/60 to-slate-900/80 p-6">
+        {/* Background decoration */}
+        <div className="absolute -right-8 -top-8 h-32 w-32 rounded-full bg-purple-500/10 blur-3xl" />
+        <div className="absolute -bottom-8 -left-8 h-24 w-24 rounded-full bg-blue-500/10 blur-3xl" />
+
+        <div className="relative">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="p-2.5 rounded-xl bg-gradient-to-br from-purple-500/20 to-blue-500/20 border border-purple-500/20">
+              <Zap className="h-5 w-5 text-purple-400" />
+            </div>
+            <h2 className="text-xl font-bold text-white">Fazer Upgrade</h2>
+          </div>
+
+          <p className="text-slate-400 leading-relaxed">
+            Você está atualmente no plano{' '}
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 font-semibold text-sm">
+              <Sparkles className="h-3.5 w-3.5" />
+              {subscription.plan.toUpperCase()}
+            </span>
+            . Selecione um plano superior acima para fazer upgrade e desbloquear mais recursos.
+          </p>
+
+          <div className="mt-5 flex flex-wrap gap-4">
+            <div className="flex items-center gap-2 text-sm text-slate-300">
+              <div className="w-6 h-6 rounded-full bg-green-500/10 flex items-center justify-center">
+                <Check className="h-3.5 w-3.5 text-green-400" />
+              </div>
+              <span>Upgrades entram em vigor imediatamente</span>
+            </div>
+            <div className="flex items-center gap-2 text-sm text-slate-300">
+              <div className="w-6 h-6 rounded-full bg-blue-500/10 flex items-center justify-center">
+                <Shield className="h-3.5 w-3.5 text-blue-400" />
+              </div>
+              <span>Pagamento seguro</span>
+            </div>
+          </div>
         </div>
       </div>
 
       {/* Manage Subscription Section - Stripe Customer Portal */}
-      <div className="rounded-lg border border-slate-800 bg-slate-900/50 p-6">
-        <div className="flex items-start justify-between">
-          <div>
-            <h2 className="text-xl font-bold text-white flex items-center gap-2">
-              <CreditCard className="h-5 w-5 text-purple-400" />
-              Gerenciar Assinatura
-            </h2>
-            <p className="mt-2 text-slate-400">
-              Acesse o portal de pagamentos para atualizar seu cartao, ver faturas,
-              cancelar assinatura ou alterar seu plano.
-            </p>
+      <div className="relative overflow-hidden rounded-2xl border border-slate-700/50 bg-gradient-to-br from-slate-800/50 via-slate-900/60 to-slate-900/80 p-6">
+        {/* Background decoration */}
+        <div className="absolute -right-12 -bottom-12 h-40 w-40 rounded-full bg-blue-500/5 blur-3xl" />
+
+        <div className="relative">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="p-2.5 rounded-xl bg-gradient-to-br from-blue-500/20 to-cyan-500/20 border border-blue-500/20">
+              <CreditCard className="h-5 w-5 text-blue-400" />
+            </div>
+            <h2 className="text-xl font-bold text-white">Gerenciar Assinatura</h2>
+          </div>
+
+          <p className="text-slate-400 leading-relaxed">
+            Acesse o portal de pagamentos para atualizar seu cartão, ver faturas,
+            cancelar assinatura ou alterar seu plano.
+          </p>
+
+          <div className="mt-5 flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+            <button
+              onClick={handleOpenCustomerPortal}
+              disabled={isLoadingPortal}
+              className="flex items-center gap-2 px-6 py-3 rounded-xl font-semibold bg-gradient-to-r from-blue-500 to-cyan-500 text-white hover:from-blue-600 hover:to-cyan-600 shadow-lg shadow-blue-500/20 hover:shadow-blue-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer active:scale-[0.98]"
+            >
+              {isLoadingPortal ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  <span>Abrindo portal...</span>
+                </>
+              ) : (
+                <>
+                  <ExternalLink className="h-5 w-5" />
+                  <span>Abrir Portal de Pagamentos</span>
+                </>
+              )}
+            </button>
+
+            <div className="flex items-center gap-2 text-xs text-slate-500">
+              <Shield className="h-4 w-4 text-slate-600" />
+              <span>Redirecionamento seguro via Stripe</span>
+            </div>
           </div>
         </div>
-
-        <button
-          onClick={handleOpenCustomerPortal}
-          disabled={isLoadingPortal}
-          className="mt-4 flex items-center gap-2 px-6 py-3 rounded-xl font-semibold bg-gradient-to-r from-purple-500 to-blue-500 text-white hover:from-purple-600 hover:to-blue-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {isLoadingPortal ? (
-            <>
-              <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              <span>Abrindo portal...</span>
-            </>
-          ) : (
-            <>
-              <ExternalLink className="h-5 w-5" />
-              <span>Abrir Portal de Pagamentos</span>
-            </>
-          )}
-        </button>
-
-        <p className="mt-3 text-xs text-slate-500">
-          Voce sera redirecionado para o portal seguro do Stripe.
-        </p>
       </div>
 
       {/* Modal de Confirmação */}
       {isConfirmModalOpen && selectedPlanData && currentPlanData && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-slate-900 border border-slate-700 rounded-2xl max-w-md w-full p-6 space-y-6">
-            {/* Header */}
-            <div className="flex items-center justify-between">
-              <h3 className="text-xl font-bold text-white">
-                Fazer Upgrade
-              </h3>
-              <button
-                onClick={() => {
-                  setIsConfirmModalOpen(false);
-                  setSelectedPlan(null);
-                }}
-                className="p-2 rounded-lg hover:bg-slate-800 transition-colors"
-              >
-                <X className="h-5 w-5 text-slate-400" />
-              </button>
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-gradient-to-b from-slate-800/95 to-slate-900/98 border border-slate-700/50 rounded-2xl max-w-md w-full shadow-2xl overflow-hidden">
+            {/* Header with gradient */}
+            <div className="bg-gradient-to-r from-purple-600/20 via-blue-600/20 to-purple-600/20 px-6 py-5 border-b border-slate-700/50">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-xl bg-gradient-to-br from-purple-500/20 to-blue-500/20 border border-purple-500/20">
+                    <ArrowUpCircle className="h-5 w-5 text-purple-400" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-white">Fazer Upgrade</h3>
+                    <p className="text-xs text-slate-400">Melhore seu plano agora</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => {
+                    setIsConfirmModalOpen(false);
+                    setSelectedPlan(null);
+                  }}
+                  className="p-2 rounded-xl hover:bg-slate-700/50 transition-colors group"
+                >
+                  <X className="h-5 w-5 text-slate-400 group-hover:text-white transition-colors" />
+                </button>
+              </div>
             </div>
 
-            {/* Comparison */}
-            <div className="space-y-4">
+            {/* Content */}
+            <div className="p-6 space-y-5">
               {(() => {
                 // Determine billing period: from preview, subscription data, or default to annual
                 const billingPeriod = prorationPreview?.billingPeriod
@@ -265,176 +304,199 @@ export function SubscriptionTab({ subscription }: SubscriptionTabProps) {
 
                 return (
                   <>
-                    {/* From */}
-                    <div className="bg-slate-800/50 rounded-xl p-4">
-                      <p className="text-xs text-slate-500 uppercase tracking-wide mb-2">Plano Atual</p>
-                      <div className="flex items-center justify-between">
-                        <span className="text-lg font-semibold text-slate-300">{currentPlanData.name}</span>
-                        <span className="text-slate-400">
-                          {isAnnual
-                            ? `${currentPlanData.fullPrice}/ano`
-                            : `12x ${currentPlanData.installmentPrice}`}
-                        </span>
+                    {/* Plans comparison */}
+                    <div className="relative">
+                      {/* From */}
+                      <div className="bg-slate-800/60 rounded-xl p-4 border border-slate-700/50">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-lg bg-slate-700/50 flex items-center justify-center">
+                            <span className="text-lg font-bold text-slate-400">{currentPlanData.name.charAt(0)}</span>
+                          </div>
+                          <div className="flex-1">
+                            <p className="text-xs text-slate-500 uppercase tracking-wide">Plano Atual</p>
+                            <p className="text-base font-semibold text-slate-300">{currentPlanData.name}</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-sm font-medium text-slate-400">
+                              {isAnnual ? currentPlanData.fullPrice : `12x ${currentPlanData.installmentPrice}`}
+                            </p>
+                            <p className="text-xs text-slate-500">{isAnnual ? 'por ano' : 'por mês'}</p>
+                          </div>
+                        </div>
                       </div>
-                      <p className="text-sm text-slate-500 mt-1">
-                        {currentPlanData.limits.maxSites === -1 ? 'Sites ilimitados' : `${currentPlanData.limits.maxSites} site${currentPlanData.limits.maxSites > 1 ? 's' : ''}`}
-                      </p>
-                    </div>
 
-                    {/* Arrow */}
-                    <div className="flex justify-center">
-                      <ArrowUpCircle className="h-8 w-8 text-green-400" />
-                    </div>
-
-                    {/* To */}
-                    <div className="rounded-xl p-4 bg-green-900/20 border border-green-500/30">
-                      <p className="text-xs text-slate-500 uppercase tracking-wide mb-2">Novo Plano</p>
-                      <div className="flex items-center justify-between">
-                        <span className="text-lg font-semibold text-green-400">
-                          {selectedPlanData.name}
-                        </span>
-                        <span className="text-green-300">
-                          {isAnnual
-                            ? `${selectedPlanData.fullPrice}/ano`
-                            : `12x ${selectedPlanData.installmentPrice}`}
-                        </span>
+                      {/* Arrow connector */}
+                      <div className="absolute left-1/2 -translate-x-1/2 -my-2 z-10">
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-b from-purple-500 to-blue-500 flex items-center justify-center shadow-lg shadow-purple-500/30">
+                          <ArrowUpCircle className="h-5 w-5 text-white rotate-180" />
+                        </div>
                       </div>
-                      <p className="text-sm text-slate-400 mt-1">
-                        {selectedPlanData.limits.maxSites === -1 ? 'Sites ilimitados' : `${selectedPlanData.limits.maxSites} site${selectedPlanData.limits.maxSites > 1 ? 's' : ''}`}
-                      </p>
+
+                      {/* To */}
+                      <div className="mt-4 bg-gradient-to-br from-purple-500/10 via-blue-500/10 to-purple-500/10 rounded-xl p-4 border border-purple-500/30">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-500/30 to-blue-500/30 flex items-center justify-center">
+                            <span className="text-lg font-bold text-purple-300">{selectedPlanData.name.charAt(0)}</span>
+                          </div>
+                          <div className="flex-1">
+                            <p className="text-xs text-purple-400/80 uppercase tracking-wide">Novo Plano</p>
+                            <p className="text-base font-bold text-purple-300">{selectedPlanData.name}</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-sm font-bold text-purple-300">
+                              {isAnnual ? selectedPlanData.fullPrice : `12x ${selectedPlanData.installmentPrice}`}
+                            </p>
+                            <p className="text-xs text-purple-400/70">{isAnnual ? 'por ano' : 'por mês'}</p>
+                          </div>
+                        </div>
+                      </div>
                     </div>
 
                     {/* Price Difference Summary */}
                     {(() => {
-                      const monthlyDiff = (selectedPlanData.priceNumeric - currentPlanData.priceNumeric) / 100;
-                      const annualDiff = monthlyDiff * 12;
+                      const monthlyDiff = (selectedPlanData.installmentPriceNumeric - currentPlanData.installmentPriceNumeric) / 100;
+                      const annualDiff = (selectedPlanData.fullPriceNumeric - currentPlanData.fullPriceNumeric) / 100;
                       return (
-                        <div className="rounded-xl p-4 bg-purple-900/20 border border-purple-500/30">
-                          <p className="text-xs text-slate-500 uppercase tracking-wide mb-2">Diferença de Valor</p>
-                          {isAnnual ? (
-                            <div className="flex items-center justify-between">
-                              <span className="text-sm text-slate-400">Por ano (à vista)</span>
-                              <span className="text-lg font-bold text-purple-400">
-                                +R$ {annualDiff.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                              </span>
+                        <div className="flex items-center justify-between p-4 rounded-xl bg-gradient-to-r from-green-500/10 to-emerald-500/10 border border-green-500/20">
+                          <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 rounded-lg bg-green-500/20 flex items-center justify-center">
+                              <span className="text-green-400 text-sm">+</span>
                             </div>
-                          ) : (
-                            <div className="flex items-center justify-between">
-                              <span className="text-sm text-slate-400">Por mês (12x)</span>
-                              <span className="text-lg font-bold text-purple-400">
-                                +R$ {monthlyDiff.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                              </span>
-                            </div>
-                          )}
+                            <span className="text-sm text-slate-300">
+                              {isAnnual ? 'Diferença anual' : 'Diferença mensal'}
+                            </span>
+                          </div>
+                          <span className="text-xl font-bold text-green-400">
+                            +R$ {(isAnnual ? annualDiff : monthlyDiff).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </span>
                         </div>
                       );
                     })()}
+
+                    {/* No Downgrade Warning */}
+                    <div className="flex items-start gap-3 p-4 rounded-xl bg-amber-500/5 border border-amber-500/20">
+                      <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center">
+                        <svg className="h-4 w-4 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </div>
+                      <div>
+                        <p className="text-sm text-amber-200/90 font-medium">
+                          Importante: Upgrade é permanente
+                        </p>
+                        <p className="text-xs text-slate-400 mt-1">
+                          Após o upgrade, não será possível voltar para o plano <span className="font-medium text-amber-400">{currentPlanData.name}</span> até a próxima renovação.
+                        </p>
+                      </div>
+                    </div>
                   </>
                 );
               })()}
-            </div>
 
-            {/* Upfront Payment User Blocked Message (PIX or Card à vista) */}
-            {upfrontBlockedError && (
-              <div className="rounded-xl p-4 bg-amber-900/20 border border-amber-500/30">
-                <div className="flex items-start gap-3">
-                  <AlertTriangle className="h-5 w-5 text-amber-400 flex-shrink-0 mt-0.5" />
-                  <div>
-                    <p className="text-sm text-amber-300 font-medium">Mudança de plano não disponível</p>
-                    <p className="text-xs text-amber-400/70 mt-1">
-                      {upfrontBlockedError.message}
-                    </p>
-                    {upfrontBlockedError.periodEnd && (
-                      <p className="text-xs text-slate-400 mt-2">
-                        Renovação em:{' '}
-                        <span className="font-medium text-slate-300">
-                          {new Date(upfrontBlockedError.periodEnd).toLocaleDateString('pt-BR', {
-                            day: '2-digit',
-                            month: 'long',
-                            year: 'numeric',
-                          })}
-                        </span>
+              {/* Upfront Payment User Blocked Message (PIX or Card à vista) */}
+              {upfrontBlockedError && (
+                <div className="rounded-xl p-4 bg-red-500/10 border border-red-500/20">
+                  <div className="flex items-start gap-3">
+                    <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-red-500/20 flex items-center justify-center">
+                      <AlertTriangle className="h-4 w-4 text-red-400" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-red-300 font-medium">Mudança não disponível</p>
+                      <p className="text-xs text-red-400/70 mt-1">
+                        {upfrontBlockedError.message}
                       </p>
-                    )}
+                      {upfrontBlockedError.periodEnd && (
+                        <p className="text-xs text-slate-400 mt-2">
+                          Renovação em:{' '}
+                          <span className="font-medium text-slate-300">
+                            {new Date(upfrontBlockedError.periodEnd).toLocaleDateString('pt-BR', {
+                              day: '2-digit',
+                              month: 'long',
+                              year: 'numeric',
+                            })}
+                          </span>
+                        </p>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
+              )}
 
-            {/* Proration Preview */}
-            {isLoadingPreview ? (
-              <div className="flex items-center justify-center gap-2 py-4 text-slate-400">
-                <Loader2 className="h-5 w-5 animate-spin" />
-                <span>Calculando diferença...</span>
-              </div>
-            ) : !upfrontBlockedError && prorationPreview && prorationPreview.amountDue > 0 ? (
-              <div className="rounded-xl p-4 bg-blue-900/20 border border-blue-500/30">
-                <p className="text-xs text-slate-500 uppercase tracking-wide mb-2">Valor a Pagar Agora</p>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-slate-400">Diferença proporcional</span>
-                  <span className="text-xl font-bold text-blue-400">
-                    {formatCurrency(prorationPreview.amountDue, prorationPreview.currency)}
-                  </span>
+              {/* Proration Preview */}
+              {isLoadingPreview ? (
+                <div className="flex items-center justify-center gap-3 py-6">
+                  <Loader2 className="h-5 w-5 animate-spin text-purple-400" />
+                  <span className="text-slate-400">Calculando valor...</span>
                 </div>
-                <p className="text-xs text-slate-500 mt-2">
-                  {prorationPreview.isUpfrontPayment && prorationPreview.daysRemaining ? (
-                    <>Calculado para {prorationPreview.daysRemaining} dias restantes. Seu cartão será cobrado automaticamente.</>
-                  ) : (
-                    <>Esse valor é calculado proporcionalmente ao tempo restante do seu período atual.</>
-                  )}
-                </p>
-              </div>
-            ) : null}
+              ) : !upfrontBlockedError && prorationPreview && prorationPreview.amountDue > 0 ? (
+                <div className="rounded-xl p-4 bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/20">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm text-slate-300 font-medium">Valor a pagar agora</span>
+                    <span className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+                      {formatCurrency(prorationPreview.amountDue, prorationPreview.currency)}
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-500">
+                    {prorationPreview.isUpfrontPayment && prorationPreview.daysRemaining ? (
+                      <>Proporcional aos {prorationPreview.daysRemaining} dias restantes. Cobrança automática no cartão.</>
+                    ) : (
+                      <>Calculado proporcionalmente ao período restante da sua assinatura.</>
+                    )}
+                  </p>
+                </div>
+              ) : null}
+            </div>
 
-            {/* Buttons */}
-            <div className="flex gap-3">
-              {upfrontBlockedError ? (
-                // Upfront payment users (PIX or Card à vista) can only close the modal
-                <button
-                  onClick={() => {
-                    setIsConfirmModalOpen(false);
-                    setSelectedPlan(null);
-                    setUpfrontBlockedError(null);
-                  }}
-                  className="flex-1 px-4 py-3 rounded-xl border border-slate-600 text-slate-300 hover:bg-slate-800 transition-colors"
-                >
-                  Entendi
-                </button>
-              ) : (
-                <>
+            {/* Footer with buttons */}
+            <div className="px-6 py-4 border-t border-slate-700/50 bg-slate-900/50">
+              <div className="flex gap-3">
+                {upfrontBlockedError ? (
                   <button
                     onClick={() => {
                       setIsConfirmModalOpen(false);
                       setSelectedPlan(null);
+                      setUpfrontBlockedError(null);
                     }}
-                    disabled={isProcessing}
-                    className="flex-1 px-4 py-3 rounded-xl border border-slate-600 text-slate-300 hover:bg-slate-800 transition-colors disabled:opacity-50"
+                    className="flex-1 px-4 py-3 rounded-xl bg-slate-800 text-slate-300 hover:bg-slate-700 transition-all font-medium"
                   >
-                    Cancelar
+                    Entendi
                   </button>
-                  <button
-                    onClick={handleConfirmChange}
-                    disabled={isProcessing || isLoadingPreview}
-                    className="flex-1 px-4 py-3 rounded-xl font-semibold transition-colors disabled:opacity-50 flex items-center justify-center gap-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white hover:from-green-600 hover:to-emerald-700"
-                  >
-                    {isProcessing ? (
-                      <>
-                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                        <span>Processando...</span>
-                      </>
-                    ) : (
-                      <>
-                        <Check className="h-5 w-5" />
-                        <span>
-                          {prorationPreview && prorationPreview.amountDue > 0
-                            ? `Pagar ${formatCurrency(prorationPreview.amountDue, prorationPreview.currency)}`
-                            : 'Confirmar Upgrade'}
-                        </span>
-                      </>
-                    )}
-                  </button>
-                </>
-              )}
+                ) : (
+                  <>
+                    <button
+                      onClick={() => {
+                        setIsConfirmModalOpen(false);
+                        setSelectedPlan(null);
+                      }}
+                      disabled={isProcessing}
+                      className="flex-1 px-4 py-3 rounded-xl bg-slate-800 text-slate-300 hover:bg-slate-700 transition-all font-medium disabled:opacity-50"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      onClick={handleConfirmChange}
+                      disabled={isProcessing || isLoadingPreview}
+                      className="flex-1 px-4 py-3 rounded-xl font-semibold transition-all disabled:opacity-50 flex items-center justify-center gap-2 bg-gradient-to-r from-purple-500 to-blue-500 text-white hover:from-purple-600 hover:to-blue-600 shadow-lg shadow-purple-500/20 hover:shadow-purple-500/30 cursor-pointer active:scale-[0.98]"
+                    >
+                      {isProcessing ? (
+                        <>
+                          <Loader2 className="h-5 w-5 animate-spin" />
+                          <span>Processando...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Check className="h-5 w-5" />
+                          <span>
+                            {prorationPreview && prorationPreview.amountDue > 0
+                              ? `Confirmar • ${formatCurrency(prorationPreview.amountDue, prorationPreview.currency)}`
+                              : 'Confirmar Upgrade'}
+                          </span>
+                        </>
+                      )}
+                    </button>
+                  </>
+                )}
+              </div>
             </div>
           </div>
         </div>
