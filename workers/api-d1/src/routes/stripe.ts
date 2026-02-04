@@ -1091,7 +1091,26 @@ stripeRoutes.post('/update-subscription', async (c) => {
           paymentMethodId = cardCheck.paymentMethodId;
         }
 
-        if (hasCard && paymentMethodId && existingUser.subscription_period_end && existingUser.subscription_plan) {
+        // Check if subscription_period_end is missing - this is a data issue
+        if (!existingUser.subscription_period_end) {
+          console.error('[Stripe] Missing subscription_period_end for user:', userId);
+          return c.json({
+            error: 'Dados da assinatura incompletos. Por favor, entre em contato com o suporte.',
+            code: 'MISSING_PERIOD_END',
+            details: 'subscription_period_end is null',
+          }, 400);
+        }
+
+        if (!existingUser.subscription_plan) {
+          console.error('[Stripe] Missing subscription_plan for user:', userId);
+          return c.json({
+            error: 'Dados da assinatura incompletos. Por favor, entre em contato com o suporte.',
+            code: 'MISSING_PLAN',
+            details: 'subscription_plan is null',
+          }, 400);
+        }
+
+        if (hasCard && paymentMethodId) {
           // User has a saved card - process upgrade with PaymentIntent
           console.log('[Stripe] À vista user with card - processing upgrade:', userId, 'from', existingUser.subscription_plan, 'to', newPlan);
 
@@ -1439,7 +1458,26 @@ stripeRoutes.post('/preview-proration', async (c) => {
           paymentMethodId = cardCheck.paymentMethodId;
         }
 
-        if (hasCard && existingUser.subscription_period_end && existingUser.subscription_plan) {
+        // Check if subscription_period_end is missing - this is a data issue
+        if (!existingUser.subscription_period_end) {
+          console.error('[Stripe] Missing subscription_period_end for user:', userId);
+          return c.json({
+            error: 'Dados da assinatura incompletos. Por favor, entre em contato com o suporte.',
+            code: 'MISSING_PERIOD_END',
+            details: 'subscription_period_end is null',
+          }, 400);
+        }
+
+        if (!existingUser.subscription_plan) {
+          console.error('[Stripe] Missing subscription_plan for user:', userId);
+          return c.json({
+            error: 'Dados da assinatura incompletos. Por favor, entre em contato com o suporte.',
+            code: 'MISSING_PLAN',
+            details: 'subscription_plan is null',
+          }, 400);
+        }
+
+        if (hasCard && paymentMethodId) {
           // User has a saved card - calculate manual proration for upgrade
           console.log('[Stripe] À vista user with card - calculating manual proration:', userId);
 
@@ -1579,6 +1617,322 @@ stripeRoutes.post('/preview-proration', async (c) => {
   } catch (error) {
     console.error('[Stripe] Error previewing proration:', error);
     return c.json({ error: 'Internal server error' }, 500);
+  }
+});
+
+/**
+ * POST /stripe/fix-subscription-data
+ * Fix missing subscription_period_end for users who have active subscriptions
+ * This is a data repair endpoint for users with incomplete subscription data
+ */
+stripeRoutes.post('/fix-subscription-data', async (c) => {
+  try {
+    const body = await c.req.json();
+    const { userId } = body;
+
+    console.log('[Stripe] fix-subscription-data called for user:', userId);
+
+    if (!userId) {
+      return c.json({ error: 'Missing required field: userId' }, 400);
+    }
+
+    const STRIPE_SECRET_KEY = c.env.STRIPE_SECRET_KEY;
+    if (!STRIPE_SECRET_KEY) {
+      return c.json({ error: 'Stripe not configured' }, 500);
+    }
+
+    const db = c.get('db');
+    const existingUser = await db.select().from(users).where(eq(users.uuid, userId)).get();
+
+    if (!existingUser) {
+      return c.json({ error: 'User not found' }, 404);
+    }
+
+    console.log('[Stripe] User data:', {
+      uuid: existingUser.uuid,
+      subscription_status: existingUser.subscription_status,
+      subscription_plan: existingUser.subscription_plan,
+      subscription_period_end: existingUser.subscription_period_end,
+      stripe_subscription_id: existingUser.stripe_subscription_id,
+      stripe_customer_id: existingUser.stripe_customer_id,
+      created_at: existingUser.created_at,
+      billing_cycle: existingUser.billing_cycle,
+      payment_method_type: existingUser.payment_method_type,
+    });
+
+    // Check if user already has subscription_period_end set
+    if (existingUser.subscription_period_end) {
+      return c.json({
+        success: true,
+        message: 'subscription_period_end already set',
+        periodEnd: existingUser.subscription_period_end,
+        noChanges: true,
+      });
+    }
+
+    // Check if user has an active subscription
+    if (existingUser.subscription_status !== 'active') {
+      return c.json({
+        error: 'User does not have an active subscription',
+        code: 'INACTIVE_SUBSCRIPTION',
+        status: existingUser.subscription_status,
+      }, 400);
+    }
+
+    let periodEndDate: string | null = null;
+    let source = '';
+
+    // Case 1: User has a Stripe subscription - fetch from Stripe
+    if (existingUser.stripe_subscription_id) {
+      console.log('[Stripe] Fetching subscription from Stripe:', existingUser.stripe_subscription_id);
+
+      const subResponse = await fetch(`https://api.stripe.com/v1/subscriptions/${existingUser.stripe_subscription_id}`, {
+        headers: {
+          'Authorization': `Bearer ${STRIPE_SECRET_KEY}`,
+        },
+      });
+
+      if (subResponse.ok) {
+        const subscription = await subResponse.json() as {
+          id: string;
+          status: string;
+          current_period_end: number;
+        };
+
+        if (subscription.current_period_end) {
+          periodEndDate = new Date(subscription.current_period_end * 1000).toISOString();
+          source = 'stripe_subscription';
+          console.log('[Stripe] Got period end from Stripe subscription:', periodEndDate);
+        }
+      } else {
+        console.error('[Stripe] Failed to fetch subscription from Stripe');
+      }
+    }
+
+    // Case 2: User has a Stripe customer - check for payment intents to find purchase date
+    if (!periodEndDate && existingUser.stripe_customer_id) {
+      console.log('[Stripe] Checking payment intents for customer:', existingUser.stripe_customer_id);
+
+      const piResponse = await fetch(
+        `https://api.stripe.com/v1/payment_intents?customer=${existingUser.stripe_customer_id}&limit=10`,
+        {
+          headers: {
+            'Authorization': `Bearer ${STRIPE_SECRET_KEY}`,
+          },
+        }
+      );
+
+      if (piResponse.ok) {
+        const piData = await piResponse.json() as {
+          data: Array<{
+            id: string;
+            status: string;
+            created: number;
+            metadata?: {
+              plan?: string;
+              isAnnualBrazil?: string;
+            };
+          }>;
+        };
+
+        // Find the most recent successful payment intent
+        const successfulPI = piData.data.find(pi => pi.status === 'succeeded');
+        if (successfulPI) {
+          // Calculate 1 year from the payment date
+          const paymentDate = new Date(successfulPI.created * 1000);
+          const oneYearLater = new Date(paymentDate);
+          oneYearLater.setFullYear(oneYearLater.getFullYear() + 1);
+          periodEndDate = oneYearLater.toISOString();
+          source = 'payment_intent';
+          console.log('[Stripe] Calculated period end from payment intent:', periodEndDate, 'payment date:', paymentDate.toISOString());
+        }
+      }
+    }
+
+    // Case 3: Fallback - calculate 1 year from created_at
+    if (!periodEndDate && existingUser.created_at) {
+      const createdAt = new Date(existingUser.created_at);
+      const oneYearLater = new Date(createdAt);
+      oneYearLater.setFullYear(oneYearLater.getFullYear() + 1);
+      periodEndDate = oneYearLater.toISOString();
+      source = 'created_at';
+      console.log('[Stripe] Calculated period end from created_at:', periodEndDate);
+    }
+
+    if (!periodEndDate) {
+      return c.json({
+        error: 'Could not determine subscription period end date',
+        code: 'CANNOT_DETERMINE_PERIOD_END',
+      }, 400);
+    }
+
+    // Update the database
+    await db.update(users)
+      .set({
+        subscription_period_end: periodEndDate,
+      })
+      .where(eq(users.uuid, userId));
+
+    console.log('[Stripe] Fixed subscription_period_end for user:', userId, 'periodEnd:', periodEndDate, 'source:', source);
+
+    return c.json({
+      success: true,
+      message: 'subscription_period_end has been fixed',
+      periodEnd: periodEndDate,
+      source,
+    });
+  } catch (error) {
+    console.error('[Stripe] Error fixing subscription data:', error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    return c.json({ error: 'Internal server error', details: errorMessage }, 500);
+  }
+});
+
+/**
+ * GET /stripe/diagnose-subscription/:userId
+ * Diagnose subscription issues for a user
+ * Returns detailed information about the user's subscription state
+ */
+stripeRoutes.get('/diagnose-subscription/:userId', async (c) => {
+  try {
+    const userId = c.req.param('userId');
+
+    const STRIPE_SECRET_KEY = c.env.STRIPE_SECRET_KEY;
+    if (!STRIPE_SECRET_KEY) {
+      return c.json({ error: 'Stripe not configured' }, 500);
+    }
+
+    const db = c.get('db');
+    const existingUser = await db.select().from(users).where(eq(users.uuid, userId)).get();
+
+    if (!existingUser) {
+      return c.json({ error: 'User not found' }, 404);
+    }
+
+    const diagnosis: Record<string, unknown> = {
+      userId: existingUser.uuid,
+      email: existingUser.email,
+      subscription: {
+        status: existingUser.subscription_status,
+        plan: existingUser.subscription_plan,
+        periodEnd: existingUser.subscription_period_end,
+        billingCycle: existingUser.billing_cycle,
+        paymentMethodType: existingUser.payment_method_type,
+        cancelAtPeriodEnd: existingUser.subscription_cancel_at_period_end,
+      },
+      stripe: {
+        customerId: existingUser.stripe_customer_id,
+        subscriptionId: existingUser.stripe_subscription_id,
+      },
+      createdAt: existingUser.created_at,
+      issues: [] as string[],
+    };
+
+    // Check for issues
+    const issues: string[] = [];
+
+    if (existingUser.subscription_status === 'active' && !existingUser.subscription_period_end) {
+      issues.push('MISSING_PERIOD_END: Active subscription without period end date');
+    }
+
+    if (existingUser.subscription_status === 'active' && !existingUser.subscription_plan) {
+      issues.push('MISSING_PLAN: Active subscription without plan');
+    }
+
+    if (existingUser.subscription_status === 'active' && !existingUser.stripe_customer_id) {
+      issues.push('MISSING_CUSTOMER_ID: Active subscription without Stripe customer ID');
+    }
+
+    // If user has Stripe subscription, verify it exists
+    if (existingUser.stripe_subscription_id) {
+      const subResponse = await fetch(`https://api.stripe.com/v1/subscriptions/${existingUser.stripe_subscription_id}`, {
+        headers: {
+          'Authorization': `Bearer ${STRIPE_SECRET_KEY}`,
+        },
+      });
+
+      if (subResponse.ok) {
+        const subscription = await subResponse.json() as {
+          id: string;
+          status: string;
+          current_period_end: number;
+          items: { data: Array<{ price: { id: string } }> };
+        };
+        diagnosis.stripeSubscription = {
+          id: subscription.id,
+          status: subscription.status,
+          periodEnd: new Date(subscription.current_period_end * 1000).toISOString(),
+          priceId: subscription.items?.data?.[0]?.price?.id,
+        };
+
+        // Check if local and Stripe data match
+        if (existingUser.subscription_status === 'active' && subscription.status !== 'active' && subscription.status !== 'trialing') {
+          issues.push(`STATUS_MISMATCH: Local status is 'active' but Stripe status is '${subscription.status}'`);
+        }
+      } else {
+        issues.push('STRIPE_SUBSCRIPTION_NOT_FOUND: Stripe subscription ID exists but subscription not found in Stripe');
+      }
+    }
+
+    // If user has Stripe customer, check for payment methods
+    if (existingUser.stripe_customer_id) {
+      const pmResponse = await fetch(
+        `https://api.stripe.com/v1/payment_methods?customer=${existingUser.stripe_customer_id}&type=card`,
+        {
+          headers: {
+            'Authorization': `Bearer ${STRIPE_SECRET_KEY}`,
+          },
+        }
+      );
+
+      if (pmResponse.ok) {
+        const pmData = await pmResponse.json() as { data: Array<{ id: string; card?: { brand: string; last4: string } }> };
+        diagnosis.paymentMethods = pmData.data.map(pm => ({
+          id: pm.id,
+          brand: pm.card?.brand,
+          last4: pm.card?.last4,
+        }));
+      }
+
+      // Check for recent payment intents
+      const piResponse = await fetch(
+        `https://api.stripe.com/v1/payment_intents?customer=${existingUser.stripe_customer_id}&limit=5`,
+        {
+          headers: {
+            'Authorization': `Bearer ${STRIPE_SECRET_KEY}`,
+          },
+        }
+      );
+
+      if (piResponse.ok) {
+        const piData = await piResponse.json() as {
+          data: Array<{
+            id: string;
+            status: string;
+            amount: number;
+            currency: string;
+            created: number;
+          }>;
+        };
+        diagnosis.recentPaymentIntents = piData.data.map(pi => ({
+          id: pi.id,
+          status: pi.status,
+          amount: pi.amount,
+          currency: pi.currency,
+          created: new Date(pi.created * 1000).toISOString(),
+        }));
+      }
+    }
+
+    diagnosis.issues = issues;
+    diagnosis.hasIssues = issues.length > 0;
+    diagnosis.canBeFixed = issues.some(i => i.includes('MISSING_PERIOD_END'));
+
+    return c.json(diagnosis);
+  } catch (error) {
+    console.error('[Stripe] Error diagnosing subscription:', error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    return c.json({ error: 'Internal server error', details: errorMessage }, 500);
   }
 });
 
