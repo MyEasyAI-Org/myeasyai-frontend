@@ -139,6 +139,9 @@ export function PlanSelectionStep({
         country: countryCode,
         billingPeriod: effectiveBillingPeriod,
         paymentMethod: paymentMethod,
+        rawBillingPeriodState: billingPeriod,
+        isBrazil: isBrazil,
+        isPix: billingPeriod === 'pix',
       });
 
       // Create SetupIntent/PaymentIntent and get client secret
@@ -152,6 +155,7 @@ export function PlanSelectionStep({
       });
 
       console.log('[PlanSelectionStep] Subscription created:', response);
+      console.log('[PlanSelectionStep] Intent type:', response.intentType, 'PIX enabled:', response.pixEnabled);
 
       setClientSecret(response.clientSecret);
       setSubscriptionData({
