@@ -58,6 +58,51 @@ export interface UpdateSubscriptionResponse {
   amountCharged?: number;
   currency?: string;
   paymentIntentId?: string;
+  // For PIX upgrade users
+  requiresPixPayment?: boolean;
+  clientSecret?: string;
+  amountDue?: number;
+  oldPlan?: string;
+  daysRemaining?: number;
+}
+
+export interface ConfirmPixUpgradeResponse {
+  success: boolean;
+  status: string;
+  newPlan?: string;
+  oldPlan?: string;
+  periodEnd?: string;
+  message?: string;
+}
+
+export interface PaymentHistoryItem {
+  id: string;
+  date: string;
+  amount: number;
+  currency: string;
+  status: string;
+  description: string | null;
+  paymentMethod: string;
+  plan: string | null;
+}
+
+export interface PaymentHistoryResponse {
+  payments: PaymentHistoryItem[];
+  total: number;
+}
+
+export interface CancelSubscriptionResponse {
+  success: boolean;
+  cancelled?: boolean;
+  immediate?: boolean;
+  cancelAtPeriodEnd?: boolean;
+  periodEnd?: string | null;
+  message: string;
+}
+
+export interface ReactivateSubscriptionResponse {
+  success: boolean;
+  message: string;
 }
 
 export interface ProrationPreviewResponse {
@@ -73,6 +118,8 @@ export interface ProrationPreviewResponse {
   daysRemaining?: number;
   isUpfrontPayment?: boolean;
   paymentMethodId?: string;
+  // For PIX upgrade users
+  isPixUpgrade?: boolean;
 }
 
 class StripeService {
@@ -325,6 +372,30 @@ class StripeService {
   }
 
   /**
+   * Confirm PIX upgrade after payment is complete
+   * Called after user pays via PIX QR code
+   */
+  async confirmPixUpgrade(params: {
+    paymentIntentId: string;
+    userId: string;
+  }): Promise<ConfirmPixUpgradeResponse> {
+    const response = await fetch(`${this.baseUrl}/confirm-pix-upgrade`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(params),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to confirm PIX upgrade');
+    }
+
+    return response.json();
+  }
+
+  /**
    * Redirect to Stripe Checkout
    */
   async redirectToCheckout(params: {
@@ -379,6 +450,73 @@ class StripeService {
     } catch {
       return true;
     }
+  }
+
+  /**
+   * Get payment history for a user
+   * Returns all payments including PIX and card payments
+   */
+  async getPaymentHistory(userId: string): Promise<PaymentHistoryResponse> {
+    const response = await fetch(`${this.baseUrl}/payment-history/${userId}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      if (response.status === 404) {
+        return { payments: [], total: 0 };
+      }
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to get payment history');
+    }
+
+    return response.json();
+  }
+
+  /**
+   * Cancel subscription
+   * Can cancel at period end (default) or immediately
+   */
+  async cancelSubscription(params: {
+    userId: string;
+    immediate?: boolean;
+  }): Promise<CancelSubscriptionResponse> {
+    const response = await fetch(`${this.baseUrl}/cancel-subscription`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(params),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to cancel subscription');
+    }
+
+    return response.json();
+  }
+
+  /**
+   * Reactivate a subscription that was scheduled for cancellation
+   */
+  async reactivateSubscription(userId: string): Promise<ReactivateSubscriptionResponse> {
+    const response = await fetch(`${this.baseUrl}/reactivate-subscription`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ userId }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to reactivate subscription');
+    }
+
+    return response.json();
   }
 }
 

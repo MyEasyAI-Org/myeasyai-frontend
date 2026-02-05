@@ -19,6 +19,12 @@ export interface D1User {
   preferred_language: string;
   subscription_plan: string | null;
   subscription_status: string | null;
+  subscription_period_end: string | null;
+  subscription_cancel_at_period_end: boolean | null;
+  billing_cycle: string | null;
+  payment_method_type: string | null;
+  stripe_customer_id: string | null;
+  stripe_subscription_id: string | null;
   bio: string | null;
   company_name: string | null;
   created_at: string;
