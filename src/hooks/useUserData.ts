@@ -76,6 +76,8 @@ export type SubscriptionData = {
   billing_cycle?: string;
   /** Payment method information (optional) */
   payment_method?: string;
+  /** Whether subscription will cancel at period end */
+  cancel_at_period_end?: boolean;
 };
 
 /**
@@ -411,18 +413,19 @@ export function useUserData() {
       company: userData.company_name,
     });
 
-    // Update subscription (from Supabase since D1 doesn't have subscription fields yet)
+    // Update subscription - D1 uses subscription_period_end, not subscription_end_date
     setSubscription({
       plan: normalizeSubscriptionPlan(userData.subscription_plan),
       status: userData.subscription_status || 'active',
       start_date: userData.subscription_start_date || new Date().toISOString(),
-      end_date: userData.subscription_end_date,
+      end_date: userData.subscription_period_end || userData.subscription_end_date,
       tokens_used: userData.tokens_used || 0,
       tokens_limit: userData.tokens_limit || 1000,
       requests_this_month: userData.requests_this_month || 0,
       next_billing_date: userData.next_billing_date,
       billing_cycle: userData.billing_cycle,
       payment_method: userData.payment_method,
+      cancel_at_period_end: userData.subscription_cancel_at_period_end || false,
     });
 
     // Update cadastral info
@@ -732,13 +735,14 @@ export function useUserData() {
         plan: normalizeSubscriptionPlan(userData.subscription_plan),
         status: userData.subscription_status || 'active',
         start_date: userData.subscription_start_date || new Date().toISOString(),
-        end_date: userData.subscription_end_date,
+        end_date: userData.subscription_period_end || userData.subscription_end_date,
         tokens_used: userData.tokens_used || 0,
         tokens_limit: userData.tokens_limit || 1000,
         requests_this_month: userData.requests_this_month || 0,
         next_billing_date: userData.next_billing_date,
         billing_cycle: userData.billing_cycle,
         payment_method: userData.payment_method,
+        cancel_at_period_end: userData.subscription_cancel_at_period_end || false,
       });
 
       updateCache('subscription');

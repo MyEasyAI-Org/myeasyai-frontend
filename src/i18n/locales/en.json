@@ -32,6 +32,7 @@
     "logout": "Logout",
     "login": "Login",
     "signup": "Sign Up",
+    "loginOrSignup": "Login or Sign Up",
     "hello": "Hello"
   },
 

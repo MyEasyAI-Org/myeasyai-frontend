@@ -32,6 +32,7 @@
     "logout": "Deconnexion",
     "login": "Connexion",
     "signup": "S'inscrire",
+    "loginOrSignup": "Connexion ou inscription",
     "hello": "Bonjour"
   },
 
