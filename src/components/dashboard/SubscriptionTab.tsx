@@ -570,7 +570,7 @@ export function SubscriptionTab({ subscription }: SubscriptionTabProps) {
                 }`}>
                   {subscription.status === 'active' ? 'Ativo' :
                    subscription.status === 'cancelled' ? 'Cancelado' :
-                   subscription.status === 'past_due' ? 'Pendente' :
+                   (subscription.status as string) === 'past_due' ? 'Pendente' :
                    subscription.status}
                 </span>
                 {subscription.cancel_at_period_end && (
