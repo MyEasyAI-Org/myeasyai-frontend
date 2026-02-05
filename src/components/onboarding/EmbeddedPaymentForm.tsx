@@ -9,7 +9,7 @@ import {
   useStripe,
   useElements,
 } from '@stripe/react-stripe-js';
-import type { StripePaymentElementChangeEvent } from '@stripe/stripe-js';
+import type { StripePaymentElementChangeEvent, StripeError } from '@stripe/stripe-js';
 import { stripeService } from '../../services/StripeService';
 
 interface EmbeddedPaymentFormProps {
@@ -109,7 +109,7 @@ export function EmbeddedPaymentForm({
     });
   };
 
-  const handlePaymentElementLoadError = (event: { elementType: string; error: Error }) => {
+  const handlePaymentElementLoadError = (event: { elementType: 'payment'; error: StripeError }) => {
     console.error('[EmbeddedPaymentForm] PaymentElement LOAD ERROR:', event.error);
     setPaymentError(`Erro ao carregar formulário: ${event.error.message}`);
   };
