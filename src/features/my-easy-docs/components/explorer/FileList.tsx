@@ -15,6 +15,12 @@ interface FileListProps {
   folders: DocsFolder[];
   documents: DocsDocument[];
   selectedDocumentId?: string | null;
+  // Multi-select props
+  selectionMode?: boolean;
+  selectedIds?: Set<string>;
+  onToggleSelect?: (id: string, type: 'folder' | 'document') => void;
+  onSelectAll?: () => void;
+  // Action callbacks
   onOpenFolder: (folderId: string) => void;
   onSelectDocument: (documentId: string) => void;
   onOpenDocument?: (documentId: string) => void;
@@ -49,6 +55,10 @@ export const FileList = memo(function FileList({
   folders,
   documents,
   selectedDocumentId,
+  selectionMode = false,
+  selectedIds,
+  onToggleSelect,
+  onSelectAll,
   onOpenFolder,
   onSelectDocument,
   onOpenDocument,
@@ -59,6 +69,12 @@ export const FileList = memo(function FileList({
 }: FileListProps) {
   const [sortField, setSortField] = useState<DocsSortField>('name');
   const [sortOrder, setSortOrder] = useState<DocsSortOrder>('asc');
+
+  // Check if all items are selected
+  const totalItems = folders.length + documents.length;
+  const selectedCount = selectedIds?.size ?? 0;
+  const allSelected = totalItems > 0 && selectedCount === totalItems;
+  const someSelected = selectedCount > 0 && selectedCount < totalItems;
 
   const handleSort = useCallback((field: DocsSortField) => {
     if (sortField === field) {
@@ -107,6 +123,21 @@ export const FileList = memo(function FileList({
       <table className="w-full">
         <thead>
           <tr className="border-b border-slate-800">
+            {/* Select All checkbox */}
+            {onToggleSelect && (
+              <th className="w-10 px-2 py-3">
+                <input
+                  type="checkbox"
+                  checked={allSelected}
+                  ref={(el) => {
+                    if (el) el.indeterminate = someSelected;
+                  }}
+                  onChange={onSelectAll}
+                  className="w-4 h-4 rounded border-slate-600 bg-slate-800 text-blue-500 focus:ring-blue-500 focus:ring-offset-0 cursor-pointer"
+                  title={allSelected ? 'Desmarcar todos' : 'Selecionar todos'}
+                />
+              </th>
+            )}
             {COLUMNS.map((column) => (
               <th
                 key={column.key}
@@ -145,6 +176,9 @@ export const FileList = memo(function FileList({
               key={folder.id}
               item={folder}
               type="folder"
+              selectionMode={selectionMode}
+              isChecked={selectedIds?.has(folder.id) ?? false}
+              onToggleSelect={onToggleSelect}
               onOpen={onOpenFolder}
               onRename={onRenameItem}
               onDelete={onDeleteItem}
@@ -159,6 +193,9 @@ export const FileList = memo(function FileList({
               item={doc}
               type="document"
               isSelected={selectedDocumentId === doc.id}
+              selectionMode={selectionMode}
+              isChecked={selectedIds?.has(doc.id) ?? false}
+              onToggleSelect={onToggleSelect}
               onOpen={onOpenDocument ?? onSelectDocument}
               onSelect={onSelectDocument}
               onRename={onRenameItem}

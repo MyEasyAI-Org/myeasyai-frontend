@@ -5,7 +5,7 @@
 
 import { cloudflareClient } from '../../../lib/api-clients/cloudflare-client';
 import { authService } from '../../../services/AuthServiceV2';
-import { MAX_FILE_SIZE, MAX_FILE_SIZE_MB } from '../constants';
+import { MAX_FILE_SIZE, MAX_FILE_SIZE_MB, BLOCKED_EXTENSIONS, BLOCKED_MIME_TYPES } from '../constants';
 import { generateId, getFileExtension } from '../utils';
 
 /**
@@ -31,6 +31,41 @@ export interface FileValidationResult {
 }
 
 /**
+ * Result of blocked file check
+ */
+export interface BlockedFileResult {
+  blocked: boolean;
+  reason?: string;
+}
+
+/**
+ * Verifica se um arquivo é bloqueado por motivos de segurança
+ * @param file - Arquivo a verificar
+ * @returns Resultado da verificação
+ */
+export function isBlockedFile(file: File): BlockedFileResult {
+  // Verificar extensão
+  const extension = '.' + file.name.split('.').pop()?.toLowerCase();
+
+  if (BLOCKED_EXTENSIONS.includes(extension)) {
+    return {
+      blocked: true,
+      reason: `Arquivos ${extension} não são permitidos por motivos de segurança.`,
+    };
+  }
+
+  // Verificar MIME type
+  if (file.type && BLOCKED_MIME_TYPES.includes(file.type)) {
+    return {
+      blocked: true,
+      reason: 'Este tipo de arquivo não é permitido por motivos de segurança.',
+    };
+  }
+
+  return { blocked: false };
+}
+
+/**
  * Callback for upload progress updates
  */
 export type ProgressCallback = (progress: number) => void;
@@ -50,6 +85,15 @@ export const UploadService = {
    * @returns Resultado da validação
    */
   validateFile(file: File): FileValidationResult {
+    // Check for blocked file types (security)
+    const blockCheck = isBlockedFile(file);
+    if (blockCheck.blocked) {
+      return {
+        valid: false,
+        error: blockCheck.reason,
+      };
+    }
+
     // Check file size
     if (file.size > MAX_FILE_SIZE) {
       return {

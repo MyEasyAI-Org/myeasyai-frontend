@@ -15,6 +15,11 @@ interface FileGridProps {
   documents: DocsDocument[];
   selectedDocumentId?: string | null;
   documentsCountByFolder?: Map<string, number>;
+  // Multi-select props
+  selectionMode?: boolean;
+  selectedIds?: Set<string>;
+  onToggleSelect?: (id: string, type: 'folder' | 'document') => void;
+  // Action callbacks
   onOpenFolder: (folderId: string) => void;
   onSelectDocument: (documentId: string) => void;
   onOpenDocument?: (documentId: string) => void;
@@ -33,6 +38,9 @@ export const FileGrid = memo(function FileGrid({
   documents,
   selectedDocumentId,
   documentsCountByFolder,
+  selectionMode = false,
+  selectedIds,
+  onToggleSelect,
   onOpenFolder,
   onSelectDocument,
   onOpenDocument,
@@ -50,6 +58,9 @@ export const FileGrid = memo(function FileGrid({
           item={folder}
           type="folder"
           documentsCount={documentsCountByFolder?.get(folder.id) ?? 0}
+          selectionMode={selectionMode}
+          isChecked={selectedIds?.has(folder.id) ?? false}
+          onToggleSelect={onToggleSelect}
           onOpen={onOpenFolder}
           onRename={onRenameItem}
           onDelete={onDeleteItem}
@@ -64,6 +75,9 @@ export const FileGrid = memo(function FileGrid({
           item={doc}
           type="document"
           isSelected={selectedDocumentId === doc.id}
+          selectionMode={selectionMode}
+          isChecked={selectedIds?.has(doc.id) ?? false}
+          onToggleSelect={onToggleSelect}
           onOpen={onOpenDocument ?? onSelectDocument}
           onSelect={onSelectDocument}
           onRename={onRenameItem}

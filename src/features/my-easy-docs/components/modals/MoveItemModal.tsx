@@ -19,6 +19,8 @@ interface MoveItemModalProps {
   folders: DocsFolder[];
   currentFolderId: string | null;
   isMoving?: boolean;
+  /** Number of items selected for bulk move (when > 1, shows bulk move UI) */
+  bulkCount?: number;
   onClose: () => void;
   onMove: (destinationFolderId: string | null) => void;
 }
@@ -130,9 +132,11 @@ export function MoveItemModal({
   folders,
   currentFolderId,
   isMoving = false,
+  bulkCount = 1,
   onClose,
   onMove,
 }: MoveItemModalProps) {
+  const isBulkMove = bulkCount > 1;
   const [selectedDestination, setSelectedDestination] = useState<string | null>(null);
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
 
@@ -224,8 +228,8 @@ export function MoveItemModal({
 
   if (!isOpen || !item) return null;
 
-  const ItemIcon = itemType === 'folder' ? Folder : FileText;
-  const itemName = 'name' in item ? item.name : '';
+  const ItemIcon = isBulkMove ? FolderInput : (itemType === 'folder' ? Folder : FileText);
+  const itemName = isBulkMove ? `${bulkCount} itens selecionados` : ('name' in item ? item.name : '');
 
   return (
     <div
@@ -246,7 +250,9 @@ export function MoveItemModal({
             <div className="p-2 bg-purple-500/20 rounded-lg">
               <FolderInput className="w-5 h-5 text-purple-400" />
             </div>
-            <h2 className="text-lg font-semibold text-white">Mover Item</h2>
+            <h2 className="text-lg font-semibold text-white">
+              {isBulkMove ? `Mover ${bulkCount} itens` : 'Mover Item'}
+            </h2>
           </div>
           <button
             onClick={handleClose}

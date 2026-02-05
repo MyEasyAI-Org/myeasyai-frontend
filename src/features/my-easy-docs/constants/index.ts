@@ -15,6 +15,40 @@ export const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB em bytes
 export const MAX_FILE_SIZE_MB = 100;
 
 // =============================================
+// SEGURANÇA: EXTENSÕES BLOQUEADAS
+// =============================================
+export const BLOCKED_EXTENSIONS: string[] = [
+  // Executáveis Windows
+  '.exe', '.msi', '.bat', '.cmd', '.com', '.scr', '.pif',
+  // Scripts Windows
+  '.vbs', '.vbe', '.js', '.jse', '.ws', '.wsf', '.wsc', '.wsh',
+  // PowerShell
+  '.ps1', '.psm1', '.psd1',
+  // Executáveis Unix/Mac
+  '.sh', '.bash', '.zsh', '.csh', '.ksh',
+  '.app', '.command',
+  // Java
+  '.jar', '.class',
+  // Bibliotecas e drivers
+  '.dll', '.sys', '.drv',
+  // Configuração perigosa do Windows
+  '.inf', '.reg',
+  // Shortcuts (podem apontar para malware)
+  '.lnk',
+  // HTML Application (executa código)
+  '.hta',
+];
+
+// MIME types bloqueados (backup de segurança)
+export const BLOCKED_MIME_TYPES: string[] = [
+  'application/x-msdownload',
+  'application/x-msdos-program',
+  'application/x-executable',
+  'application/x-sh',
+  'application/x-shellscript',
+];
+
+// =============================================
 // TIPOS DE ARQUIVO SUPORTADOS PARA EXTRAÇÃO DE TEXTO
 // =============================================
 export const SUPPORTED_TEXT_TYPES: string[] = [

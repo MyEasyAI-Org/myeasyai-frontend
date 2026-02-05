@@ -17,6 +17,8 @@ interface DeleteConfirmModalProps {
   hasChildren?: boolean;
   childrenCount?: number;
   isDeleting?: boolean;
+  /** Number of items selected for bulk delete (when > 1, shows bulk delete UI) */
+  bulkCount?: number;
   onClose: () => void;
   onConfirm: () => void;
 }
@@ -31,6 +33,7 @@ export function DeleteConfirmModal({
   hasChildren = false,
   childrenCount = 0,
   isDeleting = false,
+  bulkCount = 1,
   onClose,
   onConfirm,
 }: DeleteConfirmModalProps) {
@@ -53,8 +56,11 @@ export function DeleteConfirmModal({
 
   if (!isOpen) return null;
 
-  const Icon = itemType === 'folder' ? Folder : FileText;
-  const title = itemType === 'folder' ? 'Excluir Pasta' : 'Excluir Arquivo';
+  const isBulkDelete = bulkCount > 1;
+  const Icon = isBulkDelete ? Trash2 : (itemType === 'folder' ? Folder : FileText);
+  const title = isBulkDelete
+    ? `Excluir ${bulkCount} itens`
+    : (itemType === 'folder' ? 'Excluir Pasta' : 'Excluir Arquivo');
 
   return (
     <div
@@ -91,22 +97,36 @@ export function DeleteConfirmModal({
           {/* Item preview */}
           <div className="flex items-center gap-3 p-3 bg-slate-800/50 rounded-lg mb-4">
             <Icon className="w-5 h-5 text-slate-400" />
-            <span className="text-sm text-slate-300 truncate">{itemName}</span>
+            <span className="text-sm text-slate-300 truncate">
+              {isBulkDelete ? `${bulkCount} itens selecionados` : itemName}
+            </span>
           </div>
 
           {/* Warning message */}
           <div className="flex items-start gap-3 p-4 bg-red-500/10 border border-red-500/20 rounded-lg">
-            <AlertTriangle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
+            <AlertTriangle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
             <div className="text-sm">
               <p className="text-slate-200">
-                Tem certeza que deseja excluir{' '}
-                {itemType === 'folder' ? 'esta pasta' : 'este arquivo'}?
+                {isBulkDelete ? (
+                  <>Tem certeza que deseja excluir <strong>{bulkCount} itens</strong>?</>
+                ) : (
+                  <>
+                    Tem certeza que deseja excluir{' '}
+                    {itemType === 'folder' ? 'esta pasta' : 'este arquivo'}?
+                  </>
+                )}
               </p>
-              {hasChildren && itemType === 'folder' && (
+              {!isBulkDelete && hasChildren && itemType === 'folder' && (
                 <p className="mt-2 text-red-300">
                   <strong>Atenção:</strong> Esta pasta contém{' '}
                   {childrenCount > 0 ? `${childrenCount} item(ns)` : 'subpastas ou arquivos'} que
                   também serão excluídos permanentemente.
+                </p>
+              )}
+              {isBulkDelete && (
+                <p className="mt-2 text-red-300">
+                  <strong>Atenção:</strong> Todos os itens selecionados serão excluídos permanentemente,
+                  incluindo o conteúdo de pastas.
                 </p>
               )}
               <p className="mt-2 text-slate-400">Esta ação não pode ser desfeita.</p>

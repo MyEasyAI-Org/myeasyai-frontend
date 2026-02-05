@@ -25,6 +25,7 @@ import {
   MoveItemModal,
   TextEditorModal,
 } from './components/modals';
+import { SelectionToolbar } from './components/shared/SelectionToolbar';
 import { isCode, isTextFile } from './utils';
 import { Loader2, Star, Clock } from 'lucide-react';
 
@@ -118,6 +119,11 @@ export function MyEasyDocs({ onBackToDashboard }: MyEasyDocsProps) {
   const [viewMode, setViewMode] = useState<DocsViewMode>('grid');
   const [chatOpen, setChatOpen] = useState(false);
   const [specialViewMode, setSpecialViewMode] = useState<'none' | 'favorites' | 'recent'>('none');
+
+  // Multi-select state
+  const [selectionModeEnabled, setSelectionModeEnabled] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [selectedTypes, setSelectedTypes] = useState<Map<string, 'folder' | 'document'>>(new Map());
 
   // Preview state
   const [previewOpen, setPreviewOpen] = useState(false);
@@ -218,6 +224,10 @@ export function MyEasyDocs({ onBackToDashboard }: MyEasyDocsProps) {
   // Check if loading
   const isLoading = isFoldersLoading || isDocumentsLoading;
 
+  // Multi-select computed values
+  const selectionMode = selectionModeEnabled;
+  const hasDocumentsSelected = Array.from(selectedTypes.values()).some((type) => type === 'document');
+
   // Filter documents and folders based on search and special view mode
   const displayedDocuments = useMemo(() => {
     // Special view modes take priority
@@ -296,7 +306,161 @@ export function MyEasyDocs({ onBackToDashboard }: MyEasyDocsProps) {
     setPreviewOpen(false);
     setSpecialViewMode('none'); // Reset special view when navigating
     setSearchQuery(''); // Limpa a busca ao navegar para evitar pasta dentro dela mesma
+    // Clear selection and exit selection mode when navigating
+    setSelectedIds(new Set());
+    setSelectedTypes(new Map());
+    setSelectionModeEnabled(false);
   }, [navigateTo, selectDocument, setSearchQuery]);
+
+  // =============================================
+  // MULTI-SELECT HANDLERS
+  // =============================================
+  const handleToggleSelect = useCallback((id: string, type: 'folder' | 'document') => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+    setSelectedTypes((prev) => {
+      const next = new Map(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.set(id, type);
+      }
+      return next;
+    });
+  }, []);
+
+  const handleSelectAll = useCallback(() => {
+    const allIds = new Set<string>();
+    const allTypes = new Map<string, 'folder' | 'document'>();
+
+    // Check if all are already selected
+    const totalItems = displayedFolders.length + displayedDocuments.length;
+    const allSelected = selectedIds.size === totalItems && totalItems > 0;
+
+    if (allSelected) {
+      // Deselect all
+      setSelectedIds(new Set());
+      setSelectedTypes(new Map());
+    } else {
+      // Select all
+      displayedFolders.forEach((folder) => {
+        allIds.add(folder.id);
+        allTypes.set(folder.id, 'folder');
+      });
+      displayedDocuments.forEach((doc) => {
+        allIds.add(doc.id);
+        allTypes.set(doc.id, 'document');
+      });
+      setSelectedIds(allIds);
+      setSelectedTypes(allTypes);
+    }
+  }, [displayedFolders, displayedDocuments, selectedIds.size]);
+
+  const handleClearSelection = useCallback(() => {
+    setSelectedIds(new Set());
+    setSelectedTypes(new Map());
+  }, []);
+
+  // Toggle selection mode on/off (from header checkbox)
+  const handleToggleSelectionMode = useCallback(() => {
+    setSelectionModeEnabled((prev) => {
+      if (prev) {
+        // If turning off, clear any selection
+        handleClearSelection();
+      }
+      return !prev;
+    });
+  }, [handleClearSelection]);
+
+  // Bulk delete selected items
+  const handleBulkDelete = useCallback(() => {
+    if (selectedIds.size === 0) return;
+
+    // Create items array for the delete modal
+    const items = Array.from(selectedIds).map((id) => {
+      const type = selectedTypes.get(id) || 'document';
+      let name = '';
+      if (type === 'folder') {
+        const folder = folders.find((f) => f.id === id);
+        name = folder?.name || 'Pasta';
+      } else {
+        const doc = documents.find((d) => d.id === id) || allDocuments.find((d) => d.id === id);
+        name = doc?.name || 'Documento';
+      }
+      return { id, name, type };
+    });
+
+    // Set itemToEdit with the first item for backwards compatibility
+    // The modal will handle multiple items via the items prop
+    if (items.length > 0) {
+      const firstItem = items[0];
+      const item = firstItem.type === 'folder'
+        ? folders.find((f) => f.id === firstItem.id)
+        : (documents.find((d) => d.id === firstItem.id) || allDocuments.find((d) => d.id === firstItem.id));
+      if (item) {
+        setItemToEdit({ item, type: firstItem.type });
+      }
+    }
+    setDeleteModalOpen(true);
+  }, [selectedIds, selectedTypes, folders, documents, allDocuments]);
+
+  // Bulk move selected items
+  const handleBulkMove = useCallback(() => {
+    if (selectedIds.size === 0) return;
+
+    // For bulk move, we'll use the first selected item
+    const firstId = Array.from(selectedIds)[0];
+    const type = selectedTypes.get(firstId) || 'document';
+
+    let item;
+    if (type === 'folder') {
+      item = folders.find((f) => f.id === firstId);
+    } else {
+      item = documents.find((d) => d.id === firstId) || allDocuments.find((d) => d.id === firstId);
+    }
+
+    if (item) {
+      setItemToEdit({ item, type });
+      setMoveModalOpen(true);
+    }
+  }, [selectedIds, selectedTypes, folders, documents, allDocuments]);
+
+  // Bulk favorite toggle (only for documents)
+  const handleBulkToggleFavorite = useCallback(async () => {
+    const docIds = Array.from(selectedIds).filter((id) => selectedTypes.get(id) === 'document');
+
+    for (const docId of docIds) {
+      try {
+        await toggleFavoriteAll(docId);
+      } catch (err) {
+        console.error('Error toggling favorite:', err);
+      }
+    }
+
+    refreshDocuments();
+    refreshAllDocuments();
+    handleClearSelection();
+  }, [selectedIds, selectedTypes, toggleFavoriteAll, refreshDocuments, refreshAllDocuments, handleClearSelection]);
+
+  // Keyboard handler for Escape to clear selection and exit selection mode
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && selectionModeEnabled) {
+        handleClearSelection();
+        setSelectionModeEnabled(false);
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [selectionModeEnabled, handleClearSelection]);
 
   const handleSelectDocument = useCallback((documentId: string) => {
     // Busca primeiro na pasta atual, depois em todos os documentos
@@ -556,6 +720,40 @@ export function MyEasyDocs({ onBackToDashboard }: MyEasyDocsProps) {
   );
 
   const handleDeleteConfirm = useCallback(async () => {
+    // Bulk delete mode
+    if (selectedIds.size > 0) {
+      try {
+        const allDeletedFolderIds: string[] = [];
+
+        for (const id of selectedIds) {
+          const type = selectedTypes.get(id);
+          if (type === 'folder') {
+            const deletedFolderIds = await deleteFolder(id);
+            allDeletedFolderIds.push(...deletedFolderIds);
+          } else {
+            await deleteDocument(id);
+            if (selectedDocument?.id === id) {
+              setPreviewOpen(false);
+            }
+          }
+        }
+
+        // Remove documents from deleted folders
+        if (allDeletedFolderIds.length > 0) {
+          removeDocumentsByFolderIds(allDeletedFolderIds);
+        }
+
+        setDeleteModalOpen(false);
+        setItemToEdit(null);
+        handleClearSelection();
+        refreshAllDocuments();
+      } catch (err) {
+        console.error('Error deleting items:', err);
+      }
+      return;
+    }
+
+    // Single item delete mode
     if (!itemToEdit) return;
 
     try {
@@ -576,7 +774,7 @@ export function MyEasyDocs({ onBackToDashboard }: MyEasyDocsProps) {
     } catch (err) {
       console.error('Error deleting:', err);
     }
-  }, [itemToEdit, deleteFolder, deleteDocument, selectedDocument, refreshAllDocuments, removeDocumentsByFolderIds]);
+  }, [itemToEdit, deleteFolder, deleteDocument, selectedDocument, refreshAllDocuments, removeDocumentsByFolderIds, selectedIds, selectedTypes, handleClearSelection]);
 
   const handleMoveItem = useCallback(
     (item: DocsFolder | DocsDocument, type: 'folder' | 'document') => {
@@ -588,6 +786,29 @@ export function MyEasyDocs({ onBackToDashboard }: MyEasyDocsProps) {
 
   const handleMoveSubmit = useCallback(
     async (destinationFolderId: string | null) => {
+      // Bulk move mode
+      if (selectedIds.size > 0) {
+        try {
+          for (const id of selectedIds) {
+            const type = selectedTypes.get(id);
+            if (type === 'folder') {
+              await moveFolder(id, destinationFolderId);
+            } else {
+              await moveDocument(id, destinationFolderId);
+            }
+          }
+          setMoveModalOpen(false);
+          setItemToEdit(null);
+          handleClearSelection();
+          refreshDocuments();
+          refreshAllDocuments();
+        } catch (err) {
+          console.error('Error moving items:', err);
+        }
+        return;
+      }
+
+      // Single item move mode
       if (!itemToEdit) return;
 
       try {
@@ -605,7 +826,7 @@ export function MyEasyDocs({ onBackToDashboard }: MyEasyDocsProps) {
         console.error('Error moving:', err);
       }
     },
-    [itemToEdit, moveFolder, moveDocument, refreshDocuments, refreshAllDocuments]
+    [itemToEdit, moveFolder, moveDocument, refreshDocuments, refreshAllDocuments, selectedIds, selectedTypes, handleClearSelection]
   );
 
   // Close modal handlers
@@ -676,6 +897,9 @@ export function MyEasyDocs({ onBackToDashboard }: MyEasyDocsProps) {
             chatOpen={chatOpen}
             avatarName={avatarName}
             avatarSelfie={avatarSelfie}
+            selectionMode={selectionMode}
+            selectedCount={selectedIds.size}
+            onToggleSelectionMode={handleToggleSelectionMode}
             onNavigate={handleNavigateToFolder}
             onSearchChange={handleSearchChange}
             onViewModeChange={handleViewModeChange}
@@ -793,6 +1017,9 @@ export function MyEasyDocs({ onBackToDashboard }: MyEasyDocsProps) {
                   documents={displayedDocuments}
                   selectedDocumentId={selectedDocument?.id}
                   documentsCountByFolder={documentsCountByFolder}
+                  selectionMode={selectionMode}
+                  selectedIds={selectedIds}
+                  onToggleSelect={handleToggleSelect}
                   onOpenFolder={handleNavigateToFolder}
                   onSelectDocument={handleSelectDocument}
                   onOpenDocument={handleOpenDocument}
@@ -809,6 +1036,10 @@ export function MyEasyDocs({ onBackToDashboard }: MyEasyDocsProps) {
                   folders={displayedFolders}
                   documents={displayedDocuments}
                   selectedDocumentId={selectedDocument?.id}
+                  selectionMode={selectionMode}
+                  selectedIds={selectedIds}
+                  onToggleSelect={handleToggleSelect}
+                  onSelectAll={handleSelectAll}
                   onOpenFolder={handleNavigateToFolder}
                   onSelectDocument={handleSelectDocument}
                   onOpenDocument={handleOpenDocument}
@@ -892,6 +1123,7 @@ export function MyEasyDocs({ onBackToDashboard }: MyEasyDocsProps) {
               documents.some((d) => d.folder_id === itemToEdit.item.id)
             : false
         }
+        bulkCount={selectedIds.size > 0 ? selectedIds.size : 1}
         onClose={handleCloseDeleteModal}
         onConfirm={handleDeleteConfirm}
       />
@@ -906,6 +1138,7 @@ export function MyEasyDocs({ onBackToDashboard }: MyEasyDocsProps) {
             ? (itemToEdit.item as DocsFolder).parent_id
             : (itemToEdit?.item as DocsDocument)?.folder_id ?? null
         }
+        bulkCount={selectedIds.size > 0 ? selectedIds.size : 1}
         onClose={handleCloseMoveModal}
         onMove={handleMoveSubmit}
       />
@@ -929,6 +1162,17 @@ export function MyEasyDocs({ onBackToDashboard }: MyEasyDocsProps) {
           onClose={handleCloseEditorModal}
         />
       )}
+
+      {/* Selection Toolbar */}
+      <SelectionToolbar
+        visible={selectionModeEnabled}
+        selectedCount={selectedIds.size}
+        hasDocumentsSelected={hasDocumentsSelected}
+        onDelete={handleBulkDelete}
+        onMove={handleBulkMove}
+        onToggleFavorite={hasDocumentsSelected ? handleBulkToggleFavorite : undefined}
+        onClearSelection={handleClearSelection}
+      />
     </div>
   );
 }

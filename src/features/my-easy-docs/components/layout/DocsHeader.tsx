@@ -19,6 +19,11 @@ interface DocsHeaderProps {
   chatOpen: boolean;
   avatarName?: string;
   avatarSelfie?: string | null;
+  // Multi-select props
+  selectionMode?: boolean;
+  selectedCount?: number;
+  onToggleSelectionMode?: () => void;
+  // Callbacks
   onNavigate: (folderId: string | null) => void;
   onSearchChange: (query: string) => void;
   onViewModeChange: (mode: DocsViewMode) => void;
@@ -36,6 +41,9 @@ export const DocsHeader = memo(function DocsHeader({
   chatOpen,
   avatarName,
   avatarSelfie,
+  selectionMode = false,
+  selectedCount = 0,
+  onToggleSelectionMode,
   onNavigate,
   onSearchChange,
   onViewModeChange,
@@ -51,7 +59,7 @@ export const DocsHeader = memo(function DocsHeader({
 
         {/* Toolbar */}
         <div className="flex items-center justify-between gap-4">
-          {/* Search + View Mode Toggle */}
+          {/* Search + View Mode Toggle + Selection Mode */}
           <div className="flex items-center gap-3">
             <SearchInput
               value={searchQuery}
@@ -61,6 +69,23 @@ export const DocsHeader = memo(function DocsHeader({
             />
             {/* View Mode Toggle */}
             <ViewModeToggle viewMode={viewMode} onChange={onViewModeChange} />
+
+            {/* Selection Mode Toggle */}
+            {onToggleSelectionMode && (
+              <label className="flex items-center gap-2 cursor-pointer text-slate-300 hover:text-white transition-colors">
+                <input
+                  type="checkbox"
+                  checked={selectionMode}
+                  onChange={onToggleSelectionMode}
+                  className="w-4 h-4 rounded border-slate-600 bg-slate-800 text-blue-500 focus:ring-blue-500 focus:ring-offset-0 cursor-pointer"
+                />
+                <span className="text-sm">
+                  {selectionMode && selectedCount > 0
+                    ? `${selectedCount} selecionado${selectedCount > 1 ? 's' : ''}`
+                    : 'Selecionar vários'}
+                </span>
+              </label>
+            )}
           </div>
 
           {/* Dica + Chat Button */}

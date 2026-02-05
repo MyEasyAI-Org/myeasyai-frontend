@@ -16,6 +16,11 @@ interface FileRowProps {
   item: DocsFolder | DocsDocument;
   type: 'folder' | 'document';
   isSelected?: boolean;
+  // Multi-select props
+  selectionMode?: boolean;
+  isChecked?: boolean;
+  onToggleSelect?: (id: string, type: 'folder' | 'document') => void;
+  // Action callbacks
   onOpen: (id: string) => void;
   onSelect?: (id: string) => void;
   onRename?: (item: DocsFolder | DocsDocument, type: 'folder' | 'document') => void;
@@ -32,6 +37,9 @@ export const FileRow = memo(function FileRow({
   item,
   type,
   isSelected = false,
+  selectionMode = false,
+  isChecked = false,
+  onToggleSelect,
   onOpen,
   onSelect,
   onRename,
@@ -41,6 +49,16 @@ export const FileRow = memo(function FileRow({
 }: FileRowProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+
+  // Handle checkbox change
+  const handleCheckboxChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    e.stopPropagation();
+    onToggleSelect?.(item.id, type);
+  }, [item.id, type, onToggleSelect]);
+
+  const handleCheckboxClick = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+  }, []);
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -119,8 +137,21 @@ export const FileRow = memo(function FileRow({
     return (
       <tr
         onClick={handleClick}
-        className="hover:bg-slate-800/50 cursor-pointer transition-colors group"
+        className={`cursor-pointer transition-colors group ${
+          isChecked ? 'bg-blue-500/10' : 'hover:bg-slate-800/50'
+        }`}
       >
+        {/* Checkbox column */}
+        {onToggleSelect && (
+          <td className="w-10 px-2" onClick={handleCheckboxClick}>
+            <input
+              type="checkbox"
+              checked={isChecked}
+              onChange={handleCheckboxChange}
+              className="w-4 h-4 rounded border-slate-600 bg-slate-800 text-blue-500 focus:ring-blue-500 focus:ring-offset-0 cursor-pointer"
+            />
+          </td>
+        )}
         <td className="px-4 py-3">
           <div className="flex items-center gap-3">
             <Folder className="w-5 h-5 text-yellow-500 shrink-0" />
@@ -188,13 +219,26 @@ export const FileRow = memo(function FileRow({
       onClick={handleClick}
       onDoubleClick={handleDoubleClick}
       className={`cursor-pointer transition-colors group ${
-        isSelected
+        isChecked
           ? 'bg-blue-500/10'
-          : doc.is_favorite
-            ? 'bg-yellow-500/5 hover:bg-yellow-500/10'
-            : 'hover:bg-slate-800/50'
+          : isSelected
+            ? 'bg-blue-500/10'
+            : doc.is_favorite
+              ? 'bg-yellow-500/5 hover:bg-yellow-500/10'
+              : 'hover:bg-slate-800/50'
       }`}
     >
+      {/* Checkbox column */}
+      {onToggleSelect && (
+        <td className="w-10 px-2" onClick={handleCheckboxClick}>
+          <input
+            type="checkbox"
+            checked={isChecked}
+            onChange={handleCheckboxChange}
+            className="w-4 h-4 rounded border-slate-600 bg-slate-800 text-blue-500 focus:ring-blue-500 focus:ring-offset-0 cursor-pointer"
+          />
+        </td>
+      )}
       <td className="px-4 py-3">
         <div className="flex items-center gap-3">
           {doc.is_favorite && (
