@@ -1039,11 +1039,107 @@ stripeRoutes.post('/confirm-pix-payment', async (c) => {
 });
 
 /**
+ * POST /stripe/confirm-pix-upgrade
+ * Confirms a PIX payment for plan upgrade
+ * Upgrades user plan while maintaining the same subscription period end
+ */
+stripeRoutes.post('/confirm-pix-upgrade', async (c) => {
+  try {
+    const body = await c.req.json();
+    const { paymentIntentId, userId } = body;
+
+    console.log('[Stripe] confirm-pix-upgrade called with:', { paymentIntentId, userId });
+
+    if (!paymentIntentId || !userId) {
+      return c.json({ error: 'Missing required fields: paymentIntentId, userId' }, 400);
+    }
+
+    const STRIPE_SECRET_KEY = c.env.STRIPE_SECRET_KEY;
+    if (!STRIPE_SECRET_KEY) {
+      return c.json({ error: 'Stripe not configured' }, 500);
+    }
+
+    // Verify the PaymentIntent status
+    const piResponse = await fetch(`https://api.stripe.com/v1/payment_intents/${paymentIntentId}`, {
+      headers: {
+        'Authorization': `Bearer ${STRIPE_SECRET_KEY}`,
+      },
+    });
+
+    if (!piResponse.ok) {
+      const error = await piResponse.text();
+      console.error('[Stripe] Failed to get payment intent:', error);
+      return c.json({ error: 'Failed to verify payment' }, 500);
+    }
+
+    const paymentIntent = await piResponse.json() as {
+      id: string;
+      status: string;
+      metadata: {
+        userId?: string;
+        oldPlan?: string;
+        newPlan?: string;
+        upgradeType?: string;
+      };
+    };
+
+    console.log('[Stripe] PaymentIntent status:', paymentIntent.status, 'metadata:', paymentIntent.metadata);
+
+    // Check if payment was successful
+    if (paymentIntent.status !== 'succeeded') {
+      console.log('[Stripe] PIX upgrade payment not yet succeeded:', paymentIntent.status);
+      return c.json({
+        success: false,
+        status: paymentIntent.status,
+        message: paymentIntent.status === 'processing' ? 'Pagamento PIX em processamento' : 'Aguardando pagamento PIX',
+      });
+    }
+
+    // Verify metadata matches
+    const newPlan = paymentIntent.metadata.newPlan;
+    if (!newPlan) {
+      console.error('[Stripe] Missing newPlan in PaymentIntent metadata');
+      return c.json({ error: 'Invalid PaymentIntent metadata' }, 400);
+    }
+
+    // Get user from database
+    const db = c.get('db');
+    const existingUser = await db.select().from(users).where(eq(users.uuid, userId)).get();
+
+    if (!existingUser) {
+      console.error('[Stripe] User not found:', userId);
+      return c.json({ error: 'User not found' }, 404);
+    }
+
+    // Update user's plan (keep the same subscription_period_end)
+    await db.update(users)
+      .set({
+        subscription_plan: newPlan,
+      })
+      .where(eq(users.uuid, userId));
+
+    console.log('[Stripe] PIX upgrade successful:', userId, 'new plan:', newPlan);
+
+    return c.json({
+      success: true,
+      status: 'active',
+      newPlan: newPlan,
+      oldPlan: paymentIntent.metadata.oldPlan,
+      periodEnd: existingUser.subscription_period_end,
+    });
+  } catch (error) {
+    console.error('[Stripe] Error confirming PIX upgrade:', error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    return c.json({ error: 'Internal server error', details: errorMessage }, 500);
+  }
+});
+
+/**
  * POST /stripe/update-subscription
  * Update an existing subscription to a new plan (upgrade/downgrade)
  * Handles proration automatically through Stripe
  *
- * For PIX users (no stripe_subscription_id): Not allowed - must wait for renewal
+ * For PIX users: Creates PIX PaymentIntent for prorated amount
  * For Stripe subscription users: Use Stripe proration
  */
 stripeRoutes.post('/update-subscription', async (c) => {
@@ -1200,13 +1296,81 @@ stripeRoutes.post('/update-subscription', async (c) => {
           });
         }
 
-        // User paid with PIX or has no card - cannot upgrade mid-cycle
-        console.log('[Stripe] PIX user trying to change plan:', userId, '(payment_method_type:', existingUser.payment_method_type, ')');
+        // User paid with PIX - create PIX PaymentIntent for upgrade
+        console.log('[Stripe] PIX user upgrade:', userId, '(payment_method_type:', existingUser.payment_method_type, ')');
+
+        const currency = country === 'BR' ? 'brl' : 'usd';
+        const proration = calculateManualProration(
+          existingUser.subscription_plan,
+          newPlan,
+          currency,
+          existingUser.subscription_period_end
+        );
+
+        // Only allow upgrades (not downgrades) for PIX users
+        if (proration.amountDue <= 0) {
+          return c.json({
+            error: 'Downgrade não disponível para pagamentos à vista. Seu plano será alterado na renovação.',
+            code: 'UPFRONT_NO_DOWNGRADE',
+            periodEnd: existingUser.subscription_period_end,
+          }, 400);
+        }
+
+        console.log('[Stripe] Creating PIX PaymentIntent for upgrade:', {
+          userId,
+          oldPlan: existingUser.subscription_plan,
+          newPlan,
+          amountDue: proration.amountDue,
+          daysRemaining: proration.daysRemaining,
+        });
+
+        // Create PaymentIntent with PIX (not confirmed - user will pay via QR code)
+        const paymentIntentParams = new URLSearchParams();
+        paymentIntentParams.append('amount', proration.amountDue.toString());
+        paymentIntentParams.append('currency', currency);
+        paymentIntentParams.append('customer', existingUser.stripe_customer_id);
+        paymentIntentParams.append('payment_method_types[0]', 'pix');
+        paymentIntentParams.append('metadata[userId]', userId);
+        paymentIntentParams.append('metadata[oldPlan]', existingUser.subscription_plan);
+        paymentIntentParams.append('metadata[newPlan]', newPlan);
+        paymentIntentParams.append('metadata[upgradeType]', 'pix_upgrade');
+        paymentIntentParams.append('description', `Upgrade de ${existingUser.subscription_plan} para ${newPlan} - MyEasyAI (PIX)`);
+
+        const paymentIntentResponse = await fetch('https://api.stripe.com/v1/payment_intents', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${STRIPE_SECRET_KEY}`,
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          body: paymentIntentParams.toString(),
+        });
+
+        if (!paymentIntentResponse.ok) {
+          const error = await paymentIntentResponse.text();
+          console.error('[Stripe] Failed to create PIX PaymentIntent for upgrade:', error);
+          return c.json({ error: 'Falha ao criar pagamento PIX para upgrade', details: error }, 500);
+        }
+
+        const paymentIntent = await paymentIntentResponse.json() as {
+          id: string;
+          client_secret: string;
+          status: string;
+        };
+
+        console.log('[Stripe] PIX PaymentIntent created for upgrade:', paymentIntent.id);
+
+        // Return clientSecret so frontend can show PIX QR code
         return c.json({
-          error: 'Você pagou à vista via PIX. Mudança de plano estará disponível na renovação.',
-          code: 'PIX_NO_MIDTERM_CHANGE',
-          periodEnd: existingUser.subscription_period_end,
-        }, 400);
+          success: false, // Not yet complete - requires PIX payment
+          requiresPixPayment: true,
+          clientSecret: paymentIntent.client_secret,
+          paymentIntentId: paymentIntent.id,
+          amountDue: proration.amountDue,
+          currency,
+          oldPlan: existingUser.subscription_plan,
+          newPlan,
+          daysRemaining: proration.daysRemaining,
+        });
       }
       console.error('[Stripe] User has no subscription:', userId);
       return c.json({ error: 'User has no active subscription' }, 400);
@@ -1518,13 +1682,40 @@ stripeRoutes.post('/preview-proration', async (c) => {
           });
         }
 
-        // User paid with PIX or has no card - cannot upgrade mid-cycle
-        console.log('[Stripe] PIX user trying to preview proration:', userId, '(payment_method_type:', existingUser.payment_method_type, ')');
+        // User paid with PIX - calculate manual proration for PIX upgrade
+        console.log('[Stripe] PIX user proration preview:', userId, '(payment_method_type:', existingUser.payment_method_type, ')');
+
+        const currency = country === 'BR' ? 'brl' : 'usd';
+        const proration = calculateManualProration(
+          existingUser.subscription_plan,
+          newPlan,
+          currency,
+          existingUser.subscription_period_end
+        );
+
+        // Only allow upgrades (not downgrades) for PIX users
+        if (proration.amountDue <= 0) {
+          return c.json({
+            error: 'Downgrade não disponível para pagamentos à vista. Seu plano será alterado na renovação.',
+            code: 'UPFRONT_NO_DOWNGRADE',
+            periodEnd: existingUser.subscription_period_end,
+          }, 400);
+        }
+
+        // Return proration preview for PIX upgrade
         return c.json({
-          error: 'Você pagou à vista via PIX. Mudança de plano estará disponível na renovação.',
-          code: 'PIX_NO_MIDTERM_CHANGE',
-          periodEnd: existingUser.subscription_period_end,
-        }, 400);
+          amountDue: proration.amountDue,
+          prorationAmount: proration.amountDue,
+          creditAmount: 0,
+          chargeAmount: proration.amountDue,
+          netAmount: proration.amountDue,
+          currency,
+          billingPeriod: 'annual',
+          currentPeriodEnd: Math.floor(new Date(existingUser.subscription_period_end).getTime() / 1000),
+          daysRemaining: proration.daysRemaining,
+          isUpfrontPayment: true,
+          isPixUpgrade: true, // Flag to indicate PIX payment required for upgrade
+        });
       }
       return c.json({ error: 'User has no active subscription' }, 400);
     }
@@ -1936,6 +2127,409 @@ stripeRoutes.get('/diagnose-subscription/:userId', async (c) => {
     return c.json(diagnosis);
   } catch (error) {
     console.error('[Stripe] Error diagnosing subscription:', error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    return c.json({ error: 'Internal server error', details: errorMessage }, 500);
+  }
+});
+
+/**
+ * GET /stripe/payment-history/:userId
+ * Get payment history for a user (PaymentIntents + Invoices)
+ * Returns all payments including PIX payments
+ */
+stripeRoutes.get('/payment-history/:userId', async (c) => {
+  try {
+    const userId = c.req.param('userId');
+
+    const STRIPE_SECRET_KEY = c.env.STRIPE_SECRET_KEY;
+    if (!STRIPE_SECRET_KEY) {
+      return c.json({ error: 'Stripe not configured' }, 500);
+    }
+
+    // Get user from database
+    const db = c.get('db');
+    const existingUser = await db.select().from(users).where(eq(users.uuid, userId)).get();
+
+    if (!existingUser) {
+      return c.json({ error: 'User not found' }, 404);
+    }
+
+    if (!existingUser.stripe_customer_id) {
+      return c.json({ error: 'User has no Stripe customer' }, 404);
+    }
+
+    const payments: Array<{
+      id: string;
+      date: string;
+      amount: number;
+      currency: string;
+      status: string;
+      description: string | null;
+      paymentMethod: string;
+      plan: string | null;
+    }> = [];
+
+    // Fetch PaymentIntents (includes PIX payments)
+    const piResponse = await fetch(
+      `https://api.stripe.com/v1/payment_intents?customer=${existingUser.stripe_customer_id}&limit=50`,
+      {
+        headers: {
+          'Authorization': `Bearer ${STRIPE_SECRET_KEY}`,
+        },
+      }
+    );
+
+    if (piResponse.ok) {
+      const piData = await piResponse.json() as {
+        data: Array<{
+          id: string;
+          status: string;
+          amount: number;
+          currency: string;
+          created: number;
+          description: string | null;
+          payment_method_types: string[];
+          metadata?: {
+            plan?: string;
+            newPlan?: string;
+            upgradeType?: string;
+          };
+        }>;
+      };
+
+      for (const pi of piData.data) {
+        if (pi.status === 'succeeded') {
+          // Determine payment method type
+          const isPix = pi.payment_method_types.includes('pix');
+          const paymentMethodType = isPix ? 'PIX' : 'Cartão';
+
+          // Determine plan from metadata
+          const plan = pi.metadata?.newPlan || pi.metadata?.plan || null;
+
+          payments.push({
+            id: pi.id,
+            date: new Date(pi.created * 1000).toISOString(),
+            amount: pi.amount,
+            currency: pi.currency,
+            status: 'succeeded',
+            description: pi.description,
+            paymentMethod: paymentMethodType,
+            plan,
+          });
+        }
+      }
+    }
+
+    // Fetch Invoices (for recurring subscription payments)
+    const invResponse = await fetch(
+      `https://api.stripe.com/v1/invoices?customer=${existingUser.stripe_customer_id}&limit=50&status=paid`,
+      {
+        headers: {
+          'Authorization': `Bearer ${STRIPE_SECRET_KEY}`,
+        },
+      }
+    );
+
+    if (invResponse.ok) {
+      const invData = await invResponse.json() as {
+        data: Array<{
+          id: string;
+          status: string;
+          amount_paid: number;
+          currency: string;
+          created: number;
+          description: string | null;
+          lines: {
+            data: Array<{
+              price?: {
+                id: string;
+              };
+            }>;
+          };
+        }>;
+      };
+
+      for (const inv of invData.data) {
+        // Skip invoices that are already represented by PaymentIntents
+        // Invoices typically have an associated PaymentIntent
+        // We add invoices for recurring subscription payments
+
+        // Get plan from price ID in invoice lines
+        const priceId = inv.lines?.data?.[0]?.price?.id;
+        const plan = priceId ? getPlanFromPriceId(priceId) : null;
+
+        payments.push({
+          id: inv.id,
+          date: new Date(inv.created * 1000).toISOString(),
+          amount: inv.amount_paid,
+          currency: inv.currency,
+          status: 'paid',
+          description: inv.description || 'Assinatura MyEasyAI',
+          paymentMethod: 'Cartão',
+          plan,
+        });
+      }
+    }
+
+    // Sort by date descending (most recent first)
+    payments.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+    // Remove duplicates (PaymentIntents that are linked to Invoices)
+    const uniquePayments = payments.filter((payment, index, self) => {
+      // Keep PaymentIntents (pi_*) and only unique Invoices
+      if (payment.id.startsWith('pi_')) return true;
+      // For invoices, check if there's a PaymentIntent with similar amount on same day
+      const paymentDate = new Date(payment.date).toDateString();
+      const hasSimilarPI = self.some(p =>
+        p.id.startsWith('pi_') &&
+        new Date(p.date).toDateString() === paymentDate &&
+        p.amount === payment.amount
+      );
+      return !hasSimilarPI;
+    });
+
+    console.log(`[Stripe] Payment history for user ${userId}: ${uniquePayments.length} payments`);
+
+    return c.json({
+      payments: uniquePayments,
+      total: uniquePayments.length,
+    });
+  } catch (error) {
+    console.error('[Stripe] Error getting payment history:', error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    return c.json({ error: 'Internal server error', details: errorMessage }, 500);
+  }
+});
+
+/**
+ * POST /stripe/cancel-subscription
+ * Cancel a user's subscription
+ * Can cancel at period end (default) or immediately
+ */
+stripeRoutes.post('/cancel-subscription', async (c) => {
+  try {
+    const body = await c.req.json();
+    const { userId, immediate = false } = body;
+
+    console.log('[Stripe] cancel-subscription called with:', { userId, immediate });
+
+    if (!userId) {
+      return c.json({ error: 'Missing required field: userId' }, 400);
+    }
+
+    const STRIPE_SECRET_KEY = c.env.STRIPE_SECRET_KEY;
+    if (!STRIPE_SECRET_KEY) {
+      return c.json({ error: 'Stripe not configured' }, 500);
+    }
+
+    // Get user from database
+    const db = c.get('db');
+    const existingUser = await db.select().from(users).where(eq(users.uuid, userId)).get();
+
+    if (!existingUser) {
+      return c.json({ error: 'User not found' }, 404);
+    }
+
+    if (existingUser.subscription_status !== 'active') {
+      return c.json({ error: 'User has no active subscription' }, 400);
+    }
+
+    // Case 1: User has a Stripe subscription (recurring)
+    if (existingUser.stripe_subscription_id) {
+      console.log('[Stripe] Cancelling Stripe subscription:', existingUser.stripe_subscription_id);
+
+      if (immediate) {
+        // Cancel immediately
+        const deleteResponse = await fetch(
+          `https://api.stripe.com/v1/subscriptions/${existingUser.stripe_subscription_id}`,
+          {
+            method: 'DELETE',
+            headers: {
+              'Authorization': `Bearer ${STRIPE_SECRET_KEY}`,
+            },
+          }
+        );
+
+        if (!deleteResponse.ok) {
+          const error = await deleteResponse.text();
+          console.error('[Stripe] Failed to cancel subscription:', error);
+          return c.json({ error: 'Failed to cancel subscription' }, 500);
+        }
+
+        // Update database
+        await db.update(users)
+          .set({
+            subscription_status: 'cancelled',
+            stripe_subscription_id: null,
+            subscription_cancel_at_period_end: false,
+          })
+          .where(eq(users.uuid, userId));
+
+        console.log('[Stripe] Subscription cancelled immediately for user:', userId);
+
+        return c.json({
+          success: true,
+          cancelled: true,
+          immediate: true,
+          message: 'Assinatura cancelada imediatamente',
+        });
+      } else {
+        // Cancel at period end
+        const updateResponse = await fetch(
+          `https://api.stripe.com/v1/subscriptions/${existingUser.stripe_subscription_id}`,
+          {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${STRIPE_SECRET_KEY}`,
+              'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: new URLSearchParams({
+              cancel_at_period_end: 'true',
+            }).toString(),
+          }
+        );
+
+        if (!updateResponse.ok) {
+          const error = await updateResponse.text();
+          console.error('[Stripe] Failed to schedule cancellation:', error);
+          return c.json({ error: 'Failed to schedule cancellation' }, 500);
+        }
+
+        // Update database
+        await db.update(users)
+          .set({
+            subscription_cancel_at_period_end: true,
+          })
+          .where(eq(users.uuid, userId));
+
+        console.log('[Stripe] Subscription scheduled for cancellation at period end for user:', userId);
+
+        return c.json({
+          success: true,
+          cancelled: false,
+          cancelAtPeriodEnd: true,
+          periodEnd: existingUser.subscription_period_end,
+          message: `Assinatura será cancelada em ${existingUser.subscription_period_end ? new Date(existingUser.subscription_period_end).toLocaleDateString('pt-BR') : 'data não disponível'}`,
+        });
+      }
+    }
+
+    // Case 2: User paid à vista (one-time payment, no Stripe subscription)
+    // Just mark as cancelled in database
+    console.log('[Stripe] Cancelling à vista subscription for user:', userId);
+
+    if (immediate) {
+      // Cancel immediately
+      await db.update(users)
+        .set({
+          subscription_status: 'cancelled',
+          subscription_cancel_at_period_end: false,
+        })
+        .where(eq(users.uuid, userId));
+
+      console.log('[Stripe] À vista subscription cancelled immediately for user:', userId);
+
+      return c.json({
+        success: true,
+        cancelled: true,
+        immediate: true,
+        message: 'Assinatura cancelada imediatamente',
+      });
+    } else {
+      // Mark for cancellation at period end
+      await db.update(users)
+        .set({
+          subscription_cancel_at_period_end: true,
+        })
+        .where(eq(users.uuid, userId));
+
+      console.log('[Stripe] À vista subscription scheduled for cancellation at period end for user:', userId);
+
+      return c.json({
+        success: true,
+        cancelled: false,
+        cancelAtPeriodEnd: true,
+        periodEnd: existingUser.subscription_period_end,
+        message: `Assinatura será cancelada em ${existingUser.subscription_period_end ? new Date(existingUser.subscription_period_end).toLocaleDateString('pt-BR') : 'data não disponível'}`,
+      });
+    }
+  } catch (error) {
+    console.error('[Stripe] Error cancelling subscription:', error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    return c.json({ error: 'Internal server error', details: errorMessage }, 500);
+  }
+});
+
+/**
+ * POST /stripe/reactivate-subscription
+ * Reactivate a subscription that was scheduled for cancellation
+ */
+stripeRoutes.post('/reactivate-subscription', async (c) => {
+  try {
+    const body = await c.req.json();
+    const { userId } = body;
+
+    console.log('[Stripe] reactivate-subscription called for user:', userId);
+
+    if (!userId) {
+      return c.json({ error: 'Missing required field: userId' }, 400);
+    }
+
+    const STRIPE_SECRET_KEY = c.env.STRIPE_SECRET_KEY;
+    if (!STRIPE_SECRET_KEY) {
+      return c.json({ error: 'Stripe not configured' }, 500);
+    }
+
+    // Get user from database
+    const db = c.get('db');
+    const existingUser = await db.select().from(users).where(eq(users.uuid, userId)).get();
+
+    if (!existingUser) {
+      return c.json({ error: 'User not found' }, 404);
+    }
+
+    if (!existingUser.subscription_cancel_at_period_end) {
+      return c.json({ error: 'Subscription is not scheduled for cancellation' }, 400);
+    }
+
+    // Case 1: User has a Stripe subscription
+    if (existingUser.stripe_subscription_id) {
+      const updateResponse = await fetch(
+        `https://api.stripe.com/v1/subscriptions/${existingUser.stripe_subscription_id}`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${STRIPE_SECRET_KEY}`,
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          body: new URLSearchParams({
+            cancel_at_period_end: 'false',
+          }).toString(),
+        }
+      );
+
+      if (!updateResponse.ok) {
+        const error = await updateResponse.text();
+        console.error('[Stripe] Failed to reactivate subscription:', error);
+        return c.json({ error: 'Failed to reactivate subscription' }, 500);
+      }
+    }
+
+    // Update database
+    await db.update(users)
+      .set({
+        subscription_cancel_at_period_end: false,
+      })
+      .where(eq(users.uuid, userId));
+
+    console.log('[Stripe] Subscription reactivated for user:', userId);
+
+    return c.json({
+      success: true,
+      message: 'Assinatura reativada com sucesso',
+    });
+  } catch (error) {
+    console.error('[Stripe] Error reactivating subscription:', error);
     const errorMessage = error instanceof Error ? error.message : String(error);
     return c.json({ error: 'Internal server error', details: errorMessage }, 500);
   }

@@ -1,11 +1,197 @@
 import { useState, useEffect } from 'react';
-import { ArrowUpCircle, X, AlertTriangle, ExternalLink, CreditCard, Check, Loader2, Zap, Sparkles, Shield } from 'lucide-react';
+import { ArrowUpCircle, X, AlertTriangle, CreditCard, Check, Loader2, Zap, Sparkles, Shield, Calendar, Receipt, Ban, RefreshCw, ChevronDown, ChevronUp } from 'lucide-react';
 import { toast } from 'sonner';
+import { loadStripe } from '@stripe/stripe-js';
+import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { PLANS, getPlanByValue, getPlanChangeType, type SubscriptionPlan } from '../../constants/plans';
 import type { SubscriptionData } from '../../hooks/useUserData';
 import { PlanCard } from './PlanCard';
-import { stripeService, type ProrationPreviewResponse } from '../../services/StripeService';
+import { stripeService, type ProrationPreviewResponse, type PaymentHistoryItem } from '../../services/StripeService';
 import { authService } from '../../services/AuthServiceV2';
+
+// Initialize Stripe
+const stripePublishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || '';
+const stripePromise = stripePublishableKey ? loadStripe(stripePublishableKey) : null;
+
+// PIX Upgrade data type
+interface PixUpgradeData {
+  clientSecret: string;
+  paymentIntentId: string;
+  amountDue: number;
+  currency: string;
+  oldPlan: string;
+  newPlan: string;
+  daysRemaining: number;
+}
+
+// PIX Upgrade Payment Form Component
+function PixUpgradePaymentForm({
+  pixData,
+  onSuccess,
+  onCancel,
+}: {
+  pixData: PixUpgradeData;
+  onSuccess: (paymentIntentId: string) => void;
+  onCancel: () => void;
+}) {
+  const stripe = useStripe();
+  const elements = useElements();
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [elementReady, setElementReady] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!stripe || !elements) {
+      setError('Stripe não carregado. Recarregue a página.');
+      return;
+    }
+
+    setIsProcessing(true);
+    setError(null);
+
+    try {
+      const { error: submitError, paymentIntent } = await stripe.confirmPayment({
+        elements,
+        confirmParams: {
+          return_url: window.location.href,
+        },
+        redirect: 'if_required',
+      });
+
+      if (submitError) {
+        setError(submitError.message || 'Erro ao processar pagamento');
+        setIsProcessing(false);
+        return;
+      }
+
+      if (paymentIntent && paymentIntent.status === 'succeeded') {
+        onSuccess(paymentIntent.id);
+      } else if (paymentIntent && paymentIntent.status === 'processing') {
+        // PIX payment is processing - poll for status
+        toast.info('Pagamento PIX em processamento...', {
+          description: 'Aguarde a confirmação do pagamento.',
+        });
+        // Start polling for payment confirmation
+        pollPixPaymentStatus(paymentIntent.id, onSuccess);
+      }
+    } catch (err) {
+      console.error('[PixUpgradePaymentForm] Error:', err);
+      setError(err instanceof Error ? err.message : 'Erro ao processar pagamento');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  // Poll for PIX payment status
+  const pollPixPaymentStatus = async (paymentIntentId: string, onSuccessCallback: (id: string) => void) => {
+    const user = authService.getUser();
+    if (!user?.uuid) return;
+
+    const maxAttempts = 60; // 5 minutes (5 seconds * 60)
+    let attempts = 0;
+
+    const poll = async () => {
+      attempts++;
+      try {
+        const result = await stripeService.confirmPixUpgrade({
+          paymentIntentId,
+          userId: user.uuid,
+        });
+
+        if (result.success) {
+          onSuccessCallback(paymentIntentId);
+          return;
+        }
+
+        if (result.status === 'processing' && attempts < maxAttempts) {
+          setTimeout(poll, 5000); // Poll every 5 seconds
+        } else if (attempts >= maxAttempts) {
+          setError('Tempo esgotado. Verifique seu pagamento no app do banco.');
+        }
+      } catch (err) {
+        console.error('[PixUpgradePaymentForm] Polling error:', err);
+        if (attempts < maxAttempts) {
+          setTimeout(poll, 5000);
+        }
+      }
+    };
+
+    setTimeout(poll, 5000);
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      {/* Amount Info */}
+      <div className="rounded-xl p-4 bg-gradient-to-r from-green-500/10 to-emerald-500/10 border border-green-500/20">
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-sm text-slate-300">Valor do upgrade via PIX</span>
+          <span className="text-2xl font-bold text-green-400">
+            {formatCurrency(pixData.amountDue, pixData.currency)}
+          </span>
+        </div>
+        <p className="text-xs text-slate-500">
+          Upgrade de <span className="font-medium text-slate-400">{pixData.oldPlan.toUpperCase()}</span> para{' '}
+          <span className="font-medium text-green-400">{pixData.newPlan.toUpperCase()}</span>
+          {pixData.daysRemaining > 0 && ` • ${pixData.daysRemaining} dias restantes`}
+        </p>
+      </div>
+
+      {/* Payment Element */}
+      <div className="p-4 rounded-lg bg-slate-800/40 border border-slate-700">
+        {!elementReady && (
+          <div className="text-center py-4 text-slate-400">
+            <Loader2 className="h-6 w-6 mx-auto mb-2 animate-spin" />
+            Carregando PIX...
+          </div>
+        )}
+        <div className={!elementReady ? 'hidden' : ''}>
+          <PaymentElement
+            options={{ layout: 'tabs' }}
+            onReady={() => setElementReady(true)}
+          />
+        </div>
+      </div>
+
+      {/* Error */}
+      {error && (
+        <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-sm">
+          {error}
+        </div>
+      )}
+
+      {/* Buttons */}
+      <div className="flex gap-3">
+        <button
+          type="button"
+          onClick={onCancel}
+          disabled={isProcessing}
+          className="flex-1 px-4 py-3 rounded-xl bg-slate-800 text-slate-300 hover:bg-slate-700 transition-all font-medium disabled:opacity-50"
+        >
+          Cancelar
+        </button>
+        <button
+          type="submit"
+          disabled={isProcessing || !elementReady}
+          className="flex-1 px-4 py-3 rounded-xl font-semibold transition-all disabled:opacity-50 flex items-center justify-center gap-2 bg-gradient-to-r from-green-500 to-emerald-500 text-white hover:from-green-600 hover:to-emerald-600 shadow-lg cursor-pointer"
+        >
+          {isProcessing ? (
+            <>
+              <Loader2 className="h-5 w-5 animate-spin" />
+              <span>Processando...</span>
+            </>
+          ) : (
+            <>
+              <Check className="h-5 w-5" />
+              <span>Pagar com PIX</span>
+            </>
+          )}
+        </button>
+      </div>
+    </form>
+  );
+}
 
 type SubscriptionTabProps = {
   subscription: SubscriptionData;
@@ -24,33 +210,106 @@ export function SubscriptionTab({ subscription }: SubscriptionTabProps) {
   const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan | null>(null);
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [isLoadingPortal, setIsLoadingPortal] = useState(false);
   const [isLoadingPreview, setIsLoadingPreview] = useState(false);
   const [prorationPreview, setProrationPreview] = useState<ProrationPreviewResponse | null>(null);
   const [upfrontBlockedError, setUpfrontBlockedError] = useState<{ message: string; periodEnd?: string } | null>(null);
+  // PIX Upgrade states
+  const [pixUpgradeData, setPixUpgradeData] = useState<PixUpgradeData | null>(null);
+  const [isPixModalOpen, setIsPixModalOpen] = useState(false);
+  // Custom subscription management states
+  const [paymentHistory, setPaymentHistory] = useState<PaymentHistoryItem[]>([]);
+  const [isLoadingPayments, setIsLoadingPayments] = useState(false);
+  const [isPaymentHistoryExpanded, setIsPaymentHistoryExpanded] = useState(false);
+  const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
+  const [isCancelling, setIsCancelling] = useState(false);
+  const [isReactivating, setIsReactivating] = useState(false);
 
   console.log('🟡 [SubscriptionTab] Current subscription:', subscription);
 
-  // Handle opening Stripe Customer Portal
-  const handleOpenCustomerPortal = async () => {
+  // Fetch payment history on mount
+  useEffect(() => {
+    const fetchPaymentHistory = async () => {
+      const user = authService.getUser();
+      if (!user?.uuid) return;
+
+      setIsLoadingPayments(true);
+      try {
+        const history = await stripeService.getPaymentHistory(user.uuid);
+        setPaymentHistory(history.payments);
+        console.log('[SubscriptionTab] Payment history loaded:', history.total);
+      } catch (error) {
+        console.error('[SubscriptionTab] Error fetching payment history:', error);
+      } finally {
+        setIsLoadingPayments(false);
+      }
+    };
+
+    fetchPaymentHistory();
+  }, []);
+
+  // Handle cancel subscription
+  const handleCancelSubscription = async (immediate: boolean = false) => {
     const user = authService.getUser();
     if (!user?.uuid) {
-      toast.error('Erro ao abrir portal', {
-        description: 'Usuario nao encontrado.',
+      toast.error('Erro ao cancelar', {
+        description: 'Usuário não encontrado.',
       });
       return;
     }
 
-    setIsLoadingPortal(true);
+    setIsCancelling(true);
     try {
-      await stripeService.redirectToPortal(user.uuid);
-      // Note: redirectToPortal will redirect the page, so we won't reach here
+      const result = await stripeService.cancelSubscription({
+        userId: user.uuid,
+        immediate,
+      });
+
+      if (result.success) {
+        toast.success(result.cancelled ? 'Assinatura cancelada' : 'Cancelamento agendado', {
+          description: result.message,
+        });
+        setIsCancelModalOpen(false);
+        // Refresh to show updated status
+        window.location.reload();
+      }
     } catch (error) {
-      console.error('[SubscriptionTab] Error opening portal:', error);
-      toast.error('Erro ao abrir portal', {
+      console.error('[SubscriptionTab] Error cancelling subscription:', error);
+      toast.error('Erro ao cancelar', {
         description: error instanceof Error ? error.message : 'Tente novamente.',
       });
-      setIsLoadingPortal(false);
+    } finally {
+      setIsCancelling(false);
+    }
+  };
+
+  // Handle reactivate subscription
+  const handleReactivateSubscription = async () => {
+    const user = authService.getUser();
+    if (!user?.uuid) {
+      toast.error('Erro ao reativar', {
+        description: 'Usuário não encontrado.',
+      });
+      return;
+    }
+
+    setIsReactivating(true);
+    try {
+      const result = await stripeService.reactivateSubscription(user.uuid);
+
+      if (result.success) {
+        toast.success('Assinatura reativada', {
+          description: result.message,
+        });
+        // Refresh to show updated status
+        window.location.reload();
+      }
+    } catch (error) {
+      console.error('[SubscriptionTab] Error reactivating subscription:', error);
+      toast.error('Erro ao reativar', {
+        description: error instanceof Error ? error.message : 'Tente novamente.',
+      });
+    } finally {
+      setIsReactivating(false);
     }
   };
 
@@ -129,6 +388,24 @@ export function SubscriptionTab({ subscription }: SubscriptionTabProps) {
         country: 'BR', // TODO: Get from user profile
       });
 
+      // Check if PIX payment is required
+      if (result.requiresPixPayment && result.clientSecret && result.paymentIntentId) {
+        console.log('[SubscriptionTab] PIX payment required for upgrade:', result);
+        setPixUpgradeData({
+          clientSecret: result.clientSecret,
+          paymentIntentId: result.paymentIntentId,
+          amountDue: result.amountDue || 0,
+          currency: result.currency || 'brl',
+          oldPlan: result.oldPlan || subscription.plan,
+          newPlan: result.newPlan,
+          daysRemaining: result.daysRemaining || 0,
+        });
+        setIsConfirmModalOpen(false);
+        setIsPixModalOpen(true);
+        setIsProcessing(false);
+        return;
+      }
+
       if (result.success) {
         // Check if this was an upfront payment upgrade
         const description = result.amountCharged && result.currency
@@ -152,6 +429,35 @@ export function SubscriptionTab({ subscription }: SubscriptionTabProps) {
       setIsProcessing(false);
       setIsConfirmModalOpen(false);
       setSelectedPlan(null);
+    }
+  };
+
+  // Handle PIX upgrade payment success
+  const handlePixUpgradeSuccess = async (paymentIntentId: string) => {
+    const user = authService.getUser();
+    if (!user?.uuid) return;
+
+    try {
+      const result = await stripeService.confirmPixUpgrade({
+        paymentIntentId,
+        userId: user.uuid,
+      });
+
+      if (result.success) {
+        toast.success('Upgrade realizado com sucesso!', {
+          description: `Você agora está no plano ${result.newPlan?.toUpperCase()}.`,
+        });
+        window.location.reload();
+      } else {
+        toast.error('Erro ao confirmar upgrade', {
+          description: result.message || 'Tente novamente.',
+        });
+      }
+    } catch (error) {
+      console.error('[SubscriptionTab] Error confirming PIX upgrade:', error);
+      toast.error('Erro ao confirmar upgrade', {
+        description: error instanceof Error ? error.message : 'Tente novamente.',
+      });
     }
   };
 
@@ -221,49 +527,214 @@ export function SubscriptionTab({ subscription }: SubscriptionTabProps) {
         </div>
       </div>
 
-      {/* Manage Subscription Section - Stripe Customer Portal */}
+      {/* Subscription Details Section */}
       <div className="relative overflow-hidden rounded-2xl border border-slate-700/50 bg-gradient-to-br from-slate-800/50 via-slate-900/60 to-slate-900/80 p-6">
-        {/* Background decoration */}
         <div className="absolute -right-12 -bottom-12 h-40 w-40 rounded-full bg-blue-500/5 blur-3xl" />
 
-        <div className="relative">
-          <div className="flex items-center gap-3 mb-3">
+        <div className="relative space-y-6">
+          {/* Header */}
+          <div className="flex items-center gap-3">
             <div className="p-2.5 rounded-xl bg-gradient-to-br from-blue-500/20 to-cyan-500/20 border border-blue-500/20">
               <CreditCard className="h-5 w-5 text-blue-400" />
             </div>
-            <h2 className="text-xl font-bold text-white">Gerenciar Assinatura</h2>
+            <h2 className="text-xl font-bold text-white">Detalhes da Assinatura</h2>
           </div>
 
-          <p className="text-slate-400 leading-relaxed">
-            Acesse o portal de pagamentos para atualizar seu cartão, ver faturas,
-            cancelar assinatura ou alterar seu plano.
-          </p>
-
-          <div className="mt-5 flex flex-col sm:flex-row gap-4 items-start sm:items-center">
-            <button
-              onClick={handleOpenCustomerPortal}
-              disabled={isLoadingPortal}
-              className="flex items-center gap-2 px-6 py-3 rounded-xl font-semibold bg-gradient-to-r from-blue-500 to-cyan-500 text-white hover:from-blue-600 hover:to-cyan-600 shadow-lg shadow-blue-500/20 hover:shadow-blue-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer active:scale-[0.98]"
-            >
-              {isLoadingPortal ? (
-                <>
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                  <span>Abrindo portal...</span>
-                </>
-              ) : (
-                <>
-                  <ExternalLink className="h-5 w-5" />
-                  <span>Abrir Portal de Pagamentos</span>
-                </>
+          {/* Subscription Info Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Current Plan */}
+            <div className="rounded-xl p-4 bg-slate-800/60 border border-slate-700/50">
+              <div className="flex items-center gap-2 mb-2">
+                <Sparkles className="h-4 w-4 text-purple-400" />
+                <span className="text-xs text-slate-400 uppercase tracking-wide">Plano Atual</span>
+              </div>
+              <p className="text-xl font-bold text-white capitalize">{subscription.plan}</p>
+              {subscription.billing_cycle && (
+                <p className="text-xs text-slate-500 mt-1">
+                  Ciclo: {subscription.billing_cycle === 'annual' ? 'Anual' : 'Mensal'}
+                </p>
               )}
-            </button>
+            </div>
 
-            <div className="flex items-center gap-2 text-xs text-slate-500">
-              <Shield className="h-4 w-4 text-slate-600" />
-              <span>Redirecionamento seguro via Stripe</span>
+            {/* Status */}
+            <div className="rounded-xl p-4 bg-slate-800/60 border border-slate-700/50">
+              <div className="flex items-center gap-2 mb-2">
+                <Shield className="h-4 w-4 text-green-400" />
+                <span className="text-xs text-slate-400 uppercase tracking-wide">Status</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className={`text-xl font-bold ${
+                  subscription.status === 'active' ? 'text-green-400' :
+                  subscription.status === 'cancelled' ? 'text-red-400' :
+                  'text-amber-400'
+                }`}>
+                  {subscription.status === 'active' ? 'Ativo' :
+                   subscription.status === 'cancelled' ? 'Cancelado' :
+                   subscription.status === 'past_due' ? 'Pendente' :
+                   subscription.status}
+                </span>
+                {subscription.cancel_at_period_end && (
+                  <span className="text-xs px-2 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400">
+                    Cancela em breve
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Renewal Date */}
+            <div className="rounded-xl p-4 bg-slate-800/60 border border-slate-700/50">
+              <div className="flex items-center gap-2 mb-2">
+                <Calendar className="h-4 w-4 text-blue-400" />
+                <span className="text-xs text-slate-400 uppercase tracking-wide">
+                  {subscription.cancel_at_period_end ? 'Encerra em' : 'Renova em'}
+                </span>
+              </div>
+              <p className="text-xl font-bold text-white">
+                {subscription.end_date
+                  ? new Date(subscription.end_date).toLocaleDateString('pt-BR', {
+                      day: '2-digit',
+                      month: 'short',
+                      year: 'numeric',
+                    })
+                  : 'N/A'}
+              </p>
+              {subscription.end_date && (
+                <p className="text-xs text-slate-500 mt-1">
+                  {(() => {
+                    const daysRemaining = Math.ceil(
+                      (new Date(subscription.end_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
+                    );
+                    return daysRemaining > 0 ? `${daysRemaining} dias restantes` : 'Expirado';
+                  })()}
+                </p>
+              )}
             </div>
           </div>
+
+          {/* Actions */}
+          <div className="flex flex-wrap gap-3">
+            {subscription.cancel_at_period_end ? (
+              <button
+                onClick={handleReactivateSubscription}
+                disabled={isReactivating}
+                className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-medium bg-gradient-to-r from-green-500 to-emerald-500 text-white hover:from-green-600 hover:to-emerald-600 shadow-lg shadow-green-500/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer active:scale-[0.98]"
+              >
+                {isReactivating ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Reativando...</span>
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw className="h-4 w-4" />
+                    <span>Reativar Assinatura</span>
+                  </>
+                )}
+              </button>
+            ) : (
+              subscription.status === 'active' && (
+                <button
+                  onClick={() => setIsCancelModalOpen(true)}
+                  className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-medium bg-slate-800 text-slate-300 hover:bg-red-500/10 hover:text-red-400 hover:border-red-500/30 border border-slate-700 transition-all cursor-pointer"
+                >
+                  <Ban className="h-4 w-4" />
+                  <span>Cancelar Assinatura</span>
+                </button>
+              )
+            )}
+          </div>
         </div>
+      </div>
+
+      {/* Payment History Section */}
+      <div className="relative overflow-hidden rounded-2xl border border-slate-700/50 bg-gradient-to-br from-slate-800/50 via-slate-900/60 to-slate-900/80">
+        {/* Header - always visible */}
+        <button
+          onClick={() => setIsPaymentHistoryExpanded(!isPaymentHistoryExpanded)}
+          className="w-full p-6 flex items-center justify-between hover:bg-slate-800/20 transition-colors cursor-pointer"
+        >
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 rounded-xl bg-gradient-to-br from-emerald-500/20 to-teal-500/20 border border-emerald-500/20">
+              <Receipt className="h-5 w-5 text-emerald-400" />
+            </div>
+            <div className="text-left">
+              <h2 className="text-xl font-bold text-white">Histórico de Pagamentos</h2>
+              <p className="text-sm text-slate-400">{paymentHistory.length} pagamentos encontrados</p>
+            </div>
+          </div>
+          {isPaymentHistoryExpanded ? (
+            <ChevronUp className="h-5 w-5 text-slate-400" />
+          ) : (
+            <ChevronDown className="h-5 w-5 text-slate-400" />
+          )}
+        </button>
+
+        {/* Expandable Content */}
+        {isPaymentHistoryExpanded && (
+          <div className="px-6 pb-6 border-t border-slate-700/50">
+            {isLoadingPayments ? (
+              <div className="py-8 flex items-center justify-center gap-3">
+                <Loader2 className="h-5 w-5 animate-spin text-emerald-400" />
+                <span className="text-slate-400">Carregando histórico...</span>
+              </div>
+            ) : paymentHistory.length === 0 ? (
+              <div className="py-8 text-center text-slate-400">
+                <Receipt className="h-12 w-12 mx-auto mb-3 text-slate-600" />
+                <p>Nenhum pagamento encontrado</p>
+              </div>
+            ) : (
+              <div className="mt-4 space-y-3">
+                {paymentHistory.map((payment) => (
+                  <div
+                    key={payment.id}
+                    className="flex items-center justify-between p-4 rounded-xl bg-slate-800/40 border border-slate-700/30 hover:bg-slate-800/60 transition-colors"
+                  >
+                    <div className="flex items-center gap-4">
+                      {/* Payment method icon */}
+                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                        payment.paymentMethod === 'PIX'
+                          ? 'bg-green-500/10 border border-green-500/20'
+                          : 'bg-blue-500/10 border border-blue-500/20'
+                      }`}>
+                        {payment.paymentMethod === 'PIX' ? (
+                          <span className="text-green-400 font-bold text-xs">PIX</span>
+                        ) : (
+                          <CreditCard className="h-5 w-5 text-blue-400" />
+                        )}
+                      </div>
+                      <div>
+                        <p className="font-medium text-white">
+                          {payment.description || (payment.plan ? `Plano ${payment.plan.charAt(0).toUpperCase() + payment.plan.slice(1)}` : 'Pagamento')}
+                        </p>
+                        <p className="text-xs text-slate-400">
+                          {new Date(payment.date).toLocaleDateString('pt-BR', {
+                            day: '2-digit',
+                            month: 'long',
+                            year: 'numeric',
+                          })}
+                          {' · '}
+                          {payment.paymentMethod}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-bold text-white">
+                        {formatCurrency(payment.amount, payment.currency)}
+                      </p>
+                      <p className={`text-xs ${
+                        payment.status === 'succeeded' || payment.status === 'paid'
+                          ? 'text-green-400'
+                          : 'text-amber-400'
+                      }`}>
+                        {payment.status === 'succeeded' || payment.status === 'paid' ? 'Pago' : payment.status}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Modal de Confirmação */}
@@ -429,15 +900,17 @@ export function SubscriptionTab({ subscription }: SubscriptionTabProps) {
                   <span className="text-slate-400">Calculando valor...</span>
                 </div>
               ) : !upfrontBlockedError && prorationPreview && prorationPreview.amountDue > 0 ? (
-                <div className="rounded-xl p-4 bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/20">
+                <div className={`rounded-xl p-4 border ${prorationPreview.isPixUpgrade ? 'bg-gradient-to-r from-green-500/10 to-emerald-500/10 border-green-500/20' : 'bg-gradient-to-r from-blue-500/10 to-purple-500/10 border-blue-500/20'}`}>
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-sm text-slate-300 font-medium">Valor a pagar agora</span>
-                    <span className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+                    <span className={`text-2xl font-bold ${prorationPreview.isPixUpgrade ? 'text-green-400' : 'bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent'}`}>
                       {formatCurrency(prorationPreview.amountDue, prorationPreview.currency)}
                     </span>
                   </div>
                   <p className="text-xs text-slate-500">
-                    {prorationPreview.isUpfrontPayment && prorationPreview.daysRemaining ? (
+                    {prorationPreview.isPixUpgrade && prorationPreview.daysRemaining ? (
+                      <>Proporcional aos {prorationPreview.daysRemaining} dias restantes. <span className="text-green-400 font-medium">Pagamento via PIX.</span></>
+                    ) : prorationPreview.isUpfrontPayment && prorationPreview.daysRemaining ? (
                       <>Proporcional aos {prorationPreview.daysRemaining} dias restantes. Cobrança automática no cartão.</>
                     ) : (
                       <>Calculado proporcionalmente ao período restante da sua assinatura.</>
@@ -497,6 +970,163 @@ export function SubscriptionTab({ subscription }: SubscriptionTabProps) {
                   </>
                 )}
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Cancel Subscription Modal */}
+      {isCancelModalOpen && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-gradient-to-b from-slate-800/95 to-slate-900/98 border border-slate-700/50 rounded-2xl max-w-md w-full shadow-2xl overflow-hidden">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-red-600/20 via-rose-600/20 to-red-600/20 px-6 py-5 border-b border-slate-700/50">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-xl bg-red-500/20 border border-red-500/20">
+                    <Ban className="h-5 w-5 text-red-400" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-white">Cancelar Assinatura</h3>
+                    <p className="text-xs text-slate-400">Esta ação pode ser revertida</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setIsCancelModalOpen(false)}
+                  className="p-2 rounded-xl hover:bg-slate-700/50 transition-colors group"
+                >
+                  <X className="h-5 w-5 text-slate-400 group-hover:text-white transition-colors" />
+                </button>
+              </div>
+            </div>
+
+            {/* Content */}
+            <div className="p-6 space-y-5">
+              <div className="flex items-start gap-4">
+                <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-amber-500/10 flex items-center justify-center">
+                  <AlertTriangle className="h-6 w-6 text-amber-400" />
+                </div>
+                <div>
+                  <p className="text-white font-medium">Tem certeza que deseja cancelar?</p>
+                  <p className="text-sm text-slate-400 mt-1">
+                    Ao cancelar, você continuará tendo acesso ao plano{' '}
+                    <span className="font-medium text-white">{subscription.plan.toUpperCase()}</span> até{' '}
+                    <span className="font-medium text-white">
+                      {subscription.end_date
+                        ? new Date(subscription.end_date).toLocaleDateString('pt-BR', {
+                            day: '2-digit',
+                            month: 'long',
+                            year: 'numeric',
+                          })
+                        : 'o fim do período'}
+                    </span>.
+                  </p>
+                </div>
+              </div>
+
+              {/* What you'll lose */}
+              <div className="rounded-xl p-4 bg-slate-800/60 border border-slate-700/50">
+                <p className="text-xs text-slate-400 uppercase tracking-wide mb-3">O que você perderá:</p>
+                <ul className="space-y-2">
+                  {getPlanByValue(subscription.plan)?.features.slice(0, 3).map((feature, idx) => (
+                    <li key={idx} className="flex items-center gap-2 text-sm text-slate-300">
+                      <X className="h-4 w-4 text-red-400 flex-shrink-0" />
+                      <span>{feature}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="px-6 py-4 border-t border-slate-700/50 bg-slate-900/50 space-y-3">
+              <button
+                onClick={() => handleCancelSubscription(false)}
+                disabled={isCancelling}
+                className="w-full px-4 py-3 rounded-xl font-semibold transition-all disabled:opacity-50 flex items-center justify-center gap-2 bg-amber-500/10 text-amber-400 border border-amber-500/30 hover:bg-amber-500/20 cursor-pointer"
+              >
+                {isCancelling ? (
+                  <>
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                    <span>Processando...</span>
+                  </>
+                ) : (
+                  <>
+                    <Calendar className="h-5 w-5" />
+                    <span>Cancelar ao fim do período</span>
+                  </>
+                )}
+              </button>
+              <button
+                onClick={() => setIsCancelModalOpen(false)}
+                disabled={isCancelling}
+                className="w-full px-4 py-3 rounded-xl bg-slate-800 text-slate-300 hover:bg-slate-700 transition-all font-medium disabled:opacity-50 cursor-pointer"
+              >
+                Manter minha assinatura
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* PIX Upgrade Payment Modal */}
+      {isPixModalOpen && pixUpgradeData && stripePromise && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-gradient-to-b from-slate-800/95 to-slate-900/98 border border-slate-700/50 rounded-2xl max-w-md w-full shadow-2xl overflow-hidden">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-green-600/20 via-emerald-600/20 to-green-600/20 px-6 py-5 border-b border-slate-700/50">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-green-500/30 to-emerald-500/30 flex items-center justify-center">
+                    <CreditCard className="h-5 w-5 text-green-400" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-white">Upgrade via PIX</h3>
+                    <p className="text-sm text-slate-400">Pague com PIX para fazer o upgrade</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => {
+                    setIsPixModalOpen(false);
+                    setPixUpgradeData(null);
+                    setSelectedPlan(null);
+                  }}
+                  className="p-2 rounded-lg hover:bg-slate-700/50 text-slate-400 hover:text-slate-200 transition-colors"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Content */}
+            <div className="px-6 py-5">
+              <Elements
+                stripe={stripePromise}
+                options={{
+                  clientSecret: pixUpgradeData.clientSecret,
+                  appearance: {
+                    theme: 'night',
+                    variables: {
+                      colorPrimary: '#22c55e',
+                      colorBackground: '#1e293b',
+                      colorText: '#e2e8f0',
+                      colorDanger: '#ef4444',
+                      fontFamily: 'system-ui, sans-serif',
+                      borderRadius: '8px',
+                    },
+                  },
+                }}
+              >
+                <PixUpgradePaymentForm
+                  pixData={pixUpgradeData}
+                  onSuccess={handlePixUpgradeSuccess}
+                  onCancel={() => {
+                    setIsPixModalOpen(false);
+                    setPixUpgradeData(null);
+                    setSelectedPlan(null);
+                  }}
+                />
+              </Elements>
             </div>
           </div>
         </div>
