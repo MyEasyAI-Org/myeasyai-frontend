@@ -1,5 +1,5 @@
 import { forwardRef } from 'react';
-import { MessageCircle, Sparkles } from 'lucide-react';
+import { MessageCircle, User } from 'lucide-react';
 
 interface ChatBubbleIconProps {
   avatarSelfie: string | null;
@@ -52,7 +52,7 @@ export const ChatBubbleIcon = forwardRef<HTMLButtonElement, ChatBubbleIconProps>
               </div>
             ) : (
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-blue-400 to-purple-500 ring-2 ring-white/20">
-                <Sparkles className="h-5 w-5 text-white" />
+                <User className="h-5 w-5 text-white" />
               </div>
             )}
 
