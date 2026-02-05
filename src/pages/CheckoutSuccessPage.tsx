@@ -14,13 +14,22 @@ export function CheckoutSuccessPage() {
   const [subscriptionStatus, setSubscriptionStatus] = useState<string | null>(null);
 
   const sessionId = searchParams.get('session_id');
-  const user = authService.getUser();
 
   useEffect(() => {
     const verifyPayment = async () => {
+      // Wait for auth service to initialize (restore session from localStorage)
+      await authService.waitForInit();
+
+      const user = authService.getUser();
+
       if (!user?.uuid) {
-        setError('Usuario nao encontrado');
+        console.error('[CheckoutSuccess] User not found after auth init');
+        setError('Usuário não encontrado. Faça login novamente.');
         setLoading(false);
+        // Redirect to login after a delay
+        setTimeout(() => {
+          navigate('/login', { replace: true });
+        }, 3000);
         return;
       }
 
@@ -66,7 +75,7 @@ export function CheckoutSuccessPage() {
     };
 
     verifyPayment();
-  }, [user, navigate, sessionId]);
+  }, [navigate, sessionId]);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-900 to-slate-800 flex items-center justify-center p-4">
