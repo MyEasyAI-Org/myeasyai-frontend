@@ -3,7 +3,7 @@
 // =============================================
 
 import { memo } from 'react';
-import { LayoutGrid, List, MessageSquare } from 'lucide-react';
+import { LayoutGrid, List, MessageSquare, Pointer } from 'lucide-react';
 import type { BreadcrumbItem, DocsViewMode } from '../../types';
 import { Breadcrumb } from '../shared/Breadcrumb';
 import { SearchInput } from '../shared/SearchInput';
@@ -51,38 +51,45 @@ export const DocsHeader = memo(function DocsHeader({
 
         {/* Toolbar */}
         <div className="flex items-center justify-between gap-4">
-          {/* Search */}
-          <SearchInput
-            value={searchQuery}
-            onChange={onSearchChange}
-            placeholder="Buscar documentos..."
-            className="flex-1 max-w-md"
-          />
-
-          {/* View Toggle & Chat */}
-          <div className="flex items-center gap-2">
+          {/* Search + View Mode Toggle */}
+          <div className="flex items-center gap-3">
+            <SearchInput
+              value={searchQuery}
+              onChange={onSearchChange}
+              placeholder="Buscar documentos..."
+              className="flex-1 max-w-md"
+            />
             {/* View Mode Toggle */}
             <ViewModeToggle viewMode={viewMode} onChange={onViewModeChange} />
+          </div>
+
+          {/* Dica + Chat Button */}
+          <div className="flex items-center gap-3">
+            {/* Dica para o assistente */}
+            <div className="flex items-center gap-2 text-slate-400">
+              <span className="text-sm">Se precisar de ajuda é só falar comigo!</span>
+              <Pointer className="w-7 h-5 animate-pointing text-white" />
+            </div>
 
             {/* Chat Button */}
             <button
-              onClick={onToggleChat}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
-                chatOpen
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-              }`}
-            >
-              {avatarSelfie ? (
-                <img
-                  src={avatarSelfie}
-                  alt={avatarName || 'Assistente Concierge'}
-                  className="w-5 h-5 rounded-full object-cover"
-                />
-              ) : (
-                <MessageSquare className="w-4 h-4" />
-              )}
-              <span className="text-sm font-medium">{avatarName || 'Assistente Concierge'}</span>
+            onClick={onToggleChat}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors animate-pulse-glow ${
+              chatOpen
+                ? 'bg-blue-600 text-white'
+                : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+            }`}
+          >
+            {avatarSelfie ? (
+              <img
+                src={avatarSelfie}
+                alt={avatarName || 'Assistente Concierge'}
+                className="w-5 h-5 rounded-full object-cover"
+              />
+            ) : (
+              <MessageSquare className="w-4 h-4" />
+            )}
+            <span className="text-sm font-medium">{avatarName || 'Assistente Concierge'}</span>
             </button>
           </div>
         </div>
