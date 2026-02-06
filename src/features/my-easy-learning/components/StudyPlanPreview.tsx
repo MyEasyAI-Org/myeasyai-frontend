@@ -7,10 +7,11 @@ interface StudyPlanPreviewProps {
   plan: GeneratedStudyPlan | null;
   onSavePlan?: () => void;
   isSaving?: boolean;
+  isPlanSaved?: boolean;
   onTaskComplete?: (studyHour?: number, skillCategory?: string) => Promise<void>;
 }
 
-export function StudyPlanPreview({ plan, onSavePlan, isSaving = false, onTaskComplete }: StudyPlanPreviewProps) {
+export function StudyPlanPreview({ plan, onSavePlan, isSaving = false, isPlanSaved = false, onTaskComplete }: StudyPlanPreviewProps) {
   const [completedTasks, setCompletedTasks] = useState<Set<string>>(new Set());
 
   const handleTaskToggle = useCallback(async (taskId: string) => {
@@ -73,15 +74,28 @@ export function StudyPlanPreview({ plan, onSavePlan, isSaving = false, onTaskCom
               </div>
             </div>
             {onSavePlan && (
-              <button
-                type="button"
-                onClick={onSavePlan}
-                disabled={isSaving}
-                className="flex items-center gap-2 rounded-lg bg-white/20 px-4 py-2 text-sm font-semibold text-white hover:bg-white/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <Save className="h-4 w-4" />
-                {isSaving ? 'Salvando...' : 'Salvar Plano'}
-              </button>
+              isPlanSaved ? (
+                // Plan already saved - show disabled button
+                <button
+                  type="button"
+                  disabled
+                  className="flex items-center gap-2 rounded-lg bg-white/10 px-4 py-2 text-sm font-medium text-white/50 cursor-not-allowed"
+                >
+                  <Check className="h-4 w-4" />
+                  Plano Salvo
+                </button>
+              ) : (
+                // Plan not saved - show save button
+                <button
+                  type="button"
+                  onClick={onSavePlan}
+                  disabled={isSaving}
+                  className="flex items-center gap-2 rounded-lg bg-white/20 px-4 py-2 text-sm font-semibold text-white hover:bg-white/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Save className="h-4 w-4" />
+                  {isSaving ? 'Salvando...' : 'Salvar Plano'}
+                </button>
+              )
             )}
           </div>
         </div>

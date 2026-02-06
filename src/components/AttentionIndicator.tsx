@@ -61,10 +61,10 @@ export const AttentionIndicator = memo(function AttentionIndicator({
     <div
       className={`absolute z-50 flex items-center gap-1 pointer-events-none ${posStyles.container} ${className}`}
     >
-      {/* Pointing hand with bounce animation */}
+      {/* Pointing hand with gentle bounce animation */}
       <span
-        className={`${sizeStyles.text} ${posStyles.hand} animate-bounce drop-shadow-lg`}
-        style={{ animationDuration: '1s' }}
+        className={`${sizeStyles.text} ${posStyles.hand} animate-bounce drop-shadow-sm opacity-80`}
+        style={{ animationDuration: '2s' }}
       >
         👆
       </span>
@@ -107,9 +107,9 @@ export const WithAttentionIndicator = memo(function WithAttentionIndicator({
       {children}
       <AttentionIndicator show={show} position={position} message={message} size={size} />
 
-      {/* Pulse ring around element when attention is active */}
+      {/* Subtle glow around element when attention is active */}
       {show && (
-        <div className="absolute inset-0 rounded-lg ring-2 ring-amber-400/50 animate-pulse pointer-events-none" />
+        <div className="absolute inset-0 rounded-lg ring-1 ring-emerald-400/30 pointer-events-none" />
       )}
     </div>
   );

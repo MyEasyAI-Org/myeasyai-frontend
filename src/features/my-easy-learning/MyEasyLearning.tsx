@@ -493,6 +493,9 @@ export function MyEasyLearning({ onBackToDashboard }: MyEasyLearningProps) {
         studyPlanData.setGeneratedPlan(planData as GeneratedStudyPlan);
       }
 
+      // Mark as saved since it's being loaded from library
+      setIsPlanSaved(true);
+
       studyPlanData.setCurrentStep('result');
       setViewMode('chat');
       toast.success(`Plano "${item.version_name}" carregado!`);
@@ -537,23 +540,35 @@ export function MyEasyLearning({ onBackToDashboard }: MyEasyLearningProps) {
             <h1 className="text-lg md:text-2xl font-bold text-white">MyEasyLearning</h1>
           </div>
           <div className="flex items-center gap-1 md:gap-2">
-            {/* Save Button with Attention Indicator */}
-            {hasUnsavedPlan && (
-              <WithAttentionIndicator
-                show={hasUnsavedPlan}
-                position="bottom"
-                message="Salve seu plano!"
-                size="sm"
-              >
+            {/* Save Button - shows different states based on plan status */}
+            {hasPlan && (
+              isPlanSaved ? (
+                // Plan already saved - show disabled "Plano Salvo" button
                 <button
                   type="button"
-                  onClick={handleSavePlan}
-                  className="flex items-center gap-1 md:gap-2 rounded-lg px-2 md:px-4 py-2 text-xs md:text-sm font-semibold transition-colors cursor-pointer bg-gradient-to-r from-emerald-500 to-green-600 text-white hover:from-emerald-600 hover:to-green-700 shadow-lg shadow-emerald-500/30"
+                  disabled
+                  className="flex items-center gap-1 md:gap-2 rounded-lg px-2 md:px-4 py-2 text-xs md:text-sm font-medium bg-slate-700/50 text-slate-400 cursor-not-allowed"
                 >
                   <Save className="h-4 w-4" />
-                  <span className="hidden sm:inline">Salvar</span>
+                  <span className="hidden sm:inline">Plano Salvo</span>
                 </button>
-              </WithAttentionIndicator>
+              ) : (
+                // Plan not saved - show save button with subtle attention indicator
+                <WithAttentionIndicator
+                  show={true}
+                  position="bottom"
+                  size="sm"
+                >
+                  <button
+                    type="button"
+                    onClick={handleSavePlan}
+                    className="flex items-center gap-1 md:gap-2 rounded-lg px-2 md:px-4 py-2 text-xs md:text-sm font-semibold transition-colors cursor-pointer bg-gradient-to-r from-emerald-500 to-green-600 text-white hover:from-emerald-600 hover:to-green-700 shadow-lg shadow-emerald-500/30"
+                  >
+                    <Save className="h-4 w-4" />
+                    <span className="hidden sm:inline">Salvar</span>
+                  </button>
+                </WithAttentionIndicator>
+              )
             )}
             <button
               type="button"
@@ -637,6 +652,7 @@ export function MyEasyLearning({ onBackToDashboard }: MyEasyLearningProps) {
                   profile={studyPlanData.data.profile}
                   onSavePlan={handleSavePlan}
                   isSaving={studyPlanLibrary.isSaving}
+                  isPlanSaved={isPlanSaved}
                   onXpEarned={gamification.addXP}
                   onLessonComplete={(weekNumber, lessonNumber) => {
                     gamification.recordTaskCompleted(new Date().getHours(), studyPlanData.data.profile?.skill_category);
@@ -648,6 +664,7 @@ export function MyEasyLearning({ onBackToDashboard }: MyEasyLearningProps) {
                   plan={studyPlanData.data.generatedPlan}
                   onSavePlan={handleSavePlan}
                   isSaving={studyPlanLibrary.isSaving}
+                  isPlanSaved={isPlanSaved}
                   onTaskComplete={gamification.recordTaskCompleted}
                 />
               )}
@@ -682,6 +699,7 @@ export function MyEasyLearning({ onBackToDashboard }: MyEasyLearningProps) {
                       profile={studyPlanData.data.profile}
                       onSavePlan={handleSavePlan}
                       isSaving={studyPlanLibrary.isSaving}
+                      isPlanSaved={isPlanSaved}
                       onXpEarned={gamification.addXP}
                       onLessonComplete={(weekNumber, lessonNumber) => {
                         gamification.recordTaskCompleted(new Date().getHours(), studyPlanData.data.profile?.skill_category);
@@ -693,6 +711,7 @@ export function MyEasyLearning({ onBackToDashboard }: MyEasyLearningProps) {
                       plan={studyPlanData.data.generatedPlan}
                       onSavePlan={handleSavePlan}
                       isSaving={studyPlanLibrary.isSaving}
+                      isPlanSaved={isPlanSaved}
                       onTaskComplete={gamification.recordTaskCompleted}
                     />
                   )}
