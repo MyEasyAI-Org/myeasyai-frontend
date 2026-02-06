@@ -1,8 +1,10 @@
-import { ArrowLeft, Library, GraduationCap, MessageCircle, BookOpen } from 'lucide-react';
+import { ArrowLeft, Library, GraduationCap, MessageCircle, BookOpen, Save } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
+import { WithAttentionIndicator } from '../../components/AttentionIndicator';
 import { useUserData } from '../../hooks/useUserData';
 import { SaveStudyPlanModal } from './components/SaveStudyPlanModal';
+import { UnsavedPlanModal } from './components/UnsavedPlanModal';
 import { StudyPlanChatPanel } from './components/StudyPlanChatPanel';
 import { StudyPlanLibrary } from './components/StudyPlanLibrary';
 import { StudyPlanPreview } from './components/StudyPlanPreview';
@@ -42,10 +44,16 @@ export function MyEasyLearning({ onBackToDashboard }: MyEasyLearningProps) {
   const [generatingStep, setGeneratingStep] = useState<string | null>(null);
   const [hasError, setHasError] = useState(false);
   const [mobilePanel, setMobilePanel] = useState<'chat' | 'plan'>('chat');
+  const [isUnsavedModalOpen, setIsUnsavedModalOpen] = useState(false);
+  const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
+  const [isPlanSaved, setIsPlanSaved] = useState(false);
   const useEnhancedMode = true; // Always use AI teaching mode
 
   // Check if there's a plan to show
   const hasPlan = enhancedPlan || studyPlanData.data.generatedPlan;
+
+  // Check if there's an unsaved plan
+  const hasUnsavedPlan = hasPlan && !isPlanSaved;
 
   // Initialize conversation
   useEffect(() => {
@@ -433,12 +441,40 @@ export function MyEasyLearning({ onBackToDashboard }: MyEasyLearningProps) {
       if (savedPlan) {
         toast.success('Plano salvo com sucesso!');
         setIsSaveModalOpen(false);
+        setIsPlanSaved(true);
       } else {
         toast.error('Erro ao salvar plano');
       }
     },
     [studyPlanData, studyPlanLibrary, enhancedPlan]
   );
+
+  // Handler for attempting to leave with unsaved plan
+  const handleAttemptLeave = useCallback(
+    (action: () => void) => {
+      if (hasUnsavedPlan) {
+        setPendingAction(() => action);
+        setIsUnsavedModalOpen(true);
+      } else {
+        action();
+      }
+    },
+    [hasUnsavedPlan]
+  );
+
+  const handleConfirmLeave = useCallback(() => {
+    setIsUnsavedModalOpen(false);
+    if (pendingAction) {
+      pendingAction();
+      setPendingAction(null);
+    }
+  }, [pendingAction]);
+
+  const handleSaveFromModal = useCallback(() => {
+    setIsUnsavedModalOpen(false);
+    setPendingAction(null);
+    setIsSaveModalOpen(true);
+  }, []);
 
   const handleLoadPlan = useCallback(
     (item: typeof studyPlanLibrary.items[0]) => {
@@ -492,7 +528,7 @@ export function MyEasyLearning({ onBackToDashboard }: MyEasyLearningProps) {
             {onBackToDashboard && (
               <button
                 type="button"
-                onClick={onBackToDashboard}
+                onClick={() => handleAttemptLeave(onBackToDashboard)}
                 className="flex items-center gap-2 text-gray-400 hover:text-white cursor-pointer"
               >
                 <ArrowLeft className="h-5 w-5" />
@@ -501,6 +537,24 @@ export function MyEasyLearning({ onBackToDashboard }: MyEasyLearningProps) {
             <h1 className="text-lg md:text-2xl font-bold text-white">MyEasyLearning</h1>
           </div>
           <div className="flex items-center gap-1 md:gap-2">
+            {/* Save Button with Attention Indicator */}
+            {hasUnsavedPlan && (
+              <WithAttentionIndicator
+                show={hasUnsavedPlan}
+                position="bottom"
+                message="Salve seu plano!"
+                size="sm"
+              >
+                <button
+                  type="button"
+                  onClick={handleSavePlan}
+                  className="flex items-center gap-1 md:gap-2 rounded-lg px-2 md:px-4 py-2 text-xs md:text-sm font-semibold transition-colors cursor-pointer bg-gradient-to-r from-emerald-500 to-green-600 text-white hover:from-emerald-600 hover:to-green-700 shadow-lg shadow-emerald-500/30"
+                >
+                  <Save className="h-4 w-4" />
+                  <span className="hidden sm:inline">Salvar</span>
+                </button>
+              </WithAttentionIndicator>
+            )}
             <button
               type="button"
               onClick={() => setViewMode(viewMode === 'progress' ? 'chat' : 'progress')}
@@ -691,6 +745,18 @@ export function MyEasyLearning({ onBackToDashboard }: MyEasyLearningProps) {
         onSave={handleSaveConfirm}
         defaultName={studyPlanData.data.profile?.skill_name || ''}
         isSaving={studyPlanLibrary.isSaving}
+      />
+
+      {/* Unsaved Plan Warning Modal */}
+      <UnsavedPlanModal
+        isOpen={isUnsavedModalOpen}
+        onClose={() => {
+          setIsUnsavedModalOpen(false);
+          setPendingAction(null);
+        }}
+        onSave={handleSaveFromModal}
+        onLeave={handleConfirmLeave}
+        planName={studyPlanData.data.profile?.skill_name}
       />
     </div>
   );
