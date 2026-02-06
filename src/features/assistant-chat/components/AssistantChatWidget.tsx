@@ -5,7 +5,7 @@ import {
   Maximize2,
   Minimize2,
   RotateCcw,
-  Sparkles,
+  User,
   Bot,
   ExternalLink,
   Zap,
@@ -458,7 +458,7 @@ export function AssistantChatWidget() {
                 />
               ) : (
                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-r from-blue-400 to-purple-400">
-                  <Sparkles className="h-4 w-4 text-white" />
+                  <User className="h-4 w-4 text-white" />
                 </div>
               )}
               <div>
@@ -783,7 +783,7 @@ export function AssistantChatWidget() {
                   />
                 ) : (
                   <div className="flex h-full w-full items-center justify-center rounded-full bg-gradient-to-br from-purple-500 to-violet-600">
-                    <Sparkles className="h-7 w-7 text-white" />
+                    <User className="h-7 w-7 text-white" />
                   </div>
                 )}
               </div>

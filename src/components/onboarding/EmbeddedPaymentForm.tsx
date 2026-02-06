@@ -2,13 +2,14 @@
 // Integrates with the onboarding flow for in-modal payment
 // Uses SetupIntent flow: collect payment method, then create subscription
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   PaymentElement,
   useStripe,
   useElements,
 } from '@stripe/react-stripe-js';
+import type { StripePaymentElementChangeEvent, StripeError } from '@stripe/stripe-js';
 import { stripeService } from '../../services/StripeService';
 
 interface EmbeddedPaymentFormProps {
@@ -43,6 +44,75 @@ export function EmbeddedPaymentForm({
   const elements = useElements();
   const [isProcessing, setIsProcessing] = useState(false);
   const [paymentError, setPaymentError] = useState<string | null>(null);
+  const [elementReady, setElementReady] = useState(false);
+  const [loadTimeout, setLoadTimeout] = useState(false);
+  const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+  const isHTTP = window.location.protocol === 'http:';
+
+  // Debug: Log when stripe and elements are available
+  useEffect(() => {
+    console.log('[EmbeddedPaymentForm] Component mounted');
+    console.log('[EmbeddedPaymentForm] Environment:', {
+      isLocalhost,
+      isHTTP,
+      protocol: window.location.protocol,
+      hostname: window.location.hostname,
+    });
+    console.log('[EmbeddedPaymentForm] Props:', {
+      intentType,
+      paymentIntentId,
+      customerId,
+      priceId,
+      countryCode,
+      planName,
+    });
+    if (isLocalhost && isHTTP) {
+      console.warn('[EmbeddedPaymentForm] WARNING: Running on HTTP localhost. Stripe PaymentElement may have issues. Consider using HTTPS.');
+    }
+  }, [intentType, paymentIntentId, customerId, priceId, countryCode, planName, isLocalhost, isHTTP]);
+
+  useEffect(() => {
+    console.log('[EmbeddedPaymentForm] Stripe instance:', stripe ? 'LOADED' : 'NOT LOADED');
+    console.log('[EmbeddedPaymentForm] Elements instance:', elements ? 'LOADED' : 'NOT LOADED');
+  }, [stripe, elements]);
+
+  // Timeout detector - if element doesn't load in 15 seconds, show error
+  useEffect(() => {
+    if (elementReady) return;
+
+    const timeoutId = setTimeout(() => {
+      if (!elementReady) {
+        console.error('[EmbeddedPaymentForm] PaymentElement TIMEOUT - element did not load in 15 seconds');
+        setLoadTimeout(true);
+        setPaymentError('O formulário de pagamento não carregou. Verifique sua conexão com a internet ou tente usar HTTPS.');
+      }
+    }, 15000);
+
+    return () => clearTimeout(timeoutId);
+  }, [elementReady]);
+
+  const handlePaymentElementReady = () => {
+    console.log('[EmbeddedPaymentForm] PaymentElement is READY');
+    setElementReady(true);
+    setLoadTimeout(false);
+  };
+
+  const handleLoaderStart = () => {
+    console.log('[EmbeddedPaymentForm] PaymentElement loader STARTED');
+  };
+
+  const handlePaymentElementChange = (event: StripePaymentElementChangeEvent) => {
+    console.log('[EmbeddedPaymentForm] PaymentElement changed:', {
+      complete: event.complete,
+      empty: event.empty,
+      value: event.value,
+    });
+  };
+
+  const handlePaymentElementLoadError = (event: { elementType: 'payment'; error: StripeError }) => {
+    console.error('[EmbeddedPaymentForm] PaymentElement LOAD ERROR:', event.error);
+    setPaymentError(`Erro ao carregar formulário: ${event.error.message}`);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -210,18 +280,63 @@ export function EmbeddedPaymentForm({
 
       {/* Payment Element */}
       <div className="p-4 rounded-lg bg-slate-800/40 border border-slate-700">
-        <PaymentElement
-          options={{
-            layout: 'tabs',
-            defaultValues: {
-              billingDetails: {
-                address: {
-                  country: countryCode,
+        {!elementReady && !loadTimeout && (
+          <div className="text-center py-4 text-slate-400">
+            <svg className="animate-spin h-6 w-6 mx-auto mb-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+            </svg>
+            Carregando formulário de pagamento...
+          </div>
+        )}
+        {loadTimeout && (
+          <div className="text-center py-4 text-amber-400">
+            <svg className="h-8 w-8 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            <p className="text-sm mb-3">O formulário de pagamento está demorando para carregar.</p>
+            {isLocalhost && isHTTP ? (
+              <div className="text-xs text-slate-400 mb-3 space-y-1">
+                <p className="text-amber-300 font-medium">Detectado: localhost via HTTP</p>
+                <p>O Stripe pode ter problemas em HTTP local. Opções:</p>
+                <ul className="list-disc list-inside text-left pl-4">
+                  <li>Use o site em produção (HTTPS): <a href="https://myeasyai.com" className="text-blue-400 underline">myeasyai.com</a></li>
+                  <li>Use ngrok para criar um túnel HTTPS</li>
+                  <li>Configure vite para usar HTTPS local</li>
+                </ul>
+              </div>
+            ) : (
+              <p className="text-xs text-slate-400 mb-3">
+                Verifique sua conexão com a internet e tente novamente.
+              </p>
+            )}
+            <button
+              type="button"
+              onClick={() => window.location.reload()}
+              className="px-4 py-2 bg-amber-500/20 border border-amber-500/30 rounded-lg text-amber-300 hover:bg-amber-500/30 transition-colors"
+            >
+              Recarregar página
+            </button>
+          </div>
+        )}
+        <div className={loadTimeout ? 'hidden' : ''}>
+          <PaymentElement
+            options={{
+              layout: 'tabs',
+              defaultValues: {
+                billingDetails: {
+                  address: {
+                    country: countryCode,
+                  },
                 },
               },
-            },
-          }}
-        />
+            }}
+            onReady={handlePaymentElementReady}
+            onChange={handlePaymentElementChange}
+            onLoadError={handlePaymentElementLoadError}
+            onLoaderStart={handleLoaderStart}
+          />
+        </div>
       </div>
 
       {/* Error Message */}
