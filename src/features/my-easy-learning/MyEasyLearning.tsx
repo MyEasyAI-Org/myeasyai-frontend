@@ -1,4 +1,4 @@
-import { ArrowLeft, Library, GraduationCap } from 'lucide-react';
+import { ArrowLeft, Library, GraduationCap, MessageCircle, BookOpen } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { useUserData } from '../../hooks/useUserData';
@@ -41,7 +41,11 @@ export function MyEasyLearning({ onBackToDashboard }: MyEasyLearningProps) {
   const [enhancedPlan, setEnhancedPlan] = useState<EnhancedGeneratedStudyPlan | null>(null);
   const [generatingStep, setGeneratingStep] = useState<string | null>(null);
   const [hasError, setHasError] = useState(false);
+  const [mobilePanel, setMobilePanel] = useState<'chat' | 'plan'>('chat');
   const useEnhancedMode = true; // Always use AI teaching mode
+
+  // Check if there's a plan to show
+  const hasPlan = enhancedPlan || studyPlanData.data.generatedPlan;
 
   // Initialize conversation
   useEffect(() => {
@@ -482,9 +486,9 @@ export function MyEasyLearning({ onBackToDashboard }: MyEasyLearningProps) {
   return (
     <div className="flex h-screen flex-col bg-slate-950">
       {/* Header */}
-      <div className="border-b border-slate-800 bg-slate-900 p-4">
+      <div className="border-b border-slate-800 bg-slate-900 p-3 md:p-4">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 md:gap-4">
             {onBackToDashboard && (
               <button
                 type="button"
@@ -494,32 +498,32 @@ export function MyEasyLearning({ onBackToDashboard }: MyEasyLearningProps) {
                 <ArrowLeft className="h-5 w-5" />
               </button>
             )}
-            <h1 className="text-2xl font-bold text-white">MyEasyLearning</h1>
+            <h1 className="text-lg md:text-2xl font-bold text-white">MyEasyLearning</h1>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 md:gap-2">
             <button
               type="button"
               onClick={() => setViewMode(viewMode === 'progress' ? 'chat' : 'progress')}
-              className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition-colors cursor-pointer ${
+              className={`flex items-center gap-1 md:gap-2 rounded-lg px-2 md:px-4 py-2 text-xs md:text-sm font-semibold transition-colors cursor-pointer ${
                 viewMode === 'progress'
                   ? 'bg-cyan-600 text-white hover:bg-cyan-700'
                   : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
               }`}
             >
               <GraduationCap className="h-4 w-4" />
-              {viewMode === 'progress' ? 'Voltar' : 'Progresso'}
+              <span className="hidden sm:inline">{viewMode === 'progress' ? 'Voltar' : 'Progresso'}</span>
             </button>
             <button
               type="button"
               onClick={() => setViewMode(viewMode === 'library' ? 'chat' : 'library')}
-              className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition-colors cursor-pointer ${
+              className={`flex items-center gap-1 md:gap-2 rounded-lg px-2 md:px-4 py-2 text-xs md:text-sm font-semibold transition-colors cursor-pointer ${
                 viewMode === 'library'
                   ? 'bg-blue-600 text-white hover:bg-blue-700'
                   : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
               }`}
             >
               <Library className="h-4 w-4" />
-              {viewMode === 'library' ? 'Voltar' : 'Biblioteca'}
+              <span className="hidden sm:inline">{viewMode === 'library' ? 'Voltar' : 'Biblioteca'}</span>
             </button>
           </div>
         </div>
@@ -549,50 +553,135 @@ export function MyEasyLearning({ onBackToDashboard }: MyEasyLearningProps) {
           />
         </div>
       ) : (
-        <div className="flex flex-1 overflow-hidden">
-          {/* Chat Panel */}
-          <div className="w-1/2 border-r border-slate-800">
-            <StudyPlanChatPanel
-              messages={messages}
-              currentStep={studyPlanData.data.currentStep}
-              inputMessage={inputMessage}
-              isGenerating={isGenerating}
-              generatingStep={generatingStep}
-              hasError={hasError}
-              onInputChange={setInputMessage}
-              onSendMessage={handleSendMessage}
-              onSkillLevelSelect={handleCurrentLevelSelect}
-              onTargetLevelSelect={handleTargetLevelSelect}
-              onMotivationSelect={handleMotivationSelect}
-              onWeeklyHoursSelect={handleWeeklyHoursSelect}
-              onDeadlineSelect={handleDeadlineSelect}
-            />
+        <>
+          {/* Desktop: Split view */}
+          <div className="hidden md:flex flex-1 overflow-hidden">
+            {/* Chat Panel */}
+            <div className="w-1/2 border-r border-slate-800">
+              <StudyPlanChatPanel
+                messages={messages}
+                currentStep={studyPlanData.data.currentStep}
+                inputMessage={inputMessage}
+                isGenerating={isGenerating}
+                generatingStep={generatingStep}
+                hasError={hasError}
+                onInputChange={setInputMessage}
+                onSendMessage={handleSendMessage}
+                onSkillLevelSelect={handleCurrentLevelSelect}
+                onTargetLevelSelect={handleTargetLevelSelect}
+                onMotivationSelect={handleMotivationSelect}
+                onWeeklyHoursSelect={handleWeeklyHoursSelect}
+                onDeadlineSelect={handleDeadlineSelect}
+              />
+            </div>
+
+            {/* Preview Panel */}
+            <div className="w-1/2">
+              {useEnhancedMode && enhancedPlan ? (
+                <EnhancedStudyPlanPreview
+                  plan={enhancedPlan}
+                  profile={studyPlanData.data.profile}
+                  onSavePlan={handleSavePlan}
+                  isSaving={studyPlanLibrary.isSaving}
+                  onXpEarned={gamification.addXP}
+                  onLessonComplete={(weekNumber, lessonNumber) => {
+                    gamification.recordTaskCompleted(new Date().getHours(), studyPlanData.data.profile?.skill_category);
+                    console.log(`Lesson ${lessonNumber} of week ${weekNumber} completed!`);
+                  }}
+                />
+              ) : (
+                <StudyPlanPreview
+                  plan={studyPlanData.data.generatedPlan}
+                  onSavePlan={handleSavePlan}
+                  isSaving={studyPlanLibrary.isSaving}
+                  onTaskComplete={gamification.recordTaskCompleted}
+                />
+              )}
+            </div>
           </div>
 
-          {/* Preview Panel */}
-          <div className="w-1/2">
-            {useEnhancedMode && enhancedPlan ? (
-              <EnhancedStudyPlanPreview
-                plan={enhancedPlan}
-                profile={studyPlanData.data.profile}
-                onSavePlan={handleSavePlan}
-                isSaving={studyPlanLibrary.isSaving}
-                onXpEarned={gamification.addXP}
-                onLessonComplete={(weekNumber, lessonNumber) => {
-                  gamification.recordTaskCompleted(new Date().getHours(), studyPlanData.data.profile?.skill_category);
-                  console.log(`Lesson ${lessonNumber} of week ${weekNumber} completed!`);
-                }}
-              />
-            ) : (
-              <StudyPlanPreview
-                plan={studyPlanData.data.generatedPlan}
-                onSavePlan={handleSavePlan}
-                isSaving={studyPlanLibrary.isSaving}
-                onTaskComplete={gamification.recordTaskCompleted}
-              />
-            )}
+          {/* Mobile: Single panel with bottom tabs */}
+          <div className="flex md:hidden flex-1 flex-col overflow-hidden">
+            {/* Mobile Content Area */}
+            <div className="flex-1 overflow-hidden">
+              {mobilePanel === 'chat' ? (
+                <StudyPlanChatPanel
+                  messages={messages}
+                  currentStep={studyPlanData.data.currentStep}
+                  inputMessage={inputMessage}
+                  isGenerating={isGenerating}
+                  generatingStep={generatingStep}
+                  hasError={hasError}
+                  onInputChange={setInputMessage}
+                  onSendMessage={handleSendMessage}
+                  onSkillLevelSelect={handleCurrentLevelSelect}
+                  onTargetLevelSelect={handleTargetLevelSelect}
+                  onMotivationSelect={handleMotivationSelect}
+                  onWeeklyHoursSelect={handleWeeklyHoursSelect}
+                  onDeadlineSelect={handleDeadlineSelect}
+                />
+              ) : (
+                <>
+                  {useEnhancedMode && enhancedPlan ? (
+                    <EnhancedStudyPlanPreview
+                      plan={enhancedPlan}
+                      profile={studyPlanData.data.profile}
+                      onSavePlan={handleSavePlan}
+                      isSaving={studyPlanLibrary.isSaving}
+                      onXpEarned={gamification.addXP}
+                      onLessonComplete={(weekNumber, lessonNumber) => {
+                        gamification.recordTaskCompleted(new Date().getHours(), studyPlanData.data.profile?.skill_category);
+                        console.log(`Lesson ${lessonNumber} of week ${weekNumber} completed!`);
+                      }}
+                    />
+                  ) : (
+                    <StudyPlanPreview
+                      plan={studyPlanData.data.generatedPlan}
+                      onSavePlan={handleSavePlan}
+                      isSaving={studyPlanLibrary.isSaving}
+                      onTaskComplete={gamification.recordTaskCompleted}
+                    />
+                  )}
+                </>
+              )}
+            </div>
+
+            {/* Mobile Bottom Tab Bar */}
+            <div className="border-t border-slate-800 bg-slate-900 safe-area-bottom">
+              <div className="flex">
+                <button
+                  type="button"
+                  onClick={() => setMobilePanel('chat')}
+                  className={`flex-1 flex flex-col items-center gap-1 py-3 px-4 transition-colors ${
+                    mobilePanel === 'chat'
+                      ? 'text-cyan-400 bg-slate-800/50'
+                      : 'text-slate-400 hover:text-slate-300'
+                  }`}
+                >
+                  <MessageCircle className="h-5 w-5" />
+                  <span className="text-xs font-medium">Chat</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMobilePanel('plan')}
+                  disabled={!hasPlan}
+                  className={`flex-1 flex flex-col items-center gap-1 py-3 px-4 transition-colors ${
+                    !hasPlan
+                      ? 'text-slate-600 cursor-not-allowed'
+                      : mobilePanel === 'plan'
+                        ? 'text-cyan-400 bg-slate-800/50'
+                        : 'text-slate-400 hover:text-slate-300'
+                  }`}
+                >
+                  <BookOpen className="h-5 w-5" />
+                  <span className="text-xs font-medium">
+                    {hasPlan ? 'Meu Plano' : 'Sem Plano'}
+                  </span>
+                </button>
+              </div>
+            </div>
           </div>
-        </div>
+        </>
       )}
 
       {/* Save Modal */}
