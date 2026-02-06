@@ -1,4 +1,4 @@
-import { ArrowLeft, Library } from 'lucide-react';
+import { ArrowLeft, Library, GraduationCap } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { useUserData } from '../../hooks/useUserData';
@@ -6,9 +6,13 @@ import { SaveStudyPlanModal } from './components/SaveStudyPlanModal';
 import { StudyPlanChatPanel } from './components/StudyPlanChatPanel';
 import { StudyPlanLibrary } from './components/StudyPlanLibrary';
 import { StudyPlanPreview } from './components/StudyPlanPreview';
+import { EnhancedStudyPlanPreview } from './components/EnhancedStudyPlanPreview';
+import { ProgressTab } from './components/gamification';
 import { useStudyPlanData } from './hooks/useStudyPlanData';
 import { useStudyPlanLibrary } from './hooks/useStudyPlanLibrary';
+import { useLearningGamification } from './hooks/useLearningGamification';
 import { studyPlanGenerationService } from './services/StudyPlanGenerationService';
+import type { EnhancedGeneratedStudyPlan } from './services/StudyPlanGenerationService';
 import type {
   ChatMessage,
   SkillLevel,
@@ -20,16 +24,23 @@ interface MyEasyLearningProps {
   onBackToDashboard?: () => void;
 }
 
+type ViewMode = 'chat' | 'library' | 'progress';
+
 export function MyEasyLearning({ onBackToDashboard }: MyEasyLearningProps) {
   const { userUuid } = useUserData();
   const studyPlanData = useStudyPlanData();
   const studyPlanLibrary = useStudyPlanLibrary(userUuid);
+  const gamification = useLearningGamification({ enabled: !!userUuid });
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputMessage, setInputMessage] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
-  const [showLibrary, setShowLibrary] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>('chat');
   const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
+  const [enhancedPlan, setEnhancedPlan] = useState<EnhancedGeneratedStudyPlan | null>(null);
+  const [generatingStep, setGeneratingStep] = useState<string | null>(null);
+  const [hasError, setHasError] = useState(false);
+  const useEnhancedMode = true; // Always use AI teaching mode
 
   // Initialize conversation
   useEffect(() => {
@@ -38,17 +49,17 @@ export function MyEasyLearning({ onBackToDashboard }: MyEasyLearningProps) {
       setMessages([
         {
           role: 'assistant',
-          content: '👋 Olá! Que bom ter você aqui no MyEasyLearning!',
+          content: 'E aí! Que bom te ver por aqui! 👋',
           timestamp: new Date(),
         },
         {
           role: 'assistant',
-          content: '🎯 Vou te ajudar a criar um plano de estudos personalizado para você dominar uma nova habilidade e alavancar sua carreira!',
+          content: 'Bora criar um plano de estudos sob medida pra você? Aqui eu não só monto o plano, eu vou te ENSINAR de verdade! Nada de ficar jogando link aleatório não 😎',
           timestamp: new Date(),
         },
         {
           role: 'assistant',
-          content: '💡 Para começar, me diga: qual habilidade você quer aprender?\n\nPor exemplo:\n• "Python"\n• "Excel Avançado"\n• "Inglês para negócios"\n• "Marketing Digital"\n• "Liderança"\n\nDigite abaixo a habilidade que você quer dominar:',
+          content: 'Pra começar, me conta: o que você quer aprender?\n\nPode ser qualquer coisa:\n• Python, JavaScript, React...\n• Excel ninja, Power BI...\n• Inglês, Espanhol...\n• Marketing, Vendas, Liderança...\n\nManda aí! 👇',
           timestamp: new Date(),
         },
       ]);
@@ -95,13 +106,13 @@ export function MyEasyLearning({ onBackToDashboard }: MyEasyLearningProps) {
 
     addMessage({
       role: 'assistant',
-      content: `✅ Ótima escolha! ${skillName} é uma habilidade muito valiosa!`,
+      content: `Boa! ${skillName} é uma skill muito massa! 🔥`,
       timestamp: new Date(),
     });
 
     addMessage({
       role: 'assistant',
-      content: '📊 Agora me diga: qual seu nível atual em ' + skillName + '?\n\nEscolha uma das opções abaixo:',
+      content: `Agora preciso saber: qual seu nível atual em ${skillName}?\n\nSem vergonha, hein! Todo mundo começa de algum lugar 😊`,
       timestamp: new Date(),
     });
   }, [inputMessage, userUuid, addMessage, studyPlanData]);
@@ -118,13 +129,13 @@ export function MyEasyLearning({ onBackToDashboard }: MyEasyLearningProps) {
 
     addMessage({
       role: 'assistant',
-      content: '✅ Entendi! Vamos criar um plano do seu nível atual.',
+      content: 'Fechou! Anotado aqui ✍️',
       timestamp: new Date(),
     });
 
     addMessage({
       role: 'assistant',
-      content: '🎯 E até que nível você quer chegar?\n\nEscolha seu objetivo abaixo:',
+      content: 'E aí, até onde você quer chegar? 🎯\n\nQual é a meta? Sonha alto que eu te levo lá!',
       timestamp: new Date(),
     });
   }, [addMessage, studyPlanData]);
@@ -141,13 +152,13 @@ export function MyEasyLearning({ onBackToDashboard }: MyEasyLearningProps) {
 
     addMessage({
       role: 'assistant',
-      content: '✅ Perfeito! Esse é um ótimo objetivo!',
+      content: 'Isso aí! Gosto de gente ambiciosa! 💪',
       timestamp: new Date(),
     });
 
     addMessage({
       role: 'assistant',
-      content: '⏰ Agora me diga: quanto tempo você tem disponível para estudar POR SEMANA?\n\nSeja honesto! É melhor um plano realista do que um plano impossível de cumprir 😊\n\nEscolha abaixo:',
+      content: 'Agora o papo sério: quanto tempo você consegue dedicar POR SEMANA? ⏰\n\nSeja sincero comigo! Prefiro um plano que você consiga cumprir do que um que vai virar peso na consciência 😅',
       timestamp: new Date(),
     });
   }, [addMessage, studyPlanData]);
@@ -164,13 +175,13 @@ export function MyEasyLearning({ onBackToDashboard }: MyEasyLearningProps) {
 
     addMessage({
       role: 'assistant',
-      content: '✅ Ótimo! Vou criar um plano com esse ritmo de estudos.',
+      content: 'Show! Vou montar tudo respeitando seu tempo 👌',
       timestamp: new Date(),
     });
 
     addMessage({
       role: 'assistant',
-      content: '📅 E quando você quer dominar essa habilidade?\n\nPense em um prazo realista para seu objetivo.\n\nEscolha abaixo:',
+      content: 'E pra quando você quer estar mandando bem nisso? 📅\n\nNão precisa ter pressa, mas ter uma meta ajuda a manter o foco!',
       timestamp: new Date(),
     });
   }, [addMessage, studyPlanData]);
@@ -193,13 +204,13 @@ export function MyEasyLearning({ onBackToDashboard }: MyEasyLearningProps) {
 
     addMessage({
       role: 'assistant',
-      content: '✅ Perfeito! Prazo definido.',
+      content: 'Marcado no calendário! 📆',
       timestamp: new Date(),
     });
 
     addMessage({
       role: 'assistant',
-      content: '🔥 Por último, me conte: por que você quer aprender essa habilidade?\n\nIsso me ajuda a personalizar seu plano!\n\nEscolha abaixo:',
+      content: 'Última pergunta! Por que você quer aprender isso? 🔥\n\nPode parecer bobeira, mas saber sua motivação me ajuda a deixar o conteúdo mais relevante pra você!',
       timestamp: new Date(),
     });
   }, [addMessage, studyPlanData]);
@@ -226,25 +237,25 @@ export function MyEasyLearning({ onBackToDashboard }: MyEasyLearningProps) {
 
     addMessage({
       role: 'assistant',
-      content: '✅ Entendi perfeitamente sua motivação!',
+      content: 'Adorei! Motivação é o combustível do aprendizado 🚀',
       timestamp: new Date(),
     });
 
     addMessage({
       role: 'assistant',
-      content: '📋 Ótimo! Vamos revisar tudo que você me passou:',
+      content: 'Beleza, deixa eu recapitular tudo pra gente não errar:',
       timestamp: new Date(),
     });
 
     addMessage({
       role: 'assistant',
-      content: `✓ Habilidade: ${profile.skill_name}\n✓ Nível atual: ${profile.current_level === 'none' ? 'Nenhum' : profile.current_level}\n✓ Objetivo: ${profile.target_level}\n✓ Tempo semanal: ${profile.weekly_hours}h\n✓ Prazo: ${profile.deadline_weeks} semanas\n✓ Motivação: ${motivationLabels[motivation]}`,
+      content: `📝 **Seu perfil de estudos:**\n\n🎯 Skill: ${profile.skill_name}\n📊 Nível atual: ${profile.current_level === 'none' ? 'Começando do zero' : profile.current_level}\n🏆 Meta: ${profile.target_level}\n⏰ Tempo por semana: ${profile.weekly_hours}h\n📅 Prazo: ${profile.deadline_weeks} semanas\n💪 Motivação: ${motivationLabels[motivation]}`,
       timestamp: new Date(),
     });
 
     addMessage({
       role: 'assistant',
-      content: '👀 Dá uma olhada se está tudo certinho!\n\nSe estiver tudo ok, digite "gerar" para eu criar seu plano de estudos personalizado com Inteligência Artificial.\n\nSe quiser mudar algo, me avise que a gente ajusta! ✨',
+      content: 'Tá tudo certo aí? 👀\n\nSe sim, manda um **"gerar"** que eu crio seu plano personalizado na hora!\n\nSe quiser mudar alguma coisa, é só me falar!',
       timestamp: new Date(),
     });
   }, [addMessage, studyPlanData]);
@@ -259,7 +270,7 @@ export function MyEasyLearning({ onBackToDashboard }: MyEasyLearningProps) {
 
       addMessage({
         role: 'assistant',
-        content: '👂 Estou te ouvindo! Me diga o que você quer ajustar.\n\nOu se estiver tudo certo, é só digitar "gerar" para eu criar seu plano!',
+        content: 'Opa, tô ouvindo! 👂 Me conta o que quer mudar.\n\nQuando tiver tudo certo, manda um **"gerar"** que eu faço a mágica acontecer! ✨',
         timestamp: new Date(),
       });
       return;
@@ -272,53 +283,107 @@ export function MyEasyLearning({ onBackToDashboard }: MyEasyLearningProps) {
     });
     setInputMessage('');
     setIsGenerating(true);
+    setHasError(false);
+    setGeneratingStep('iniciando');
 
     studyPlanData.setCurrentStep('generating');
 
     addMessage({
       role: 'assistant',
-      content: '✨ Perfeito! Agora vou criar seu plano de estudos personalizado.',
-      timestamp: new Date(),
-    });
-
-    addMessage({
-      role: 'assistant',
-      content: '⏳ Estou usando Inteligência Artificial para montar tudo de forma organizada e profissional. Isso pode levar alguns segundos...',
+      content: '🚀 Bora! Deixa comigo...',
       timestamp: new Date(),
     });
 
     try {
       const profile = studyPlanData.data.profile!;
 
-      // Generate study plan with Gemini AI
-      const generatedPlan = await studyPlanGenerationService.generateStudyPlan(profile);
+      if (useEnhancedMode) {
+        // Step 1: Starting
+        setGeneratingStep('analisando');
+        addMessage({
+          role: 'assistant',
+          content: '🔍 Analisando seu perfil e definindo a melhor estratégia de ensino...',
+          timestamp: new Date(),
+        });
 
-      studyPlanData.setGeneratedPlan(generatedPlan);
-      studyPlanData.setCurrentStep('result');
-      setIsGenerating(false);
+        await new Promise(resolve => setTimeout(resolve, 800));
 
-      addMessage({
-        role: 'assistant',
-        content: '🎉 Pronto! Seu plano de estudos está pronto!',
-        timestamp: new Date(),
-      });
+        // Step 2: Planning
+        setGeneratingStep('planejando');
+        addMessage({
+          role: 'assistant',
+          content: '📋 Estruturando as semanas e organizando os tópicos...',
+          timestamp: new Date(),
+        });
 
-      addMessage({
-        role: 'assistant',
-        content: `📚 Criei um cronograma de ${generatedPlan.weeks.length} semanas com tudo que você precisa estudar.\n\n👉 Confira o plano completo no painel ao lado.\n\nVocê pode acompanhar seu progresso, marcar tarefas como concluídas e muito mais! 🚀`,
-        timestamp: new Date(),
-      });
+        await new Promise(resolve => setTimeout(resolve, 600));
+
+        // Step 3: Creating lessons
+        setGeneratingStep('criando');
+        addMessage({
+          role: 'assistant',
+          content: '✍️ Criando as lições personalizadas pra você...\n\n_(isso pode levar alguns segundos, mas vale a pena!)_',
+          timestamp: new Date(),
+        });
+
+        const generatedEnhancedPlan = await studyPlanGenerationService.generateEnhancedStudyPlan(profile);
+
+        // Step 4: Finishing
+        setGeneratingStep('finalizando');
+
+        setEnhancedPlan(generatedEnhancedPlan);
+        studyPlanData.setCurrentStep('result');
+        setIsGenerating(false);
+        setGeneratingStep(null);
+
+        const totalLessons = generatedEnhancedPlan.weeks.reduce((sum, w) => sum + w.lessonTopics.length, 0);
+
+        addMessage({
+          role: 'assistant',
+          content: '🎉 PRONTO! Olha que lindo ficou!',
+          timestamp: new Date(),
+        });
+
+        addMessage({
+          role: 'assistant',
+          content: `Criei um plano com **${generatedEnhancedPlan.weeks.length} semanas** e **${totalLessons} lições** só pra você!\n\n✨ **O diferencial:** Eu vou te ensinar TUDO diretamente:\n• 📖 Teoria mastigadinha\n• 💻 Exemplos práticos\n• 🧠 Quizzes pra fixar\n• 🎯 Exercícios pra praticar\n\n👉 **Clica em qualquer lição ali do lado pra começar!**\n\nBora aprender? 🚀`,
+          timestamp: new Date(),
+        });
+      } else {
+        // Fallback to original plan generation
+        const generatedPlan = await studyPlanGenerationService.generateStudyPlan(profile);
+
+        studyPlanData.setGeneratedPlan(generatedPlan);
+        studyPlanData.setCurrentStep('result');
+        setIsGenerating(false);
+        setGeneratingStep(null);
+
+        addMessage({
+          role: 'assistant',
+          content: '🎉 Pronto! Seu plano tá no jeito!',
+          timestamp: new Date(),
+        });
+
+        addMessage({
+          role: 'assistant',
+          content: `Montei um cronograma de ${generatedPlan.weeks.length} semanas com tudo que você precisa.\n\n👉 Confere ali do lado e vai marcando as tarefas conforme for fazendo! 🚀`,
+          timestamp: new Date(),
+        });
+      }
     } catch (error) {
       console.error('Erro ao gerar plano de estudos:', error);
       setIsGenerating(false);
+      setGeneratingStep(null);
+      setHasError(true);
 
       addMessage({
         role: 'assistant',
-        content: '❌ Ops! Ocorreu um erro ao gerar seu plano de estudos. Por favor, tente novamente em alguns instantes.',
+        content: '😅 **Ops, deu ruim!**\n\nAlgo não saiu como esperado. Pode ser instabilidade na IA ou problema de conexão.\n\n🔄 **Manda "gerar" de novo** que eu tento mais uma vez!\n\n_(Se continuar dando erro, espera uns minutinhos e tenta de novo)_',
         timestamp: new Date(),
+        isError: true,
       });
 
-      toast.error('Erro ao gerar plano de estudos. Tente novamente.');
+      toast.error('Eita! Algo deu errado. Tenta de novo?');
     }
   }, [inputMessage, addMessage, studyPlanData]);
 
@@ -342,20 +407,20 @@ export function MyEasyLearning({ onBackToDashboard }: MyEasyLearningProps) {
 
   const handleSaveConfirm = useCallback(
     async (planName: string) => {
-      const generatedPlan = studyPlanData.data.generatedPlan;
+      // Use enhanced plan if available, otherwise use the original generated plan
+      const planToSave = enhancedPlan || studyPlanData.data.generatedPlan;
       const profile = studyPlanData.data.profile;
 
-      if (!generatedPlan || !profile) {
+      if (!planToSave || !profile) {
         toast.error('Nenhum plano para salvar');
         return;
       }
 
       // Update profile with plan name
-      const updatedProfile = { ...profile, plan_name: planName };
       studyPlanData.updateProfile({ plan_name: planName });
 
       const savedPlan = await studyPlanLibrary.saveStudyPlan(
-        generatedPlan,
+        planToSave,
         profile.id,
         planName
       );
@@ -367,14 +432,14 @@ export function MyEasyLearning({ onBackToDashboard }: MyEasyLearningProps) {
         toast.error('Erro ao salvar plano');
       }
     },
-    [studyPlanData, studyPlanLibrary]
+    [studyPlanData, studyPlanLibrary, enhancedPlan]
   );
 
   const handleLoadPlan = useCallback(
     (item: typeof studyPlanLibrary.items[0]) => {
       studyPlanData.setGeneratedPlan(item.plan_data);
       studyPlanData.setCurrentStep('result');
-      setShowLibrary(false);
+      setViewMode('chat');
       toast.success(`Plano "${item.version_name}" carregado!`);
     },
     [studyPlanData]
@@ -409,26 +474,44 @@ export function MyEasyLearning({ onBackToDashboard }: MyEasyLearningProps) {
               <button
                 type="button"
                 onClick={onBackToDashboard}
-                className="flex items-center gap-2 text-gray-400 hover:text-white"
+                className="flex items-center gap-2 text-gray-400 hover:text-white cursor-pointer"
               >
                 <ArrowLeft className="h-5 w-5" />
               </button>
             )}
             <h1 className="text-2xl font-bold text-white">MyEasyLearning</h1>
           </div>
-          <button
-            type="button"
-            onClick={() => setShowLibrary(!showLibrary)}
-            className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 transition-colors"
-          >
-            <Library className="h-4 w-4" />
-            {showLibrary ? 'Voltar' : 'Biblioteca'}
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setViewMode(viewMode === 'progress' ? 'chat' : 'progress')}
+              className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition-colors cursor-pointer ${
+                viewMode === 'progress'
+                  ? 'bg-cyan-600 text-white hover:bg-cyan-700'
+                  : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+              }`}
+            >
+              <GraduationCap className="h-4 w-4" />
+              {viewMode === 'progress' ? 'Voltar' : 'Progresso'}
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode(viewMode === 'library' ? 'chat' : 'library')}
+              className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition-colors cursor-pointer ${
+                viewMode === 'library'
+                  ? 'bg-blue-600 text-white hover:bg-blue-700'
+                  : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+              }`}
+            >
+              <Library className="h-4 w-4" />
+              {viewMode === 'library' ? 'Voltar' : 'Biblioteca'}
+            </button>
+          </div>
         </div>
       </div>
 
       {/* Main Content */}
-      {showLibrary ? (
+      {viewMode === 'library' ? (
         <div className="flex-1 overflow-y-auto p-6">
           <StudyPlanLibrary
             items={studyPlanLibrary.items}
@@ -436,6 +519,18 @@ export function MyEasyLearning({ onBackToDashboard }: MyEasyLearningProps) {
             onLoadPlan={handleLoadPlan}
             onToggleFavorite={handleToggleFavorite}
             onDelete={handleDeletePlan}
+          />
+        </div>
+      ) : viewMode === 'progress' ? (
+        <div className="flex-1 overflow-y-auto">
+          <ProgressTab
+            state={gamification.state}
+            isLoading={gamification.isLoading}
+            isSaving={gamification.isSaving}
+            error={gamification.error}
+            streak={gamification.streak}
+            xp={gamification.xp}
+            stats={gamification.stats}
           />
         </div>
       ) : (
@@ -447,6 +542,8 @@ export function MyEasyLearning({ onBackToDashboard }: MyEasyLearningProps) {
               currentStep={studyPlanData.data.currentStep}
               inputMessage={inputMessage}
               isGenerating={isGenerating}
+              generatingStep={generatingStep}
+              hasError={hasError}
               onInputChange={setInputMessage}
               onSendMessage={handleSendMessage}
               onSkillLevelSelect={handleCurrentLevelSelect}
@@ -459,11 +556,26 @@ export function MyEasyLearning({ onBackToDashboard }: MyEasyLearningProps) {
 
           {/* Preview Panel */}
           <div className="w-1/2">
-            <StudyPlanPreview
-              plan={studyPlanData.data.generatedPlan}
-              onSavePlan={handleSavePlan}
-              isSaving={studyPlanLibrary.isSaving}
-            />
+            {useEnhancedMode && enhancedPlan ? (
+              <EnhancedStudyPlanPreview
+                plan={enhancedPlan}
+                profile={studyPlanData.data.profile}
+                onSavePlan={handleSavePlan}
+                isSaving={studyPlanLibrary.isSaving}
+                onXpEarned={gamification.addXP}
+                onLessonComplete={(weekNumber, lessonNumber) => {
+                  gamification.recordTaskCompleted(new Date().getHours(), studyPlanData.data.profile?.skill_category);
+                  console.log(`Lesson ${lessonNumber} of week ${weekNumber} completed!`);
+                }}
+              />
+            ) : (
+              <StudyPlanPreview
+                plan={studyPlanData.data.generatedPlan}
+                onSavePlan={handleSavePlan}
+                isSaving={studyPlanLibrary.isSaving}
+                onTaskComplete={gamification.recordTaskCompleted}
+              />
+            )}
           </div>
         </div>
       )}

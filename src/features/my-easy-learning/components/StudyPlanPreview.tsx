@@ -1,4 +1,5 @@
 import { Check, BookOpen, Clock, Target, Save } from 'lucide-react';
+import { useState, useCallback } from 'react';
 import type { GeneratedStudyPlan } from '../types';
 import { RESOURCE_TYPE_LABELS } from '../constants';
 
@@ -6,9 +7,30 @@ interface StudyPlanPreviewProps {
   plan: GeneratedStudyPlan | null;
   onSavePlan?: () => void;
   isSaving?: boolean;
+  onTaskComplete?: (studyHour?: number, skillCategory?: string) => Promise<void>;
 }
 
-export function StudyPlanPreview({ plan, onSavePlan, isSaving = false }: StudyPlanPreviewProps) {
+export function StudyPlanPreview({ plan, onSavePlan, isSaving = false, onTaskComplete }: StudyPlanPreviewProps) {
+  const [completedTasks, setCompletedTasks] = useState<Set<string>>(new Set());
+
+  const handleTaskToggle = useCallback(async (taskId: string) => {
+    if (completedTasks.has(taskId)) {
+      // Uncheck - just remove from local state (no XP penalty)
+      setCompletedTasks((prev) => {
+        const newSet = new Set(prev);
+        newSet.delete(taskId);
+        return newSet;
+      });
+    } else {
+      // Check - add to local state and award XP
+      setCompletedTasks((prev) => new Set(prev).add(taskId));
+      if (onTaskComplete) {
+        const currentHour = new Date().getHours();
+        await onTaskComplete(currentHour);
+      }
+    }
+  }, [completedTasks, onTaskComplete]);
+
   if (!plan) {
     return (
       <div className="flex h-full items-center justify-center bg-slate-900 p-8">
@@ -98,16 +120,24 @@ export function StudyPlanPreview({ plan, onSavePlan, isSaving = false }: StudyPl
                   return (
                     <div
                       key={task.id}
-                      className="flex items-start gap-3 rounded-lg bg-slate-900 p-3"
+                      className={`flex items-start gap-3 rounded-lg p-3 transition-colors ${
+                        completedTasks.has(task.id) || task.is_completed
+                          ? 'bg-green-900/20 border border-green-500/30'
+                          : 'bg-slate-900'
+                      }`}
                     >
                       <input
                         type="checkbox"
-                        checked={task.is_completed}
-                        readOnly
-                        className="mt-1"
+                        checked={completedTasks.has(task.id) || task.is_completed}
+                        onChange={() => handleTaskToggle(task.id)}
+                        className="mt-1 h-4 w-4 rounded border-slate-600 bg-slate-700 text-green-500 focus:ring-green-500 focus:ring-offset-slate-900 cursor-pointer"
                       />
                       <div className="flex-1">
-                        <p className="text-sm text-white">{task.description}</p>
+                        <p className={`text-sm ${
+                          completedTasks.has(task.id) || task.is_completed
+                            ? 'text-slate-400 line-through'
+                            : 'text-white'
+                        }`}>{task.description}</p>
                         <div className="mt-1 flex items-center gap-2 text-xs text-slate-400">
                           <span className={resourceLabel.color}>
                             {resourceLabel.icon} {resourceLabel.label}

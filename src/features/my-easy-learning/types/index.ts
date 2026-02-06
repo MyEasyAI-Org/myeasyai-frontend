@@ -131,13 +131,29 @@ export interface GeneratedStudyPlan {
   created_at: Date;
 }
 
+// Base Study Plan type that works for both original and enhanced plans
+export interface BaseStudyPlan {
+  id: string;
+  profile_id: string;
+  plan_summary: {
+    total_weeks: number;
+    estimated_completion: string;
+    total_hours: number;
+    main_topics: string[];
+  };
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  weeks: any[]; // Using any[] to accommodate both StudyPlanWeek[] and EnhancedStudyPlanWeekData[]
+  milestones: StudyMilestone[];
+  created_at: Date;
+}
+
 // Study Plan Library Item (Saved Plan)
 export interface StudyPlanLibraryItem {
   id: string;
   user_id: string;
   profile_id: string;
   version_name: string;              // "Python - Janeiro 2026"
-  plan_data: GeneratedStudyPlan;
+  plan_data: BaseStudyPlan;          // Accepts both GeneratedStudyPlan and EnhancedGeneratedStudyPlan
   progress: StudyProgress;
   tags: string[];                    // ["Tecnologia", "Programação"]
   is_favorite: boolean;
@@ -152,6 +168,7 @@ export interface ChatMessage {
   content: string;
   step?: ConversationStep;
   timestamp: Date;
+  isError?: boolean;
 }
 
 // Study Plan Generation Request (Para a IA)

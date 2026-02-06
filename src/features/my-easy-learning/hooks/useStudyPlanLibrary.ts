@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import type { StudyPlanLibraryItem, GeneratedStudyPlan } from '../types';
+import type { StudyPlanLibraryItem, BaseStudyPlan } from '../types';
 
 /**
  * Filter options for study plan library
@@ -90,10 +90,11 @@ export function useStudyPlanLibrary(userId: string | null) {
 
   /**
    * Save generated study plan to library
+   * Supports both original (with tasks) and enhanced (with lessonTopics) plans
    */
   const saveStudyPlan = useCallback(
     async (
-      generatedPlan: GeneratedStudyPlan,
+      generatedPlan: BaseStudyPlan,
       profileId: string,
       versionName: string,
       options?: { tags?: string[]; is_favorite?: boolean }
@@ -107,6 +108,14 @@ export function useStudyPlanLibrary(userId: string | null) {
       setError(null);
 
       try {
+        // Calculate total tasks/lessons - handle both original and enhanced plans
+        const totalItems = generatedPlan.weeks.reduce((sum: number, week) => {
+          // Check for tasks (original plan) or lessonTopics (enhanced plan)
+          const tasks = (week as { tasks?: unknown[] }).tasks;
+          const lessonTopics = (week as { lessonTopics?: unknown[] }).lessonTopics;
+          return sum + (tasks?.length || lessonTopics?.length || 0);
+        }, 0);
+
         const newItem: StudyPlanLibraryItem = {
           id: crypto.randomUUID(),
           user_id: userId,
@@ -118,7 +127,7 @@ export function useStudyPlanLibrary(userId: string | null) {
             total_weeks: generatedPlan.weeks.length,
             completed_weeks: 0,
             current_week: 1,
-            total_tasks: generatedPlan.weeks.reduce((sum, week) => sum + week.tasks.length, 0),
+            total_tasks: totalItems,
             completed_tasks: 0,
             progress_percentage: 0,
             total_hours_planned: generatedPlan.plan_summary.total_hours,

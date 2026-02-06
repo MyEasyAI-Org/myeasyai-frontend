@@ -233,6 +233,45 @@ export interface D1FitnessGamification {
 }
 
 // =============================================================================
+// Learning Gamification Types
+// =============================================================================
+
+export interface D1LearningGamification {
+  id: string;
+  user_uuid: string;
+  // Streak data
+  current_streak: number;
+  longest_streak: number;
+  last_study_date: string | null;
+  total_study_days: number;
+  // XP data
+  total_xp: number;
+  current_level: number;
+  // Stats
+  total_lessons_completed: number;
+  total_tasks_completed: number;
+  perfect_weeks: number;
+  perfect_months: number;
+  // Learning-specific stats
+  early_study_sessions?: number;
+  night_study_sessions?: number;
+  practice_sessions_completed?: number;
+  skill_categories?: string; // JSON array of strings
+  consecutive_perfect_weeks?: number;
+  plans_completed?: number;
+  // JSON stringified arrays
+  badges: string;
+  certificates?: string;
+  achievements?: string;
+  challenges: string;
+  goals: string;
+  activities: string;
+  // Timestamps
+  created_at: string;
+  updated_at: string | null;
+}
+
+// =============================================================================
 // CRM Types
 // =============================================================================
 
@@ -1763,6 +1802,51 @@ export class D1Client {
     activities: string;
   }): Promise<D1ApiResponse<D1FitnessGamification>> {
     return this.fetch<D1FitnessGamification>('/fitness/gamification', {
+      method: 'PUT',
+      body: JSON.stringify(gamification),
+    });
+  }
+
+  // ==================== LEARNING GAMIFICATION ====================
+
+  /**
+   * Busca dados de gamificacao de learning do usuario
+   */
+  async getLearningGamification(userUuid: string): Promise<D1ApiResponse<D1LearningGamification | null>> {
+    return this.fetch<D1LearningGamification | null>(`/learning/gamification/user/${userUuid}`);
+  }
+
+  /**
+   * Cria ou atualiza dados de gamificacao de learning
+   */
+  async upsertLearningGamification(gamification: {
+    user_uuid: string;
+    current_streak: number;
+    longest_streak: number;
+    last_study_date: string | null;
+    total_study_days: number;
+    total_xp: number;
+    current_level: number;
+    total_lessons_completed: number;
+    total_tasks_completed: number;
+    perfect_weeks: number;
+    perfect_months: number;
+    // Learning-specific stats
+    early_study_sessions?: number;
+    night_study_sessions?: number;
+    practice_sessions_completed?: number;
+    skill_categories?: string;
+    consecutive_perfect_weeks?: number;
+    plans_completed?: number;
+    // JSON stringified arrays
+    badges: string;
+    certificates?: string;
+    achievements?: string;
+    challenges: string;
+    goals: string;
+    activities: string;
+  }): Promise<D1ApiResponse<D1LearningGamification>> {
+    return this.fetch<D1LearningGamification>('/learning/gamification', {
       method: 'PUT',
       body: JSON.stringify(gamification),
     });

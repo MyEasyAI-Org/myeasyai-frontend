@@ -6,6 +6,12 @@ import type {
   StudyTask,
   StudyMilestone,
 } from '../types';
+import type {
+  LessonTopic,
+  ContentStrategy,
+  ContentDeliveryMode,
+} from '../types/lesson';
+import { getContentStrategy } from '../types/lesson';
 
 /**
  * Service for generating personalized study plans using Gemini AI
@@ -349,6 +355,348 @@ IMPORTANTE:
         },
       ],
     };
+  }
+}
+
+// =============================================================================
+// ENHANCED PLAN GENERATION (with lessons)
+// =============================================================================
+
+/** Enhanced plan with lesson topics instead of tasks */
+export interface EnhancedGeneratedStudyPlan extends Omit<GeneratedStudyPlan, 'weeks'> {
+  weeks: EnhancedStudyPlanWeekData[];
+  contentStrategy: ContentStrategy;
+}
+
+/** Enhanced week with lesson topics */
+export interface EnhancedStudyPlanWeekData {
+  id: string;
+  plan_id: string;
+  week_number: number;
+  title: string;
+  focus: string;
+  learningObjectives: string[];
+  estimated_hours: number;
+  deliveryMode: ContentDeliveryMode;
+  lessonTopics: LessonTopic[];
+  is_completed: boolean;
+  completed_at: string | null;
+}
+
+const ENHANCED_PLAN_PROMPT = `
+Voce e um especialista em educacao. Crie um plano de estudos com LICOES que voce vai ENSINAR diretamente ao aluno.
+
+PERFIL DO ALUNO:
+- Habilidade: {skillName}
+- Categoria: {category}
+- Nivel atual: {currentLevel}
+- Nivel desejado: {targetLevel}
+- Tempo semanal: {weeklyHours} horas
+- Prazo: {deadlineWeeks} semanas
+- Motivacao: {motivation}
+
+ESTRATEGIA DE CONTEUDO:
+{contentStrategy}
+
+INSTRUCOES:
+1. Crie EXATAMENTE {deadlineWeeks} semanas
+2. Cada semana deve ter 2-4 LICOES (topicos que voce vai ensinar)
+3. Para cada licao, defina objetivos de aprendizagem claros
+4. Progrida do nivel {currentLevel} ate {targetLevel}
+
+FORMATO (use exatamente este formato):
+
+SEMANA 1:
+TITULO: [titulo da semana]
+FOCO: [foco principal]
+OBJETIVOS: [objetivo 1], [objetivo 2], [objetivo 3]
+MODO: native
+LICAO 1:
+- TITULO: [titulo da licao]
+- DESCRICAO: [breve descricao]
+- OBJETIVOS: [objetivo de aprendizagem 1], [objetivo 2]
+LICAO 2:
+- TITULO: [titulo da licao]
+- DESCRICAO: [breve descricao]
+- OBJETIVOS: [objetivo 1], [objetivo 2]
+
+SEMANA 2:
+[mesmo formato...]
+
+TOPICOS_PRINCIPAIS: [topico1], [topico2], [topico3], [topico4], [topico5]
+
+Gere o plano agora:`;
+
+// Extended service class with enhanced plan generation
+StudyPlanGenerationService.prototype.generateEnhancedStudyPlan = async function (
+  profile: StudyPlanProfile
+): Promise<EnhancedGeneratedStudyPlan> {
+  console.log('🎓 [ENHANCED PLAN] Generating enhanced study plan with lessons for:', profile.skill_name);
+
+  // Get content strategy based on skill and level
+  const contentStrategy = getContentStrategy(
+    profile.skill_category,
+    profile.current_level,
+    profile.target_level
+  );
+
+  const motivationLabels: Record<string, string> = {
+    career_change: 'Mudar de carreira',
+    promotion: 'Conseguir promocao',
+    income_increase: 'Aumentar renda',
+    personal_project: 'Projeto pessoal',
+    personal_satisfaction: 'Satisfacao pessoal',
+  };
+
+  const levelLabels: Record<string, string> = {
+    none: 'Iniciante',
+    basic: 'Basico',
+    intermediate: 'Intermediario',
+    advanced: 'Avancado',
+    expert: 'Especialista',
+  };
+
+  const prompt = ENHANCED_PLAN_PROMPT
+    .replace('{skillName}', profile.skill_name)
+    .replace('{category}', profile.skill_category)
+    .replace('{currentLevel}', levelLabels[profile.current_level] || 'Iniciante')
+    .replace('{targetLevel}', levelLabels[profile.target_level] || 'Intermediario')
+    .replace('{weeklyHours}', profile.weekly_hours.toString())
+    .replace('{deadlineWeeks}', profile.deadline_weeks.toString())
+    .replace('{motivation}', motivationLabels[profile.motivation] || 'Aprendizado')
+    .replace('{contentStrategy}', contentStrategy.reasoning)
+    .replace('{deadlineWeeks}', profile.deadline_weeks.toString())
+    .replace('{currentLevel}', levelLabels[profile.current_level] || 'Iniciante')
+    .replace('{targetLevel}', levelLabels[profile.target_level] || 'Intermediario');
+
+  try {
+    const response = await geminiClient.call(prompt, 0.8);
+    const plan = parseEnhancedPlanResponse(response, profile, contentStrategy);
+
+    console.log('✅ [ENHANCED PLAN] Plan generated with', plan.weeks.length, 'weeks');
+    return plan;
+  } catch (error) {
+    console.error('❌ [ENHANCED PLAN] Error generating plan:', error);
+    // Return fallback plan
+    return createFallbackEnhancedPlan(profile, contentStrategy);
+  }
+};
+
+function parseEnhancedPlanResponse(
+  response: string,
+  profile: StudyPlanProfile,
+  contentStrategy: ContentStrategy
+): EnhancedGeneratedStudyPlan {
+  const weeks: EnhancedStudyPlanWeekData[] = [];
+  const mainTopics: string[] = [];
+  const lines = response.split('\n').map((l) => l.trim());
+
+  let currentWeek: Partial<EnhancedStudyPlanWeekData> | null = null;
+  let currentLesson: Partial<LessonTopic> | null = null;
+  let lessonNumber = 0;
+
+  for (const line of lines) {
+    // Parse week header
+    if (line.match(/^SEMANA\s+\d+:/i)) {
+      if (currentWeek && currentWeek.week_number) {
+        if (currentLesson && currentLesson.title) {
+          currentWeek.lessonTopics = currentWeek.lessonTopics || [];
+          currentWeek.lessonTopics.push(finalizeLessonTopic(currentLesson, lessonNumber));
+        }
+        weeks.push(finalizeEnhancedWeek(currentWeek, profile.id, contentStrategy));
+      }
+      const weekNum = parseInt(line.match(/\d+/)?.[0] || '0');
+      currentWeek = {
+        week_number: weekNum,
+        lessonTopics: [],
+        learningObjectives: [],
+      };
+      currentLesson = null;
+      lessonNumber = 0;
+      continue;
+    }
+
+    if (!currentWeek) continue;
+
+    // Parse week properties
+    if (line.match(/^TITULO:/i)) {
+      currentWeek.title = line.replace(/^TITULO:\s*/i, '').trim();
+    } else if (line.match(/^FOCO:/i)) {
+      currentWeek.focus = line.replace(/^FOCO:\s*/i, '').trim();
+    } else if (line.match(/^OBJETIVOS:/i)) {
+      const objectives = line.replace(/^OBJETIVOS:\s*/i, '').split(',').map((o) => o.trim());
+      currentWeek.learningObjectives = objectives;
+    } else if (line.match(/^MODO:/i)) {
+      const mode = line.replace(/^MODO:\s*/i, '').trim().toLowerCase();
+      currentWeek.deliveryMode = mode as ContentDeliveryMode;
+    } else if (line.match(/^LICAO\s+\d+:/i)) {
+      // Save previous lesson
+      if (currentLesson && currentLesson.title) {
+        currentWeek.lessonTopics = currentWeek.lessonTopics || [];
+        currentWeek.lessonTopics.push(finalizeLessonTopic(currentLesson, lessonNumber));
+      }
+      lessonNumber++;
+      currentLesson = { lessonNumber };
+    } else if (currentLesson && line.match(/^-\s*TITULO:/i)) {
+      currentLesson.title = line.replace(/^-\s*TITULO:\s*/i, '').trim();
+    } else if (currentLesson && line.match(/^-\s*DESCRICAO:/i)) {
+      currentLesson.description = line.replace(/^-\s*DESCRICAO:\s*/i, '').trim();
+    } else if (currentLesson && line.match(/^-\s*OBJETIVOS:/i)) {
+      const objs = line.replace(/^-\s*OBJETIVOS:\s*/i, '').split(',').map((o) => o.trim());
+      currentLesson.learningObjectives = objs;
+    }
+
+    // Parse main topics
+    if (line.match(/^TOPICOS_PRINCIPAIS:/i)) {
+      const topics = line.replace(/^TOPICOS_PRINCIPAIS:\s*/i, '').split(',').map((t) => t.trim());
+      mainTopics.push(...topics);
+    }
+  }
+
+  // Finalize last week and lesson
+  if (currentLesson && currentLesson.title && currentWeek) {
+    currentWeek.lessonTopics = currentWeek.lessonTopics || [];
+    currentWeek.lessonTopics.push(finalizeLessonTopic(currentLesson, lessonNumber));
+  }
+  if (currentWeek && currentWeek.week_number) {
+    weeks.push(finalizeEnhancedWeek(currentWeek, profile.id, contentStrategy));
+  }
+
+  // Fill missing weeks if needed
+  while (weeks.length < profile.deadline_weeks) {
+    weeks.push(createDefaultEnhancedWeek(weeks.length + 1, profile, contentStrategy));
+  }
+
+  const totalHours = weeks.reduce((sum, w) => sum + w.estimated_hours, 0);
+
+  return {
+    id: crypto.randomUUID(),
+    profile_id: profile.id,
+    plan_summary: {
+      total_weeks: weeks.length,
+      estimated_completion: new Date(profile.deadline_date).toLocaleDateString('pt-BR'),
+      total_hours: totalHours,
+      main_topics: mainTopics.length > 0 ? mainTopics : [profile.skill_name, 'Fundamentos', 'Pratica'],
+    },
+    weeks,
+    milestones: [],
+    contentStrategy,
+    created_at: new Date(),
+  };
+}
+
+function finalizeLessonTopic(lesson: Partial<LessonTopic>, lessonNumber: number): LessonTopic {
+  return {
+    weekNumber: 0, // Will be set by week
+    lessonNumber,
+    title: lesson.title || `Licao ${lessonNumber}`,
+    description: lesson.description || 'Conteudo da licao',
+    learningObjectives: lesson.learningObjectives || ['Aprender o conteudo'],
+    suggestedDeliveryMode: 'native',
+  };
+}
+
+function finalizeEnhancedWeek(
+  week: Partial<EnhancedStudyPlanWeekData>,
+  planId: string,
+  contentStrategy: ContentStrategy
+): EnhancedStudyPlanWeekData {
+  const weekNum = week.week_number || 1;
+
+  // Update lesson topics with week number
+  const lessonTopics = (week.lessonTopics || []).map((lesson, idx) => ({
+    ...lesson,
+    weekNumber: weekNum,
+    lessonNumber: idx + 1,
+    suggestedDeliveryMode: week.deliveryMode || contentStrategy.overallMode,
+  }));
+
+  // Ensure at least one lesson
+  if (lessonTopics.length === 0) {
+    lessonTopics.push({
+      weekNumber: weekNum,
+      lessonNumber: 1,
+      title: `Introducao - Semana ${weekNum}`,
+      description: week.focus || 'Conteudo da semana',
+      learningObjectives: week.learningObjectives || ['Aprender o conteudo'],
+      suggestedDeliveryMode: contentStrategy.overallMode,
+    });
+  }
+
+  return {
+    id: crypto.randomUUID(),
+    plan_id: planId,
+    week_number: weekNum,
+    title: week.title || `Semana ${weekNum}`,
+    focus: week.focus || 'Aprendizado continuo',
+    learningObjectives: week.learningObjectives || [],
+    estimated_hours: 4,
+    deliveryMode: week.deliveryMode || contentStrategy.overallMode,
+    lessonTopics,
+    is_completed: false,
+    completed_at: null,
+  };
+}
+
+function createDefaultEnhancedWeek(
+  weekNumber: number,
+  profile: StudyPlanProfile,
+  contentStrategy: ContentStrategy
+): EnhancedStudyPlanWeekData {
+  return {
+    id: crypto.randomUUID(),
+    plan_id: profile.id,
+    week_number: weekNumber,
+    title: `Semana ${weekNumber}: Continuacao`,
+    focus: 'Aprofundamento e pratica',
+    learningObjectives: ['Consolidar conhecimentos', 'Praticar o aprendido'],
+    estimated_hours: profile.weekly_hours,
+    deliveryMode: contentStrategy.overallMode,
+    lessonTopics: [
+      {
+        weekNumber,
+        lessonNumber: 1,
+        title: 'Revisao e Pratica',
+        description: 'Revisao dos conceitos e pratica guiada',
+        learningObjectives: ['Revisar conceitos', 'Aplicar na pratica'],
+        suggestedDeliveryMode: contentStrategy.overallMode,
+      },
+    ],
+    is_completed: false,
+    completed_at: null,
+  };
+}
+
+function createFallbackEnhancedPlan(
+  profile: StudyPlanProfile,
+  contentStrategy: ContentStrategy
+): EnhancedGeneratedStudyPlan {
+  const weeks: EnhancedStudyPlanWeekData[] = [];
+
+  for (let i = 1; i <= profile.deadline_weeks; i++) {
+    weeks.push(createDefaultEnhancedWeek(i, profile, contentStrategy));
+  }
+
+  return {
+    id: crypto.randomUUID(),
+    profile_id: profile.id,
+    plan_summary: {
+      total_weeks: weeks.length,
+      estimated_completion: new Date(profile.deadline_date).toLocaleDateString('pt-BR'),
+      total_hours: weeks.length * profile.weekly_hours,
+      main_topics: [profile.skill_name, 'Fundamentos', 'Pratica', 'Projetos'],
+    },
+    weeks,
+    milestones: [],
+    contentStrategy,
+    created_at: new Date(),
+  };
+}
+
+// Extend the class type
+declare module './StudyPlanGenerationService' {
+  interface StudyPlanGenerationService {
+    generateEnhancedStudyPlan(profile: StudyPlanProfile): Promise<EnhancedGeneratedStudyPlan>;
   }
 }
 
