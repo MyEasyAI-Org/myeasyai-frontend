@@ -15,6 +15,7 @@ import { studyPlanGenerationService } from './services/StudyPlanGenerationServic
 import type { EnhancedGeneratedStudyPlan } from './services/StudyPlanGenerationService';
 import type {
   ChatMessage,
+  GeneratedStudyPlan,
   SkillLevel,
   StudyMotivation,
   StudyPlanProfile,
@@ -437,7 +438,21 @@ export function MyEasyLearning({ onBackToDashboard }: MyEasyLearningProps) {
 
   const handleLoadPlan = useCallback(
     (item: typeof studyPlanLibrary.items[0]) => {
-      studyPlanData.setGeneratedPlan(item.plan_data);
+      const planData = item.plan_data;
+
+      // Check if it's an enhanced plan (has lessonTopics in weeks or contentStrategy)
+      const isEnhancedPlan = planData.weeks.some(
+        (week: { lessonTopics?: unknown[] }) => week.lessonTopics !== undefined
+      ) || ('contentStrategy' in planData);
+
+      if (isEnhancedPlan) {
+        // Load as enhanced plan
+        setEnhancedPlan(planData as EnhancedGeneratedStudyPlan);
+      } else {
+        // Load as original plan
+        studyPlanData.setGeneratedPlan(planData as GeneratedStudyPlan);
+      }
+
       studyPlanData.setCurrentStep('result');
       setViewMode('chat');
       toast.success(`Plano "${item.version_name}" carregado!`);
