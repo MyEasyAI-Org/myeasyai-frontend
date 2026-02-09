@@ -20,9 +20,11 @@ interface DocsHeaderProps {
   avatarName?: string;
   avatarSelfie?: string | null;
   // Multi-select props
-  selectionMode?: boolean;
   selectedCount?: number;
-  onToggleSelectionMode?: () => void;
+  totalItems?: number;
+  allSelected?: boolean;
+  someSelected?: boolean;
+  onSelectAll?: () => void;
   // Callbacks
   onNavigate: (folderId: string | null) => void;
   onSearchChange: (query: string) => void;
@@ -41,9 +43,11 @@ export const DocsHeader = memo(function DocsHeader({
   chatOpen,
   avatarName,
   avatarSelfie,
-  selectionMode = false,
   selectedCount = 0,
-  onToggleSelectionMode,
+  totalItems = 0,
+  allSelected = false,
+  someSelected = false,
+  onSelectAll,
   onNavigate,
   onSearchChange,
   onViewModeChange,
@@ -70,19 +74,23 @@ export const DocsHeader = memo(function DocsHeader({
             {/* View Mode Toggle */}
             <ViewModeToggle viewMode={viewMode} onChange={onViewModeChange} />
 
-            {/* Selection Mode Toggle */}
-            {onToggleSelectionMode && (
+            {/* Select All Toggle */}
+            {onSelectAll && totalItems > 0 && (
               <label className="flex items-center gap-2 cursor-pointer text-slate-300 hover:text-white transition-colors">
                 <input
                   type="checkbox"
-                  checked={selectionMode}
-                  onChange={onToggleSelectionMode}
+                  checked={allSelected}
+                  ref={(el) => {
+                    if (el) el.indeterminate = someSelected;
+                  }}
+                  onChange={onSelectAll}
                   className="w-4 h-4 rounded border-slate-600 bg-slate-800 text-blue-500 focus:ring-blue-500 focus:ring-offset-0 cursor-pointer"
+                  title={allSelected ? 'Desselecionar todos' : 'Selecionar todos'}
                 />
                 <span className="text-sm">
-                  {selectionMode && selectedCount > 0
+                  {selectedCount > 0
                     ? `${selectedCount} selecionado${selectedCount > 1 ? 's' : ''}`
-                    : 'Selecionar vários'}
+                    : 'Selecionar todos'}
                 </span>
               </label>
             )}

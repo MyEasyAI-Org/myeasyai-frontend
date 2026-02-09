@@ -33,6 +33,21 @@ export function UploadProgressList({ uploads, onCancelUpload }: UploadProgressLi
     return { total, completed, failed, inProgress };
   }, [uploads]);
 
+  // Calculate overall progress including individual file progress
+  const overallProgress = useMemo(() => {
+    if (uploads.length === 0) return 0;
+
+    const totalProgress = uploads.reduce((sum, upload) => {
+      if (upload.status === 'completed') return sum + 100;
+      if (upload.status === 'error' || upload.status === 'cancelled') return sum;
+      if (upload.status === 'extracting') return sum + 95; // Near complete
+      if (upload.status === 'uploading') return sum + upload.progress;
+      return sum; // pending = 0
+    }, 0);
+
+    return Math.round(totalProgress / uploads.length);
+  }, [uploads]);
+
   if (uploads.length === 0) {
     return null;
   }
@@ -83,14 +98,14 @@ export function UploadProgressList({ uploads, onCancelUpload }: UploadProgressLi
           <div className="flex items-center justify-between mb-1.5">
             <span className="text-xs text-slate-400">Progresso geral</span>
             <span className="text-xs text-slate-400">
-              {stats.completed}/{stats.total}
+              {overallProgress}%
             </span>
           </div>
           <div className="w-full h-2 bg-slate-700 rounded-full overflow-hidden">
             <div
               className="h-full bg-gradient-to-r from-blue-500 to-blue-400 rounded-full transition-all duration-300"
               style={{
-                width: `${stats.total > 0 ? (stats.completed / stats.total) * 100 : 0}%`,
+                width: `${overallProgress}%`,
               }}
             />
           </div>

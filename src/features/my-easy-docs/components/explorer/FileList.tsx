@@ -123,7 +123,7 @@ export const FileList = memo(function FileList({
       <table className="w-full">
         <thead>
           <tr className="border-b border-slate-800">
-            {/* Select All checkbox */}
+            {/* Select All checkbox - always visible when onToggleSelect is provided */}
             {onToggleSelect && (
               <th className="w-10 px-2 py-3">
                 <input

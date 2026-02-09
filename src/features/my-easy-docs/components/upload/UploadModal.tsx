@@ -4,7 +4,7 @@
 // Modal for uploading files with drag-and-drop.
 // =============================================
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import { X, Upload, Loader2, AlertTriangle } from 'lucide-react';
 import type { UploadProgress } from '../../types';
 import { generateId } from '../../utils';
@@ -18,6 +18,14 @@ interface BlockedFile {
   reason: string;
 }
 
+// Interface for pending file (before upload starts)
+interface PendingFile {
+  id: string;
+  file: File;
+  fileName: string;
+  fileSize: number;
+}
+
 // =============================================
 // PROPS
 // =============================================
@@ -26,8 +34,10 @@ interface UploadModalProps {
   currentFolderId: string | null;
   currentFolderName?: string;
   isUploading?: boolean;
+  uploads?: UploadProgress[];
   onClose: () => void;
   onUpload: (files: File[], folderId: string | null) => void;
+  onCancelUpload?: (uploadId: string) => void;
 }
 
 // =============================================
@@ -38,21 +48,40 @@ export function UploadModal({
   currentFolderId,
   currentFolderName,
   isUploading = false,
+  uploads: externalUploads = [],
   onClose,
   onUpload,
+  onCancelUpload,
 }: UploadModalProps) {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
-  const [uploads, setUploads] = useState<UploadProgress[]>([]);
+  const [pendingFiles, setPendingFiles] = useState<PendingFile[]>([]);
   const [blockedFiles, setBlockedFiles] = useState<BlockedFile[]>([]);
 
   // Reset state when modal closes
   useEffect(() => {
     if (!isOpen) {
       setSelectedFiles([]);
-      setUploads([]);
+      setPendingFiles([]);
       setBlockedFiles([]);
     }
   }, [isOpen]);
+
+  // Combine pending files (before upload) with actual uploads (during/after upload)
+  const displayUploads: UploadProgress[] = useMemo(() => {
+    if (isUploading || externalUploads.length > 0) {
+      // During upload: show real upload progress from hook
+      return externalUploads;
+    }
+    // Before upload: show pending files as "pending" status
+    return pendingFiles.map((pf) => ({
+      id: pf.id,
+      file: pf.file,
+      fileName: pf.fileName,
+      fileSize: pf.fileSize,
+      progress: 0,
+      status: 'pending' as const,
+    }));
+  }, [isUploading, externalUploads, pendingFiles]);
 
   // Handle files selected from DropZone
   const handleFilesSelected = useCallback((files: File[]) => {
@@ -89,20 +118,18 @@ export function UploadModal({
         return [...prev, ...newFiles];
       });
 
-      // Create upload progress items for allowed files only
-      const newUploads: UploadProgress[] = allowed.map((file) => ({
+      // Create pending file entries for display
+      const newPendingFiles: PendingFile[] = allowed.map((file) => ({
         id: generateId(),
         file,
         fileName: file.name,
         fileSize: file.size,
-        progress: 0,
-        status: 'pending',
       }));
 
-      setUploads((prev) => {
-        const existingKeys = new Set(prev.map((u) => `${u.fileName}-${u.fileSize}`));
-        const filtered = newUploads.filter(
-          (u) => !existingKeys.has(`${u.fileName}-${u.fileSize}`)
+      setPendingFiles((prev) => {
+        const existingKeys = new Set(prev.map((pf) => `${pf.fileName}-${pf.fileSize}`));
+        const filtered = newPendingFiles.filter(
+          (pf) => !existingKeys.has(`${pf.fileName}-${pf.fileSize}`)
         );
         return [...prev, ...filtered];
       });
@@ -120,17 +147,31 @@ export function UploadModal({
     onUpload(selectedFiles, currentFolderId);
   }, [selectedFiles, currentFolderId, onUpload]);
 
-  // Handle cancel single upload
-  const handleCancelUpload = useCallback((uploadId: string) => {
-    setUploads((prev) =>
-      prev.map((u) => (u.id === uploadId ? { ...u, status: 'cancelled' } : u))
+  // Handle cancel single upload (before upload starts)
+  const handleCancelPending = useCallback((fileId: string) => {
+    const pendingFile = pendingFiles.find((pf) => pf.id === fileId);
+    if (!pendingFile) return;
+
+    setPendingFiles((prev) => prev.filter((pf) => pf.id !== fileId));
+    setSelectedFiles((prev) =>
+      prev.filter((f) => f.name !== pendingFile.fileName || f.size !== pendingFile.fileSize)
     );
-    setSelectedFiles((prev) => {
-      const upload = uploads.find((u) => u.id === uploadId);
-      if (!upload) return prev;
-      return prev.filter((f) => f.name !== upload.fileName || f.size !== upload.fileSize);
-    });
-  }, [uploads]);
+  }, [pendingFiles]);
+
+  // Handle cancel upload (during upload)
+  const handleCancelUpload = useCallback((uploadId: string) => {
+    if (onCancelUpload) {
+      onCancelUpload(uploadId);
+    }
+  }, [onCancelUpload]);
+
+  // Determine which cancel handler to use
+  const cancelHandler = useMemo(() => {
+    if (isUploading) {
+      return onCancelUpload ? handleCancelUpload : undefined;
+    }
+    return handleCancelPending;
+  }, [isUploading, onCancelUpload, handleCancelUpload, handleCancelPending]);
 
   // Handle close
   const handleClose = useCallback(() => {
@@ -148,11 +189,6 @@ export function UploadModal({
     },
     [isUploading, onClose]
   );
-
-  // Count active uploads
-  const pendingCount = uploads.filter(
-    (u) => u.status === 'pending' || u.status === 'uploading' || u.status === 'extracting'
-  ).length;
 
   if (!isOpen) return null;
 
@@ -231,10 +267,10 @@ export function UploadModal({
           )}
 
           {/* Upload progress list */}
-          {uploads.length > 0 && (
+          {displayUploads.length > 0 && (
             <UploadProgressList
-              uploads={uploads}
-              onCancelUpload={!isUploading ? handleCancelUpload : undefined}
+              uploads={displayUploads}
+              onCancelUpload={cancelHandler}
             />
           )}
         </div>

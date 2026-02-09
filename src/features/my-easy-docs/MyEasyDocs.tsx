@@ -84,8 +84,10 @@ export function MyEasyDocs({ onBackToDashboard }: MyEasyDocsProps) {
   } = useDocuments();
 
   const {
+    uploads,
     isUploading,
     uploadFiles,
+    cancelUpload,
     clearCompleted,
   } = useFileUpload({
     folderId: currentFolderId,
@@ -121,7 +123,6 @@ export function MyEasyDocs({ onBackToDashboard }: MyEasyDocsProps) {
   const [specialViewMode, setSpecialViewMode] = useState<'none' | 'favorites' | 'recent'>('none');
 
   // Multi-select state
-  const [selectionModeEnabled, setSelectionModeEnabled] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [selectedTypes, setSelectedTypes] = useState<Map<string, 'folder' | 'document'>>(new Map());
 
@@ -225,7 +226,6 @@ export function MyEasyDocs({ onBackToDashboard }: MyEasyDocsProps) {
   const isLoading = isFoldersLoading || isDocumentsLoading;
 
   // Multi-select computed values
-  const selectionMode = selectionModeEnabled;
   const hasDocumentsSelected = Array.from(selectedTypes.values()).some((type) => type === 'document');
 
   // Filter documents and folders based on search and special view mode
@@ -306,10 +306,9 @@ export function MyEasyDocs({ onBackToDashboard }: MyEasyDocsProps) {
     setPreviewOpen(false);
     setSpecialViewMode('none'); // Reset special view when navigating
     setSearchQuery(''); // Limpa a busca ao navegar para evitar pasta dentro dela mesma
-    // Clear selection and exit selection mode when navigating
+    // Clear selection when navigating
     setSelectedIds(new Set());
     setSelectedTypes(new Map());
-    setSelectionModeEnabled(false);
   }, [navigateTo, selectDocument, setSearchQuery]);
 
   // =============================================
@@ -367,17 +366,6 @@ export function MyEasyDocs({ onBackToDashboard }: MyEasyDocsProps) {
     setSelectedIds(new Set());
     setSelectedTypes(new Map());
   }, []);
-
-  // Toggle selection mode on/off (from header checkbox)
-  const handleToggleSelectionMode = useCallback(() => {
-    setSelectionModeEnabled((prev) => {
-      if (prev) {
-        // If turning off, clear any selection
-        handleClearSelection();
-      }
-      return !prev;
-    });
-  }, [handleClearSelection]);
 
   // Bulk delete selected items
   const handleBulkDelete = useCallback(() => {
@@ -449,18 +437,17 @@ export function MyEasyDocs({ onBackToDashboard }: MyEasyDocsProps) {
     handleClearSelection();
   }, [selectedIds, selectedTypes, toggleFavoriteAll, refreshDocuments, refreshAllDocuments, handleClearSelection]);
 
-  // Keyboard handler for Escape to clear selection and exit selection mode
+  // Keyboard handler for Escape to clear selection
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && selectionModeEnabled) {
+      if (e.key === 'Escape' && selectedIds.size > 0) {
         handleClearSelection();
-        setSelectionModeEnabled(false);
       }
     };
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [selectionModeEnabled, handleClearSelection]);
+  }, [selectedIds.size, handleClearSelection]);
 
   const handleSelectDocument = useCallback((documentId: string) => {
     // Busca primeiro na pasta atual, depois em todos os documentos
@@ -897,9 +884,11 @@ export function MyEasyDocs({ onBackToDashboard }: MyEasyDocsProps) {
             chatOpen={chatOpen}
             avatarName={avatarName}
             avatarSelfie={avatarSelfie}
-            selectionMode={selectionMode}
             selectedCount={selectedIds.size}
-            onToggleSelectionMode={handleToggleSelectionMode}
+            totalItems={displayedFolders.length + displayedDocuments.length}
+            allSelected={displayedFolders.length + displayedDocuments.length > 0 && selectedIds.size === displayedFolders.length + displayedDocuments.length}
+            someSelected={selectedIds.size > 0 && selectedIds.size < displayedFolders.length + displayedDocuments.length}
+            onSelectAll={handleSelectAll}
             onNavigate={handleNavigateToFolder}
             onSearchChange={handleSearchChange}
             onViewModeChange={handleViewModeChange}
@@ -1017,7 +1006,6 @@ export function MyEasyDocs({ onBackToDashboard }: MyEasyDocsProps) {
                   documents={displayedDocuments}
                   selectedDocumentId={selectedDocument?.id}
                   documentsCountByFolder={documentsCountByFolder}
-                  selectionMode={selectionMode}
                   selectedIds={selectedIds}
                   onToggleSelect={handleToggleSelect}
                   onOpenFolder={handleNavigateToFolder}
@@ -1036,7 +1024,6 @@ export function MyEasyDocs({ onBackToDashboard }: MyEasyDocsProps) {
                   folders={displayedFolders}
                   documents={displayedDocuments}
                   selectedDocumentId={selectedDocument?.id}
-                  selectionMode={selectionMode}
                   selectedIds={selectedIds}
                   onToggleSelect={handleToggleSelect}
                   onSelectAll={handleSelectAll}
@@ -1093,8 +1080,10 @@ export function MyEasyDocs({ onBackToDashboard }: MyEasyDocsProps) {
         currentFolderId={currentFolderId}
         currentFolderName={currentFolderName}
         isUploading={isUploading}
+        uploads={uploads}
         onClose={handleCloseUploadModal}
         onUpload={handleUploadFiles}
+        onCancelUpload={cancelUpload}
       />
 
       {/* Modals */}
@@ -1165,7 +1154,7 @@ export function MyEasyDocs({ onBackToDashboard }: MyEasyDocsProps) {
 
       {/* Selection Toolbar */}
       <SelectionToolbar
-        visible={selectionModeEnabled}
+        visible={selectedIds.size > 0}
         selectedCount={selectedIds.size}
         hasDocumentsSelected={hasDocumentsSelected}
         onDelete={handleBulkDelete}

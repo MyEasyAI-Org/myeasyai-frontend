@@ -90,14 +90,10 @@ export const FileCard = memo(function FileCard({
     onOpen(item.id);
   }, [item.id, onOpen]);
 
-  // For folders, single click opens; for documents, single click selects
+  // Single click opens both folders and documents
   const handleSingleClick = useCallback(() => {
-    if (type === 'folder') {
-      onOpen(item.id);
-    } else {
-      handleClick();
-    }
-  }, [type, item.id, onOpen, handleClick]);
+    onOpen(item.id);
+  }, [item.id, onOpen]);
 
   const handleMenuClick = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
@@ -147,13 +143,9 @@ export const FileCard = memo(function FileCard({
   if (type === 'folder') {
     return (
       <div className="relative group">
-        {/* Checkbox - visible on hover or when in selection mode */}
+        {/* Checkbox - always visible when onToggleSelect is provided */}
         {onToggleSelect && (
-          <div
-            className={`absolute top-2 left-2 z-10 ${
-              selectionMode || isChecked ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
-            } transition-opacity`}
-          >
+          <div className="absolute top-2 left-2 z-10">
             <label
               className="flex items-center justify-center w-6 h-6 bg-slate-800/90 border border-slate-600 rounded cursor-pointer hover:border-blue-500 transition-colors"
               onClick={handleCheckboxClick}
@@ -236,13 +228,9 @@ export const FileCard = memo(function FileCard({
 
   return (
     <div className="relative group">
-      {/* Checkbox - visible on hover or when in selection mode */}
+      {/* Checkbox - always visible when onToggleSelect is provided */}
       {onToggleSelect && (
-        <div
-          className={`absolute top-2 left-2 z-20 ${
-            selectionMode || isChecked ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
-          } transition-opacity`}
-        >
+        <div className="absolute top-2 left-2 z-20">
           <label
             className="flex items-center justify-center w-6 h-6 bg-slate-800/90 border border-slate-600 rounded cursor-pointer hover:border-blue-500 transition-colors"
             onClick={handleCheckboxClick}

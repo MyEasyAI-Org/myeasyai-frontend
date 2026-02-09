@@ -74,13 +74,10 @@ export const FileRow = memo(function FileRow({
     }
   }, [menuOpen]);
 
+  // Single click opens both folders and documents
   const handleClick = useCallback(() => {
-    if (type === 'folder') {
-      onOpen(item.id);
-    } else if (onSelect) {
-      onSelect(item.id);
-    }
-  }, [type, item.id, onOpen, onSelect]);
+    onOpen(item.id);
+  }, [item.id, onOpen]);
 
   const handleDoubleClick = useCallback(() => {
     onOpen(item.id);
@@ -141,7 +138,7 @@ export const FileRow = memo(function FileRow({
           isChecked ? 'bg-blue-500/10' : 'hover:bg-slate-800/50'
         }`}
       >
-        {/* Checkbox column */}
+        {/* Checkbox column - always visible when onToggleSelect is provided */}
         {onToggleSelect && (
           <td className="w-10 px-2" onClick={handleCheckboxClick}>
             <input
@@ -228,8 +225,8 @@ export const FileRow = memo(function FileRow({
               : 'hover:bg-slate-800/50'
       }`}
     >
-      {/* Checkbox column */}
-      {onToggleSelect && (
+      {/* Checkbox column - only visible when selection mode is enabled */}
+      {selectionMode && onToggleSelect && (
         <td className="w-10 px-2" onClick={handleCheckboxClick}>
           <input
             type="checkbox"

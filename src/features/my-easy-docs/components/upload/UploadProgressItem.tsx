@@ -86,8 +86,25 @@ export const UploadProgressItem = memo(function UploadProgressItem({
   // Get mime type from file
   const mimeType = upload.file.type || 'application/octet-stream';
 
+  // Determine container styles based on status
+  const containerStyles = {
+    completed: 'bg-green-500/10 border-green-500/30',
+    error: 'bg-red-500/10 border-red-500/30',
+    cancelled: 'bg-slate-800/30 border-slate-600',
+    default: 'bg-slate-800/50 border-slate-700',
+  };
+
+  const containerClass =
+    upload.status === 'completed'
+      ? containerStyles.completed
+      : upload.status === 'error'
+      ? containerStyles.error
+      : upload.status === 'cancelled'
+      ? containerStyles.cancelled
+      : containerStyles.default;
+
   return (
-    <div className="flex items-center gap-3 p-3 bg-slate-800/50 rounded-lg border border-slate-700">
+    <div className={`flex items-center gap-3 p-3 rounded-lg border transition-all duration-300 ${containerClass}`}>
       {/* File icon */}
       <div className="flex-shrink-0">
         <FileIcon mimeType={mimeType} size="lg" />
@@ -104,13 +121,32 @@ export const UploadProgressItem = memo(function UploadProgressItem({
           </span>
         </div>
 
-        {/* Progress bar (only for uploading) */}
+        {/* Progress bar (for uploading) */}
         {upload.status === 'uploading' && (
           <div className="w-full h-1.5 bg-slate-700 rounded-full overflow-hidden mb-1">
             <div
               className="h-full bg-blue-500 rounded-full transition-all duration-300"
               style={{ width: `${upload.progress}%` }}
             />
+          </div>
+        )}
+
+        {/* Indeterminate progress bar (for extracting) */}
+        {upload.status === 'extracting' && (
+          <div className="w-full h-1.5 bg-slate-700 rounded-full overflow-hidden mb-1 relative">
+            <div
+              className="absolute h-full bg-gradient-to-r from-transparent via-yellow-500 to-transparent rounded-full"
+              style={{
+                width: '40%',
+                animation: 'indeterminate 1.5s infinite ease-in-out',
+              }}
+            />
+            <style>{`
+              @keyframes indeterminate {
+                0% { transform: translateX(-100%); }
+                100% { transform: translateX(350%); }
+              }
+            `}</style>
           </div>
         )}
 
@@ -143,10 +179,10 @@ export const UploadProgressItem = memo(function UploadProgressItem({
         </button>
       )}
 
-      {/* Completed check */}
+      {/* Completed check with success animation */}
       {upload.status === 'completed' && (
-        <div className="flex-shrink-0 p-1.5 text-green-400">
-          <Check className="w-4 h-4" />
+        <div className="flex-shrink-0 p-1.5 bg-green-500/20 rounded-full">
+          <Check className="w-4 h-4 text-green-400 animate-[scale_0.3s_ease-out]" />
         </div>
       )}
     </div>
