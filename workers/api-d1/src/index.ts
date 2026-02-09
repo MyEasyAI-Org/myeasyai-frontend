@@ -22,6 +22,7 @@ import { runAutoSync } from './scheduled/autoSync';
 // Tipagem do ambiente Cloudflare
 export type Env = {
   DB: D1Database;
+  R2_BUCKET: R2Bucket;
   ENVIRONMENT: string;
   CORS_ORIGIN: string;
   JWT_SECRET: string;

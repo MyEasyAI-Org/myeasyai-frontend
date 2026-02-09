@@ -14,9 +14,6 @@
 ### Mídia
 - MP4, MOV, MP3, WAV
 
-### Compactados (Apenas Armazenamento)
-- ZIP, RAR, 7Z, TAR, GZ
-
 ---
 
 ## ⚠️ SEGURANÇA: Formatos Bloqueados
@@ -40,20 +37,44 @@ const BLOCKED_EXTENSIONS = [
   '.inf', '.reg',  // Registry/config do Windows
   '.lnk',  // Shortcuts (podem apontar para malware)
   '.hta',  // HTML Application (executa código)
+  // Arquivos compactados (risco de segurança - podem conter executáveis maliciosos)
+  '.zip', '.rar', '.7z', '.tar', '.gz', '.bz2', '.xz', '.tgz', '.tbz2',
+  '.cab', '.iso', '.dmg', '.pkg', '.deb', '.rpm',
 ];
 
 const BLOCKED_MIME_TYPES = [
+  // Executáveis
   'application/x-msdownload',
   'application/x-msdos-program',
   'application/x-executable',
   'application/x-sh',
   'application/x-shellscript',
+  // Arquivos compactados
+  'application/zip',
+  'application/x-zip-compressed',
+  'application/x-rar-compressed',
+  'application/x-7z-compressed',
+  'application/gzip',
+  'application/x-gzip',
+  'application/x-tar',
+  'application/x-bzip2',
+  'application/x-xz',
+  'application/x-iso9660-image',
+  'application/x-apple-diskimage',
 ];
 ```
 
+### Justificativa para Bloqueio de Compactados
+
+Arquivos compactados representam riscos de segurança porque:
+- Podem conter executáveis maliciosos ocultos
+- Podem conter scripts perigosos
+- Dificultam a análise de conteúdo antes do download
+- Podem ser usados para bypass de outras validações
+
 ### Implementação do Bloqueio
 
-Adicionar validação em `UploadService.ts`:
+Validação já implementada em `UploadService.ts`:
 
 ```typescript
 export function isBlockedFile(file: File): { blocked: boolean; reason?: string } {
@@ -100,9 +121,9 @@ export function isBlockedFile(file: File): { blocked: boolean; reason?: string }
 | MOV | 🔧 Fase A | ❌ Não suportado | - |
 | MP3 | ✅ Feito | ❌ Não suportado | - |
 | WAV | ✅ Feito | ❌ Não suportado | - |
-| ZIP | 🔧 Fase A | ❌ Não suportado | - |
-| RAR | 📦 Armazenar | ❌ Não suportado | - |
-| 7Z | 📦 Armazenar | ❌ Não suportado | - |
+| ZIP | 🚫 Bloqueado | ❌ | - |
+| RAR | 🚫 Bloqueado | ❌ | - |
+| 7Z | 🚫 Bloqueado | ❌ | - |
 
 ---
 
@@ -114,60 +135,17 @@ Implementar todas as leituras primeiro. Testar completamente antes de passar par
 
 ---
 
-## ETAPA A0: Bloqueio de Arquivos Perigosos (SEGURANÇA)
+## ETAPA A0: Bloqueio de Arquivos Perigosos (SEGURANÇA) ✅ IMPLEMENTADO
 
 ### Objetivo
-Bloquear upload de executáveis e scripts perigosos.
+Bloquear upload de executáveis, scripts perigosos e arquivos compactados.
 
-### Arquivos a Modificar
-1. `services/UploadService.ts` - Adicionar validação de bloqueio
-2. `components/upload/UploadModal.tsx` - Mostrar erro amigável
+### Status
+✅ **Implementado** em `constants/index.ts`
 
-### Passos Detalhados
-
-#### Passo A0.1: Adicionar constantes de bloqueio
-```typescript
-// Em constants/index.ts ou criar constants/security.ts
-
-export const BLOCKED_EXTENSIONS = [
-  // Executáveis Windows
-  '.exe', '.msi', '.bat', '.cmd', '.com', '.scr', '.pif',
-  // Scripts
-  '.vbs', '.vbe', '.js', '.jse', '.ws', '.wsf', '.wsc', '.wsh',
-  '.ps1', '.psm1', '.psd1',
-  // Unix/Mac
-  '.sh', '.bash', '.zsh', '.app', '.command',
-  // Java
-  '.jar', '.class',
-  // Outros
-  '.dll', '.sys', '.drv', '.inf', '.reg', '.lnk', '.hta',
-];
-```
-
-#### Passo A0.2: Adicionar validação em UploadService.ts
-```typescript
-export function isBlockedFile(file: File): { blocked: boolean; reason?: string } {
-  const extension = '.' + file.name.split('.').pop()?.toLowerCase();
-
-  if (BLOCKED_EXTENSIONS.includes(extension)) {
-    return {
-      blocked: true,
-      reason: `Arquivos ${extension} não são permitidos por motivos de segurança.`
-    };
-  }
-
-  return { blocked: false };
-}
-```
-
-#### Passo A0.3: Integrar no fluxo de upload
-```typescript
-// Em validateFile() ou processUpload()
-const blockCheck = isBlockedFile(file);
-if (blockCheck.blocked) {
-  throw new Error(blockCheck.reason);
-}
-```
+### Arquivos Modificados
+1. `constants/index.ts` - Constantes BLOCKED_EXTENSIONS e BLOCKED_MIME_TYPES
+2. `services/UploadService.ts` - Função isBlockedFile() e validateFile()
 
 ### Testes Manuais - Etapa A0
 
@@ -177,8 +155,12 @@ if (blockCheck.blocked) {
 | A0.2 | Upload .bat | Tentar upload de script.bat | Erro: "não permitido por segurança" |
 | A0.3 | Upload .sh | Tentar upload de script.sh | Erro: "não permitido por segurança" |
 | A0.4 | Upload .jar | Tentar upload de app.jar | Erro: "não permitido por segurança" |
-| A0.5 | Upload .zip | Tentar upload de arquivo.zip | Upload permitido ✅ |
-| A0.6 | Upload .pdf | Tentar upload de doc.pdf | Upload permitido ✅ |
+| A0.5 | Upload .zip | Tentar upload de arquivo.zip | Erro: "não permitido por segurança" |
+| A0.6 | Upload .rar | Tentar upload de arquivo.rar | Erro: "não permitido por segurança" |
+| A0.7 | Upload .7z | Tentar upload de arquivo.7z | Erro: "não permitido por segurança" |
+| A0.8 | Upload .tar.gz | Tentar upload de arquivo.tar.gz | Erro: "não permitido por segurança" |
+| A0.9 | Upload .pdf | Tentar upload de doc.pdf | Upload permitido ✅ |
+| A0.10 | Upload .png | Tentar upload de imagem.png | Upload permitido ✅ |
 
 **Após testar todos os itens acima, passar para A1.**
 
@@ -407,83 +389,7 @@ const [error, setError] = useState(false);
 | A3.4 | Download DOC | Clicar botão download | Arquivo baixa corretamente |
 | A3.5 | Download MOV | Clicar botão download | Arquivo baixa corretamente |
 
-**Após testar todos os itens acima, passar para A4.**
-
----
-
-## ETAPA A4: Preview de Arquivos ZIP
-
-### Objetivo
-Mostrar lista de arquivos dentro de um ZIP (sem extração completa).
-
-### Dependências
-```bash
-npm install jszip
-```
-
-### Arquivos a Criar
-1. `components/preview/ZipPreview.tsx`
-
-### Arquivos a Modificar
-1. `components/preview/FilePreview.tsx`
-
-### Passos Detalhados
-
-#### Passo A4.1: Instalar jszip
-```bash
-npm install jszip
-```
-
-#### Passo A4.2: Criar ZipPreview.tsx
-```typescript
-// Localização: src/features/my-easy-docs/components/preview/ZipPreview.tsx
-
-import JSZip from 'jszip';
-
-interface ZipPreviewProps {
-  url: string;
-  fileName: string;
-}
-
-// Funcionalidades:
-// - Carregar ZIP do R2
-// - Listar arquivos e pastas
-// - Mostrar tamanho de cada arquivo
-// - Mostrar total de arquivos
-// - Botão para baixar ZIP completo
-
-// Estrutura da lista:
-// ┌─────────────────────────────────────────┐
-// │ 📁 arquivo.zip (15 arquivos, 2.3 MB)   │
-// ├─────────────────────────────────────────┤
-// │ 📄 documento.pdf          1.2 MB        │
-// │ 📁 imagens/                             │
-// │   📷 foto1.jpg            500 KB        │
-// │   📷 foto2.jpg            600 KB        │
-// │ 📄 readme.txt             2 KB          │
-// ├─────────────────────────────────────────┤
-// │        [Baixar ZIP Completo]            │
-// └─────────────────────────────────────────┘
-```
-
-#### Passo A4.3: Integrar no FilePreview.tsx
-```typescript
-// Adicionar case para ZIP
-if (document.mime_type === 'application/zip' ||
-    document.mime_type === 'application/x-zip-compressed') {
-  return <ZipPreview url={fileUrl} fileName={document.name} />;
-}
-```
-
-### Testes Manuais - Etapa A4
-
-| # | Teste | Como Verificar | Resultado Esperado |
-|---|-------|----------------|-------------------|
-| A4.1 | Upload ZIP | Upload arquivo.zip | Lista de conteúdo aparece |
-| A4.2 | ZIP com pastas | Upload ZIP com subpastas | Estrutura hierárquica visível |
-| A4.3 | ZIP grande | Upload ZIP com 100+ arquivos | Lista renderiza sem travar |
-| A4.4 | Download ZIP | Clicar "Baixar" | ZIP baixa corretamente |
-| A4.5 | RAR/7Z | Upload arquivo.rar | Ícone genérico + download (sem preview) |
+**Após testar todos os itens acima, Fase A está completa.**
 
 ---
 
@@ -495,7 +401,8 @@ Antes de prosseguir para a Fase B, confirme que TODOS os testes abaixo passam:
 - [ ] Arquivos .exe são bloqueados
 - [ ] Arquivos .bat/.sh são bloqueados
 - [ ] Arquivos .jar são bloqueados
-- [ ] Arquivos seguros (PDF, ZIP, etc.) são permitidos
+- [ ] Arquivos .zip/.rar/.7z são bloqueados
+- [ ] Arquivos seguros (PDF, PNG, DOCX, etc.) são permitidos
 
 ### Planilhas (A1)
 - [ ] XLSX visualiza corretamente
@@ -512,10 +419,6 @@ Antes de prosseguir para a Fase B, confirme que TODOS os testes abaixo passam:
 ### Legados (A3)
 - [ ] DOC mostra mensagem + download
 - [ ] MOV mostra fallback quando não suporta
-
-### Compactados (A4)
-- [ ] ZIP mostra lista de conteúdo
-- [ ] RAR/7Z mostram ícone + download
 
 **Somente passe para Fase B após todos os itens acima estarem OK.**
 
@@ -848,16 +751,14 @@ src/features/my-easy-docs/
 │       ├── FilePreview.tsx        # Modificar
 │       ├── SpreadsheetPreview.tsx # FASE A
 │       ├── DocxPreview.tsx        # FASE A
-│       ├── ZipPreview.tsx         # FASE A
 │       ├── JsonEditor.tsx         # FASE B
 │       ├── CsvEditor.tsx          # FASE B
 │       ├── HtmlEditor.tsx         # FASE B
 │       └── ImageEditor.tsx        # FASE B
 ├── constants/
-│   ├── index.ts                   # MIME types existentes
-│   └── security.ts                # FASE A (bloqueios)
+│   └── index.ts                   # Bloqueios de segurança ✅
 ├── services/
-│   ├── UploadService.ts           # Modificar (validação)
+│   ├── UploadService.ts           # Validação ✅
 │   ├── ImageService.ts            # FASE B
 │   └── ConversionService.ts       # FASE B
 └── utils/
@@ -870,7 +771,7 @@ src/features/my-easy-docs/
 
 ### Fase A
 ```bash
-npm install docx-preview papaparse jszip
+npm install docx-preview papaparse
 ```
 
 ### Fase B
@@ -883,17 +784,16 @@ npm install fabric
 ## Ordem de Implementação
 
 ### FASE A (Leituras) - Implementar Primeiro
-1. **A0** - Bloqueio de arquivos perigosos (SEGURANÇA) ⚠️
+1. **A0** - Bloqueio de arquivos perigosos (SEGURANÇA) ✅ FEITO
 2. **A1** - SpreadsheetPreview (XLSX/XLS/CSV)
 3. **A2** - DocxPreview
 4. **A3** - Mensagens DOC/MOV
-5. **A4** - ZipPreview
 
 **⏸️ PARAR E TESTAR FASE A COMPLETAMENTE**
 
 ### FASE B (Edições) - Implementar Depois
-6. **B1** - JsonEditor
-7. **B2** - CsvEditor
-8. **B3** - HtmlEditor
-9. **B4** - ImageEditor
-10. **B5** - ConversionService
+5. **B1** - JsonEditor
+6. **B2** - CsvEditor
+7. **B3** - HtmlEditor
+8. **B4** - ImageEditor
+9. **B5** - ConversionService

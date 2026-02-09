@@ -223,8 +223,14 @@ export const UploadService = {
       return `${r2Domain}/${r2Key}`;
     }
 
-    // Fallback - return key as path
-    console.warn('[UploadService] R2 public domain not configured');
+    // Fallback - use API endpoint to serve files from R2
+    const apiUrl = import.meta.env.VITE_CLOUDFLARE_D1_API_URL;
+    if (apiUrl) {
+      return `${apiUrl}/docs/files/${r2Key}`;
+    }
+
+    // Last resort - return key as path (will likely fail)
+    console.warn('[UploadService] Neither R2 public domain nor API URL configured');
     return r2Key;
   },
 

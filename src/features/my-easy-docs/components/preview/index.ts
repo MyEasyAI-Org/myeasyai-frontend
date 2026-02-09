@@ -11,3 +11,4 @@ export { CodePreview } from './CodePreview';
 export { TextPreview } from './TextPreview';
 export { TextEditor } from './TextEditor';
 export { UnsupportedPreview } from './UnsupportedPreview';
+export { SpreadsheetPreview } from './SpreadsheetPreview';

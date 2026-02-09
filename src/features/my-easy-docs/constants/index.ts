@@ -37,15 +37,31 @@ export const BLOCKED_EXTENSIONS: string[] = [
   '.lnk',
   // HTML Application (executa código)
   '.hta',
+  // Arquivos compactados (risco de segurança - podem conter executáveis maliciosos)
+  '.zip', '.rar', '.7z', '.tar', '.gz', '.bz2', '.xz', '.tgz', '.tbz2',
+  '.cab', '.iso', '.dmg', '.pkg', '.deb', '.rpm',
 ];
 
 // MIME types bloqueados (backup de segurança)
 export const BLOCKED_MIME_TYPES: string[] = [
+  // Executáveis
   'application/x-msdownload',
   'application/x-msdos-program',
   'application/x-executable',
   'application/x-sh',
   'application/x-shellscript',
+  // Arquivos compactados
+  'application/zip',
+  'application/x-zip-compressed',
+  'application/x-rar-compressed',
+  'application/x-7z-compressed',
+  'application/gzip',
+  'application/x-gzip',
+  'application/x-tar',
+  'application/x-bzip2',
+  'application/x-xz',
+  'application/x-iso9660-image',
+  'application/x-apple-diskimage',
 ];
 
 // =============================================
@@ -124,12 +140,6 @@ export const FILE_TYPE_ICONS: Record<string, string> = {
   'audio/ogg': 'Music',
   'audio/webm': 'Music',
 
-  // Arquivos compactados
-  'application/zip': 'FileArchive',
-  'application/x-rar-compressed': 'FileArchive',
-  'application/x-7z-compressed': 'FileArchive',
-  'application/gzip': 'FileArchive',
-
   // Código
   'application/javascript': 'FileCode',
   'application/json': 'FileJson',
@@ -171,10 +181,6 @@ export const EXTENSION_TO_MIME: Record<string, string> = {
   '.mp3': 'audio/mpeg',
   '.wav': 'audio/wav',
   '.ogg': 'audio/ogg',
-  '.zip': 'application/zip',
-  '.rar': 'application/x-rar-compressed',
-  '.7z': 'application/x-7z-compressed',
-  '.gz': 'application/gzip',
   '.js': 'application/javascript',
   '.ts': 'application/typescript',
   '.json': 'application/json',

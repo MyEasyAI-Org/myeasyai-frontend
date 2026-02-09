@@ -208,6 +208,27 @@ export function isTextFile(mimeType: string): boolean {
 }
 
 /**
+ * Verifica se o arquivo é uma planilha (XLSX, XLS, CSV)
+ */
+export function isSpreadsheet(mimeType: string): boolean {
+  const spreadsheetMimeTypes = [
+    // XLSX
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    // XLS
+    'application/vnd.ms-excel',
+    // CSV
+    'text/csv',
+    'text/comma-separated-values',
+    'application/csv',
+    // Fallbacks que alguns browsers/sistemas podem usar
+    'application/x-excel',
+    'application/x-msexcel',
+    'application/excel',
+  ];
+  return spreadsheetMimeTypes.includes(mimeType);
+}
+
+/**
  * Extensões de código suportadas para syntax highlighting
  */
 const CODE_EXTENSIONS = [

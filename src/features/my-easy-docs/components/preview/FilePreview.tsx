@@ -8,7 +8,8 @@
 import { useState, useCallback, useEffect } from 'react';
 import { X, Download, Edit3, Star, Trash2, MoreVertical, Move } from 'lucide-react';
 import type { DocsDocument } from '../../types';
-import { isImage, isPdf, isTextFile, isVideo, isAudio, isCode, isEditable, formatFileSize, formatRelativeTime } from '../../utils';
+import { isImage, isPdf, isTextFile, isVideo, isAudio, isCode, isEditable, isSpreadsheet, formatFileSize, formatRelativeTime } from '../../utils';
+import { UploadService } from '../../services/UploadService';
 import { ImagePreview } from './ImagePreview';
 import { PdfPreview } from './PdfPreview';
 import { TextPreview } from './TextPreview';
@@ -16,6 +17,7 @@ import { VideoPreview } from './VideoPreview';
 import { AudioPreview } from './AudioPreview';
 import { CodePreview } from './CodePreview';
 import { UnsupportedPreview } from './UnsupportedPreview';
+import { SpreadsheetPreview } from './SpreadsheetPreview';
 
 // =============================================
 // PROPS
@@ -88,26 +90,45 @@ export function FilePreview({
 
   // Determine which preview to show
   const renderPreview = () => {
-    const { mime_type, r2_url, name } = document;
+    const { mime_type, r2_url, r2_key, name } = document;
+
+    // Build file URL - use r2_url if available, otherwise build from r2_key
+    const fileUrl = r2_url || (r2_key ? UploadService.getDownloadUrl(r2_key) : null);
+
+    // DEBUG: Log mime_type to identify issues
+    console.log('[FilePreview] Document:', {
+      name,
+      mime_type,
+      r2_url: r2_url ? 'EXISTS' : 'MISSING',
+      r2_key: r2_key ? 'EXISTS' : 'MISSING',
+      fileUrl: fileUrl ? 'BUILT' : 'MISSING',
+      isSpreadsheetResult: isSpreadsheet(mime_type),
+      willShowSpreadsheet: isSpreadsheet(mime_type) && !!fileUrl
+    });
 
     // Image preview
-    if (isImage(mime_type) && r2_url) {
-      return <ImagePreview url={r2_url} name={name} onDownload={handleDownload} />;
+    if (isImage(mime_type) && fileUrl) {
+      return <ImagePreview url={fileUrl} name={name} onDownload={handleDownload} />;
     }
 
     // PDF preview
-    if (isPdf(mime_type) && r2_url) {
-      return <PdfPreview url={r2_url} name={name} onDownload={handleDownload} />;
+    if (isPdf(mime_type) && fileUrl) {
+      return <PdfPreview url={fileUrl} name={name} onDownload={handleDownload} />;
     }
 
     // Video preview
-    if (isVideo(mime_type) && r2_url) {
-      return <VideoPreview url={r2_url} name={name} onDownload={handleDownload} />;
+    if (isVideo(mime_type) && fileUrl) {
+      return <VideoPreview url={fileUrl} name={name} onDownload={handleDownload} />;
     }
 
     // Audio preview
-    if (isAudio(mime_type) && r2_url) {
-      return <AudioPreview url={r2_url} name={name} onDownload={handleDownload} />;
+    if (isAudio(mime_type) && fileUrl) {
+      return <AudioPreview url={fileUrl} name={name} onDownload={handleDownload} />;
+    }
+
+    // Spreadsheet preview (XLSX, XLS, CSV)
+    if (isSpreadsheet(mime_type) && (fileUrl || r2_key)) {
+      return <SpreadsheetPreview url={fileUrl || undefined} r2Key={r2_key} fileName={name} />;
     }
 
     // Code preview (with syntax highlighting)

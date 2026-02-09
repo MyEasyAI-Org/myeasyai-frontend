@@ -1,5 +1,6 @@
 // Docs API Routes - CRUD para MyEasyDocs
 // Gerencia pastas, documentos, conteúdo extraído e chunks para busca IA
+// Inclui endpoint para servir arquivos do R2
 
 import { Hono } from 'hono';
 import { eq, and, desc, isNull, sql } from 'drizzle-orm';
@@ -630,4 +631,59 @@ docsRoutes.get('/stats/user/:userId', async (c) => {
       total_chunks: chunksResult[0]?.count || 0,
     },
   });
+});
+
+// =============================================================================
+// FILE SERVING (R2)
+// =============================================================================
+
+/**
+ * GET /docs/files/*
+ * Serve arquivos diretamente do R2 bucket
+ * O path após /files/ é a chave do R2 (ex: docs/userId/docId.xlsx)
+ */
+docsRoutes.get('/files/*', async (c) => {
+  const r2 = c.env.R2_BUCKET;
+
+  if (!r2) {
+    console.error('❌ [DOCS] R2_BUCKET binding not available');
+    return c.json({ error: 'Storage not configured' }, 500);
+  }
+
+  // Extrair a chave R2 do path (tudo após /docs/files/)
+  const path = c.req.path;
+  const r2Key = path.replace('/docs/files/', '');
+
+  if (!r2Key || r2Key === '') {
+    return c.json({ error: 'File key is required' }, 400);
+  }
+
+  console.log(`📥 [DOCS] Serving file: ${r2Key}`);
+
+  try {
+    const object = await r2.get(r2Key);
+
+    if (!object) {
+      console.warn(`⚠️ [DOCS] File not found: ${r2Key}`);
+      return c.json({ error: 'File not found' }, 404);
+    }
+
+    // Determinar Content-Type baseado na extensão ou usar o httpMetadata
+    const contentType = object.httpMetadata?.contentType || 'application/octet-stream';
+
+    console.log(`✅ [DOCS] Serving ${r2Key} (${object.size} bytes, ${contentType})`);
+
+    // Retornar o arquivo com headers apropriados
+    return new Response(object.body, {
+      headers: {
+        'Content-Type': contentType,
+        'Content-Length': object.size.toString(),
+        'Cache-Control': 'public, max-age=3600',
+        'ETag': object.etag,
+      },
+    });
+  } catch (error) {
+    console.error(`❌ [DOCS] Error serving file ${r2Key}:`, error);
+    return c.json({ error: 'Failed to retrieve file' }, 500);
+  }
 });
