@@ -6,7 +6,9 @@
 // =============================================
 
 import { useState, useCallback } from 'react';
-import { ZoomIn, ZoomOut, RotateCw, Download } from 'lucide-react';
+import { ZoomIn, ZoomOut, RotateCw, Download, Edit3 } from 'lucide-react';
+import { ImageEditor } from './ImageEditor';
+import type { ImageFormat } from '../../services/ImageExportService';
 
 // =============================================
 // PROPS
@@ -15,16 +17,18 @@ interface ImagePreviewProps {
   url: string;
   name: string;
   onDownload?: () => void;
+  onSaveImage?: (blob: Blob, format: ImageFormat) => Promise<void>;
 }
 
 // =============================================
 // COMPONENT
 // =============================================
-export function ImagePreview({ url, name, onDownload }: ImagePreviewProps) {
+export function ImagePreview({ url, name, onDownload, onSaveImage }: ImagePreviewProps) {
   const [scale, setScale] = useState(1);
   const [rotation, setRotation] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
 
   // Zoom controls
   const handleZoomIn = useCallback(() => {
@@ -54,6 +58,21 @@ export function ImagePreview({ url, name, onDownload }: ImagePreviewProps) {
     setIsLoading(false);
     setError(true);
   }, []);
+
+  // Image editing mode
+  if (isEditing && onSaveImage) {
+    return (
+      <ImageEditor
+        url={url}
+        name={name}
+        onSave={async (blob, format) => {
+          await onSaveImage(blob, format);
+          setIsEditing(false);
+        }}
+        onCancel={() => setIsEditing(false)}
+      />
+    );
+  }
 
   if (error) {
     return (
@@ -115,6 +134,19 @@ export function ImagePreview({ url, name, onDownload }: ImagePreviewProps) {
         >
           <RotateCw className="w-4 h-4 text-slate-300" />
         </button>
+
+        {onSaveImage && (
+          <>
+            <div className="w-px h-5 bg-slate-600 mx-2" />
+            <button
+              onClick={() => setIsEditing(true)}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+            >
+              <Edit3 className="w-4 h-4" />
+              <span>Editar</span>
+            </button>
+          </>
+        )}
       </div>
 
       {/* Image container */}

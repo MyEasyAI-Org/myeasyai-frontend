@@ -1007,6 +1007,7 @@ export function MyEasyDocs({ onBackToDashboard }: MyEasyDocsProps) {
                   selectedDocumentId={selectedDocument?.id}
                   documentsCountByFolder={documentsCountByFolder}
                   selectedIds={selectedIds}
+                  hasAnySelection={selectedIds.size > 0}
                   onToggleSelect={handleToggleSelect}
                   onOpenFolder={handleNavigateToFolder}
                   onSelectDocument={handleSelectDocument}
@@ -1025,6 +1026,7 @@ export function MyEasyDocs({ onBackToDashboard }: MyEasyDocsProps) {
                   documents={displayedDocuments}
                   selectedDocumentId={selectedDocument?.id}
                   selectedIds={selectedIds}
+                  hasAnySelection={selectedIds.size > 0}
                   onToggleSelect={handleToggleSelect}
                   onSelectAll={handleSelectAll}
                   onOpenFolder={handleNavigateToFolder}

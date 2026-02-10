@@ -18,6 +18,7 @@ interface FileListProps {
   // Multi-select props
   selectionMode?: boolean;
   selectedIds?: Set<string>;
+  hasAnySelection?: boolean;
   onToggleSelect?: (id: string, type: 'folder' | 'document') => void;
   onSelectAll?: () => void;
   // Action callbacks
@@ -57,6 +58,7 @@ export const FileList = memo(function FileList({
   selectedDocumentId,
   selectionMode = false,
   selectedIds,
+  hasAnySelection = false,
   onToggleSelect,
   onSelectAll,
   onOpenFolder,
@@ -178,6 +180,7 @@ export const FileList = memo(function FileList({
               type="folder"
               selectionMode={selectionMode}
               isChecked={selectedIds?.has(folder.id) ?? false}
+              hasAnySelection={hasAnySelection}
               onToggleSelect={onToggleSelect}
               onOpen={onOpenFolder}
               onRename={onRenameItem}
@@ -195,6 +198,7 @@ export const FileList = memo(function FileList({
               isSelected={selectedDocumentId === doc.id}
               selectionMode={selectionMode}
               isChecked={selectedIds?.has(doc.id) ?? false}
+              hasAnySelection={hasAnySelection}
               onToggleSelect={onToggleSelect}
               onOpen={onOpenDocument ?? onSelectDocument}
               onSelect={onSelectDocument}

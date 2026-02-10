@@ -88,16 +88,20 @@ export function VideoPreview({ url, name, onDownload }: VideoPreviewProps) {
   };
 
   if (error) {
+    const isMov = name.toLowerCase().endsWith('.mov');
+
     return (
       <div className="flex flex-col items-center justify-center h-full p-8 text-center">
         <div className="w-16 h-16 mb-4 flex items-center justify-center bg-red-500/20 rounded-full">
           <AlertCircle className="w-8 h-8 text-red-400" />
         </div>
         <p className="text-slate-300 font-medium mb-2">
-          Não foi possível reproduzir o vídeo
+          {isMov ? 'Formato MOV com suporte limitado' : 'Não foi possível reproduzir o vídeo'}
         </p>
         <p className="text-sm text-slate-500 mb-6">
-          Seu navegador pode não suportar este formato de vídeo.
+          {isMov
+            ? 'Seu navegador pode não suportar o formato MOV. Recomendamos converter para MP4 para melhor compatibilidade.'
+            : 'Seu navegador pode não suportar este formato de vídeo.'}
         </p>
         {onDownload && (
           <button

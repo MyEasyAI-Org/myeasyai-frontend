@@ -44,10 +44,10 @@ export interface BlockedFileResult {
  * @returns Resultado da verificação
  */
 export function isBlockedFile(file: File): BlockedFileResult {
-  // Verificar extensão
-  const extension = '.' + file.name.split('.').pop()?.toLowerCase();
+  // Verificar extensão (getFileExtension retorna '' se não houver extensão)
+  const extension = getFileExtension(file.name);
 
-  if (BLOCKED_EXTENSIONS.includes(extension)) {
+  if (extension && BLOCKED_EXTENSIONS.includes(extension)) {
     return {
       blocked: true,
       reason: `Arquivos ${extension} não são permitidos por motivos de segurança.`,

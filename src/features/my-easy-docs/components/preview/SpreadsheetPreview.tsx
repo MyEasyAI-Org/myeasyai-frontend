@@ -5,10 +5,11 @@
 // Uses xlsx library for parsing and displays as HTML table.
 // =============================================
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import * as XLSX from 'xlsx';
-import { Loader2, FileSpreadsheet, AlertCircle } from 'lucide-react';
+import { Loader2, FileSpreadsheet, AlertCircle, Edit3 } from 'lucide-react';
 import { UploadService } from '../../services/UploadService';
+import { CsvEditor } from './CsvEditor';
 
 // =============================================
 // TYPES
@@ -17,6 +18,8 @@ interface SpreadsheetPreviewProps {
   url?: string;
   r2Key?: string;
   fileName: string;
+  isSaving?: boolean;
+  onSave?: (content: string) => Promise<void>;
 }
 
 interface SheetData {
@@ -27,17 +30,30 @@ interface SheetData {
 // =============================================
 // COMPONENT
 // =============================================
-export function SpreadsheetPreview({ url, r2Key, fileName }: SpreadsheetPreviewProps) {
-  console.log('[SpreadsheetPreview] Rendering with:', {
-    url: url ? 'EXISTS' : 'MISSING',
-    r2Key: r2Key ? 'EXISTS' : 'MISSING',
-    fileName
-  });
-
+export function SpreadsheetPreview({ url, r2Key, fileName, isSaving = false, onSave }: SpreadsheetPreviewProps) {
   const [sheets, setSheets] = useState<SheetData[]>([]);
   const [activeSheet, setActiveSheet] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
+
+  const isCsv = fileName.toLowerCase().endsWith('.csv');
+  const canEdit = isCsv && !!onSave;
+
+  const handleSaveCsv = useCallback(async (csvContent: string) => {
+    if (onSave) {
+      try {
+        await onSave(csvContent);
+        setIsEditing(false);
+      } catch (err) {
+        console.error('Error saving CSV:', err);
+      }
+    }
+  }, [onSave]);
+
+  const handleCancelEdit = useCallback(() => {
+    setIsEditing(false);
+  }, []);
 
   // Load and parse spreadsheet
   useEffect(() => {
@@ -53,7 +69,6 @@ export function SpreadsheetPreview({ url, r2Key, fileName }: SpreadsheetPreviewP
           throw new Error('Nenhuma fonte de arquivo disponível');
         }
 
-        console.log('[SpreadsheetPreview] Loading via public URL:', fetchUrl);
         const response = await fetch(fetchUrl);
 
         if (!response.ok) {
@@ -128,6 +143,18 @@ export function SpreadsheetPreview({ url, r2Key, fileName }: SpreadsheetPreviewP
   const rowCount = currentSheet?.data.length || 0;
   const colCount = hasData ? Math.max(...currentSheet.data.map((row) => row.length)) : 0;
 
+  // CSV editing mode
+  if (isEditing && canEdit && hasData) {
+    return (
+      <CsvEditor
+        data={currentSheet.data}
+        isSaving={isSaving}
+        onSave={handleSaveCsv}
+        onCancel={handleCancelEdit}
+      />
+    );
+  }
+
   return (
     <div className="flex flex-col h-full">
       {/* Toolbar with sheet tabs */}
@@ -161,6 +188,17 @@ export function SpreadsheetPreview({ url, r2Key, fileName }: SpreadsheetPreviewP
           <span className="px-2 py-0.5 text-xs bg-slate-700 text-slate-400 rounded ml-2">
             {currentSheet.name}
           </span>
+        )}
+
+        {/* Edit button for CSV files */}
+        {canEdit && (
+          <button
+            onClick={() => setIsEditing(true)}
+            className="inline-flex items-center gap-1.5 px-3 py-1 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors ml-auto shrink-0"
+          >
+            <Edit3 className="w-3.5 h-3.5" />
+            <span>Editar</span>
+          </button>
         )}
       </div>
 

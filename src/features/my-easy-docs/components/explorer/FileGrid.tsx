@@ -18,6 +18,7 @@ interface FileGridProps {
   // Multi-select props
   selectionMode?: boolean;
   selectedIds?: Set<string>;
+  hasAnySelection?: boolean;
   onToggleSelect?: (id: string, type: 'folder' | 'document') => void;
   // Action callbacks
   onOpenFolder: (folderId: string) => void;
@@ -40,6 +41,7 @@ export const FileGrid = memo(function FileGrid({
   documentsCountByFolder,
   selectionMode = false,
   selectedIds,
+  hasAnySelection = false,
   onToggleSelect,
   onOpenFolder,
   onSelectDocument,
@@ -60,6 +62,7 @@ export const FileGrid = memo(function FileGrid({
           documentsCount={documentsCountByFolder?.get(folder.id) ?? 0}
           selectionMode={selectionMode}
           isChecked={selectedIds?.has(folder.id) ?? false}
+          hasAnySelection={hasAnySelection}
           onToggleSelect={onToggleSelect}
           onOpen={onOpenFolder}
           onRename={onRenameItem}
@@ -77,6 +80,7 @@ export const FileGrid = memo(function FileGrid({
           isSelected={selectedDocumentId === doc.id}
           selectionMode={selectionMode}
           isChecked={selectedIds?.has(doc.id) ?? false}
+          hasAnySelection={hasAnySelection}
           onToggleSelect={onToggleSelect}
           onOpen={onOpenDocument ?? onSelectDocument}
           onSelect={onSelectDocument}

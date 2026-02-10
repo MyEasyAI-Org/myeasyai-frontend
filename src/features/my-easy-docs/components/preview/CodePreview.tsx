@@ -7,7 +7,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { Highlight, themes } from 'prism-react-renderer';
-import { FileCode, Copy, Check, Loader2 } from 'lucide-react';
+import { FileCode, Copy, Check, Loader2, Edit3 } from 'lucide-react';
 import { getCodeLanguage } from '../../utils';
 
 // =============================================
@@ -17,12 +17,13 @@ interface CodePreviewProps {
   content: string | null;
   name: string;
   isLoading?: boolean;
+  onEdit?: () => void;
 }
 
 // =============================================
 // COMPONENT
 // =============================================
-export function CodePreview({ content, name, isLoading = false }: CodePreviewProps) {
+export function CodePreview({ content, name, isLoading = false, onEdit }: CodePreviewProps) {
   const [copied, setCopied] = useState(false);
   const language = getCodeLanguage(name);
 
@@ -78,11 +79,21 @@ export function CodePreview({ content, name, isLoading = false }: CodePreviewPro
             {language}
           </span>
         </div>
-        <button
-          onClick={handleCopy}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm text-slate-300 hover:bg-slate-700 rounded-lg transition-colors"
-          title="Copiar código"
-        >
+        <div className="flex items-center gap-2">
+          {onEdit && (
+            <button
+              onClick={onEdit}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+            >
+              <Edit3 className="w-4 h-4" />
+              <span>Editar</span>
+            </button>
+          )}
+          <button
+            onClick={handleCopy}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm text-slate-300 hover:bg-slate-700 rounded-lg transition-colors"
+            title="Copiar código"
+          >
           {copied ? (
             <>
               <Check className="w-4 h-4 text-green-400" />
@@ -95,6 +106,7 @@ export function CodePreview({ content, name, isLoading = false }: CodePreviewPro
             </>
           )}
         </button>
+        </div>
       </div>
 
       {/* Code content */}

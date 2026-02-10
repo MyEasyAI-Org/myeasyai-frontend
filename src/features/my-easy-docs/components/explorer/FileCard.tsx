@@ -20,6 +20,7 @@ interface FileCardProps {
   // Multi-select props
   selectionMode?: boolean;
   isChecked?: boolean;
+  hasAnySelection?: boolean;
   onToggleSelect?: (id: string, type: 'folder' | 'document') => void;
   // Action callbacks
   onOpen: (id: string) => void;
@@ -49,6 +50,7 @@ export const FileCard = memo(function FileCard({
   documentsCount = 0,
   selectionMode = false,
   isChecked = false,
+  hasAnySelection = false,
   onToggleSelect,
   onOpen,
   onSelect,
@@ -143,9 +145,11 @@ export const FileCard = memo(function FileCard({
   if (type === 'folder') {
     return (
       <div className="relative group">
-        {/* Checkbox - always visible when onToggleSelect is provided */}
+        {/* Checkbox - visible on hover or when any item is selected */}
         {onToggleSelect && (
-          <div className="absolute top-2 left-2 z-10">
+          <div className={`absolute top-2 left-2 z-10 transition-opacity ${
+            hasAnySelection || isChecked ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+          }`}>
             <label
               className="flex items-center justify-center w-6 h-6 bg-slate-800/90 border border-slate-600 rounded cursor-pointer hover:border-blue-500 transition-colors"
               onClick={handleCheckboxClick}
@@ -228,9 +232,11 @@ export const FileCard = memo(function FileCard({
 
   return (
     <div className="relative group">
-      {/* Checkbox - always visible when onToggleSelect is provided */}
+      {/* Checkbox - visible on hover or when any item is selected */}
       {onToggleSelect && (
-        <div className="absolute top-2 left-2 z-20">
+        <div className={`absolute top-2 left-2 z-20 transition-opacity ${
+          hasAnySelection || isChecked ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+        }`}>
           <label
             className="flex items-center justify-center w-6 h-6 bg-slate-800/90 border border-slate-600 rounded cursor-pointer hover:border-blue-500 transition-colors"
             onClick={handleCheckboxClick}

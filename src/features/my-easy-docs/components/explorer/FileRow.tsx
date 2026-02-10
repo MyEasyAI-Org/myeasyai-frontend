@@ -19,6 +19,7 @@ interface FileRowProps {
   // Multi-select props
   selectionMode?: boolean;
   isChecked?: boolean;
+  hasAnySelection?: boolean;
   onToggleSelect?: (id: string, type: 'folder' | 'document') => void;
   // Action callbacks
   onOpen: (id: string) => void;
@@ -39,6 +40,7 @@ export const FileRow = memo(function FileRow({
   isSelected = false,
   selectionMode = false,
   isChecked = false,
+  hasAnySelection = false,
   onToggleSelect,
   onOpen,
   onSelect,
@@ -138,9 +140,11 @@ export const FileRow = memo(function FileRow({
           isChecked ? 'bg-blue-500/10' : 'hover:bg-slate-800/50'
         }`}
       >
-        {/* Checkbox column - always visible when onToggleSelect is provided */}
+        {/* Checkbox column - visible on hover or when any item is selected */}
         {onToggleSelect && (
-          <td className="w-10 px-2" onClick={handleCheckboxClick}>
+          <td className={`w-10 px-2 transition-opacity ${
+            hasAnySelection || isChecked ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+          }`} onClick={handleCheckboxClick}>
             <input
               type="checkbox"
               checked={isChecked}
@@ -225,9 +229,11 @@ export const FileRow = memo(function FileRow({
               : 'hover:bg-slate-800/50'
       }`}
     >
-      {/* Checkbox column - only visible when selection mode is enabled */}
-      {selectionMode && onToggleSelect && (
-        <td className="w-10 px-2" onClick={handleCheckboxClick}>
+      {/* Checkbox column - visible on hover or when any item is selected */}
+      {onToggleSelect && (
+        <td className={`w-10 px-2 transition-opacity ${
+          hasAnySelection || isChecked ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+        }`} onClick={handleCheckboxClick}>
           <input
             type="checkbox"
             checked={isChecked}

@@ -208,6 +208,34 @@ export function isTextFile(mimeType: string): boolean {
 }
 
 /**
+ * Verifica se o arquivo é um DOCX
+ */
+export function isDocx(mimeType: string): boolean {
+  return mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+}
+
+/**
+ * Verifica se o arquivo é um DOC legado
+ */
+export function isDocLegacy(mimeType: string): boolean {
+  return mimeType === 'application/msword';
+}
+
+/**
+ * Verifica se o arquivo é JSON
+ */
+export function isJson(mimeType: string, filename: string): boolean {
+  return mimeType === 'application/json' || filename.toLowerCase().endsWith('.json');
+}
+
+/**
+ * Verifica se o arquivo é HTML
+ */
+export function isHtml(mimeType: string, filename: string): boolean {
+  return mimeType === 'text/html' || /\.(html?)$/i.test(filename);
+}
+
+/**
  * Verifica se o arquivo é uma planilha (XLSX, XLS, CSV)
  */
 export function isSpreadsheet(mimeType: string): boolean {

@@ -1,23 +1,18 @@
 // =============================================
 // MyEasyDocs - FilePreview Component
 // =============================================
-// Main preview container that switches between
-// different preview types based on file mime_type.
+// Main preview container that uses the preview registry
+// to resolve the correct preview component for each file type.
 // =============================================
 
 import { useState, useCallback, useEffect } from 'react';
 import { X, Download, Edit3, Star, Trash2, MoreVertical, Move } from 'lucide-react';
 import type { DocsDocument } from '../../types';
-import { isImage, isPdf, isTextFile, isVideo, isAudio, isCode, isEditable, isSpreadsheet, formatFileSize, formatRelativeTime } from '../../utils';
+import { isEditable, formatFileSize, formatRelativeTime } from '../../utils';
 import { UploadService } from '../../services/UploadService';
-import { ImagePreview } from './ImagePreview';
-import { PdfPreview } from './PdfPreview';
-import { TextPreview } from './TextPreview';
-import { VideoPreview } from './VideoPreview';
-import { AudioPreview } from './AudioPreview';
-import { CodePreview } from './CodePreview';
+import { resolvePreview } from './previewRegistry';
 import { UnsupportedPreview } from './UnsupportedPreview';
-import { SpreadsheetPreview } from './SpreadsheetPreview';
+import { ConvertMenu } from './ConvertMenu';
 
 // =============================================
 // PROPS
@@ -83,83 +78,33 @@ export function FilePreview({
     if (onDownload) {
       onDownload();
     } else if (document.r2_url) {
-      // Fallback: open URL in new tab
       window.open(document.r2_url, '_blank', 'noopener,noreferrer');
     }
   }, [document.r2_url, onDownload]);
 
-  // Determine which preview to show
+  // Resolve preview component via registry (OCP pattern)
   const renderPreview = () => {
-    const { mime_type, r2_url, r2_key, name } = document;
+    const PreviewComponent = resolvePreview(document);
 
-    // Build file URL - use r2_url if available, otherwise build from r2_key
-    const fileUrl = r2_url || (r2_key ? UploadService.getDownloadUrl(r2_key) : null);
-
-    // DEBUG: Log mime_type to identify issues
-    console.log('[FilePreview] Document:', {
-      name,
-      mime_type,
-      r2_url: r2_url ? 'EXISTS' : 'MISSING',
-      r2_key: r2_key ? 'EXISTS' : 'MISSING',
-      fileUrl: fileUrl ? 'BUILT' : 'MISSING',
-      isSpreadsheetResult: isSpreadsheet(mime_type),
-      willShowSpreadsheet: isSpreadsheet(mime_type) && !!fileUrl
-    });
-
-    // Image preview
-    if (isImage(mime_type) && fileUrl) {
-      return <ImagePreview url={fileUrl} name={name} onDownload={handleDownload} />;
-    }
-
-    // PDF preview
-    if (isPdf(mime_type) && fileUrl) {
-      return <PdfPreview url={fileUrl} name={name} onDownload={handleDownload} />;
-    }
-
-    // Video preview
-    if (isVideo(mime_type) && fileUrl) {
-      return <VideoPreview url={fileUrl} name={name} onDownload={handleDownload} />;
-    }
-
-    // Audio preview
-    if (isAudio(mime_type) && fileUrl) {
-      return <AudioPreview url={fileUrl} name={name} onDownload={handleDownload} />;
-    }
-
-    // Spreadsheet preview (XLSX, XLS, CSV)
-    if (isSpreadsheet(mime_type) && (fileUrl || r2_key)) {
-      return <SpreadsheetPreview url={fileUrl || undefined} r2Key={r2_key} fileName={name} />;
-    }
-
-    // Code preview (with syntax highlighting)
-    if (isCode(mime_type, name)) {
+    if (PreviewComponent) {
       return (
-        <CodePreview
-          content={textContent}
-          name={name}
-          isLoading={isLoadingContent}
+        <PreviewComponent
+          document={document}
+          fileUrl={fileUrl}
+          textContent={textContent}
+          isLoadingContent={isLoadingContent}
+          isSavingContent={isSavingContent}
+          onSave={onSave}
+          onFullscreen={onFullscreen}
+          onDownload={handleDownload}
         />
       );
     }
 
-    // Text/Markdown preview
-    if (isTextFile(mime_type)) {
-      return (
-        <TextPreview
-          content={textContent}
-          name={name}
-          isLoading={isLoadingContent}
-          isSaving={isSavingContent}
-          onSave={isEditable(name) ? onSave : undefined}
-          onFullscreen={isEditable(name) ? onFullscreen : undefined}
-        />
-      );
-    }
-
-    // Unsupported file type
     return <UnsupportedPreview document={document} onDownload={handleDownload} />;
   };
 
+  const fileUrl = document.r2_url || (document.r2_key ? UploadService.getDownloadUrl(document.r2_key) : null);
   const canEdit = isEditable(document.name) && onFullscreen;
 
   return (
@@ -199,6 +144,15 @@ export function FilePreview({
           >
             <Download className="w-4 h-4" />
           </button>
+
+          {/* Convert menu */}
+          {fileUrl && (
+            <ConvertMenu
+              mimeType={document.mime_type}
+              fileUrl={fileUrl}
+              fileName={document.name}
+            />
+          )}
 
           {/* Fullscreen edit button (for editable files) */}
           {canEdit && (
