@@ -1,0 +1,22 @@
+{
+  "nome": "Configuração de Teste",
+  "versao": 1.0,
+  "ativo": true,
+  "usuarios": [
+    {
+      "id": 1,
+      "nome": "João Silva",
+      "email": "joao@example.com"
+    },
+    {
+      "id": 2,
+      "nome": "Maria Santos",
+      "email": "maria@example.com"
+    }
+  ],
+  "configuracoes": {
+    "tema": "escuro",
+    "idioma": "pt-BR",
+    "notificacoes": true
+  }
+}

@@ -64,8 +64,9 @@ export {
   isEditable,
   isImage,
   isPdf,
-  isVideo,
-  isAudio,
+  // TODO: v2 - Reativar suporte a vídeo/áudio
+  // isVideo,
+  // isAudio,
   isTextFile,
   generateId,
   generateR2Key,

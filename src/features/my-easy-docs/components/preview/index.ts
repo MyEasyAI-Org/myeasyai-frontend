@@ -6,8 +6,9 @@ export { FilePreview } from './FilePreview';
 export { ImagePreview } from './ImagePreview';
 export { ImageEditor } from './ImageEditor';
 export { PdfPreview } from './PdfPreview';
-export { VideoPreview } from './VideoPreview';
-export { AudioPreview } from './AudioPreview';
+// TODO: v2 - Reativar suporte a vídeo/áudio
+// export { VideoPreview } from './VideoPreview';
+// export { AudioPreview } from './AudioPreview';
 export { CodePreview } from './CodePreview';
 export { TextPreview } from './TextPreview';
 export { TextEditor } from './TextEditor';

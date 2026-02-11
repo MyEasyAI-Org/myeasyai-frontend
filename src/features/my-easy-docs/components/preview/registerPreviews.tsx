@@ -8,13 +8,13 @@
 
 import { registerPreview } from './previewRegistry';
 import type { PreviewComponentProps } from './previewRegistry';
-import { isImage, isPdf, isVideo, isAudio, isSpreadsheet, isCode, isTextFile, isEditable, isDocx, isDocLegacy, isJson, isHtml } from '../../utils';
+import { isImage, isPdf, /* isVideo, isAudio, */ isSpreadsheet, isCode, isTextFile, isEditable, isDocx, isDocLegacy, isJson, isHtml } from '../../utils';
 import { ImagePreview } from './ImagePreview';
 import { DocxPreview } from './DocxPreview';
 import { LegacyFormatPreview } from './LegacyFormatPreview';
 import { PdfPreview } from './PdfPreview';
-import { VideoPreview } from './VideoPreview';
-import { AudioPreview } from './AudioPreview';
+// import { VideoPreview } from './VideoPreview';
+// import { AudioPreview } from './AudioPreview';
 import { SpreadsheetPreview } from './SpreadsheetPreview';
 import { CodePreview } from './CodePreview';
 import { TextPreview } from './TextPreview';
@@ -34,13 +34,15 @@ function PdfPreviewAdapter(props: PreviewComponentProps) {
   return <PdfPreview url={props.fileUrl!} name={props.document.name} onDownload={props.onDownload} />;
 }
 
-function VideoPreviewAdapter(props: PreviewComponentProps) {
-  return <VideoPreview url={props.fileUrl!} name={props.document.name} onDownload={props.onDownload} />;
-}
+// TODO: v2 - Reativar suporte a vídeo/áudio
+// function VideoPreviewAdapter(props: PreviewComponentProps) {
+//   return <VideoPreview url={props.fileUrl!} name={props.document.name} onDownload={props.onDownload} />;
+// }
 
-function AudioPreviewAdapter(props: PreviewComponentProps) {
-  return <AudioPreview url={props.fileUrl!} name={props.document.name} onDownload={props.onDownload} />;
-}
+// TODO: v2 - Reativar suporte a vídeo/áudio
+// function AudioPreviewAdapter(props: PreviewComponentProps) {
+//   return <AudioPreview url={props.fileUrl!} name={props.document.name} onDownload={props.onDownload} />;
+// }
 
 function SpreadsheetPreviewAdapter(props: PreviewComponentProps) {
   return (
@@ -171,19 +173,21 @@ export function registerAllPreviews(): void {
     priority: 10,
   });
 
-  registerPreview({
-    key: 'video',
-    canHandle: (doc) => isVideo(doc.mime_type) && !!(doc.r2_url || doc.r2_key),
-    component: VideoPreviewAdapter,
-    priority: 10,
-  });
+  // TODO: v2 - Reativar suporte a vídeo/áudio
+  // registerPreview({
+  //   key: 'video',
+  //   canHandle: (doc) => isVideo(doc.mime_type) && !!(doc.r2_url || doc.r2_key),
+  //   component: VideoPreviewAdapter,
+  //   priority: 10,
+  // });
 
-  registerPreview({
-    key: 'audio',
-    canHandle: (doc) => isAudio(doc.mime_type) && !!(doc.r2_url || doc.r2_key),
-    component: AudioPreviewAdapter,
-    priority: 10,
-  });
+  // TODO: v2 - Reativar suporte a vídeo/áudio
+  // registerPreview({
+  //   key: 'audio',
+  //   canHandle: (doc) => isAudio(doc.mime_type) && !!(doc.r2_url || doc.r2_key),
+  //   component: AudioPreviewAdapter,
+  //   priority: 10,
+  // });
 
   registerPreview({
     key: 'spreadsheet',

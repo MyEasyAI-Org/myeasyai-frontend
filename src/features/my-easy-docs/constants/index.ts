@@ -128,17 +128,18 @@ export const FILE_TYPE_ICONS: Record<string, string> = {
   'image/svg+xml': 'Image',
   'image/bmp': 'Image',
 
-  // Vídeos
-  'video/mp4': 'Video',
-  'video/webm': 'Video',
-  'video/quicktime': 'Video',
-  'video/x-msvideo': 'Video',
+  // TODO: v2 - Reativar suporte a vídeo/áudio
+  // // Vídeos
+  // 'video/mp4': 'Video',
+  // 'video/webm': 'Video',
+  // 'video/quicktime': 'Video',
+  // 'video/x-msvideo': 'Video',
 
-  // Áudios
-  'audio/mpeg': 'Music',
-  'audio/wav': 'Music',
-  'audio/ogg': 'Music',
-  'audio/webm': 'Music',
+  // // Áudios
+  // 'audio/mpeg': 'Music',
+  // 'audio/wav': 'Music',
+  // 'audio/ogg': 'Music',
+  // 'audio/webm': 'Music',
 
   // Código
   'application/javascript': 'FileCode',
@@ -174,13 +175,14 @@ export const EXTENSION_TO_MIME: Record<string, string> = {
   '.webp': 'image/webp',
   '.svg': 'image/svg+xml',
   '.bmp': 'image/bmp',
-  '.mp4': 'video/mp4',
-  '.webm': 'video/webm',
-  '.mov': 'video/quicktime',
-  '.avi': 'video/x-msvideo',
-  '.mp3': 'audio/mpeg',
-  '.wav': 'audio/wav',
-  '.ogg': 'audio/ogg',
+  // TODO: v2 - Reativar suporte a vídeo/áudio
+  // '.mp4': 'video/mp4',
+  // '.webm': 'video/webm',
+  // '.mov': 'video/quicktime',
+  // '.avi': 'video/x-msvideo',
+  // '.mp3': 'audio/mpeg',
+  // '.wav': 'audio/wav',
+  // '.ogg': 'audio/ogg',
   '.js': 'application/javascript',
   '.ts': 'application/typescript',
   '.json': 'application/json',
@@ -320,15 +322,17 @@ export const MESSAGES = {
     spreadsheetEmpty: 'Planilha vazia',
     spreadsheetSheetEmpty: 'Esta aba está vazia',
     noFileSource: 'Nenhuma fonte de arquivo disponível',
-    videoError: 'Não foi possível reproduzir o vídeo',
-    videoUnsupported: 'Seu navegador pode não suportar este formato de vídeo.',
-    audioUnsupported: 'Seu navegador pode não suportar este formato de áudio.',
+    // TODO: v2 - Reativar suporte a vídeo/áudio
+    // videoError: 'Não foi possível reproduzir o vídeo',
+    // videoUnsupported: 'Seu navegador pode não suportar este formato de vídeo.',
+    // audioUnsupported: 'Seu navegador pode não suportar este formato de áudio.',
     imageError: 'Não foi possível carregar a imagem',
     codeError: 'Não foi possível carregar o código',
     docLegacyTitle: 'Formato DOC (legado)',
     docLegacyMessage: 'O formato .doc tem suporte limitado no navegador. Para melhor visualização, converta para .docx usando Microsoft Word ou LibreOffice.',
-    movFallbackTitle: 'Formato MOV com suporte limitado',
-    movFallbackMessage: 'Seu navegador pode não suportar o formato MOV. Recomendamos converter para MP4 para melhor compatibilidade.',
+    // TODO: v2 - Reativar suporte a vídeo/áudio
+    // movFallbackTitle: 'Formato MOV com suporte limitado',
+    // movFallbackMessage: 'Seu navegador pode não suportar o formato MOV. Recomendamos converter para MP4 para melhor compatibilidade.',
     downloadAction: 'Baixar arquivo',
     jsonInvalid: 'JSON inválido',
     jsonValid: 'JSON válido',

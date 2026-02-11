@@ -30,7 +30,12 @@ interface PreviewRegistryEntry {
 const registry: PreviewRegistryEntry[] = [];
 
 export function registerPreview(entry: PreviewRegistryEntry): void {
-  registry.push(entry);
+  const existingIndex = registry.findIndex(e => e.key === entry.key);
+  if (existingIndex >= 0) {
+    registry[existingIndex] = entry;
+  } else {
+    registry.push(entry);
+  }
   registry.sort((a, b) => b.priority - a.priority);
 }
 

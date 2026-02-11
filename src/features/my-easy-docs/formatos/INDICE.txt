@@ -1,0 +1,68 @@
+ÍNDICE DE ARQUIVOS DE TESTE
+============================
+
+IMAGENS:
+--------
+✓ foto.png         - Imagem PNG (1x1 pixel)
+✓ foto.jpg         - Imagem JPEG/JPG
+✓ foto.webp        - Imagem WebP
+✓ icone.svg        - Imagem vetorial SVG
+✓ animacao.gif     - GIF animado
+
+DOCUMENTOS:
+-----------
+✓ documento.docx   - Documento Word moderno
+✓ documento.doc    - Documento Word legado
+
+PLANILHAS:
+----------
+✓ planilha.xlsx    - Planilha Excel com múltiplas abas (Dados, Vendas, Resumo)
+✓ dados.csv        - Arquivo CSV com dados tabulares
+
+CÓDIGO:
+-------
+✓ script.js        - Arquivo JavaScript
+✓ estilo.css       - Arquivo CSS
+✓ config.yaml      - Arquivo de configuração YAML
+
+TEXTO:
+------
+✓ notas.txt        - Arquivo de texto simples
+✓ readme.md        - Arquivo Markdown
+
+JSON:
+-----
+✓ config.json            - JSON válido
+✓ config-invalido.json   - JSON inválido (para testar validação)
+
+HTML:
+-----
+✓ pagina.html      - Página HTML completa
+
+VÍDEO:
+------
+✓ video.mp4        - Arquivo MP4
+✓ video.mov        - Arquivo QuickTime MOV
+
+ÁUDIO:
+------
+✓ musica.mp3       - Arquivo MP3
+
+PDF:
+----
+✓ relatorio.pdf    - Documento PDF com tabelas
+
+ESPECIAIS:
+----------
+✓ README           - Arquivo sem extensão
+✓ programa.exe     - Arquivo executável Windows (.exe)
+
+OBSERVAÇÕES:
+------------
+- Os arquivos de mídia (áudio/vídeo) são estruturas mínimas válidas
+- O arquivo .exe contém apenas o header MZ do Windows
+- O config-invalido.json possui erros propositais para teste de validação
+- A planilha.xlsx contém 3 abas diferentes
+- Todos os arquivos possuem conteúdo real e podem ser abertos com programas apropriados
+
+Total: 24 arquivos de teste

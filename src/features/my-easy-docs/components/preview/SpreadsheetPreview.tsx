@@ -3,11 +3,12 @@
 // =============================================
 // Preview component for spreadsheet files (XLSX, XLS, CSV).
 // Uses xlsx library for parsing and displays as HTML table.
+// Lazy sheet parsing: only the active sheet is parsed on demand.
 // =============================================
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import * as XLSX from 'xlsx';
-import { Loader2, FileSpreadsheet, AlertCircle, Edit3 } from 'lucide-react';
+import { Loader2, FileSpreadsheet, AlertCircle, Edit3, ChevronDown } from 'lucide-react';
 import { UploadService } from '../../services/UploadService';
 import { CsvEditor } from './CsvEditor';
 
@@ -22,20 +23,25 @@ interface SpreadsheetPreviewProps {
   onSave?: (content: string) => Promise<void>;
 }
 
-interface SheetData {
-  name: string;
-  data: (string | number | boolean | null)[][];
-}
+type CellValue = string | number | boolean | null;
 
 // =============================================
 // COMPONENT
 // =============================================
+const MAX_VISIBLE_ROWS = 500;
+const MAX_PARSE_ROWS = 10_000;
+
 export function SpreadsheetPreview({ url, r2Key, fileName, isSaving = false, onSave }: SpreadsheetPreviewProps) {
-  const [sheets, setSheets] = useState<SheetData[]>([]);
+  const [sheetNames, setSheetNames] = useState<string[]>([]);
   const [activeSheet, setActiveSheet] = useState(0);
+  const [currentSheetData, setCurrentSheetData] = useState<CellValue[][]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
+  const [visibleRows, setVisibleRows] = useState(MAX_VISIBLE_ROWS);
+
+  const workbookRef = useRef<XLSX.WorkBook | null>(null);
+  const parsedCacheRef = useRef<Map<string, CellValue[][]>>(new Map());
 
   const isCsv = fileName.toLowerCase().endsWith('.csv');
   const canEdit = isCsv && !!onSave;
@@ -55,14 +61,13 @@ export function SpreadsheetPreview({ url, r2Key, fileName, isSaving = false, onS
     setIsEditing(false);
   }, []);
 
-  // Load and parse spreadsheet
+  // Effect 1: Load workbook and extract sheet names (NO data parsing)
   useEffect(() => {
-    const loadSpreadsheet = async () => {
+    const loadWorkbook = async () => {
       setIsLoading(true);
       setError(null);
 
       try {
-        // Build fetch URL from r2Key (public R2 domain) or use provided URL
         const fetchUrl = r2Key ? UploadService.getDownloadUrl(r2Key) : url;
 
         if (!fetchUrl) {
@@ -76,21 +81,11 @@ export function SpreadsheetPreview({ url, r2Key, fileName, isSaving = false, onS
         }
 
         const arrayBuffer = await response.arrayBuffer();
-        const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+        const workbook = XLSX.read(arrayBuffer, { type: 'array', cellStyles: false });
 
-        const parsedSheets: SheetData[] = workbook.SheetNames.map((sheetName) => {
-          const worksheet = workbook.Sheets[sheetName];
-          const jsonData = XLSX.utils.sheet_to_json<(string | number | boolean | null)[]>(
-            worksheet,
-            { header: 1, defval: null }
-          );
-          return {
-            name: sheetName,
-            data: jsonData,
-          };
-        });
-
-        setSheets(parsedSheets);
+        workbookRef.current = workbook;
+        parsedCacheRef.current.clear();
+        setSheetNames(workbook.SheetNames);
         setActiveSheet(0);
       } catch (err) {
         console.error('Error loading spreadsheet:', err);
@@ -100,8 +95,34 @@ export function SpreadsheetPreview({ url, r2Key, fileName, isSaving = false, onS
       }
     };
 
-    loadSpreadsheet();
+    loadWorkbook();
   }, [url, r2Key]);
+
+  // Effect 2: Parse only the active sheet on demand (with cache)
+  useEffect(() => {
+    const wb = workbookRef.current;
+    if (!wb || sheetNames.length === 0) return;
+
+    const name = sheetNames[activeSheet];
+    if (!name) return;
+
+    // Check cache first
+    const cached = parsedCacheRef.current.get(name);
+    if (cached) {
+      setCurrentSheetData(cached);
+      setVisibleRows(MAX_VISIBLE_ROWS);
+      return;
+    }
+
+    // Parse on demand
+    const ws = wb.Sheets[name];
+    const data = XLSX.utils.sheet_to_json<CellValue[]>(ws, { header: 1, defval: null });
+    const capped = data.slice(0, MAX_PARSE_ROWS);
+
+    parsedCacheRef.current.set(name, capped);
+    setCurrentSheetData(capped);
+    setVisibleRows(MAX_VISIBLE_ROWS);
+  }, [activeSheet, sheetNames]);
 
   // Loading state
   if (isLoading) {
@@ -127,7 +148,7 @@ export function SpreadsheetPreview({ url, r2Key, fileName, isSaving = false, onS
   }
 
   // Empty state
-  if (sheets.length === 0) {
+  if (sheetNames.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-full p-8 text-center">
         <div className="w-16 h-16 mb-4 flex items-center justify-center bg-slate-800 rounded-full">
@@ -138,16 +159,17 @@ export function SpreadsheetPreview({ url, r2Key, fileName, isSaving = false, onS
     );
   }
 
-  const currentSheet = sheets[activeSheet];
-  const hasData = currentSheet && currentSheet.data.length > 0;
-  const rowCount = currentSheet?.data.length || 0;
-  const colCount = hasData ? Math.max(...currentSheet.data.map((row) => row.length)) : 0;
+  const hasData = currentSheetData.length > 0;
+  const rowCount = currentSheetData.length;
+  const colCount = hasData ? currentSheetData.reduce((max, row) => Math.max(max, row.length), 0) : 0;
+  const displayedData = hasData ? currentSheetData.slice(0, visibleRows) : [];
+  const hasMoreRows = rowCount > visibleRows;
 
   // CSV editing mode
   if (isEditing && canEdit && hasData) {
     return (
       <CsvEditor
-        data={currentSheet.data}
+        data={currentSheetData}
         isSaving={isSaving}
         onSave={handleSaveCsv}
         onCancel={handleCancelEdit}
@@ -165,28 +187,28 @@ export function SpreadsheetPreview({ url, r2Key, fileName, isSaving = false, onS
         </span>
 
         {/* Sheet tabs - only show if multiple sheets */}
-        {sheets.length > 1 && (
+        {sheetNames.length > 1 && (
           <div className="flex items-center gap-1 ml-4 flex-shrink-0">
-            {sheets.map((sheet, index) => (
+            {sheetNames.map((name, index) => (
               <button
-                key={sheet.name}
-                onClick={() => setActiveSheet(index)}
+                key={name}
+                onClick={() => { setActiveSheet(index); setVisibleRows(MAX_VISIBLE_ROWS); }}
                 className={`px-3 py-1 text-sm rounded transition-colors whitespace-nowrap ${
                   index === activeSheet
                     ? 'bg-green-600 text-white'
                     : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
                 }`}
               >
-                {sheet.name}
+                {name}
               </button>
             ))}
           </div>
         )}
 
         {/* Single sheet indicator */}
-        {sheets.length === 1 && (
+        {sheetNames.length === 1 && (
           <span className="px-2 py-0.5 text-xs bg-slate-700 text-slate-400 rounded ml-2">
-            {currentSheet.name}
+            {sheetNames[0]}
           </span>
         )}
 
@@ -205,40 +227,53 @@ export function SpreadsheetPreview({ url, r2Key, fileName, isSaving = false, onS
       {/* Table content */}
       <div className="flex-1 overflow-auto">
         {hasData ? (
-          <table className="w-full border-collapse text-sm">
-            <tbody>
-              {currentSheet.data.map((row, rowIndex) => (
-                <tr
-                  key={rowIndex}
-                  className={`border-b border-slate-700/50 ${
-                    rowIndex === 0 ? 'bg-slate-800 sticky top-0 z-10' : 'hover:bg-slate-800/30'
-                  }`}
+          <>
+            <table className="w-full border-collapse text-sm">
+              <tbody>
+                {displayedData.map((row, rowIndex) => (
+                  <tr
+                    key={rowIndex}
+                    className={`border-b border-slate-700/50 ${
+                      rowIndex === 0 ? 'bg-slate-800 sticky top-0 z-10' : 'hover:bg-slate-800/30'
+                    }`}
+                  >
+                    {/* Row number */}
+                    <td className="px-2 py-1.5 text-right text-slate-500 bg-slate-800/50 border-r border-slate-700/50 select-none w-12 sticky left-0">
+                      {rowIndex + 1}
+                    </td>
+                    {/* Data cells */}
+                    {Array.from({ length: colCount }).map((_, colIndex) => {
+                      const cellValue = row[colIndex];
+                      const isHeader = rowIndex === 0;
+                      return (
+                        <td
+                          key={colIndex}
+                          className={`px-3 py-1.5 border-r border-slate-700/30 whitespace-nowrap ${
+                            isHeader
+                              ? 'font-semibold text-slate-200'
+                              : 'text-slate-300'
+                          } ${cellValue === null || cellValue === '' ? 'text-slate-600' : ''}`}
+                        >
+                          {cellValue !== null && cellValue !== '' ? String(cellValue) : '-'}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {hasMoreRows && (
+              <div className="flex items-center justify-center py-3 border-t border-slate-700/50">
+                <button
+                  onClick={() => setVisibleRows((prev) => prev + MAX_VISIBLE_ROWS)}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 rounded-lg transition-colors"
                 >
-                  {/* Row number */}
-                  <td className="px-2 py-1.5 text-right text-slate-500 bg-slate-800/50 border-r border-slate-700/50 select-none w-12 sticky left-0">
-                    {rowIndex + 1}
-                  </td>
-                  {/* Data cells */}
-                  {Array.from({ length: colCount }).map((_, colIndex) => {
-                    const cellValue = row[colIndex];
-                    const isHeader = rowIndex === 0;
-                    return (
-                      <td
-                        key={colIndex}
-                        className={`px-3 py-1.5 border-r border-slate-700/30 whitespace-nowrap ${
-                          isHeader
-                            ? 'font-semibold text-slate-200'
-                            : 'text-slate-300'
-                        } ${cellValue === null || cellValue === '' ? 'text-slate-600' : ''}`}
-                      >
-                        {cellValue !== null && cellValue !== '' ? String(cellValue) : '-'}
-                      </td>
-                    );
-                  })}
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                  <ChevronDown className="w-4 h-4" />
+                  <span>Mostrar mais {Math.min(MAX_VISIBLE_ROWS, rowCount - visibleRows).toLocaleString()} linhas ({(rowCount - visibleRows).toLocaleString()} restantes)</span>
+                </button>
+              </div>
+            )}
+          </>
         ) : (
           <div className="flex items-center justify-center h-full p-8 text-slate-400">
             Esta aba esta vazia
@@ -252,9 +287,9 @@ export function SpreadsheetPreview({ url, r2Key, fileName, isSaving = false, onS
           {rowCount.toLocaleString()} {rowCount === 1 ? 'linha' : 'linhas'} x {colCount.toLocaleString()}{' '}
           {colCount === 1 ? 'coluna' : 'colunas'}
         </span>
-        {sheets.length > 1 && (
+        {sheetNames.length > 1 && (
           <span>
-            Aba {activeSheet + 1} de {sheets.length}
+            Aba {activeSheet + 1} de {sheetNames.length}
           </span>
         )}
       </div>

@@ -111,17 +111,18 @@ export function getFileType(mimeType: string): string {
     'image/svg+xml': 'Imagem',
     'image/bmp': 'Imagem',
 
-    // Vídeos
-    'video/mp4': 'Vídeo',
-    'video/webm': 'Vídeo',
-    'video/quicktime': 'Vídeo',
-    'video/x-msvideo': 'Vídeo',
+    // TODO: v2 - Reativar suporte a vídeo/áudio
+    // // Vídeos
+    // 'video/mp4': 'Vídeo',
+    // 'video/webm': 'Vídeo',
+    // 'video/quicktime': 'Vídeo',
+    // 'video/x-msvideo': 'Vídeo',
 
-    // Áudios
-    'audio/mpeg': 'Áudio',
-    'audio/wav': 'Áudio',
-    'audio/ogg': 'Áudio',
-    'audio/webm': 'Áudio',
+    // // Áudios
+    // 'audio/mpeg': 'Áudio',
+    // 'audio/wav': 'Áudio',
+    // 'audio/ogg': 'Áudio',
+    // 'audio/webm': 'Áudio',
 
     // Arquivos compactados
     'application/zip': 'Arquivo ZIP',
@@ -186,19 +187,21 @@ export function isPdf(mimeType: string): boolean {
   return mimeType === 'application/pdf';
 }
 
-/**
- * Verifica se o arquivo é um vídeo
- */
-export function isVideo(mimeType: string): boolean {
-  return mimeType.startsWith('video/');
-}
+// TODO: v2 - Reativar suporte a vídeo/áudio
+// /**
+//  * Verifica se o arquivo é um vídeo
+//  */
+// export function isVideo(mimeType: string): boolean {
+//   return mimeType.startsWith('video/');
+// }
 
-/**
- * Verifica se o arquivo é um áudio
- */
-export function isAudio(mimeType: string): boolean {
-  return mimeType.startsWith('audio/');
-}
+// TODO: v2 - Reativar suporte a vídeo/áudio
+// /**
+//  * Verifica se o arquivo é um áudio
+//  */
+// export function isAudio(mimeType: string): boolean {
+//   return mimeType.startsWith('audio/');
+// }
 
 /**
  * Verifica se o arquivo é texto puro ou markdown

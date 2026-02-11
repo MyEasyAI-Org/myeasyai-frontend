@@ -6,7 +6,7 @@
 // =============================================
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Canvas as FabricCanvas, FabricImage } from 'fabric';
+import { Canvas as FabricCanvas, FabricImage, filters as fabricFilters } from 'fabric';
 import {
   RotateCw, Crop, Maximize2, Sun, Save, X, Loader2, Download,
 } from 'lucide-react';
@@ -125,7 +125,7 @@ export function ImageEditor({ url, name, onSave, onCancel }: ImageEditorProps) {
     if (objects.length === 0) return;
 
     const img = objects[0] as FabricImage;
-    const filter = new (FabricImage.filters as Record<string, new (...args: unknown[]) => unknown>).Brightness({ brightness: value / 100 }) as Parameters<typeof img.filters.push>[0];
+    const filter = new fabricFilters.Brightness({ brightness: value / 100 });
     img.filters = [filter];
     img.applyFilters();
     canvas.renderAll();
@@ -183,6 +183,7 @@ export function ImageEditor({ url, name, onSave, onCancel }: ImageEditorProps) {
     const dataUrl = canvas.toDataURL({
       format: exportFormat,
       quality: 0.92,
+      multiplier: 1,
     });
 
     const link = document.createElement('a');

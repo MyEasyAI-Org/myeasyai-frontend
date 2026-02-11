@@ -3,9 +3,9 @@
 // =============================================
 
 import { memo } from 'react';
-import { Star, FileText, FileImage, FileVideo, FileAudio, FileCode, File } from 'lucide-react';
+import { Star, FileText, FileImage, /* FileVideo, FileAudio, */ FileCode, File } from 'lucide-react';
 import type { DocsDocument } from '../../types';
-import { isImage, isVideo, isAudio, isPdf, isCode, isTextFile } from '../../utils';
+import { isImage, /* isVideo, isAudio, */ isPdf, isCode, isTextFile } from '../../utils';
 
 // =============================================
 // Types
@@ -29,12 +29,13 @@ function getDocumentIcon(mimeType: string, filename: string) {
   if (isPdf(mimeType)) {
     return <FileText className="w-4 h-4 text-red-400 flex-shrink-0" />;
   }
-  if (isVideo(mimeType)) {
-    return <FileVideo className="w-4 h-4 text-purple-400 flex-shrink-0" />;
-  }
-  if (isAudio(mimeType)) {
-    return <FileAudio className="w-4 h-4 text-pink-400 flex-shrink-0" />;
-  }
+  // TODO: v2 - Reativar suporte a vídeo/áudio
+  // if (isVideo(mimeType)) {
+  //   return <FileVideo className="w-4 h-4 text-purple-400 flex-shrink-0" />;
+  // }
+  // if (isAudio(mimeType)) {
+  //   return <FileAudio className="w-4 h-4 text-pink-400 flex-shrink-0" />;
+  // }
   if (isCode(mimeType, filename)) {
     return <FileCode className="w-4 h-4 text-cyan-400 flex-shrink-0" />;
   }

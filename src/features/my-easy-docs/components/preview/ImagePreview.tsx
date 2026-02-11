@@ -150,7 +150,7 @@ export function ImagePreview({ url, name, onDownload, onSaveImage }: ImagePrevie
       </div>
 
       {/* Image container */}
-      <div className="flex-1 overflow-auto flex items-center justify-center p-4 bg-slate-950/50">
+      <div className="flex-1 overflow-auto flex items-center justify-center p-4 bg-slate-950/50 relative">
         {isLoading && (
           <div className="absolute inset-0 flex items-center justify-center bg-slate-900/50">
             <div className="w-8 h-8 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />

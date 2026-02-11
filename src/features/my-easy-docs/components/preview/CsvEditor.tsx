@@ -167,8 +167,8 @@ export function CsvEditor({ data, isSaving = false, onSave, onCancel }: CsvEdito
                 <th key={colIndex} className="px-1 py-1 border-r border-slate-700/30 text-slate-400 font-normal">
                   <div className="flex items-center justify-between">
                     <span className="text-xs uppercase px-2">
-                      {String.fromCharCode(65 + (colIndex % 26))}
                       {colIndex >= 26 ? String.fromCharCode(65 + Math.floor(colIndex / 26) - 1) : ''}
+                      {String.fromCharCode(65 + (colIndex % 26))}
                     </span>
                     {colCount > 1 && (
                       <button
