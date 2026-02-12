@@ -1,22 +1,59 @@
 // Users API Routes - CRUD completo
 // Equivalente às operações do Supabase
 // Com sincronização automática para Supabase
+// PROTEGIDO: Todos os endpoints exigem JWT + verificação de ownership
 
 import { Hono } from 'hono';
 import { eq } from 'drizzle-orm';
 import { users, type NewUser } from '../db/schema';
 import type { Env, Variables } from '../index';
 import { syncUserToSupabase } from '../utils/supabaseSync';
+import { verifyJWT, type JWTPayload } from '../auth/jwt';
 
 export const usersRoutes = new Hono<{ Bindings: Env; Variables: Variables }>();
 
+// ========== Auth Helper ==========
+
+/**
+ * Extracts and verifies JWT from Authorization header.
+ * Returns the full payload or null if invalid.
+ */
+async function getAuthPayload(c: any): Promise<JWTPayload | null> {
+  const authHeader = c.req.header('Authorization');
+  if (!authHeader?.startsWith('Bearer ')) return null;
+  const token = authHeader.slice(7);
+  return verifyJWT(token, c.env.JWT_SECRET);
+}
+
+/**
+ * Requires authentication and returns the payload.
+ * If not authenticated, sends 401 response.
+ */
+async function requireAuth(c: any): Promise<JWTPayload | null> {
+  const payload = await getAuthPayload(c);
+  if (!payload) {
+    return null;
+  }
+  return payload;
+}
+
 /**
  * GET /users/:uuid
- * Busca usuário por UUID
+ * Busca usuário por UUID — requer auth, só pode acessar próprio perfil
  */
 usersRoutes.get('/:uuid', async (c) => {
   const db = c.get('db');
   const uuid = c.req.param('uuid');
+
+  const payload = await requireAuth(c);
+  if (!payload) {
+    return c.json({ error: 'Unauthorized' }, 401);
+  }
+
+  // Ownership check: só pode ver seu próprio perfil
+  if (payload.sub !== uuid) {
+    return c.json({ error: 'Forbidden' }, 403);
+  }
 
   const user = await db.query.users.findFirst({
     where: eq(users.uuid, uuid),
@@ -31,11 +68,21 @@ usersRoutes.get('/:uuid', async (c) => {
 
 /**
  * GET /users/email/:email
- * Busca usuário por email
+ * Busca usuário por email — requer auth, só pode acessar próprio perfil
  */
 usersRoutes.get('/email/:email', async (c) => {
   const db = c.get('db');
   const email = decodeURIComponent(c.req.param('email'));
+
+  const payload = await requireAuth(c);
+  if (!payload) {
+    return c.json({ error: 'Unauthorized' }, 401);
+  }
+
+  // Ownership check: só pode buscar por seu próprio email
+  if (payload.email !== email) {
+    return c.json({ error: 'Forbidden' }, 403);
+  }
 
   const user = await db.query.users.findFirst({
     where: eq(users.email, email),
@@ -50,15 +97,25 @@ usersRoutes.get('/email/:email', async (c) => {
 
 /**
  * POST /users
- * Cria novo usuário
+ * Cria novo usuário — requer auth, só pode criar com seu próprio UUID
  */
 usersRoutes.post('/', async (c) => {
   const db = c.get('db');
   const body = await c.req.json<NewUser>();
 
+  const payload = await requireAuth(c);
+  if (!payload) {
+    return c.json({ error: 'Unauthorized' }, 401);
+  }
+
   // Validação básica
   if (!body.uuid || !body.email) {
     return c.json({ error: 'uuid and email are required' }, 400);
+  }
+
+  // Ownership check: só pode criar registro para si mesmo
+  if (payload.sub !== body.uuid || payload.email !== body.email) {
+    return c.json({ error: 'Forbidden' }, 403);
   }
 
   // Verificar se já existe
@@ -98,12 +155,22 @@ usersRoutes.post('/', async (c) => {
 
 /**
  * PATCH /users/:uuid
- * Atualiza usuário por UUID
+ * Atualiza usuário por UUID — requer auth + ownership
  */
 usersRoutes.patch('/:uuid', async (c) => {
   const db = c.get('db');
   const uuid = c.req.param('uuid');
   const body = await c.req.json();
+
+  const payload = await requireAuth(c);
+  if (!payload) {
+    return c.json({ error: 'Unauthorized' }, 401);
+  }
+
+  // Ownership check: só pode atualizar seu próprio perfil
+  if (payload.sub !== uuid) {
+    return c.json({ error: 'Forbidden' }, 403);
+  }
 
   // Remover campos que não devem ser atualizados
   const { uuid: _, email: __, created_at: ___, ...updates } = body;
@@ -134,12 +201,22 @@ usersRoutes.patch('/:uuid', async (c) => {
 
 /**
  * PATCH /users/email/:email
- * Atualiza usuário por email (compatibilidade com código existente)
+ * Atualiza usuário por email — requer auth + ownership
  */
 usersRoutes.patch('/email/:email', async (c) => {
   const db = c.get('db');
   const email = decodeURIComponent(c.req.param('email'));
   const body = await c.req.json();
+
+  const payload = await requireAuth(c);
+  if (!payload) {
+    return c.json({ error: 'Unauthorized' }, 401);
+  }
+
+  // Ownership check: só pode atualizar por seu próprio email
+  if (payload.email !== email) {
+    return c.json({ error: 'Forbidden' }, 403);
+  }
 
   // Remover campos que não devem ser atualizados
   const { uuid: _, email: __, created_at: ___, ...updates } = body;
@@ -170,11 +247,21 @@ usersRoutes.patch('/email/:email', async (c) => {
 
 /**
  * DELETE /users/:uuid
- * Remove usuário (soft delete ou hard delete)
+ * Remove usuário — requer auth + ownership (só pode deletar a si mesmo)
  */
 usersRoutes.delete('/:uuid', async (c) => {
   const db = c.get('db');
   const uuid = c.req.param('uuid');
+
+  const payload = await requireAuth(c);
+  if (!payload) {
+    return c.json({ error: 'Unauthorized' }, 401);
+  }
+
+  // Ownership check: só pode deletar seu próprio perfil
+  if (payload.sub !== uuid) {
+    return c.json({ error: 'Forbidden' }, 403);
+  }
 
   const result = await db
     .delete(users)
@@ -196,6 +283,7 @@ usersRoutes.delete('/:uuid', async (c) => {
 /**
  * POST /users/ensure
  * Garante que usuário existe (upsert) - usado após login social
+ * Requer auth — só pode ensure para si mesmo
  */
 usersRoutes.post('/ensure', async (c) => {
   const db = c.get('db');
@@ -207,8 +295,18 @@ usersRoutes.post('/ensure', async (c) => {
     avatar_url?: string;
   }>();
 
+  const payload = await requireAuth(c);
+  if (!payload) {
+    return c.json({ error: 'Unauthorized' }, 401);
+  }
+
   if (!body.uuid || !body.email) {
     return c.json({ error: 'uuid and email are required' }, 400);
+  }
+
+  // Ownership check: só pode ensure para si mesmo
+  if (payload.sub !== body.uuid || payload.email !== body.email) {
+    return c.json({ error: 'Forbidden' }, 403);
   }
 
   // Verificar se usuário existe
@@ -256,11 +354,22 @@ usersRoutes.post('/ensure', async (c) => {
 
 /**
  * GET /users/email/:email/onboarding-status
- * Verifica se usuário precisa completar onboarding
+ * Verifica se usuário precisa completar onboarding — requer auth + ownership
  */
 usersRoutes.get('/email/:email/onboarding-status', async (c) => {
   const db = c.get('db');
   const email = decodeURIComponent(c.req.param('email'));
+
+  const payload = await requireAuth(c);
+  if (!payload) {
+    return c.json({ error: 'Unauthorized' }, 401);
+  }
+
+  // Ownership check: só pode verificar status do próprio email
+  if (payload.email !== email) {
+    return c.json({ error: 'Forbidden' }, 403);
+  }
+
   console.log('[ONBOARDING] Checking status for:', email);
 
   const user = await db.query.users.findFirst({

@@ -516,6 +516,26 @@ export class D1Client {
   }
 
   /**
+   * Get JWT token from localStorage for authenticated requests
+   */
+  private getAuthToken(): string | null {
+    try {
+      const d1Token = localStorage.getItem('d1_jwt_token');
+      if (d1Token) return d1Token;
+
+      const supabaseAuth = localStorage.getItem('sb-abmixlwlizdyvlxrizmi-auth-token');
+      if (supabaseAuth) {
+        const parsed = JSON.parse(supabaseAuth);
+        return parsed?.access_token || null;
+      }
+
+      return null;
+    } catch {
+      return null;
+    }
+  }
+
+  /**
    * Wrapper para fetch com tratamento de erros e timeout
    */
   private async fetch<T>(
@@ -531,10 +551,19 @@ export class D1Client {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
+      // Build headers with auth token
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      const token = this.getAuthToken();
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
       const response = await fetch(`${this.baseUrl}${endpoint}`, {
         ...options,
         headers: {
-          'Content-Type': 'application/json',
+          ...headers,
           ...options.headers,
         },
         signal: controller.signal,
