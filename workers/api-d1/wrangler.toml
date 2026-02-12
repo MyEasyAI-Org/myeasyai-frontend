@@ -4,7 +4,6 @@ compatibility_date = "2024-01-01"
 compatibility_flags = ["nodejs_compat"]
 
 # Custom Domain - connect.myeasyai.com
-# Usando route pattern (mais específico que wildcard CNAME)
 routes = [
   { pattern = "connect.myeasyai.com/*", zone_name = "myeasyai.com" }
 ]
@@ -14,6 +13,11 @@ routes = [
 binding = "DB"
 database_name = "myeasyai-db"
 database_id = "9601951e-ad41-4037-b09f-fe607d09030b"
+
+# R2 Storage binding (for serving docs files)
+[[r2_buckets]]
+binding = "R2_BUCKET"
+bucket_name = "myeasyai-sites"
 
 # Environment variables (non-secrets)
 [vars]
@@ -70,6 +74,9 @@ name = "myeasyai-api-dev"
 binding = "DB"
 database_name = "myeasyai-db"
 database_id = "9601951e-ad41-4037-b09f-fe607d09030b"
+[[env.dev.r2_buckets]]
+binding = "R2_BUCKET"
+bucket_name = "myeasyai-sites"
 [env.dev.vars]
 ENVIRONMENT = "development"
 CORS_ORIGIN = "http://localhost:5173"
@@ -83,6 +90,9 @@ name = "myeasyai-api-staging"
 binding = "DB"
 database_name = "myeasyai-db"
 database_id = "9601951e-ad41-4037-b09f-fe607d09030b"
+[[env.staging.r2_buckets]]
+binding = "R2_BUCKET"
+bucket_name = "myeasyai-sites"
 [env.staging.vars]
 ENVIRONMENT = "staging"
 CORS_ORIGIN = "https://staging.myeasyai.com"

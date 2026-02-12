@@ -5,6 +5,10 @@
 // Import from here when using the Docs in other parts of the app.
 // =============================================
 
+// Initialize preview registry
+import { registerAllPreviews } from './components/preview/registerPreviews';
+registerAllPreviews();
+
 // Main component
 export { MyEasyDocs, default } from './MyEasyDocs';
 
@@ -58,11 +62,14 @@ export {
   getMimeTypeFromExtension,
   canExtractText,
   isEditable,
-  isImage,
+  // TODO: v2 - Reativar suporte a imagens/código
+  // isImage,
   isPdf,
-  isVideo,
-  isAudio,
+  // TODO: v2 - Reativar suporte a vídeo/áudio
+  // isVideo,
+  // isAudio,
   isTextFile,
+  isUnsupportedFormat,
   generateId,
   generateR2Key,
   sanitizeFileName,

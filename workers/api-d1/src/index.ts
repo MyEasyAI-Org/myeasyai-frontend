@@ -16,11 +16,13 @@ import { pricingRoutes } from './routes/pricing';
 import { crmRoutes } from './routes/crm';
 import { contentRoutes } from './routes/content';
 import { stripeRoutes } from './routes/stripe';
+import { docsRoutes } from './routes/docs';
 import { runAutoSync } from './scheduled/autoSync';
 
 // Tipagem do ambiente Cloudflare
 export type Env = {
   DB: D1Database;
+  R2_BUCKET: R2Bucket;
   ENVIRONMENT: string;
   CORS_ORIGIN: string;
   JWT_SECRET: string;
@@ -95,6 +97,7 @@ app.route('/pricing', pricingRoutes);
 app.route('/crm', crmRoutes);
 app.route('/content', contentRoutes);
 app.route('/stripe', stripeRoutes);
+app.route('/docs', docsRoutes);
 
 // Root endpoint
 app.get('/', (c) => {
@@ -113,6 +116,7 @@ app.get('/', (c) => {
       crm: '/crm',
       content: '/content',
       stripe: '/stripe',
+      docs: '/docs',
     },
   });
 });

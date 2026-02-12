@@ -45,7 +45,9 @@
       "Bash(npm ls:*)",
       "Bash(npm outdated:*)",
       "Bash(git check-ignore:*)",
-      "Bash(npm run:*)"
+      "Bash(npm run:*)",
+      "Bash(ls:*)",
+      "Bash(dir:*)"
     ],
     "deny": [],
     "ask": []

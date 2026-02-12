@@ -56,8 +56,42 @@ export class CloudflareClient {
       throw new Error(`R2 upload failed: ${response.status} - ${errorText}`);
     }
 
-    const result = await response.json();
-    console.log('✅ [CLOUDFLARE CLIENT] Upload complete:', result);
+    // Try to parse JSON response, but don't fail if it's not JSON
+    try {
+      const result = await response.json();
+      console.log('✅ [CLOUDFLARE CLIENT] Upload complete:', result);
+    } catch {
+      console.log('✅ [CLOUDFLARE CLIENT] Upload complete (no JSON response)');
+    }
+  }
+
+  /**
+   * Download/Get a file from R2 bucket via Worker proxy
+   * Returns the file as ArrayBuffer for binary files
+   */
+  async getFile(key: string): Promise<ArrayBuffer> {
+    if (!this.uploadWorkerUrl) {
+      throw new Error('Upload Worker URL not configured');
+    }
+
+    console.log('📥 [CLOUDFLARE CLIENT] Downloading via proxy:', key);
+
+    const response = await fetch(this.uploadWorkerUrl, {
+      method: 'GET',
+      headers: {
+        'X-File-Path': key,
+      },
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('❌ [CLOUDFLARE CLIENT] Download error:', response.status, errorText);
+      throw new Error(`R2 download failed: ${response.status} - ${errorText}`);
+    }
+
+    const arrayBuffer = await response.arrayBuffer();
+    console.log('✅ [CLOUDFLARE CLIENT] Download complete:', key, `(${arrayBuffer.byteLength} bytes)`);
+    return arrayBuffer;
   }
 
   /**

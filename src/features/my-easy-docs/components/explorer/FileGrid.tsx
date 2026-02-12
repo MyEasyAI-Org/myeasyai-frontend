@@ -15,9 +15,19 @@ interface FileGridProps {
   documents: DocsDocument[];
   selectedDocumentId?: string | null;
   documentsCountByFolder?: Map<string, number>;
+  // Multi-select props
+  selectionMode?: boolean;
+  selectedIds?: Set<string>;
+  hasAnySelection?: boolean;
+  onToggleSelect?: (id: string, type: 'folder' | 'document') => void;
+  // Action callbacks
   onOpenFolder: (folderId: string) => void;
   onSelectDocument: (documentId: string) => void;
   onOpenDocument?: (documentId: string) => void;
+  onRenameItem?: (item: DocsFolder | DocsDocument, type: 'folder' | 'document') => void;
+  onDeleteItem?: (item: DocsFolder | DocsDocument, type: 'folder' | 'document') => void;
+  onMoveItem?: (item: DocsFolder | DocsDocument, type: 'folder' | 'document') => void;
+  onToggleFavorite?: (item: DocsDocument) => void;
 }
 
 // =============================================
@@ -29,12 +39,20 @@ export const FileGrid = memo(function FileGrid({
   documents,
   selectedDocumentId,
   documentsCountByFolder,
+  selectionMode = false,
+  selectedIds,
+  hasAnySelection = false,
+  onToggleSelect,
   onOpenFolder,
   onSelectDocument,
   onOpenDocument,
+  onRenameItem,
+  onDeleteItem,
+  onMoveItem,
+  onToggleFavorite,
 }: FileGridProps) {
   return (
-    <div className="grid grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-4">
+    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4">
       {/* Folders first */}
       {folders.map((folder) => (
         <FileCard
@@ -42,7 +60,14 @@ export const FileGrid = memo(function FileGrid({
           item={folder}
           type="folder"
           documentsCount={documentsCountByFolder?.get(folder.id) ?? 0}
+          selectionMode={selectionMode}
+          isChecked={selectedIds?.has(folder.id) ?? false}
+          hasAnySelection={hasAnySelection}
+          onToggleSelect={onToggleSelect}
           onOpen={onOpenFolder}
+          onRename={onRenameItem}
+          onDelete={onDeleteItem}
+          onMove={onMoveItem}
         />
       ))}
 
@@ -53,8 +78,16 @@ export const FileGrid = memo(function FileGrid({
           item={doc}
           type="document"
           isSelected={selectedDocumentId === doc.id}
+          selectionMode={selectionMode}
+          isChecked={selectedIds?.has(doc.id) ?? false}
+          hasAnySelection={hasAnySelection}
+          onToggleSelect={onToggleSelect}
           onOpen={onOpenDocument ?? onSelectDocument}
           onSelect={onSelectDocument}
+          onRename={onRenameItem}
+          onDelete={onDeleteItem}
+          onMove={onMoveItem}
+          onToggleFavorite={onToggleFavorite}
         />
       ))}
     </div>

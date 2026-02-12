@@ -3,7 +3,7 @@
 // =============================================
 
 import { memo } from 'react';
-import { ArrowLeft, FolderOpen, Upload, Plus, Star, Clock } from 'lucide-react';
+import { ArrowLeft, FolderOpen, Upload, Plus, FilePlus, Star, Clock } from 'lucide-react';
 import type { DocsFolder, DocsDocument } from '../../types';
 import { SIDEBAR_WIDTH } from '../../constants';
 import { FolderTree } from '../explorer/FolderTree';
@@ -17,10 +17,14 @@ interface DocsSidebarProps {
   currentFolderId: string | null;
   expandedFolders: Set<string>;
   documents: DocsDocument[];
+  selectedDocumentId?: string | null;
+  specialViewMode?: 'none' | 'favorites' | 'recent';
   onNavigate: (folderId: string | null) => void;
   onToggleExpand: (folderId: string) => void;
   onCreateFolder: () => void;
+  onCreateFile: () => void;
   onUpload: () => void;
+  onSelectDocument?: (documentId: string) => void;
   onBackToDashboard?: () => void;
   onViewFavorites?: () => void;
   onViewRecent?: () => void;
@@ -35,21 +39,24 @@ export const DocsSidebar = memo(function DocsSidebar({
   currentFolderId,
   expandedFolders,
   documents,
+  selectedDocumentId,
+  specialViewMode = 'none',
   onNavigate,
   onToggleExpand,
   onCreateFolder,
+  onCreateFile,
   onUpload,
+  onSelectDocument,
   onBackToDashboard,
   onViewFavorites,
   onViewRecent,
 }: DocsSidebarProps) {
   return (
     <aside
-      className="flex-shrink-0 bg-slate-900/50 border-r border-slate-800 flex flex-col"
-      style={{ width: SIDEBAR_WIDTH }}
+      className="w-full sm:w-[280px] lg:w-[300px] flex-shrink-0 bg-slate-900/50 border-r border-slate-800 flex flex-col"
     >
       {/* Header */}
-      <div className="p-4 border-b border-slate-800">
+      <div className="p-3 sm:p-4 border-b border-slate-800">
         <div className="flex items-center gap-3 mb-4">
           {onBackToDashboard && (
             <button
@@ -67,22 +74,32 @@ export const DocsSidebar = memo(function DocsSidebar({
         </div>
 
         {/* Action Buttons */}
-        <div className="flex gap-2">
+        <div className="flex flex-col gap-2">
           <button
             onClick={onUpload}
-            className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm font-medium text-white transition-colors"
+            className="flex items-center justify-center gap-2 px-3 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-xs sm:text-sm font-medium text-white transition-colors"
           >
             <Upload className="w-4 h-4" />
             Upload
           </button>
-          <button
-            onClick={onCreateFolder}
-            className="flex items-center justify-center gap-2 px-3 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-sm font-medium text-white transition-colors"
-            title="Nova Pasta"
-          >
-            <Plus className="w-4 h-4" />
-            Pasta
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={onCreateFolder}
+              className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-xs sm:text-sm font-medium text-white transition-colors"
+              title="Nova Pasta"
+            >
+              <Plus className="w-4 h-4" />
+              Pasta
+            </button>
+            <button
+              onClick={onCreateFile}
+              className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-xs sm:text-sm font-medium text-white transition-colors"
+              title="Novo Arquivo"
+            >
+              <FilePlus className="w-4 h-4" />
+              Arquivo
+            </button>
+          </div>
         </div>
       </div>
 
@@ -93,8 +110,10 @@ export const DocsSidebar = memo(function DocsSidebar({
           currentFolderId={currentFolderId}
           expandedFolders={expandedFolders}
           documents={documents}
+          selectedDocumentId={selectedDocumentId}
           onNavigate={onNavigate}
           onToggleExpand={onToggleExpand}
+          onSelectDocument={onSelectDocument}
         />
       </div>
 
@@ -103,16 +122,24 @@ export const DocsSidebar = memo(function DocsSidebar({
         {onViewFavorites && (
           <button
             onClick={onViewFavorites}
-            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-400 hover:text-slate-300 hover:bg-slate-800 rounded-lg transition-colors"
+            className={`w-full flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-colors ${
+              specialViewMode === 'favorites'
+                ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30'
+                : 'text-slate-400 hover:text-slate-300 hover:bg-slate-800'
+            }`}
           >
-            <Star className="w-4 h-4" />
+            <Star className={`w-4 h-4 ${specialViewMode === 'favorites' ? 'fill-yellow-500' : ''}`} />
             Favoritos
           </button>
         )}
         {onViewRecent && (
           <button
             onClick={onViewRecent}
-            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-400 hover:text-slate-300 hover:bg-slate-800 rounded-lg transition-colors"
+            className={`w-full flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-colors ${
+              specialViewMode === 'recent'
+                ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
+                : 'text-slate-400 hover:text-slate-300 hover:bg-slate-800'
+            }`}
           >
             <Clock className="w-4 h-4" />
             Recentes

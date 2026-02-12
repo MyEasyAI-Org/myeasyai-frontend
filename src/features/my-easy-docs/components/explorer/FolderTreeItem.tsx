@@ -54,16 +54,19 @@ export const FolderTreeItem = memo(function FolderTreeItem({
       }`}
       style={{ paddingLeft: `${12 + level * 16}px` }}
     >
-      {/* Expand/Collapse Button */}
+      {/* Expand/Collapse Toggle */}
       {hasChildren ? (
-        <button
+        <span
+          role="button"
+          tabIndex={0}
           onClick={handleToggleClick}
-          className="p-0.5 hover:bg-slate-700 rounded flex-shrink-0"
+          onKeyDown={(e) => e.key === 'Enter' && handleToggleClick(e as unknown as React.MouseEvent)}
+          className="p-0.5 hover:bg-slate-700 rounded flex-shrink-0 cursor-pointer"
         >
           <ChevronRight
             className={`w-3.5 h-3.5 transition-transform ${isExpanded ? 'rotate-90' : ''}`}
           />
-        </button>
+        </span>
       ) : (
         <span className="w-4 flex-shrink-0" />
       )}

@@ -2,6 +2,9 @@
 // MyEasyDocs - Utilitários
 // =============================================
 
+// Re-export text chunker utilities
+export * from './textChunker';
+
 import {
   FILE_TYPE_ICONS,
   EXTENSION_TO_MIME,
@@ -108,17 +111,18 @@ export function getFileType(mimeType: string): string {
     'image/svg+xml': 'Imagem',
     'image/bmp': 'Imagem',
 
-    // Vídeos
-    'video/mp4': 'Vídeo',
-    'video/webm': 'Vídeo',
-    'video/quicktime': 'Vídeo',
-    'video/x-msvideo': 'Vídeo',
+    // TODO: v2 - Reativar suporte a vídeo/áudio
+    // // Vídeos
+    // 'video/mp4': 'Vídeo',
+    // 'video/webm': 'Vídeo',
+    // 'video/quicktime': 'Vídeo',
+    // 'video/x-msvideo': 'Vídeo',
 
-    // Áudios
-    'audio/mpeg': 'Áudio',
-    'audio/wav': 'Áudio',
-    'audio/ogg': 'Áudio',
-    'audio/webm': 'Áudio',
+    // // Áudios
+    // 'audio/mpeg': 'Áudio',
+    // 'audio/wav': 'Áudio',
+    // 'audio/ogg': 'Áudio',
+    // 'audio/webm': 'Áudio',
 
     // Arquivos compactados
     'application/zip': 'Arquivo ZIP',
@@ -169,12 +173,13 @@ export function isEditable(filename: string): boolean {
   return EDITABLE_EXTENSIONS.includes(ext);
 }
 
-/**
- * Verifica se o arquivo é uma imagem
- */
-export function isImage(mimeType: string): boolean {
-  return mimeType.startsWith('image/');
-}
+// TODO: v2 - Reativar suporte a imagens
+// /**
+//  * Verifica se o arquivo é uma imagem
+//  */
+// export function isImage(mimeType: string): boolean {
+//   return mimeType.startsWith('image/');
+// }
 
 /**
  * Verifica se o arquivo é um PDF
@@ -183,18 +188,55 @@ export function isPdf(mimeType: string): boolean {
   return mimeType === 'application/pdf';
 }
 
-/**
- * Verifica se o arquivo é um vídeo
- */
-export function isVideo(mimeType: string): boolean {
-  return mimeType.startsWith('video/');
-}
+// TODO: v2 - Reativar suporte a vídeo/áudio
+// /**
+//  * Verifica se o arquivo é um vídeo
+//  */
+// export function isVideo(mimeType: string): boolean {
+//   return mimeType.startsWith('video/');
+// }
+
+// TODO: v2 - Reativar suporte a vídeo/áudio
+// /**
+//  * Verifica se o arquivo é um áudio
+//  */
+// export function isAudio(mimeType: string): boolean {
+//   return mimeType.startsWith('audio/');
+// }
 
 /**
- * Verifica se o arquivo é um áudio
+ * Verifica se o MIME type é de um formato explicitamente não suportado
+ * Inclui: vídeo, áudio, imagens, código (exceto HTML)
  */
-export function isAudio(mimeType: string): boolean {
-  return mimeType.startsWith('audio/');
+export function isUnsupportedFormat(mimeType: string): boolean {
+  // Mídia
+  if (mimeType.startsWith('video/') || mimeType.startsWith('audio/')) {
+    return true;
+  }
+
+  // Imagens
+  if (mimeType.startsWith('image/')) {
+    return true;
+  }
+
+  // Código (exceto HTML)
+  const codeMimeTypes = [
+    'application/javascript',
+    'application/typescript',
+    'application/json',
+    'text/javascript',
+    'text/css',
+    'text/x-python',
+    'text/x-java-source',
+    'text/x-c',
+    'text/x-c++',
+  ];
+
+  if (codeMimeTypes.includes(mimeType)) {
+    return true;
+  }
+
+  return false;
 }
 
 /**
@@ -203,6 +245,126 @@ export function isAudio(mimeType: string): boolean {
 export function isTextFile(mimeType: string): boolean {
   return mimeType === 'text/plain' || mimeType === 'text/markdown';
 }
+
+/**
+ * Verifica se o arquivo é um DOCX
+ */
+export function isDocx(mimeType: string): boolean {
+  return mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+}
+
+/**
+ * Verifica se o arquivo é um DOC legado
+ */
+export function isDocLegacy(mimeType: string): boolean {
+  return mimeType === 'application/msword';
+}
+
+/**
+ * Verifica se o arquivo é JSON
+ */
+export function isJson(mimeType: string, filename: string): boolean {
+  return mimeType === 'application/json' || filename.toLowerCase().endsWith('.json');
+}
+
+/**
+ * Verifica se o arquivo é HTML
+ */
+export function isHtml(mimeType: string, filename: string): boolean {
+  return mimeType === 'text/html' || /\.(html?)$/i.test(filename);
+}
+
+/**
+ * Verifica se o arquivo é uma planilha (XLSX, XLS, CSV)
+ */
+export function isSpreadsheet(mimeType: string): boolean {
+  const spreadsheetMimeTypes = [
+    // XLSX
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    // XLS
+    'application/vnd.ms-excel',
+    // CSV
+    'text/csv',
+    'text/comma-separated-values',
+    'application/csv',
+    // Fallbacks que alguns browsers/sistemas podem usar
+    'application/x-excel',
+    'application/x-msexcel',
+    'application/excel',
+  ];
+  return spreadsheetMimeTypes.includes(mimeType);
+}
+
+// TODO: v2 - Reativar suporte a código (exceto HTML que usa HtmlPreview)
+// /**
+//  * Extensões de código suportadas para syntax highlighting
+//  */
+// const CODE_EXTENSIONS = [
+//   '.js', '.jsx', '.ts', '.tsx', '.json',
+//   '.html', '.htm', '.css', '.scss', '.sass', '.less',
+//   '.py', '.rb', '.php', '.java', '.c', '.cpp', '.h', '.hpp',
+//   '.go', '.rs', '.swift', '.kt', '.scala',
+//   '.sh', '.bash', '.zsh', '.ps1',
+//   '.sql', '.graphql', '.gql',
+//   '.yaml', '.yml', '.toml', '.ini', '.env',
+//   '.xml', '.svg',
+// ];
+
+// /**
+//  * Verifica se o arquivo é código (para syntax highlighting)
+//  */
+// export function isCode(mimeType: string, filename: string): boolean {
+//   const ext = getFileExtension(filename);
+//   return CODE_EXTENSIONS.includes(ext);
+// }
+
+// /**
+//  * Retorna a linguagem para syntax highlighting baseado na extensão
+//  */
+// export function getCodeLanguage(filename: string): string {
+//   const ext = getFileExtension(filename);
+//   const languageMap: Record<string, string> = {
+//     '.js': 'javascript',
+//     '.jsx': 'jsx',
+//     '.ts': 'typescript',
+//     '.tsx': 'tsx',
+//     '.json': 'json',
+//     '.html': 'html',
+//     '.htm': 'html',
+//     '.css': 'css',
+//     '.scss': 'scss',
+//     '.sass': 'sass',
+//     '.less': 'less',
+//     '.py': 'python',
+//     '.rb': 'ruby',
+//     '.php': 'php',
+//     '.java': 'java',
+//     '.c': 'c',
+//     '.cpp': 'cpp',
+//     '.h': 'c',
+//     '.hpp': 'cpp',
+//     '.go': 'go',
+//     '.rs': 'rust',
+//     '.swift': 'swift',
+//     '.kt': 'kotlin',
+//     '.scala': 'scala',
+//     '.sh': 'bash',
+//     '.bash': 'bash',
+//     '.zsh': 'bash',
+//     '.ps1': 'powershell',
+//     '.sql': 'sql',
+//     '.graphql': 'graphql',
+//     '.gql': 'graphql',
+//     '.yaml': 'yaml',
+//     '.yml': 'yaml',
+//     '.toml': 'toml',
+//     '.ini': 'ini',
+//     '.env': 'bash',
+//     '.xml': 'xml',
+//     '.svg': 'xml',
+//   };
+//   return languageMap[ext] || 'text';
+// }
 
 // =============================================
 // GERAÇÃO DE IDs

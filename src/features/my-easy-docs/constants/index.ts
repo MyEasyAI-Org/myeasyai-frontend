@@ -15,6 +15,56 @@ export const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB em bytes
 export const MAX_FILE_SIZE_MB = 100;
 
 // =============================================
+// SEGURANÇA: EXTENSÕES BLOQUEADAS
+// =============================================
+export const BLOCKED_EXTENSIONS: string[] = [
+  // Executáveis Windows
+  '.exe', '.msi', '.bat', '.cmd', '.com', '.scr', '.pif',
+  // Scripts Windows
+  '.vbs', '.vbe', '.js', '.jse', '.ws', '.wsf', '.wsc', '.wsh',
+  // PowerShell
+  '.ps1', '.psm1', '.psd1',
+  // Executáveis Unix/Mac
+  '.sh', '.bash', '.zsh', '.csh', '.ksh',
+  '.app', '.command',
+  // Java
+  '.jar', '.class',
+  // Bibliotecas e drivers
+  '.dll', '.sys', '.drv',
+  // Configuração perigosa do Windows
+  '.inf', '.reg',
+  // Shortcuts (podem apontar para malware)
+  '.lnk',
+  // HTML Application (executa código)
+  '.hta',
+  // Arquivos compactados (risco de segurança - podem conter executáveis maliciosos)
+  '.zip', '.rar', '.7z', '.tar', '.gz', '.bz2', '.xz', '.tgz', '.tbz2',
+  '.cab', '.iso', '.dmg', '.pkg', '.deb', '.rpm',
+];
+
+// MIME types bloqueados (backup de segurança)
+export const BLOCKED_MIME_TYPES: string[] = [
+  // Executáveis
+  'application/x-msdownload',
+  'application/x-msdos-program',
+  'application/x-executable',
+  'application/x-sh',
+  'application/x-shellscript',
+  // Arquivos compactados
+  'application/zip',
+  'application/x-zip-compressed',
+  'application/x-rar-compressed',
+  'application/x-7z-compressed',
+  'application/gzip',
+  'application/x-gzip',
+  'application/x-tar',
+  'application/x-bzip2',
+  'application/x-xz',
+  'application/x-iso9660-image',
+  'application/x-apple-diskimage',
+];
+
+// =============================================
 // TIPOS DE ARQUIVO SUPORTADOS PARA EXTRAÇÃO DE TEXTO
 // =============================================
 export const SUPPORTED_TEXT_TYPES: string[] = [
@@ -37,8 +87,8 @@ export const SUPPORTED_TEXT_TYPES: string[] = [
   'application/rtf',
 ];
 
-// Extensões editáveis (TXT, MD)
-export const EDITABLE_EXTENSIONS: string[] = ['.txt', '.md', '.markdown'];
+// Extensões editáveis
+export const EDITABLE_EXTENSIONS: string[] = ['.txt', '.md', '.markdown', '.csv', '.html', '.htm'];
 
 // =============================================
 // MAPEAMENTO DE MIME TYPE → ÍCONE LUCIDE
@@ -70,36 +120,33 @@ export const FILE_TYPE_ICONS: Record<string, string> = {
   'application/vnd.openxmlformats-officedocument.presentationml.presentation': 'Presentation',
   'application/vnd.ms-powerpoint': 'Presentation',
 
-  // Imagens
-  'image/jpeg': 'Image',
-  'image/png': 'Image',
-  'image/gif': 'Image',
-  'image/webp': 'Image',
-  'image/svg+xml': 'Image',
-  'image/bmp': 'Image',
+  // TODO: v2 - Reativar suporte a imagens
+  // // Imagens
+  // 'image/jpeg': 'Image',
+  // 'image/png': 'Image',
+  // 'image/gif': 'Image',
+  // 'image/webp': 'Image',
+  // 'image/svg+xml': 'Image',
+  // 'image/bmp': 'Image',
 
-  // Vídeos
-  'video/mp4': 'Video',
-  'video/webm': 'Video',
-  'video/quicktime': 'Video',
-  'video/x-msvideo': 'Video',
+  // TODO: v2 - Reativar suporte a vídeo/áudio
+  // // Vídeos
+  // 'video/mp4': 'Video',
+  // 'video/webm': 'Video',
+  // 'video/quicktime': 'Video',
+  // 'video/x-msvideo': 'Video',
 
-  // Áudios
-  'audio/mpeg': 'Music',
-  'audio/wav': 'Music',
-  'audio/ogg': 'Music',
-  'audio/webm': 'Music',
+  // // Áudios
+  // 'audio/mpeg': 'Music',
+  // 'audio/wav': 'Music',
+  // 'audio/ogg': 'Music',
+  // 'audio/webm': 'Music',
 
-  // Arquivos compactados
-  'application/zip': 'FileArchive',
-  'application/x-rar-compressed': 'FileArchive',
-  'application/x-7z-compressed': 'FileArchive',
-  'application/gzip': 'FileArchive',
-
-  // Código
-  'application/javascript': 'FileCode',
-  'application/json': 'FileJson',
-  'application/typescript': 'FileCode',
+  // TODO: v2 - Reativar suporte a código (exceto HTML)
+  // // Código
+  // 'application/javascript': 'FileCode',
+  // 'application/json': 'FileJson',
+  // 'application/typescript': 'FileCode',
 
   // Padrão
   default: 'File',
@@ -123,27 +170,26 @@ export const EXTENSION_TO_MIME: Record<string, string> = {
   '.pptx': 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
   '.odt': 'application/vnd.oasis.opendocument.text',
   '.rtf': 'application/rtf',
-  '.jpg': 'image/jpeg',
-  '.jpeg': 'image/jpeg',
-  '.png': 'image/png',
-  '.gif': 'image/gif',
-  '.webp': 'image/webp',
-  '.svg': 'image/svg+xml',
-  '.bmp': 'image/bmp',
-  '.mp4': 'video/mp4',
-  '.webm': 'video/webm',
-  '.mov': 'video/quicktime',
-  '.avi': 'video/x-msvideo',
-  '.mp3': 'audio/mpeg',
-  '.wav': 'audio/wav',
-  '.ogg': 'audio/ogg',
-  '.zip': 'application/zip',
-  '.rar': 'application/x-rar-compressed',
-  '.7z': 'application/x-7z-compressed',
-  '.gz': 'application/gzip',
-  '.js': 'application/javascript',
-  '.ts': 'application/typescript',
-  '.json': 'application/json',
+  // TODO: v2 - Reativar suporte a imagens
+  // '.jpg': 'image/jpeg',
+  // '.jpeg': 'image/jpeg',
+  // '.png': 'image/png',
+  // '.gif': 'image/gif',
+  // '.webp': 'image/webp',
+  // '.svg': 'image/svg+xml',
+  // '.bmp': 'image/bmp',
+  // TODO: v2 - Reativar suporte a vídeo/áudio
+  // '.mp4': 'video/mp4',
+  // '.webm': 'video/webm',
+  // '.mov': 'video/quicktime',
+  // '.avi': 'video/x-msvideo',
+  // '.mp3': 'audio/mpeg',
+  // '.wav': 'audio/wav',
+  // '.ogg': 'audio/ogg',
+  // TODO: v2 - Reativar suporte a código (exceto HTML)
+  // '.js': 'application/javascript',
+  // '.ts': 'application/typescript',
+  // '.json': 'application/json',
 };
 
 // =============================================
@@ -269,5 +315,35 @@ export const MESSAGES = {
   chat: {
     noDocuments: 'Nenhum documento indexado. Faça upload de arquivos para conversar com a IA.',
     error: 'Erro ao processar sua pergunta. Tente novamente.',
+  },
+  preview: {
+    loadingSpreadsheet: 'Carregando planilha...',
+    loadingContent: 'Carregando conteúdo...',
+    loadingCode: 'Carregando código...',
+    loadingDocx: 'Carregando documento...',
+    loadError: 'Não foi possível carregar o conteúdo',
+    spreadsheetError: 'Erro ao carregar planilha',
+    spreadsheetEmpty: 'Planilha vazia',
+    spreadsheetSheetEmpty: 'Esta aba está vazia',
+    noFileSource: 'Nenhuma fonte de arquivo disponível',
+    // TODO: v2 - Reativar suporte a vídeo/áudio
+    // videoError: 'Não foi possível reproduzir o vídeo',
+    // videoUnsupported: 'Seu navegador pode não suportar este formato de vídeo.',
+    // audioUnsupported: 'Seu navegador pode não suportar este formato de áudio.',
+    imageError: 'Não foi possível carregar a imagem',
+    codeError: 'Não foi possível carregar o código',
+    docLegacyTitle: 'Formato DOC (legado)',
+    docLegacyMessage: 'O formato .doc tem suporte limitado no navegador. Para melhor visualização, converta para .docx usando Microsoft Word ou LibreOffice.',
+    // TODO: v2 - Reativar suporte a vídeo/áudio
+    // movFallbackTitle: 'Formato MOV com suporte limitado',
+    // movFallbackMessage: 'Seu navegador pode não suportar o formato MOV. Recomendamos converter para MP4 para melhor compatibilidade.',
+    downloadAction: 'Baixar arquivo',
+    jsonInvalid: 'JSON inválido',
+    jsonValid: 'JSON válido',
+    jsonFormat: 'Formatar',
+    editAction: 'Editar',
+    saveAction: 'Salvar',
+    cancelAction: 'Cancelar',
+    savingAction: 'Salvando...',
   },
 } as const;

@@ -1,0 +1,6 @@
+Notas de Teste
+==============
+
+- Item 1: Teste de arquivo de texto
+- Item 2: Suporte a UTF-8 (çãõáéíóú)
+- Item 3: Múltiplas linhas funcionando

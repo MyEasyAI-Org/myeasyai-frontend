@@ -6,6 +6,7 @@ import { memo, useState, useCallback } from 'react';
 import { ChevronUp, ChevronDown } from 'lucide-react';
 import type { DocsFolder, DocsDocument, DocsSortField, DocsSortOrder } from '../../types';
 import { FileRow } from './FileRow';
+import { FileGrid } from './FileGrid';
 
 // =============================================
 // Types
@@ -15,9 +16,20 @@ interface FileListProps {
   folders: DocsFolder[];
   documents: DocsDocument[];
   selectedDocumentId?: string | null;
+  // Multi-select props
+  selectionMode?: boolean;
+  selectedIds?: Set<string>;
+  hasAnySelection?: boolean;
+  onToggleSelect?: (id: string, type: 'folder' | 'document') => void;
+  onSelectAll?: () => void;
+  // Action callbacks
   onOpenFolder: (folderId: string) => void;
   onSelectDocument: (documentId: string) => void;
   onOpenDocument?: (documentId: string) => void;
+  onRenameItem?: (item: DocsFolder | DocsDocument, type: 'folder' | 'document') => void;
+  onDeleteItem?: (item: DocsFolder | DocsDocument, type: 'folder' | 'document') => void;
+  onMoveItem?: (item: DocsFolder | DocsDocument, type: 'folder' | 'document') => void;
+  onToggleFavorite?: (item: DocsDocument) => void;
 }
 
 interface ColumnConfig {
@@ -45,12 +57,27 @@ export const FileList = memo(function FileList({
   folders,
   documents,
   selectedDocumentId,
+  selectionMode = false,
+  selectedIds,
+  hasAnySelection = false,
+  onToggleSelect,
+  onSelectAll,
   onOpenFolder,
   onSelectDocument,
   onOpenDocument,
+  onRenameItem,
+  onDeleteItem,
+  onMoveItem,
+  onToggleFavorite,
 }: FileListProps) {
   const [sortField, setSortField] = useState<DocsSortField>('name');
   const [sortOrder, setSortOrder] = useState<DocsSortOrder>('asc');
+
+  // Check if all items are selected
+  const totalItems = folders.length + documents.length;
+  const selectedCount = selectedIds?.size ?? 0;
+  const allSelected = totalItems > 0 && selectedCount === totalItems;
+  const someSelected = selectedCount > 0 && selectedCount < totalItems;
 
   const handleSort = useCallback((field: DocsSortField) => {
     if (sortField === field) {
@@ -92,11 +119,30 @@ export const FileList = memo(function FileList({
     return sortField === 'name' && sortOrder === 'desc' ? -comparison : comparison;
   });
 
+  const hasContextMenu = onRenameItem || onDeleteItem || onMoveItem || onToggleFavorite;
+
   return (
-    <div className="bg-slate-900/30 border border-slate-800 rounded-xl overflow-hidden">
-      <table className="w-full">
+    <>
+      {/* Desktop: Table View */}
+      <div className="hidden sm:block bg-slate-900/30 border border-slate-800 rounded-xl overflow-hidden">
+        <table className="w-full">
         <thead>
           <tr className="border-b border-slate-800">
+            {/* Select All checkbox - always visible when onToggleSelect is provided */}
+            {onToggleSelect && (
+              <th className="w-10 px-2 py-3">
+                <input
+                  type="checkbox"
+                  checked={allSelected}
+                  ref={(el) => {
+                    if (el) el.indeterminate = someSelected;
+                  }}
+                  onChange={onSelectAll}
+                  className="w-4 h-4 rounded border-slate-600 bg-slate-800 text-blue-500 focus:ring-blue-500 focus:ring-offset-0 cursor-pointer"
+                  title={allSelected ? 'Desmarcar todos' : 'Selecionar todos'}
+                />
+              </th>
+            )}
             {COLUMNS.map((column) => (
               <th
                 key={column.key}
@@ -121,6 +167,11 @@ export const FileList = memo(function FileList({
                 )}
               </th>
             ))}
+            {hasContextMenu && (
+              <th className="px-4 py-3 text-right text-xs font-medium text-slate-400 uppercase tracking-wider w-16">
+                Ações
+              </th>
+            )}
           </tr>
         </thead>
         <tbody className="divide-y divide-slate-800">
@@ -130,7 +181,14 @@ export const FileList = memo(function FileList({
               key={folder.id}
               item={folder}
               type="folder"
+              selectionMode={selectionMode}
+              isChecked={selectedIds?.has(folder.id) ?? false}
+              hasAnySelection={hasAnySelection}
+              onToggleSelect={onToggleSelect}
               onOpen={onOpenFolder}
+              onRename={onRenameItem}
+              onDelete={onDeleteItem}
+              onMove={onMoveItem}
             />
           ))}
 
@@ -141,13 +199,42 @@ export const FileList = memo(function FileList({
               item={doc}
               type="document"
               isSelected={selectedDocumentId === doc.id}
+              selectionMode={selectionMode}
+              isChecked={selectedIds?.has(doc.id) ?? false}
+              hasAnySelection={hasAnySelection}
+              onToggleSelect={onToggleSelect}
               onOpen={onOpenDocument ?? onSelectDocument}
               onSelect={onSelectDocument}
+              onRename={onRenameItem}
+              onDelete={onDeleteItem}
+              onMove={onMoveItem}
+              onToggleFavorite={onToggleFavorite}
             />
           ))}
         </tbody>
-      </table>
-    </div>
+        </table>
+      </div>
+
+      {/* Mobile: Grid View */}
+      <div className="sm:hidden">
+        <FileGrid
+          folders={sortedFolders}
+          documents={sortedDocuments}
+          selectedDocumentId={selectedDocumentId}
+          selectionMode={selectionMode}
+          selectedIds={selectedIds}
+          hasAnySelection={hasAnySelection}
+          onToggleSelect={onToggleSelect}
+          onOpenFolder={onOpenFolder}
+          onSelectDocument={onSelectDocument}
+          onOpenDocument={onOpenDocument}
+          onRenameItem={onRenameItem}
+          onDeleteItem={onDeleteItem}
+          onMoveItem={onMoveItem}
+          onToggleFavorite={onToggleFavorite}
+        />
+      </div>
+    </>
   );
 });
 

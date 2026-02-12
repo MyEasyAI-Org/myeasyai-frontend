@@ -6,14 +6,15 @@ import { memo } from 'react';
 import {
   File,
   FileText,
-  FileImage,
-  FileVideo,
-  FileAudio,
-  FileCode,
+  // TODO: v2 - Reativar suporte a mídia/imagens/código
+  // FileImage,
+  // FileVideo,
+  // FileAudio,
+  // FileCode,
   FileSpreadsheet,
   FileArchive,
   Folder,
-  FileType,
+  Code2,
 } from 'lucide-react';
 
 // =============================================
@@ -54,20 +55,21 @@ function getIconComponent(mimeType: string) {
     return { Icon: Folder, colorClass: 'text-yellow-500' };
   }
 
-  // Images
-  if (mimeType.startsWith('image/')) {
-    return { Icon: FileImage, colorClass: 'text-purple-400' };
-  }
+  // TODO: v2 - Reativar suporte a mídia/imagens/código
+  // // Images (green-400 - mesmo padrão do painel esquerdo)
+  // if (mimeType.startsWith('image/')) {
+  //   return { Icon: FileImage, colorClass: 'text-green-400' };
+  // }
 
-  // Videos
-  if (mimeType.startsWith('video/')) {
-    return { Icon: FileVideo, colorClass: 'text-pink-400' };
-  }
+  // // Videos (purple-400 - mesmo padrão do painel esquerdo)
+  // if (mimeType.startsWith('video/')) {
+  //   return { Icon: FileVideo, colorClass: 'text-purple-400' };
+  // }
 
-  // Audio
-  if (mimeType.startsWith('audio/')) {
-    return { Icon: FileAudio, colorClass: 'text-green-400' };
-  }
+  // // Audio (pink-400 - mesmo padrão do painel esquerdo)
+  // if (mimeType.startsWith('audio/')) {
+  //   return { Icon: FileAudio, colorClass: 'text-pink-400' };
+  // }
 
   // PDF
   if (mimeType === 'application/pdf') {
@@ -103,24 +105,30 @@ function getIconComponent(mimeType: string) {
     return { Icon: FileArchive, colorClass: 'text-amber-400' };
   }
 
-  // Code files
-  if (
-    mimeType === 'application/javascript' ||
-    mimeType === 'application/typescript' ||
-    mimeType === 'application/json' ||
-    mimeType === 'application/xml' ||
-    mimeType === 'text/html' ||
-    mimeType === 'text/css' ||
-    mimeType === 'text/javascript' ||
-    mimeType === 'text/x-python' ||
-    mimeType === 'text/x-java-source'
-  ) {
-    return { Icon: FileCode, colorClass: 'text-cyan-400' };
+  // TODO: v2 - Reativar suporte a código (exceto HTML que usa HtmlPreview)
+  // // Code files
+  // if (
+  //   mimeType === 'application/javascript' ||
+  //   mimeType === 'application/typescript' ||
+  //   mimeType === 'application/json' ||
+  //   mimeType === 'application/xml' ||
+  //   mimeType === 'text/html' ||
+  //   mimeType === 'text/css' ||
+  //   mimeType === 'text/javascript' ||
+  //   mimeType === 'text/x-python' ||
+  //   mimeType === 'text/x-java-source'
+  // ) {
+  //   return { Icon: FileCode, colorClass: 'text-cyan-400' };
+  // }
+
+  // HTML files
+  if (mimeType === 'text/html') {
+    return { Icon: Code2, colorClass: 'text-orange-500' };
   }
 
-  // Plain text and markdown
+  // Plain text and markdown (blue-400 - mesmo padrão do painel esquerdo)
   if (mimeType === 'text/plain' || mimeType === 'text/markdown') {
-    return { Icon: FileType, colorClass: 'text-slate-400' };
+    return { Icon: FileText, colorClass: 'text-blue-400' };
   }
 
   // Default

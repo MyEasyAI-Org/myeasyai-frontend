@@ -6,6 +6,7 @@ import { memo, useCallback } from 'react';
 import { FolderOpen } from 'lucide-react';
 import type { DocsFolder, DocsDocument } from '../../types';
 import { FolderTreeItem } from './FolderTreeItem';
+import { DocumentTreeItem } from './DocumentTreeItem';
 import { countDocumentsInFolder } from '../../utils';
 
 // =============================================
@@ -17,8 +18,10 @@ interface FolderTreeProps {
   currentFolderId: string | null;
   expandedFolders: Set<string>;
   documents: DocsDocument[];
+  selectedDocumentId?: string | null;
   onNavigate: (folderId: string | null) => void;
   onToggleExpand: (folderId: string) => void;
+  onSelectDocument?: (documentId: string) => void;
 }
 
 // =============================================
@@ -30,8 +33,10 @@ export const FolderTree = memo(function FolderTree({
   currentFolderId,
   expandedFolders,
   documents,
+  selectedDocumentId,
   onNavigate,
   onToggleExpand,
+  onSelectDocument,
 }: FolderTreeProps) {
   // Get child folders for a given parent
   const getChildFolders = useCallback(
@@ -41,44 +46,83 @@ export const FolderTree = memo(function FolderTree({
     [folders]
   );
 
-  // Check if a folder has children
+  // Check if a folder has children (subfolders or documents)
   const hasChildren = useCallback(
     (folderId: string): boolean => {
-      return folders.some((f) => f.parent_id === folderId);
+      const hasSubfolders = folders.some((f) => f.parent_id === folderId);
+      const hasDocs = documents.some((d) => d.folder_id === folderId);
+      return hasSubfolders || hasDocs;
     },
-    [folders]
+    [folders, documents]
+  );
+
+  // Get documents in a folder
+  const getDocumentsInFolder = useCallback(
+    (folderId: string | null): DocsDocument[] => {
+      return documents.filter((d) => d.folder_id === folderId);
+    },
+    [documents]
+  );
+
+  // Render documents in a folder
+  const renderDocuments = useCallback(
+    (folderId: string | null, level: number): React.ReactNode => {
+      if (!onSelectDocument) return null;
+
+      const folderDocs = getDocumentsInFolder(folderId);
+      if (folderDocs.length === 0) return null;
+
+      return folderDocs.map((doc) => (
+        <DocumentTreeItem
+          key={doc.id}
+          document={doc}
+          level={level}
+          isSelected={selectedDocumentId === doc.id}
+          onSelect={onSelectDocument}
+        />
+      ));
+    },
+    [getDocumentsInFolder, selectedDocumentId, onSelectDocument]
   );
 
   // Render folder tree recursively
   const renderFolderTree = useCallback(
     (parentId: string | null, level: number = 0): React.ReactNode => {
       const childFolders = getChildFolders(parentId);
+      const folderDocs = getDocumentsInFolder(parentId);
 
-      return childFolders.map((folder) => {
-        const folderHasChildren = hasChildren(folder.id);
-        const isExpanded = expandedFolders.has(folder.id);
-        const isSelected = currentFolderId === folder.id;
-        const docsCount = countDocumentsInFolder(folder.id, documents);
+      return (
+        <>
+          {/* Render subfolders first */}
+          {childFolders.map((folder) => {
+            const folderHasChildren = hasChildren(folder.id);
+            const isExpanded = expandedFolders.has(folder.id);
+            const isSelected = currentFolderId === folder.id;
+            const docsCount = countDocumentsInFolder(folder.id, documents);
 
-        return (
-          <div key={folder.id}>
-            <FolderTreeItem
-              folder={folder}
-              level={level}
-              isExpanded={isExpanded}
-              isSelected={isSelected}
-              hasChildren={folderHasChildren}
-              documentsCount={docsCount}
-              onToggle={onToggleExpand}
-              onSelect={onNavigate}
-            />
-            {/* Render children if expanded */}
-            {folderHasChildren && isExpanded && renderFolderTree(folder.id, level + 1)}
-          </div>
-        );
-      });
+            return (
+              <div key={folder.id}>
+                <FolderTreeItem
+                  folder={folder}
+                  level={level}
+                  isExpanded={isExpanded}
+                  isSelected={isSelected}
+                  hasChildren={folderHasChildren}
+                  documentsCount={docsCount}
+                  onToggle={onToggleExpand}
+                  onSelect={onNavigate}
+                />
+                {/* Render children (folders and documents) if expanded */}
+                {folderHasChildren && isExpanded && renderFolderTree(folder.id, level + 1)}
+              </div>
+            );
+          })}
+          {/* Render documents after folders */}
+          {renderDocuments(parentId, level)}
+        </>
+      );
     },
-    [getChildFolders, hasChildren, expandedFolders, currentFolderId, documents, onToggleExpand, onNavigate]
+    [getChildFolders, getDocumentsInFolder, hasChildren, expandedFolders, currentFolderId, documents, onToggleExpand, onNavigate, renderDocuments]
   );
 
   return (
