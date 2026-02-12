@@ -198,7 +198,32 @@ export const pricingTaxItems = sqliteTable('pricing_tax_items', {
   updated_at: text('updated_at'),
 });
 
+// =============================================================================
+// Auth Credentials (Email/Password)
+// =============================================================================
+
+/**
+ * Tabela de credenciais de autenticação (email/senha)
+ * Armazena hash PBKDF2 com salt individual por usuário
+ * Separada da tabela users por segurança (princípio de menor privilégio)
+ */
+export const authCredentials = sqliteTable('auth_credentials', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  user_uuid: text('user_uuid')
+    .notNull()
+    .unique()
+    .references(() => users.uuid, { onDelete: 'cascade' }),
+  password_hash: text('password_hash').notNull(), // PBKDF2-SHA256, base64
+  salt: text('salt').notNull(), // Random 16-byte salt, base64
+  algorithm: text('algorithm').default('PBKDF2-SHA256'), // For future migration
+  iterations: integer('iterations').default(100000),
+  created_at: text('created_at').default(sql`(datetime('now'))`),
+  updated_at: text('updated_at').default(sql`(datetime('now'))`),
+});
+
 // Types inferidos do schema
+export type AuthCredential = typeof authCredentials.$inferSelect;
+export type NewAuthCredential = typeof authCredentials.$inferInsert;
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
 export type UserProduct = typeof userProducts.$inferSelect;

@@ -4,7 +4,7 @@
 
 import { Hono } from 'hono';
 import { eq } from 'drizzle-orm';
-import { users, type NewUser } from '../db/schema';
+import { users, authCredentials, type NewUser, type NewAuthCredential } from '../db/schema';
 import { createJWT, verifyJWT } from '../auth/jwt';
 import {
   getGoogleAuthUrl,
@@ -274,8 +274,8 @@ authRoutes.post('/signup', async (c) => {
     return c.json({ error: 'Email already registered' }, 409);
   }
 
-  // Hash da senha (TODO: armazenar em tabela auth_credentials)
-  const _passwordHash = await hashPassword(password);
+  // Hash da senha com PBKDF2 + salt individual
+  const { hash: passwordHash, salt } = await hashPassword(password);
   const uuid = crypto.randomUUID();
 
   // Criar usuário
@@ -290,12 +290,20 @@ authRoutes.post('/signup', async (c) => {
 
   await db.insert(users).values(newUser);
 
+  // Salvar credenciais na tabela auth_credentials
+  const credential: NewAuthCredential = {
+    user_uuid: uuid,
+    password_hash: passwordHash,
+    salt,
+    algorithm: 'PBKDF2-SHA256',
+    iterations: PBKDF2_ITERATIONS,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  };
+  await db.insert(authCredentials).values(credential);
+
   // 🔄 SYNC: Sincronizar novo usuário para Supabase
   c.executionCtx.waitUntil(syncUserToSupabase(c.env, 'INSERT', newUser));
-
-  // Salvar hash da senha (precisa de tabela separada ou campo adicional)
-  // Por agora, vamos armazenar em uma tabela auth_credentials
-  // TODO: Implementar tabela auth_credentials
 
   // Gerar JWT
   const jwt = await createJWT(
@@ -340,8 +348,21 @@ authRoutes.post('/login', async (c) => {
     return c.json({ error: 'Invalid credentials' }, 401);
   }
 
-  // TODO: Verificar senha (precisa da tabela auth_credentials)
-  // Por enquanto, aceita qualquer senha para teste
+  // Buscar credenciais do usuário
+  const credential = await db.query.authCredentials.findFirst({
+    where: eq(authCredentials.user_uuid, user.uuid),
+  });
+
+  if (!credential) {
+    // Usuário existe mas sem credenciais de senha (ex: registrou via Google OAuth)
+    return c.json({ error: 'Invalid credentials. Try logging in with Google.' }, 401);
+  }
+
+  // Verificar senha com PBKDF2 + constant-time comparison
+  const isPasswordValid = await verifyPassword(password, credential.password_hash, credential.salt);
+  if (!isPasswordValid) {
+    return c.json({ error: 'Invalid credentials' }, 401);
+  }
 
   // Atualizar last_online
   const updateData = { last_online: new Date().toISOString() };
@@ -466,14 +487,66 @@ function getWorkerUrl(requestUrl: string): string {
   return `${url.protocol}//${url.host}`;
 }
 
-async function hashPassword(password: string): Promise<string> {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(password);
-  const hash = await crypto.subtle.digest('SHA-256', data);
-  return btoa(String.fromCharCode(...new Uint8Array(hash)));
+const PBKDF2_ITERATIONS = 100000;
+const SALT_LENGTH = 16; // 128 bits
+const HASH_LENGTH = 32; // 256 bits
+
+/**
+ * Generate a cryptographically secure random salt
+ */
+function generateSalt(): string {
+  const salt = new Uint8Array(SALT_LENGTH);
+  crypto.getRandomValues(salt);
+  return btoa(String.fromCharCode(...salt));
 }
 
-async function _verifyPassword(password: string, hash: string): Promise<boolean> {
-  const newHash = await hashPassword(password);
-  return newHash === hash;
+/**
+ * Hash password using PBKDF2-SHA256 with individual salt
+ * Returns { hash, salt } both as base64 strings
+ */
+async function hashPassword(password: string, salt?: string): Promise<{ hash: string; salt: string }> {
+  const passwordSalt = salt || generateSalt();
+  const encoder = new TextEncoder();
+
+  // Import password as key material
+  const keyMaterial = await crypto.subtle.importKey(
+    'raw',
+    encoder.encode(password),
+    'PBKDF2',
+    false,
+    ['deriveBits']
+  );
+
+  // Decode salt from base64
+  const saltBytes = Uint8Array.from(atob(passwordSalt), c => c.charCodeAt(0));
+
+  // Derive key using PBKDF2
+  const derivedBits = await crypto.subtle.deriveBits(
+    {
+      name: 'PBKDF2',
+      hash: 'SHA-256',
+      salt: saltBytes,
+      iterations: PBKDF2_ITERATIONS,
+    },
+    keyMaterial,
+    HASH_LENGTH * 8 // bits
+  );
+
+  const hashBase64 = btoa(String.fromCharCode(...new Uint8Array(derivedBits)));
+  return { hash: hashBase64, salt: passwordSalt };
+}
+
+/**
+ * Verify password against stored hash and salt using constant-time comparison
+ */
+async function verifyPassword(password: string, storedHash: string, salt: string): Promise<boolean> {
+  const { hash: computedHash } = await hashPassword(password, salt);
+
+  // Constant-time comparison to prevent timing attacks
+  if (computedHash.length !== storedHash.length) return false;
+  let result = 0;
+  for (let i = 0; i < computedHash.length; i++) {
+    result |= computedHash.charCodeAt(i) ^ storedHash.charCodeAt(i);
+  }
+  return result === 0;
 }
