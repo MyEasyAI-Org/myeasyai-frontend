@@ -57,11 +57,15 @@ export const LessonViewer = memo(function LessonViewer({
   const [currentSectionIndex, setCurrentSectionIndex] = useState(0);
   const [completedSections, setCompletedSections] = useState<Set<string>>(new Set());
 
+  // Track if we've already triggered lesson completion to prevent double XP
+  const [hasTriggeredCompletion, setHasTriggeredCompletion] = useState(false);
+
   // Reset state when lesson changes
   useEffect(() => {
     setActiveTab('content');
     setCurrentSectionIndex(0);
     setCompletedSections(new Set());
+    setHasTriggeredCompletion(false);
   }, [lesson?.id]);
 
   const handleSectionComplete = useCallback(
@@ -75,6 +79,23 @@ export const LessonViewer = memo(function LessonViewer({
     [completedSections, onSectionComplete, onXpEarned]
   );
 
+  // Check if lesson can be marked as complete (all requirements met)
+  const checkLessonCompletion = useCallback((quizJustPassed?: boolean) => {
+    if (!lesson || lesson.isCompleted || hasTriggeredCompletion) return;
+
+    const allSectionsComplete = lesson.sections.every(
+      (s) => completedSections.has(s.id) || s.isCompleted
+    );
+    const allExercisesComplete = lesson.exercises.length === 0 || lesson.exercises.every((e) => e.isCompleted);
+    const quizPassed = !lesson.quiz || lesson.quiz.isPassed || quizJustPassed;
+
+    if (allSectionsComplete && allExercisesComplete && quizPassed) {
+      setHasTriggeredCompletion(true);
+      onXpEarned(LESSON_XP_REWARDS.LESSON_COMPLETED, 'Licao completa!');
+      onLessonComplete();
+    }
+  }, [lesson, completedSections, hasTriggeredCompletion, onXpEarned, onLessonComplete]);
+
   const handleNextSection = useCallback(() => {
     if (!lesson) return;
 
@@ -85,8 +106,12 @@ export const LessonViewer = memo(function LessonViewer({
 
     if (currentSectionIndex < lesson.sections.length - 1) {
       setCurrentSectionIndex((prev) => prev + 1);
+    } else {
+      // Last section completed - check if lesson can be marked as complete
+      // This handles cases where there's no quiz or exercises
+      setTimeout(() => checkLessonCompletion(), 100);
     }
-  }, [lesson, currentSectionIndex, completedSections, handleSectionComplete]);
+  }, [lesson, currentSectionIndex, completedSections, handleSectionComplete, checkLessonCompletion]);
 
   const handlePrevSection = useCallback(() => {
     if (currentSectionIndex > 0) {
@@ -98,27 +123,22 @@ export const LessonViewer = memo(function LessonViewer({
     (score: number, answers: Record<string, string>) => {
       onQuizComplete(score, answers);
 
-      // Check if lesson is now complete
-      if (lesson) {
-        const allSectionsComplete = lesson.sections.every(
-          (s) => completedSections.has(s.id) || s.isCompleted
-        );
-        const allExercisesComplete = lesson.exercises.every((e) => e.isCompleted);
-
-        if (allSectionsComplete && score >= (lesson.quiz?.passingScore || 70) && allExercisesComplete) {
-          onXpEarned(LESSON_XP_REWARDS.LESSON_COMPLETED, 'Licao completa!');
-          onLessonComplete();
-        }
+      // Check if lesson is now complete (after quiz passed)
+      const passed = score >= (lesson?.quiz?.passingScore || 70);
+      if (lesson && passed) {
+        setTimeout(() => checkLessonCompletion(true), 100);
       }
     },
-    [lesson, completedSections, onQuizComplete, onXpEarned, onLessonComplete]
+    [lesson, onQuizComplete, checkLessonCompletion]
   );
 
   const handleExerciseComplete = useCallback(
     (exerciseId: string, usedHints: boolean) => {
       onExerciseComplete(exerciseId, usedHints);
+      // Check if this was the last exercise and lesson can be completed
+      setTimeout(() => checkLessonCompletion(), 100);
     },
-    [onExerciseComplete]
+    [onExerciseComplete, checkLessonCompletion]
   );
 
   const handleExternalResourceClick = useCallback(

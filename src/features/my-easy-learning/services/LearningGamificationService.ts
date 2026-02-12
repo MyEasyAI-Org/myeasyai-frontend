@@ -93,6 +93,8 @@ function mapD1ToGamificationState(data: D1LearningGamification): LearningGamific
   const goals = JSON.parse(data.goals || '[]') as StudyGoal[];
   const activities = JSON.parse(data.activities || '[]') as StudyActivityItem[];
   const skillCategories = JSON.parse(data.skill_categories || '[]') as string[];
+  const courseDiplomas = JSON.parse(data.course_diplomas || '[]');
+  const finalExams = JSON.parse(data.final_exams || '[]');
 
   const { currentLevel, xpInCurrentLevel, xpToNextLevel } = calculateLevelData(data.total_xp);
 
@@ -126,6 +128,8 @@ function mapD1ToGamificationState(data: D1LearningGamification): LearningGamific
     skillCategories,
     consecutivePerfectWeeks: data.consecutive_perfect_weeks || 0,
     plansCompleted: data.plans_completed || 0,
+    courseDiplomas,
+    finalExams,
   };
 
   // Initialize certificates for new users
@@ -193,6 +197,8 @@ export const LearningGamificationService = {
         challenges: JSON.stringify(state.challenges),
         goals: JSON.stringify(state.goals),
         activities: JSON.stringify(state.activities.slice(0, 50)),
+        course_diplomas: JSON.stringify(state.courseDiplomas || []),
+        final_exams: JSON.stringify(state.finalExams || []),
       });
 
       if (result.error) {

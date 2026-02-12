@@ -5,7 +5,7 @@
  * Each lesson can be clicked to open the LessonViewer modal.
  */
 
-import { useState, useCallback, useMemo, memo } from 'react';
+import { useState, useCallback, useEffect, useMemo, memo } from 'react';
 import {
   BookOpen,
   Clock,
@@ -19,8 +19,10 @@ import {
   Lock,
   Play,
   Loader2,
+  Award,
 } from 'lucide-react';
 import { LessonViewer } from './lesson/LessonViewer';
+import { ExamEligibilityPanel } from './exam';
 import { lessonContentGenerationService } from '../services/LessonContentGenerationService';
 import type {
   EnhancedGeneratedStudyPlan,
@@ -28,6 +30,12 @@ import type {
 } from '../services/StudyPlanGenerationService';
 import type { GeneratedLesson, LessonTopic } from '../types/lesson';
 import type { StudyPlanProfile } from '../types';
+import type {
+  CertificateEligibility,
+  CertificateLevel,
+  FinalExam,
+  CourseDiploma,
+} from '../types/courseCompletion';
 
 interface EnhancedStudyPlanPreviewProps {
   plan: EnhancedGeneratedStudyPlan | null;
@@ -37,6 +45,18 @@ interface EnhancedStudyPlanPreviewProps {
   isPlanSaved?: boolean;
   onXpEarned: (amount: number, reason: string) => void;
   onLessonComplete?: (weekNumber: number, lessonNumber: number) => void;
+  onGeneratedLessonsChange?: (lessons: Map<string, GeneratedLesson>) => void;
+  // Exam / Certificate props
+  examEligibility?: CertificateEligibility;
+  certificateLevel?: CertificateLevel;
+  finalExam?: FinalExam | null;
+  diploma?: CourseDiploma | null;
+  canRetake?: { canRetake: boolean; waitUntil: string | null };
+  isGeneratingExam?: boolean;
+  onStartExam?: () => void;
+  onGenerateExam?: () => void;
+  onIssueDiploma?: () => void;
+  onDownloadPdf?: () => void;
 }
 
 export const EnhancedStudyPlanPreview = memo(function EnhancedStudyPlanPreview({
@@ -47,12 +67,28 @@ export const EnhancedStudyPlanPreview = memo(function EnhancedStudyPlanPreview({
   isPlanSaved = false,
   onXpEarned,
   onLessonComplete,
+  onGeneratedLessonsChange,
+  examEligibility,
+  certificateLevel,
+  finalExam,
+  diploma,
+  canRetake,
+  isGeneratingExam,
+  onStartExam,
+  onGenerateExam,
+  onIssueDiploma,
+  onDownloadPdf,
 }: EnhancedStudyPlanPreviewProps) {
   const [expandedWeeks, setExpandedWeeks] = useState<Set<number>>(new Set([1]));
   const [generatedLessons, setGeneratedLessons] = useState<Map<string, GeneratedLesson>>(new Map());
   const [loadingLesson, setLoadingLesson] = useState<string | null>(null);
   const [activeLesson, setActiveLesson] = useState<GeneratedLesson | null>(null);
   const [isLessonViewerOpen, setIsLessonViewerOpen] = useState(false);
+
+  // Report generatedLessons changes to parent for exam eligibility
+  useEffect(() => {
+    onGeneratedLessonsChange?.(generatedLessons);
+  }, [generatedLessons, onGeneratedLessonsChange]);
 
   // Toggle week expansion
   const toggleWeek = useCallback((weekNumber: number) => {
@@ -382,7 +418,7 @@ export const EnhancedStudyPlanPreview = memo(function EnhancedStudyPlanPreview({
           </div>
         </div>
 
-        {/* Weeks */}
+        {/* Weeks + Certificate Section */}
         <div className="space-y-4">
           {weeks.map((week) => {
             const isExpanded = expandedWeeks.has(week.week_number);
@@ -563,6 +599,24 @@ export const EnhancedStudyPlanPreview = memo(function EnhancedStudyPlanPreview({
               </div>
             );
           })}
+
+          {/* Certificate / Final Exam Section */}
+          {examEligibility && certificateLevel && onStartExam && onGenerateExam && onIssueDiploma && onDownloadPdf && (
+            <div className="rounded-lg bg-gradient-to-b from-slate-800 to-slate-800/50 border border-amber-500/20 p-6">
+              <ExamEligibilityPanel
+                eligibility={examEligibility}
+                certificateLevel={certificateLevel}
+                finalExam={finalExam ?? null}
+                diploma={diploma ?? null}
+                canRetake={canRetake ?? { canRetake: true, waitUntil: null }}
+                isGeneratingExam={isGeneratingExam ?? false}
+                onStartExam={onStartExam}
+                onGenerateExam={onGenerateExam}
+                onIssueDiploma={onIssueDiploma}
+                onDownloadPdf={onDownloadPdf}
+              />
+            </div>
+          )}
         </div>
       </div>
 

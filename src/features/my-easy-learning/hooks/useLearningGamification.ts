@@ -11,6 +11,7 @@ import type {
   StudyActivityItem,
 } from '../types/gamification';
 import { DEFAULT_LEARNING_GAMIFICATION_STATE } from '../types/gamification';
+import type { FinalExam, CourseDiploma } from '../types/courseCompletion';
 import { XP_CONFIG, getStreakMessage } from '../constants/gamification';
 import { LearningGamificationService } from '../services/LearningGamificationService';
 
@@ -51,6 +52,8 @@ interface UseLearningGamificationReturn {
   recordTaskCompleted: (studyHour?: number, skillCategory?: string) => Promise<void>;
   recordWeekCompleted: () => Promise<void>;
   recordPlanCompleted: () => Promise<void>;
+  recordExamUpdated: (exam: FinalExam) => void;
+  recordDiplomaIssued: (diploma: CourseDiploma) => void;
   addXP: (amount: number, reason: string) => void;
   refresh: () => Promise<void>;
 }
@@ -272,6 +275,29 @@ export function useLearningGamification({
     addXP(XP_CONFIG.REWARDS.PLAN_COMPLETED, 'Plano de estudos concluido!');
   }, [addXP]);
 
+  // Record exam updated (save exam state for persistence)
+  const recordExamUpdated = useCallback((exam: FinalExam) => {
+    setState((prev) => {
+      const existingIdx = prev.finalExams.findIndex((e) => e.planId === exam.planId);
+      const updatedExams = [...prev.finalExams];
+      if (existingIdx >= 0) {
+        updatedExams[existingIdx] = exam;
+      } else {
+        updatedExams.push(exam);
+      }
+      return { ...prev, finalExams: updatedExams, lastUpdated: new Date().toISOString() };
+    });
+  }, []);
+
+  // Record diploma issued (save diploma for persistence)
+  const recordDiplomaIssued = useCallback((diploma: CourseDiploma) => {
+    setState((prev) => ({
+      ...prev,
+      courseDiplomas: [...prev.courseDiplomas, diploma],
+      lastUpdated: new Date().toISOString(),
+    }));
+  }, []);
+
   // Refresh
   const refresh = useCallback(async () => {
     if (!enabled) return;
@@ -338,6 +364,8 @@ export function useLearningGamification({
     recordTaskCompleted,
     recordWeekCompleted,
     recordPlanCompleted,
+    recordExamUpdated,
+    recordDiplomaIssued,
     addXP,
     refresh,
   };

@@ -272,6 +272,9 @@ export interface D1LearningGamification {
   challenges: string;
   goals: string;
   activities: string;
+  // Course completion
+  course_diplomas?: string;
+  final_exams?: string;
   // Timestamps
   created_at: string;
   updated_at: string | null;
@@ -1851,6 +1854,9 @@ export class D1Client {
     challenges: string;
     goals: string;
     activities: string;
+    // Course completion
+    course_diplomas?: string;
+    final_exams?: string;
   }): Promise<D1ApiResponse<D1LearningGamification>> {
     return this.fetch<D1LearningGamification>('/learning/gamification', {
       method: 'PUT',

@@ -7,6 +7,7 @@
 
 import type { UserCertificate } from './trophies';
 import type { UserAchievement } from '../constants/uniqueBadges';
+import type { CourseDiploma, FinalExam } from './courseCompletion';
 
 // =============================================================================
 // Streak Types
@@ -177,6 +178,10 @@ export interface LearningGamificationState {
   skillCategories: string[]; // Different subjects studied
   consecutivePerfectWeeks: number;
   plansCompleted: number;
+
+  // Course completion diplomas (separate from gamification trophies)
+  courseDiplomas: CourseDiploma[];
+  finalExams: FinalExam[];
 }
 
 export const DEFAULT_LEARNING_GAMIFICATION_STATE: LearningGamificationState = {
@@ -209,6 +214,8 @@ export const DEFAULT_LEARNING_GAMIFICATION_STATE: LearningGamificationState = {
   skillCategories: [],
   consecutivePerfectWeeks: 0,
   plansCompleted: 0,
+  courseDiplomas: [],
+  finalExams: [],
 };
 
 // =============================================================================
@@ -245,6 +252,9 @@ export interface D1LearningGamificationProfile {
   challenges: string;
   goals: string;
   activities: string;
+  // Course completion
+  course_diplomas: string;
+  final_exams: string;
   // Timestamps
   created_at: string;
   updated_at: string | null;
@@ -283,6 +293,8 @@ export function toD1LearningGamificationProfile(
     challenges: JSON.stringify(state.challenges),
     goals: JSON.stringify(state.goals),
     activities: JSON.stringify(state.activities.slice(0, 50)),
+    course_diplomas: JSON.stringify(state.courseDiplomas || []),
+    final_exams: JSON.stringify(state.finalExams || []),
   };
 }
 
@@ -299,6 +311,8 @@ export function fromD1LearningGamificationProfile(
   const goals = JSON.parse(profile.goals || '[]') as StudyGoal[];
   const activities = JSON.parse(profile.activities || '[]') as StudyActivityItem[];
   const skillCategories = JSON.parse(profile.skill_categories || '[]') as string[];
+  const courseDiplomas = JSON.parse(profile.course_diplomas || '[]') as CourseDiploma[];
+  const finalExams = JSON.parse(profile.final_exams || '[]') as FinalExam[];
 
   const { currentLevel, xpInCurrentLevel, xpToNextLevel } = calculateLevelData(
     profile.total_xp
@@ -334,6 +348,8 @@ export function fromD1LearningGamificationProfile(
     skillCategories,
     consecutivePerfectWeeks: profile.consecutive_perfect_weeks || 0,
     plansCompleted: profile.plans_completed || 0,
+    courseDiplomas,
+    finalExams,
   };
 }
 

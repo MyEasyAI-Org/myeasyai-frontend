@@ -1,4 +1,4 @@
-import { ArrowLeft, Library, GraduationCap, MessageCircle, BookOpen, Save } from 'lucide-react';
+import { ArrowLeft, Library, GraduationCap, MessageCircle, BookOpen, Save, AlertTriangle, X } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { WithAttentionIndicator } from '../../components/AttentionIndicator';
@@ -9,12 +9,17 @@ import { StudyPlanChatPanel } from './components/StudyPlanChatPanel';
 import { StudyPlanLibrary } from './components/StudyPlanLibrary';
 import { StudyPlanPreview } from './components/StudyPlanPreview';
 import { EnhancedStudyPlanPreview } from './components/EnhancedStudyPlanPreview';
+import { FinalExamComponent } from './components/exam';
 import { ProgressTab } from './components/gamification';
 import { useStudyPlanData } from './hooks/useStudyPlanData';
 import { useStudyPlanLibrary } from './hooks/useStudyPlanLibrary';
 import { useLearningGamification } from './hooks/useLearningGamification';
+import { useFinalExam } from './hooks/useFinalExam';
 import { studyPlanGenerationService } from './services/StudyPlanGenerationService';
 import type { EnhancedGeneratedStudyPlan } from './services/StudyPlanGenerationService';
+import type { GeneratedLesson } from './types/lesson';
+import type { CourseDiploma, FinalExam } from './types/courseCompletion';
+import { LEGAL_DISCLAIMER_TEXT, LEGAL_DISCLAIMER_CHECKBOX_TEXT } from './types/courseCompletion';
 import type {
   ChatMessage,
   GeneratedStudyPlan,
@@ -22,6 +27,12 @@ import type {
   StudyMotivation,
   StudyPlanProfile,
 } from './types';
+import {
+  createMockProfile,
+  createMockCompletedPlan,
+  createMockGeneratedLessons,
+  createMockPassedExam,
+} from './utils/devMockCompletedCourse';
 
 interface MyEasyLearningProps {
   onBackToDashboard?: () => void;
@@ -47,7 +58,28 @@ export function MyEasyLearning({ onBackToDashboard }: MyEasyLearningProps) {
   const [isUnsavedModalOpen, setIsUnsavedModalOpen] = useState(false);
   const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
   const [isPlanSaved, setIsPlanSaved] = useState(false);
+  const [generatedLessons, setGeneratedLessons] = useState<Map<string, GeneratedLesson>>(new Map());
+  const [isDisclaimerModalOpen, setIsDisclaimerModalOpen] = useState(false);
+  const [disclaimerAccepted, setDisclaimerAccepted] = useState(false);
+  const [existingExam, setExistingExam] = useState<FinalExam | null>(null);
   const useEnhancedMode = true; // Always use AI teaching mode
+
+  // Final Exam / Certificate hook
+  const finalExamHook = useFinalExam({
+    plan: enhancedPlan,
+    profile: studyPlanData.data.profile,
+    generatedLessons,
+    onXpEarned: gamification.addXP,
+    onDiplomaIssued: (diploma: CourseDiploma) => {
+      gamification.recordDiplomaIssued(diploma);
+      toast.success('Certificado emitido com sucesso!');
+    },
+    onExamUpdated: (exam: FinalExam) => {
+      gamification.recordExamUpdated(exam);
+    },
+    existingExam,
+    userName: studyPlanData.data.profile?.plan_name || undefined,
+  });
 
   // Check if there's a plan to show
   const hasPlan = enhancedPlan || studyPlanData.data.generatedPlan;
@@ -476,6 +508,44 @@ export function MyEasyLearning({ onBackToDashboard }: MyEasyLearningProps) {
     setIsSaveModalOpen(true);
   }, []);
 
+  // Exam / Certificate handlers
+  const handleGeneratedLessonsChange = useCallback((lessons: Map<string, GeneratedLesson>) => {
+    setGeneratedLessons(lessons);
+  }, []);
+
+  const handleIssueDiploma = useCallback(() => {
+    setDisclaimerAccepted(false);
+    setIsDisclaimerModalOpen(true);
+  }, []);
+
+  const handleDisclaimerConfirm = useCallback(() => {
+    if (!disclaimerAccepted) return;
+    setIsDisclaimerModalOpen(false);
+    finalExamHook.issueDiploma();
+  }, [disclaimerAccepted, finalExamHook]);
+
+  const handleDownloadPdf = useCallback(async () => {
+    await finalExamHook.downloadPdf();
+    toast.success('PDF do certificado baixado!');
+  }, [finalExamHook]);
+
+  // DEV ONLY: Load mock completed course for testing certificate flow
+  const handleLoadDevMock = useCallback(() => {
+    const mockProfile = createMockProfile();
+    const mockPlan = createMockCompletedPlan();
+    const mockLessons = createMockGeneratedLessons();
+    const mockExam = createMockPassedExam();
+
+    studyPlanData.setProfile(mockProfile);
+    studyPlanData.setCurrentStep('result');
+    setEnhancedPlan(mockPlan);
+    setGeneratedLessons(mockLessons);
+    setExistingExam(mockExam);
+    setIsPlanSaved(true);
+    setViewMode('chat');
+    toast.success('[DEV] Curso completo + prova aprovada! Clique em "Emitir Certificado" no plano.');
+  }, [studyPlanData]);
+
   const handleLoadPlan = useCallback(
     (item: typeof studyPlanLibrary.items[0]) => {
       const planData = item.plan_data;
@@ -540,6 +610,17 @@ export function MyEasyLearning({ onBackToDashboard }: MyEasyLearningProps) {
             <h1 className="text-lg md:text-2xl font-bold text-white">MyEasyLearning</h1>
           </div>
           <div className="flex items-center gap-1 md:gap-2">
+            {/* DEV: Load mock completed course */}
+            {import.meta.env.DEV && (
+              <button
+                type="button"
+                onClick={handleLoadDevMock}
+                className="flex items-center gap-1 rounded-lg px-2 py-2 text-xs font-bold bg-red-600 text-white hover:bg-red-700 transition-colors cursor-pointer"
+                title="[DEV] Carregar curso completo mock para testar certificado"
+              >
+                DEV: Mock Curso
+              </button>
+            )}
             {/* Save Button - shows different states based on plan status */}
             {hasPlan && (
               isPlanSaved ? (
@@ -658,6 +739,17 @@ export function MyEasyLearning({ onBackToDashboard }: MyEasyLearningProps) {
                     gamification.recordTaskCompleted(new Date().getHours(), studyPlanData.data.profile?.skill_category);
                     console.log(`Lesson ${lessonNumber} of week ${weekNumber} completed!`);
                   }}
+                  onGeneratedLessonsChange={handleGeneratedLessonsChange}
+                  examEligibility={finalExamHook.eligibility}
+                  certificateLevel={finalExamHook.certificateLevel}
+                  finalExam={finalExamHook.finalExam}
+                  diploma={finalExamHook.diploma}
+                  canRetake={finalExamHook.canRetake}
+                  isGeneratingExam={finalExamHook.isGeneratingExam}
+                  onStartExam={finalExamHook.startExam}
+                  onGenerateExam={finalExamHook.generateExam}
+                  onIssueDiploma={handleIssueDiploma}
+                  onDownloadPdf={handleDownloadPdf}
                 />
               ) : (
                 <StudyPlanPreview
@@ -705,6 +797,17 @@ export function MyEasyLearning({ onBackToDashboard }: MyEasyLearningProps) {
                         gamification.recordTaskCompleted(new Date().getHours(), studyPlanData.data.profile?.skill_category);
                         console.log(`Lesson ${lessonNumber} of week ${weekNumber} completed!`);
                       }}
+                      onGeneratedLessonsChange={handleGeneratedLessonsChange}
+                      examEligibility={finalExamHook.eligibility}
+                      certificateLevel={finalExamHook.certificateLevel}
+                      finalExam={finalExamHook.finalExam}
+                      diploma={finalExamHook.diploma}
+                      canRetake={finalExamHook.canRetake}
+                      isGeneratingExam={finalExamHook.isGeneratingExam}
+                      onStartExam={finalExamHook.startExam}
+                      onGenerateExam={finalExamHook.generateExam}
+                      onIssueDiploma={handleIssueDiploma}
+                      onDownloadPdf={handleDownloadPdf}
                     />
                   ) : (
                     <StudyPlanPreview
@@ -777,6 +880,79 @@ export function MyEasyLearning({ onBackToDashboard }: MyEasyLearningProps) {
         onLeave={handleConfirmLeave}
         planName={studyPlanData.data.profile?.skill_name}
       />
+
+      {/* Final Exam Modal (full-screen) */}
+      {finalExamHook.isExamActive && finalExamHook.finalExam && (
+        <FinalExamComponent
+          exam={finalExamHook.finalExam}
+          questions={finalExamHook.examQuestions}
+          onComplete={finalExamHook.submitExamAttempt}
+          onCancel={finalExamHook.cancelExam}
+        />
+      )}
+
+      {/* Legal Disclaimer Modal */}
+      {isDisclaimerModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
+          <div className="w-full max-w-lg rounded-xl bg-slate-800 border border-slate-700 shadow-2xl">
+            {/* Header */}
+            <div className="flex items-center justify-between p-4 border-b border-slate-700">
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="h-5 w-5 text-amber-400" />
+                <h3 className="text-lg font-bold text-white">Aviso Legal Importante</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsDisclaimerModalOpen(false)}
+                className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-700 transition-colors cursor-pointer"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {/* Disclaimer text */}
+            <div className="p-4 max-h-64 overflow-y-auto">
+              <p className="text-sm text-slate-300 whitespace-pre-line leading-relaxed">
+                {LEGAL_DISCLAIMER_TEXT}
+              </p>
+            </div>
+
+            {/* Checkbox */}
+            <div className="px-4 pb-3">
+              <label className="flex items-start gap-3 cursor-pointer group">
+                <input
+                  type="checkbox"
+                  checked={disclaimerAccepted}
+                  onChange={(e) => setDisclaimerAccepted(e.target.checked)}
+                  className="mt-1 h-4 w-4 rounded border-slate-600 bg-slate-700 text-amber-500 focus:ring-amber-500 cursor-pointer"
+                />
+                <span className="text-sm text-slate-300 group-hover:text-white transition-colors">
+                  {LEGAL_DISCLAIMER_CHECKBOX_TEXT}
+                </span>
+              </label>
+            </div>
+
+            {/* Actions */}
+            <div className="flex gap-3 p-4 border-t border-slate-700">
+              <button
+                type="button"
+                onClick={() => setIsDisclaimerModalOpen(false)}
+                className="flex-1 py-2.5 rounded-lg bg-slate-700 text-slate-300 text-sm font-medium hover:bg-slate-600 transition-colors cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleDisclaimerConfirm}
+                disabled={!disclaimerAccepted}
+                className="flex-1 py-2.5 rounded-lg bg-amber-600 text-white text-sm font-bold hover:bg-amber-700 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                Aceitar e Emitir Certificado
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
