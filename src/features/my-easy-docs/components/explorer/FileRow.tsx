@@ -224,9 +224,7 @@ export const FileRow = memo(function FileRow({
           ? 'bg-blue-500/10'
           : isSelected
             ? 'bg-blue-500/10'
-            : doc.is_favorite
-              ? 'bg-yellow-500/5 hover:bg-yellow-500/10'
-              : 'hover:bg-slate-800/50'
+            : 'hover:bg-slate-800/50'
       }`}
     >
       {/* Checkbox column - visible on hover or when any item is selected */}
@@ -244,16 +242,8 @@ export const FileRow = memo(function FileRow({
       )}
       <td className="px-4 py-3">
         <div className="flex items-center gap-3">
-          {doc.is_favorite && (
-            <div className="p-1 bg-yellow-500/20 rounded border border-yellow-500/30 shrink-0">
-              <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />
-            </div>
-          )}
           <FileIcon mimeType={doc.mime_type} size="md" />
           <span className="text-sm text-slate-200 truncate">{doc.name}</span>
-          {doc.is_favorite && (
-            <span className="text-xs text-yellow-500/70 shrink-0">Favorito</span>
-          )}
         </div>
       </td>
       <td className="px-4 py-3 text-sm text-slate-500">{formatFileSize(doc.size)}</td>

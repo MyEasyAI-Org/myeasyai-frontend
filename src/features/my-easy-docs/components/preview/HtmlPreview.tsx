@@ -67,11 +67,12 @@ export function HtmlPreview({
         <div className="flex items-center justify-between px-4 py-3 bg-slate-800 border-b border-slate-700">
           <span className="text-sm text-slate-400">Visualização HTML</span>
           <div className="flex items-center gap-2">
+            {/* Fullscreen button - Hidden on mobile */}
             {onFullscreen && (
               <button
                 onClick={onFullscreen}
                 disabled={isLoading || !content}
-                className="flex items-center gap-2 px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-white text-sm rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-white text-sm rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Maximize2 className="w-4 h-4" />
                 Tela cheia

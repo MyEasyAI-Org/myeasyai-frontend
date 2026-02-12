@@ -6,6 +6,7 @@ import { memo, useState, useCallback } from 'react';
 import { ChevronUp, ChevronDown } from 'lucide-react';
 import type { DocsFolder, DocsDocument, DocsSortField, DocsSortOrder } from '../../types';
 import { FileRow } from './FileRow';
+import { FileGrid } from './FileGrid';
 
 // =============================================
 // Types
@@ -121,8 +122,10 @@ export const FileList = memo(function FileList({
   const hasContextMenu = onRenameItem || onDeleteItem || onMoveItem || onToggleFavorite;
 
   return (
-    <div className="bg-slate-900/30 border border-slate-800 rounded-xl overflow-hidden">
-      <table className="w-full">
+    <>
+      {/* Desktop: Table View */}
+      <div className="hidden sm:block bg-slate-900/30 border border-slate-800 rounded-xl overflow-hidden">
+        <table className="w-full">
         <thead>
           <tr className="border-b border-slate-800">
             {/* Select All checkbox - always visible when onToggleSelect is provided */}
@@ -209,8 +212,29 @@ export const FileList = memo(function FileList({
             />
           ))}
         </tbody>
-      </table>
-    </div>
+        </table>
+      </div>
+
+      {/* Mobile: Grid View */}
+      <div className="sm:hidden">
+        <FileGrid
+          folders={sortedFolders}
+          documents={sortedDocuments}
+          selectedDocumentId={selectedDocumentId}
+          selectionMode={selectionMode}
+          selectedIds={selectedIds}
+          hasAnySelection={hasAnySelection}
+          onToggleSelect={onToggleSelect}
+          onOpenFolder={onOpenFolder}
+          onSelectDocument={onSelectDocument}
+          onOpenDocument={onOpenDocument}
+          onRenameItem={onRenameItem}
+          onDeleteItem={onDeleteItem}
+          onMoveItem={onMoveItem}
+          onToggleFavorite={onToggleFavorite}
+        />
+      </div>
+    </>
   );
 });
 

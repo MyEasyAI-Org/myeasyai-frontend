@@ -30,7 +30,13 @@ type ViewMode = 'split' | 'code' | 'preview';
 export function HtmlEditor({ content, isSaving = false, onSave, onCancel }: HtmlEditorProps) {
   const [editedContent, setEditedContent] = useState(content);
   const [previewHtml, setPreviewHtml] = useState(content);
-  const [viewMode, setViewMode] = useState<ViewMode>('split');
+  // Start with 'code' on mobile (< 640px), 'split' on desktop
+  const [viewMode, setViewMode] = useState<ViewMode>(() => {
+    if (typeof window !== 'undefined') {
+      return window.innerWidth < 640 ? 'code' : 'split';
+    }
+    return 'split';
+  });
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
 
   // Sync with prop content when it changes
@@ -92,7 +98,7 @@ export function HtmlEditor({ content, isSaving = false, onSave, onCancel }: Html
           </button>
           <button
             onClick={() => setViewMode('split')}
-            className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg transition-colors ${
+            className={`hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg transition-colors ${
               viewMode === 'split' ? 'bg-slate-700 text-white' : 'text-slate-400 hover:bg-slate-700/50'
             }`}
           >

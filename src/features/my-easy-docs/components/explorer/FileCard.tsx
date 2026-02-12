@@ -145,10 +145,10 @@ export const FileCard = memo(function FileCard({
   if (type === 'folder') {
     return (
       <div className="relative group">
-        {/* Checkbox - visible on hover or when any item is selected */}
+        {/* Checkbox - visible on hover (desktop) or when any item is selected */}
         {onToggleSelect && (
           <div className={`absolute top-2 left-2 z-10 transition-opacity ${
-            hasAnySelection || isChecked ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+            hasAnySelection || isChecked ? 'opacity-100' : 'opacity-0 sm:group-hover:opacity-100'
           }`}>
             <label
               className="flex items-center justify-center w-6 h-6 bg-slate-800/90 border border-slate-600 rounded cursor-pointer hover:border-blue-500 transition-colors"
@@ -165,17 +165,17 @@ export const FileCard = memo(function FileCard({
 
         <button
           onClick={handleSingleClick}
-          className={`w-full flex flex-col items-center p-4 bg-slate-900/50 border rounded-xl transition-all ${
+          className={`w-full flex flex-col items-center p-3 sm:p-4 bg-slate-900/50 border rounded-xl transition-all min-h-[120px] sm:min-h-[140px] ${
             isChecked
               ? 'border-blue-500 bg-blue-500/10'
               : 'border-slate-800 hover:border-blue-500/50 hover:bg-slate-800/50'
           }`}
         >
-          <Folder className="w-12 h-12 text-yellow-500 mb-3" />
-          <span className="text-sm font-medium text-slate-200 truncate w-full text-center">
+          <Folder className="w-10 h-10 sm:w-12 sm:h-12 text-yellow-500 mb-2 sm:mb-3" />
+          <span className="text-xs sm:text-sm font-medium text-slate-200 truncate w-full text-center">
             {item.name}
           </span>
-          <span className="text-xs text-slate-500 mt-1">
+          <span className="text-[10px] sm:text-xs text-slate-500 mt-1">
             {documentsCount} {documentsCount === 1 ? 'arquivo' : 'arquivos'}
           </span>
         </button>
@@ -232,10 +232,10 @@ export const FileCard = memo(function FileCard({
 
   return (
     <div className="relative group">
-      {/* Checkbox - visible on hover or when any item is selected */}
+      {/* Checkbox - visible on hover (desktop) or when any item is selected */}
       {onToggleSelect && (
         <div className={`absolute top-2 left-2 z-20 transition-opacity ${
-          hasAnySelection || isChecked ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+          hasAnySelection || isChecked ? 'opacity-100' : 'opacity-0 sm:group-hover:opacity-100'
         }`}>
           <label
             className="flex items-center justify-center w-6 h-6 bg-slate-800/90 border border-slate-600 rounded cursor-pointer hover:border-blue-500 transition-colors"
@@ -250,31 +250,22 @@ export const FileCard = memo(function FileCard({
         </div>
       )}
 
-      {/* Favorite indicator - adjusted position when checkbox exists */}
-      {doc.is_favorite && (
-        <div className={`absolute ${onToggleSelect ? 'top-10' : 'top-2'} left-2 z-10 p-1 bg-yellow-500/20 rounded-md border border-yellow-500/30`}>
-          <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
-        </div>
-      )}
-
       <button
         onClick={handleSingleClick}
         onDoubleClick={handleDoubleClick}
-        className={`w-full flex flex-col items-center p-4 bg-slate-900/50 border rounded-xl transition-all ${
+        className={`w-full flex flex-col items-center p-3 sm:p-4 bg-slate-900/50 border rounded-xl transition-all min-h-[120px] sm:min-h-[140px] ${
           isChecked
             ? 'border-blue-500 bg-blue-500/10'
             : isSelected
               ? 'border-blue-500 bg-blue-500/10'
-              : doc.is_favorite
-                ? 'border-yellow-500/30 hover:border-yellow-500/50 hover:bg-slate-800/50'
-                : 'border-slate-800 hover:border-blue-500/50 hover:bg-slate-800/50'
+              : 'border-slate-800 hover:border-blue-500/50 hover:bg-slate-800/50'
         }`}
       >
-        <FileIcon mimeType={doc.mime_type} size="xl" />
-        <span className="text-sm font-medium text-slate-200 truncate w-full text-center mt-3">
+        <FileIcon mimeType={doc.mime_type} size="xl" className="w-10 h-10 sm:w-12 sm:h-12" />
+        <span className="text-xs sm:text-sm font-medium text-slate-200 truncate w-full text-center mt-2 sm:mt-3">
           {doc.name}
         </span>
-        <span className="text-xs text-slate-500 mt-1">{formatFileSize(doc.size)}</span>
+        <span className="text-[10px] sm:text-xs text-slate-500 mt-1">{formatFileSize(doc.size)}</span>
       </button>
 
       {/* Context Menu Button */}

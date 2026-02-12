@@ -187,11 +187,11 @@ export function TextPreview({
           {/* Non-editing mode buttons */}
           {!isEditing && (
             <>
-              {/* Fullscreen button - replaces Copy button */}
+              {/* Fullscreen button - Hidden on mobile */}
               {onFullscreen && canEdit && (
                 <button
                   onClick={onFullscreen}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm text-slate-300 hover:bg-slate-700 rounded-lg transition-colors"
+                  className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 text-sm text-slate-300 hover:bg-slate-700 rounded-lg transition-colors"
                   title="Abrir em tela cheia"
                 >
                   <Maximize2 className="w-4 h-4" />

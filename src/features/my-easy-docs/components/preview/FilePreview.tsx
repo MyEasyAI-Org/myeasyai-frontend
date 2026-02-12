@@ -115,22 +115,22 @@ export function FilePreview({
   return (
     <div className="flex flex-col h-full bg-slate-900 border-l border-slate-700">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-slate-700 bg-slate-800/50">
-        <div className="flex-1 min-w-0 mr-4">
-          <h3 className="text-white font-medium truncate">{document.name}</h3>
-          <div className="flex items-center gap-2 mt-1 text-xs text-slate-400">
+      <div className="flex items-center justify-between px-3 sm:px-4 py-2 sm:py-3 border-b border-slate-700 bg-slate-800/50">
+        <div className="flex-1 min-w-0 mr-2 sm:mr-4">
+          <h3 className="text-sm sm:text-base text-white font-medium truncate">{document.name}</h3>
+          <div className="flex items-center gap-2 mt-1 text-[10px] sm:text-xs text-slate-400">
             <span>{formatFileSize(document.size)}</span>
             <span>•</span>
-            <span>{formatRelativeTime(document.updated_at)}</span>
+            <span className="hidden sm:inline">{formatRelativeTime(document.updated_at)}</span>
           </div>
         </div>
 
         <div className="flex items-center gap-1">
-          {/* Favorite button */}
+          {/* Favorite button - Hidden on mobile */}
           {onToggleFavorite && (
             <button
               onClick={onToggleFavorite}
-              className={`p-2 rounded-lg transition-colors ${
+              className={`hidden sm:flex p-2 rounded-lg transition-colors ${
                 document.is_favorite
                   ? 'text-yellow-400 hover:bg-yellow-400/10'
                   : 'text-slate-400 hover:bg-slate-700 hover:text-slate-300'
@@ -150,20 +150,22 @@ export function FilePreview({
             <Download className="w-4 h-4" />
           </button>
 
-          {/* Convert menu */}
+          {/* Convert menu - Hidden on mobile */}
           {fileUrl && (
-            <ConvertMenu
-              mimeType={document.mime_type}
-              fileUrl={fileUrl}
-              fileName={document.name}
-            />
+            <div className="hidden sm:block">
+              <ConvertMenu
+                mimeType={document.mime_type}
+                fileUrl={fileUrl}
+                fileName={document.name}
+              />
+            </div>
           )}
 
-          {/* Fullscreen edit button (for editable files) */}
+          {/* Fullscreen edit button (for editable files) - Hidden on mobile */}
           {canEdit && (
             <button
               onClick={onFullscreen}
-              className="p-2 text-slate-400 hover:text-slate-300 hover:bg-slate-700 rounded-lg transition-colors"
+              className="hidden sm:flex p-2 text-slate-400 hover:text-slate-300 hover:bg-slate-700 rounded-lg transition-colors"
               title="Editar em tela cheia"
             >
               <Edit3 className="w-4 h-4" />

@@ -8,6 +8,7 @@
 import { useState, useCallback, useMemo, useEffect } from 'react';
 import type { DocsDocument, DocsFolder, DocsViewMode } from './types';
 import { useFolders, useDocuments, useFileUpload, useDocsChat, useDocsSearch } from './hooks';
+import { useMediaQuery } from './hooks/useMediaQuery';
 import { avatarService } from '../my-easy-avatar/services/avatarService';
 import { DocsSidebar } from './components/layout/DocsSidebar';
 import { DocsHeader } from './components/layout/DocsHeader';
@@ -27,8 +28,10 @@ import {
   HtmlEditorModal,
 } from './components/modals';
 import { SelectionToolbar } from './components/shared/SelectionToolbar';
+import { MobileDrawer } from './components/mobile/MobileDrawer';
+import { MobilePreviewModal } from './components/mobile/MobilePreviewModal';
 import { isTextFile, isHtml } from './utils';
-import { Loader2, Star, Clock } from 'lucide-react';
+import { Loader2, Star, Clock, Menu } from 'lucide-react';
 
 // =============================================
 // PROPS
@@ -118,10 +121,16 @@ export function MyEasyDocs({ onBackToDashboard }: MyEasyDocsProps) {
   // =============================================
   // LOCAL STATE
   // =============================================
+  // Responsive hook
+  const { isMobile } = useMediaQuery();
+
   // View state
   const [viewMode, setViewMode] = useState<DocsViewMode>('grid');
   const [chatOpen, setChatOpen] = useState(false);
   const [specialViewMode, setSpecialViewMode] = useState<'none' | 'favorites' | 'recent'>('none');
+
+  // Mobile state
+  const [sidebarDrawerOpen, setSidebarDrawerOpen] = useState(false);
 
   // Multi-select state
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -888,24 +897,26 @@ export function MyEasyDocs({ onBackToDashboard }: MyEasyDocsProps) {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 to-slate-900 text-white">
       <div className="flex h-screen">
-        {/* Sidebar */}
-        <DocsSidebar
-          folders={folders}
-          currentFolderId={currentFolderId}
-          expandedFolders={expandedFolders}
-          documents={allDocuments}
-          selectedDocumentId={selectedDocument?.id}
-          specialViewMode={specialViewMode}
-          onNavigate={handleNavigateToFolder}
-          onToggleExpand={handleToggleFolderExpansion}
-          onCreateFolder={handleCreateFolder}
-          onCreateFile={handleCreateFile}
-          onUpload={handleUpload}
-          onSelectDocument={handleOpenDocument}
-          onBackToDashboard={onBackToDashboard}
-          onViewFavorites={handleViewFavorites}
-          onViewRecent={handleViewRecent}
-        />
+        {/* Sidebar - Hidden on mobile */}
+        <div className="hidden sm:block">
+          <DocsSidebar
+            folders={folders}
+            currentFolderId={currentFolderId}
+            expandedFolders={expandedFolders}
+            documents={allDocuments}
+            selectedDocumentId={selectedDocument?.id}
+            specialViewMode={specialViewMode}
+            onNavigate={handleNavigateToFolder}
+            onToggleExpand={handleToggleFolderExpansion}
+            onCreateFolder={handleCreateFolder}
+            onCreateFile={handleCreateFile}
+            onUpload={handleUpload}
+            onSelectDocument={handleOpenDocument}
+            onBackToDashboard={onBackToDashboard}
+            onViewFavorites={handleViewFavorites}
+            onViewRecent={handleViewRecent}
+          />
+        </div>
 
         {/* Main Content */}
         <main className="flex-1 flex flex-col overflow-hidden">
@@ -926,12 +937,13 @@ export function MyEasyDocs({ onBackToDashboard }: MyEasyDocsProps) {
             onSearchChange={handleSearchChange}
             onViewModeChange={handleViewModeChange}
             onToggleChat={handleToggleChat}
+            onMenuClick={() => setSidebarDrawerOpen(true)}
           />
 
           {/* Content Area */}
           <div className="flex-1 flex overflow-hidden">
             {/* File explorer */}
-            <div className="flex-1 overflow-y-auto p-6">
+            <div className="flex-1 overflow-y-auto p-3 sm:p-4 lg:p-6 pb-20 sm:pb-6">
               {/* Loading State */}
               {isLoading && (
                 <div className="flex items-center justify-center h-64">
@@ -1073,9 +1085,9 @@ export function MyEasyDocs({ onBackToDashboard }: MyEasyDocsProps) {
               )}
             </div>
 
-            {/* Preview Panel */}
+            {/* Preview Panel - Desktop only */}
             {previewOpen && selectedDocument && (
-              <aside className="w-[480px] shrink-0 border-l border-slate-700">
+              <aside className="hidden sm:block w-[480px] lg:w-[520px] shrink-0 border-l border-slate-700">
                 <FilePreview
                   document={selectedDocument}
                   textContent={textContent}
@@ -1197,6 +1209,56 @@ export function MyEasyDocs({ onBackToDashboard }: MyEasyDocsProps) {
           onSave={handleSaveHtmlDocument}
           onClose={handleCloseHtmlEditorModal}
         />
+      )}
+
+      {/* Mobile: Sidebar Drawer */}
+      {isMobile && (
+        <MobileDrawer
+          isOpen={sidebarDrawerOpen}
+          onClose={() => setSidebarDrawerOpen(false)}
+          title="My Easy Docs"
+        >
+          <DocsSidebar
+            folders={folders}
+            currentFolderId={currentFolderId}
+            expandedFolders={expandedFolders}
+            documents={allDocuments}
+            selectedDocumentId={selectedDocument?.id}
+            specialViewMode={specialViewMode}
+            onNavigate={handleNavigateToFolder}
+            onToggleExpand={handleToggleFolderExpansion}
+            onCreateFolder={handleCreateFolder}
+            onCreateFile={handleCreateFile}
+            onUpload={handleUpload}
+            onSelectDocument={handleOpenDocument}
+            onBackToDashboard={onBackToDashboard}
+            onViewFavorites={handleViewFavorites}
+            onViewRecent={handleViewRecent}
+          />
+        </MobileDrawer>
+      )}
+
+      {/* Mobile: Preview Modal */}
+      {isMobile && previewOpen && selectedDocument && (
+        <MobilePreviewModal
+          isOpen
+          onClose={handleClosePreview}
+          title={selectedDocument.name}
+        >
+          <FilePreview
+            document={selectedDocument}
+            textContent={textContent}
+            isLoadingContent={isLoadingContent}
+            isSavingContent={isSaving}
+            onClose={handleClosePreview}
+            onFullscreen={handleFullscreenEdit}
+            onSave={handleInlineSaveDocument}
+            onDownload={handleDownloadDocument}
+            onDelete={handleDeleteDocument}
+            onMove={handleMoveDocument}
+            onToggleFavorite={handleToggleFavorite}
+          />
+        </MobilePreviewModal>
       )}
 
       {/* Selection Toolbar */}

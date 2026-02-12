@@ -53,11 +53,10 @@ export const DocsSidebar = memo(function DocsSidebar({
 }: DocsSidebarProps) {
   return (
     <aside
-      className="flex-shrink-0 bg-slate-900/50 border-r border-slate-800 flex flex-col"
-      style={{ width: SIDEBAR_WIDTH }}
+      className="w-full sm:w-[280px] lg:w-[300px] flex-shrink-0 bg-slate-900/50 border-r border-slate-800 flex flex-col"
     >
       {/* Header */}
-      <div className="p-4 border-b border-slate-800">
+      <div className="p-3 sm:p-4 border-b border-slate-800">
         <div className="flex items-center gap-3 mb-4">
           {onBackToDashboard && (
             <button
@@ -78,7 +77,7 @@ export const DocsSidebar = memo(function DocsSidebar({
         <div className="flex flex-col gap-2">
           <button
             onClick={onUpload}
-            className="flex items-center justify-center gap-2 px-3 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm font-medium text-white transition-colors"
+            className="flex items-center justify-center gap-2 px-3 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-xs sm:text-sm font-medium text-white transition-colors"
           >
             <Upload className="w-4 h-4" />
             Upload
@@ -86,7 +85,7 @@ export const DocsSidebar = memo(function DocsSidebar({
           <div className="flex gap-2">
             <button
               onClick={onCreateFolder}
-              className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-sm font-medium text-white transition-colors"
+              className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-xs sm:text-sm font-medium text-white transition-colors"
               title="Nova Pasta"
             >
               <Plus className="w-4 h-4" />
@@ -94,7 +93,7 @@ export const DocsSidebar = memo(function DocsSidebar({
             </button>
             <button
               onClick={onCreateFile}
-              className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-sm font-medium text-white transition-colors"
+              className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-xs sm:text-sm font-medium text-white transition-colors"
               title="Novo Arquivo"
             >
               <FilePlus className="w-4 h-4" />
