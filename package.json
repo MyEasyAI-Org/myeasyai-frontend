@@ -63,7 +63,6 @@
     "drizzle-orm": "^0.45.0",
     "framer-motion": "^11.12.0",
     "git-filter-repo": "^0.0.30",
-    "groq-sdk": "^0.37.0",
     "i18next": "^24.2.3",
     "i18next-browser-languagedetector": "^8.0.4",
     "istextorbinary": "^9.5.0",
