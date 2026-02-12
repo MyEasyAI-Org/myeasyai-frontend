@@ -47,7 +47,7 @@ export function UnsupportedPreview({ document, onDownload }: UnsupportedPreviewP
       {/* Message */}
       <div className="flex items-center gap-2 text-slate-400 mb-8">
         <FileQuestion className="w-5 h-5" />
-        <p>Visualização não disponível para arquivos {fileType}</p>
+        <p>Visualização não disponível para este formato</p>
       </div>
 
       {/* Actions */}

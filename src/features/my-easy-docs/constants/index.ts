@@ -88,7 +88,7 @@ export const SUPPORTED_TEXT_TYPES: string[] = [
 ];
 
 // Extensões editáveis
-export const EDITABLE_EXTENSIONS: string[] = ['.txt', '.md', '.markdown', '.json', '.csv', '.html', '.htm'];
+export const EDITABLE_EXTENSIONS: string[] = ['.txt', '.md', '.markdown', '.csv', '.html', '.htm'];
 
 // =============================================
 // MAPEAMENTO DE MIME TYPE → ÍCONE LUCIDE
@@ -120,13 +120,14 @@ export const FILE_TYPE_ICONS: Record<string, string> = {
   'application/vnd.openxmlformats-officedocument.presentationml.presentation': 'Presentation',
   'application/vnd.ms-powerpoint': 'Presentation',
 
-  // Imagens
-  'image/jpeg': 'Image',
-  'image/png': 'Image',
-  'image/gif': 'Image',
-  'image/webp': 'Image',
-  'image/svg+xml': 'Image',
-  'image/bmp': 'Image',
+  // TODO: v2 - Reativar suporte a imagens
+  // // Imagens
+  // 'image/jpeg': 'Image',
+  // 'image/png': 'Image',
+  // 'image/gif': 'Image',
+  // 'image/webp': 'Image',
+  // 'image/svg+xml': 'Image',
+  // 'image/bmp': 'Image',
 
   // TODO: v2 - Reativar suporte a vídeo/áudio
   // // Vídeos
@@ -141,10 +142,11 @@ export const FILE_TYPE_ICONS: Record<string, string> = {
   // 'audio/ogg': 'Music',
   // 'audio/webm': 'Music',
 
-  // Código
-  'application/javascript': 'FileCode',
-  'application/json': 'FileJson',
-  'application/typescript': 'FileCode',
+  // TODO: v2 - Reativar suporte a código (exceto HTML)
+  // // Código
+  // 'application/javascript': 'FileCode',
+  // 'application/json': 'FileJson',
+  // 'application/typescript': 'FileCode',
 
   // Padrão
   default: 'File',
@@ -168,13 +170,14 @@ export const EXTENSION_TO_MIME: Record<string, string> = {
   '.pptx': 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
   '.odt': 'application/vnd.oasis.opendocument.text',
   '.rtf': 'application/rtf',
-  '.jpg': 'image/jpeg',
-  '.jpeg': 'image/jpeg',
-  '.png': 'image/png',
-  '.gif': 'image/gif',
-  '.webp': 'image/webp',
-  '.svg': 'image/svg+xml',
-  '.bmp': 'image/bmp',
+  // TODO: v2 - Reativar suporte a imagens
+  // '.jpg': 'image/jpeg',
+  // '.jpeg': 'image/jpeg',
+  // '.png': 'image/png',
+  // '.gif': 'image/gif',
+  // '.webp': 'image/webp',
+  // '.svg': 'image/svg+xml',
+  // '.bmp': 'image/bmp',
   // TODO: v2 - Reativar suporte a vídeo/áudio
   // '.mp4': 'video/mp4',
   // '.webm': 'video/webm',
@@ -183,9 +186,10 @@ export const EXTENSION_TO_MIME: Record<string, string> = {
   // '.mp3': 'audio/mpeg',
   // '.wav': 'audio/wav',
   // '.ogg': 'audio/ogg',
-  '.js': 'application/javascript',
-  '.ts': 'application/typescript',
-  '.json': 'application/json',
+  // TODO: v2 - Reativar suporte a código (exceto HTML)
+  // '.js': 'application/javascript',
+  // '.ts': 'application/typescript',
+  // '.json': 'application/json',
 };
 
 // =============================================

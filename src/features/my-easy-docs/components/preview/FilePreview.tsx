@@ -8,7 +8,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { X, Download, Edit3, Star, Trash2, MoreVertical, Move } from 'lucide-react';
 import type { DocsDocument } from '../../types';
-import { isEditable, formatFileSize, formatRelativeTime } from '../../utils';
+import { isEditable, formatFileSize, formatRelativeTime, isUnsupportedFormat } from '../../utils';
 import { UploadService } from '../../services/UploadService';
 import { resolvePreview } from './previewRegistry';
 import { UnsupportedPreview } from './UnsupportedPreview';
@@ -84,6 +84,11 @@ export function FilePreview({
 
   // Resolve preview component via registry (OCP pattern)
   const renderPreview = () => {
+    // Early return para formatos explicitamente não suportados
+    if (isUnsupportedFormat(document.mime_type)) {
+      return <UnsupportedPreview document={document} onDownload={handleDownload} />;
+    }
+
     const PreviewComponent = resolvePreview(document);
 
     if (PreviewComponent) {

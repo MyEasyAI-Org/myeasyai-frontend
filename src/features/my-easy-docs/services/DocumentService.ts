@@ -157,15 +157,18 @@ export const DocumentService = {
    * Lista documentos favoritos
    */
   async getFavorites(): Promise<DocsDocument[]> {
-    const userId = await getCurrentUserId();
-    const result = await d1Client.getFavoriteDocsDocuments(userId);
+    // Get all documents
+    const allDocs = await this.getAll();
 
-    if (result.error) {
-      console.error('[DocumentService] Error fetching favorites:', result.error);
-      throw new Error('Failed to fetch favorite documents');
-    }
+    // Filter favorites locally
+    const favorites = allDocs.filter((doc) => doc.is_favorite);
 
-    return (result.data || []).map(mapD1ToDocument);
+    // Sort by updated_at (most recent first)
+    favorites.sort(
+      (a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
+    );
+
+    return favorites;
   },
 
   /**
@@ -316,14 +319,15 @@ export const DocumentService = {
    * Alterna status de favorito
    */
   async toggleFavorite(id: string): Promise<DocsDocument> {
-    const result = await d1Client.toggleDocsDocumentFavorite(id);
+    // Get current document state
+    const current = await this.getById(id);
 
-    if (result.error || !result.data) {
-      console.error('[DocumentService] Error toggling favorite:', result.error);
-      throw new Error('Failed to toggle favorite');
-    }
+    // Update with toggled favorite status
+    const updated = await this.update(id, {
+      is_favorite: !current.is_favorite,
+    });
 
-    return mapD1ToDocument(result.data);
+    return updated;
   },
 
   /**

@@ -62,12 +62,14 @@ export {
   getMimeTypeFromExtension,
   canExtractText,
   isEditable,
-  isImage,
+  // TODO: v2 - Reativar suporte a imagens/código
+  // isImage,
   isPdf,
   // TODO: v2 - Reativar suporte a vídeo/áudio
   // isVideo,
   // isAudio,
   isTextFile,
+  isUnsupportedFormat,
   generateId,
   generateR2Key,
   sanitizeFileName,

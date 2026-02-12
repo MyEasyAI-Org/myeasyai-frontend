@@ -8,17 +8,20 @@
 
 import { registerPreview } from './previewRegistry';
 import type { PreviewComponentProps } from './previewRegistry';
-import { isImage, isPdf, /* isVideo, isAudio, */ isSpreadsheet, isCode, isTextFile, isEditable, isDocx, isDocLegacy, isJson, isHtml } from '../../utils';
-import { ImagePreview } from './ImagePreview';
+import { /* isImage, */ isPdf, /* isVideo, isAudio, */ isSpreadsheet, /* isCode, */ isTextFile, isEditable, isDocx, isDocLegacy, /* isJson, */ isHtml } from '../../utils';
+// TODO: v2 - Reativar suporte a imagens
+// import { ImagePreview } from './ImagePreview';
 import { DocxPreview } from './DocxPreview';
 import { LegacyFormatPreview } from './LegacyFormatPreview';
 import { PdfPreview } from './PdfPreview';
+// TODO: v2 - Reativar suporte a vídeo/áudio
 // import { VideoPreview } from './VideoPreview';
 // import { AudioPreview } from './AudioPreview';
 import { SpreadsheetPreview } from './SpreadsheetPreview';
-import { CodePreview } from './CodePreview';
+// TODO: v2 - Reativar suporte a código (exceto HTML)
+// import { CodePreview } from './CodePreview';
 import { TextPreview } from './TextPreview';
-import { JsonPreview } from './JsonPreview';
+// import { JsonPreview } from './JsonPreview';
 import { HtmlPreview } from './HtmlPreview';
 
 // =============================================
@@ -26,9 +29,10 @@ import { HtmlPreview } from './HtmlPreview';
 // =============================================
 // Each adapter maps PreviewComponentProps to a specific component's props
 
-function ImagePreviewAdapter(props: PreviewComponentProps) {
-  return <ImagePreview url={props.fileUrl!} name={props.document.name} onDownload={props.onDownload} />;
-}
+// TODO: v2 - Reativar suporte a imagens
+// function ImagePreviewAdapter(props: PreviewComponentProps) {
+//   return <ImagePreview url={props.fileUrl!} name={props.document.name} onDownload={props.onDownload} />;
+// }
 
 function PdfPreviewAdapter(props: PreviewComponentProps) {
   return <PdfPreview url={props.fileUrl!} name={props.document.name} onDownload={props.onDownload} />;
@@ -56,15 +60,16 @@ function SpreadsheetPreviewAdapter(props: PreviewComponentProps) {
   );
 }
 
-function CodePreviewAdapter(props: PreviewComponentProps) {
-  return (
-    <CodePreview
-      content={props.textContent ?? null}
-      name={props.document.name}
-      isLoading={props.isLoadingContent}
-    />
-  );
-}
+// TODO: v2 - Reativar suporte a código (exceto HTML)
+// function CodePreviewAdapter(props: PreviewComponentProps) {
+//   return (
+//     <CodePreview
+//       content={props.textContent ?? null}
+//       name={props.document.name}
+//       isLoading={props.isLoadingContent}
+//     />
+//   );
+// }
 
 function TextPreviewAdapter(props: PreviewComponentProps) {
   return (
@@ -79,17 +84,18 @@ function TextPreviewAdapter(props: PreviewComponentProps) {
   );
 }
 
-function JsonPreviewAdapter(props: PreviewComponentProps) {
-  return (
-    <JsonPreview
-      content={props.textContent ?? null}
-      name={props.document.name}
-      isLoading={props.isLoadingContent}
-      isSaving={props.isSavingContent}
-      onSave={props.onSave}
-    />
-  );
-}
+// TODO: v2 - Reativar suporte a código (exceto HTML)
+// function JsonPreviewAdapter(props: PreviewComponentProps) {
+//   return (
+//     <JsonPreview
+//       content={props.textContent ?? null}
+//       name={props.document.name}
+//       isLoading={props.isLoadingContent}
+//       isSaving={props.isSavingContent}
+//       onSave={props.onSave}
+//     />
+//   );
+// }
 
 function HtmlPreviewAdapter(props: PreviewComponentProps) {
   return (
@@ -99,6 +105,7 @@ function HtmlPreviewAdapter(props: PreviewComponentProps) {
       isLoading={props.isLoadingContent}
       isSaving={props.isSavingContent}
       onSave={props.onSave}
+      onFullscreen={props.onFullscreen}
     />
   );
 }
@@ -145,12 +152,13 @@ export function registerAllPreviews(): void {
   });
 
   // Specific format editors (priority 15 - above generic code at 5)
-  registerPreview({
-    key: 'json',
-    canHandle: (doc) => isJson(doc.mime_type, doc.name),
-    component: JsonPreviewAdapter,
-    priority: 15,
-  });
+  // TODO: v2 - Reativar suporte a código (exceto HTML)
+  // registerPreview({
+  //   key: 'json',
+  //   canHandle: (doc) => isJson(doc.mime_type, doc.name),
+  //   component: JsonPreviewAdapter,
+  //   priority: 15,
+  // });
 
   registerPreview({
     key: 'html',
@@ -159,12 +167,13 @@ export function registerAllPreviews(): void {
     priority: 15,
   });
 
-  registerPreview({
-    key: 'image',
-    canHandle: (doc) => isImage(doc.mime_type) && !!(doc.r2_url || doc.r2_key),
-    component: ImagePreviewAdapter,
-    priority: 10,
-  });
+  // TODO: v2 - Reativar suporte a imagens
+  // registerPreview({
+  //   key: 'image',
+  //   canHandle: (doc) => isImage(doc.mime_type) && !!(doc.r2_url || doc.r2_key),
+  //   component: ImagePreviewAdapter,
+  //   priority: 10,
+  // });
 
   registerPreview({
     key: 'pdf',
@@ -196,12 +205,13 @@ export function registerAllPreviews(): void {
     priority: 10,
   });
 
-  registerPreview({
-    key: 'code',
-    canHandle: (doc) => isCode(doc.mime_type, doc.name),
-    component: CodePreviewAdapter,
-    priority: 5,
-  });
+  // TODO: v2 - Reativar suporte a código (exceto HTML)
+  // registerPreview({
+  //   key: 'code',
+  //   canHandle: (doc) => isCode(doc.mime_type, doc.name),
+  //   component: CodePreviewAdapter,
+  //   priority: 5,
+  // });
 
   registerPreview({
     key: 'text',

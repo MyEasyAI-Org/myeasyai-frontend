@@ -24,9 +24,10 @@ import {
   DeleteConfirmModal,
   MoveItemModal,
   TextEditorModal,
+  HtmlEditorModal,
 } from './components/modals';
 import { SelectionToolbar } from './components/shared/SelectionToolbar';
-import { isCode, isTextFile } from './utils';
+import { isTextFile, isHtml } from './utils';
 import { Loader2, Star, Clock } from 'lucide-react';
 
 // =============================================
@@ -175,6 +176,7 @@ export function MyEasyDocs({ onBackToDashboard }: MyEasyDocsProps) {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [moveModalOpen, setMoveModalOpen] = useState(false);
   const [editorModalOpen, setEditorModalOpen] = useState(false);
+  const [htmlEditorModalOpen, setHtmlEditorModalOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isCreatingFile, setIsCreatingFile] = useState(false);
 
@@ -467,8 +469,8 @@ export function MyEasyDocs({ onBackToDashboard }: MyEasyDocsProps) {
       setPreviewOpen(true);
       setIsEditing(false);
 
-      // Load text content for text files and code files
-      const needsContent = isTextFile(doc.mime_type) || isCode(doc.mime_type, doc.name);
+      // Load text content for text files and HTML files
+      const needsContent = isTextFile(doc.mime_type) || isHtml(doc.mime_type, doc.name);
       if (needsContent) {
         setIsLoadingContent(true);
         try {
@@ -539,9 +541,19 @@ export function MyEasyDocs({ onBackToDashboard }: MyEasyDocsProps) {
 
   // Open fullscreen editor
   const handleFullscreenEdit = useCallback(() => {
-    setEditorModalOpen(true);
+    if (!selectedDocument) return;
+
+    // Check if HTML file
+    const isHtmlFile = isHtml(selectedDocument.mime_type, selectedDocument.name);
+
+    if (isHtmlFile) {
+      setHtmlEditorModalOpen(true);
+    } else {
+      setEditorModalOpen(true);
+    }
+
     setIsEditing(true);
-  }, []);
+  }, [selectedDocument]);
 
   // Handle inline save from TextPreview
   const handleInlineSaveDocument = useCallback(async (content: string) => {
@@ -576,6 +588,27 @@ export function MyEasyDocs({ onBackToDashboard }: MyEasyDocsProps) {
 
   const handleCloseEditorModal = useCallback(() => {
     setEditorModalOpen(false);
+    setIsEditing(false);
+  }, []);
+
+  const handleSaveHtmlDocument = useCallback(async (content: string) => {
+    if (!selectedDocument) return;
+
+    setIsSaving(true);
+    try {
+      await saveContent(selectedDocument.id, content);
+      setTextContent(content);
+      setHtmlEditorModalOpen(false);
+      setIsEditing(false);
+    } catch (err) {
+      console.error('Error saving HTML document:', err);
+    } finally {
+      setIsSaving(false);
+    }
+  }, [selectedDocument, saveContent]);
+
+  const handleCloseHtmlEditorModal = useCallback(() => {
+    setHtmlEditorModalOpen(false);
     setIsEditing(false);
   }, []);
 
@@ -1151,6 +1184,18 @@ export function MyEasyDocs({ onBackToDashboard }: MyEasyDocsProps) {
           isSaving={isSaving}
           onSave={handleSaveDocument}
           onClose={handleCloseEditorModal}
+        />
+      )}
+
+      {/* Fullscreen HTML Editor Modal */}
+      {selectedDocument && isHtml(selectedDocument.mime_type, selectedDocument.name) && (
+        <HtmlEditorModal
+          isOpen={htmlEditorModalOpen}
+          content={textContent || ''}
+          fileName={selectedDocument.name}
+          isSaving={isSaving}
+          onSave={handleSaveHtmlDocument}
+          onClose={handleCloseHtmlEditorModal}
         />
       )}
 

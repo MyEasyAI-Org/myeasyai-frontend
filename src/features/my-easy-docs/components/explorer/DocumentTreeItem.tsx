@@ -3,9 +3,9 @@
 // =============================================
 
 import { memo } from 'react';
-import { Star, FileText, FileImage, /* FileVideo, FileAudio, */ FileCode, File } from 'lucide-react';
+import { Star, FileText, /* FileImage, FileVideo, FileAudio, FileCode, */ File } from 'lucide-react';
 import type { DocsDocument } from '../../types';
-import { isImage, /* isVideo, isAudio, */ isPdf, isCode, isTextFile } from '../../utils';
+import { /* isImage, isVideo, isAudio, */ isPdf, /* isCode, */ isTextFile } from '../../utils';
 
 // =============================================
 // Types
@@ -23,9 +23,10 @@ interface DocumentTreeItemProps {
 // =============================================
 
 function getDocumentIcon(mimeType: string, filename: string) {
-  if (isImage(mimeType)) {
-    return <FileImage className="w-4 h-4 text-green-400 flex-shrink-0" />;
-  }
+  // TODO: v2 - Reativar suporte a imagens/mídia/código
+  // if (isImage(mimeType)) {
+  //   return <FileImage className="w-4 h-4 text-green-400 flex-shrink-0" />;
+  // }
   if (isPdf(mimeType)) {
     return <FileText className="w-4 h-4 text-red-400 flex-shrink-0" />;
   }
@@ -36,9 +37,10 @@ function getDocumentIcon(mimeType: string, filename: string) {
   // if (isAudio(mimeType)) {
   //   return <FileAudio className="w-4 h-4 text-pink-400 flex-shrink-0" />;
   // }
-  if (isCode(mimeType, filename)) {
-    return <FileCode className="w-4 h-4 text-cyan-400 flex-shrink-0" />;
-  }
+  // TODO: v2 - Reativar suporte a código (exceto HTML)
+  // if (isCode(mimeType, filename)) {
+  //   return <FileCode className="w-4 h-4 text-cyan-400 flex-shrink-0" />;
+  // }
   if (isTextFile(mimeType)) {
     return <FileText className="w-4 h-4 text-blue-400 flex-shrink-0" />;
   }

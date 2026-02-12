@@ -231,20 +231,35 @@ export const avatarService = {
   /**
    * Get only avatar name and selfie (for use in other modules like MyEasyDocs)
    */
-  async getAvatarBasicInfo(): Promise<{
+  async getAvatarBasicInfo(retries = 2): Promise<{
     name: string | null;
     selfie: string | null;
   }> {
     const user = authService.getUser();
 
     if (!user?.uuid) {
+      console.log('[AvatarService] No user authenticated, cannot load avatar info');
       return { name: null, selfie: null };
     }
 
     try {
       const result = await d1Client.getUserByUuid(user.uuid);
 
+      if (result.error) {
+        console.error('[AvatarService] Error fetching user data:', result.error);
+
+        // Retry on error
+        if (retries > 0) {
+          console.log(`[AvatarService] Retrying... (${retries} attempts left)`);
+          await new Promise(resolve => setTimeout(resolve, 500)); // Wait 500ms
+          return this.getAvatarBasicInfo(retries - 1);
+        }
+
+        return { name: null, selfie: null };
+      }
+
       if (!result.data?.bio) {
+        console.log('[AvatarService] No bio data found for user');
         return { name: null, selfie: null };
       }
 
@@ -252,14 +267,29 @@ export const avatarService = {
       const avatarData = bioData.avatar || bioData;
 
       if (avatarData.type !== 'avatar_customization') {
+        console.log('[AvatarService] Bio does not contain avatar customization');
         return { name: null, selfie: null };
       }
+
+      console.log('[AvatarService] Avatar info loaded successfully:', {
+        name: avatarData.name,
+        hasSelfie: !!avatarData.selfie,
+      });
 
       return {
         name: avatarData.name || null,
         selfie: avatarData.selfie || null,
       };
-    } catch {
+    } catch (error) {
+      console.error('[AvatarService] Exception loading avatar info:', error);
+
+      // Retry on exception
+      if (retries > 0) {
+        console.log(`[AvatarService] Retrying after exception... (${retries} attempts left)`);
+        await new Promise(resolve => setTimeout(resolve, 500));
+        return this.getAvatarBasicInfo(retries - 1);
+      }
+
       return { name: null, selfie: null };
     }
   },

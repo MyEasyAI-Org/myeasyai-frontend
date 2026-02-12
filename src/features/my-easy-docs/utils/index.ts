@@ -173,12 +173,13 @@ export function isEditable(filename: string): boolean {
   return EDITABLE_EXTENSIONS.includes(ext);
 }
 
-/**
- * Verifica se o arquivo é uma imagem
- */
-export function isImage(mimeType: string): boolean {
-  return mimeType.startsWith('image/');
-}
+// TODO: v2 - Reativar suporte a imagens
+// /**
+//  * Verifica se o arquivo é uma imagem
+//  */
+// export function isImage(mimeType: string): boolean {
+//   return mimeType.startsWith('image/');
+// }
 
 /**
  * Verifica se o arquivo é um PDF
@@ -202,6 +203,41 @@ export function isPdf(mimeType: string): boolean {
 // export function isAudio(mimeType: string): boolean {
 //   return mimeType.startsWith('audio/');
 // }
+
+/**
+ * Verifica se o MIME type é de um formato explicitamente não suportado
+ * Inclui: vídeo, áudio, imagens, código (exceto HTML)
+ */
+export function isUnsupportedFormat(mimeType: string): boolean {
+  // Mídia
+  if (mimeType.startsWith('video/') || mimeType.startsWith('audio/')) {
+    return true;
+  }
+
+  // Imagens
+  if (mimeType.startsWith('image/')) {
+    return true;
+  }
+
+  // Código (exceto HTML)
+  const codeMimeTypes = [
+    'application/javascript',
+    'application/typescript',
+    'application/json',
+    'text/javascript',
+    'text/css',
+    'text/x-python',
+    'text/x-java-source',
+    'text/x-c',
+    'text/x-c++',
+  ];
+
+  if (codeMimeTypes.includes(mimeType)) {
+    return true;
+  }
+
+  return false;
+}
 
 /**
  * Verifica se o arquivo é texto puro ou markdown
@@ -259,75 +295,76 @@ export function isSpreadsheet(mimeType: string): boolean {
   return spreadsheetMimeTypes.includes(mimeType);
 }
 
-/**
- * Extensões de código suportadas para syntax highlighting
- */
-const CODE_EXTENSIONS = [
-  '.js', '.jsx', '.ts', '.tsx', '.json',
-  '.html', '.htm', '.css', '.scss', '.sass', '.less',
-  '.py', '.rb', '.php', '.java', '.c', '.cpp', '.h', '.hpp',
-  '.go', '.rs', '.swift', '.kt', '.scala',
-  '.sh', '.bash', '.zsh', '.ps1',
-  '.sql', '.graphql', '.gql',
-  '.yaml', '.yml', '.toml', '.ini', '.env',
-  '.xml', '.svg',
-];
+// TODO: v2 - Reativar suporte a código (exceto HTML que usa HtmlPreview)
+// /**
+//  * Extensões de código suportadas para syntax highlighting
+//  */
+// const CODE_EXTENSIONS = [
+//   '.js', '.jsx', '.ts', '.tsx', '.json',
+//   '.html', '.htm', '.css', '.scss', '.sass', '.less',
+//   '.py', '.rb', '.php', '.java', '.c', '.cpp', '.h', '.hpp',
+//   '.go', '.rs', '.swift', '.kt', '.scala',
+//   '.sh', '.bash', '.zsh', '.ps1',
+//   '.sql', '.graphql', '.gql',
+//   '.yaml', '.yml', '.toml', '.ini', '.env',
+//   '.xml', '.svg',
+// ];
 
-/**
- * Verifica se o arquivo é código (para syntax highlighting)
- */
-export function isCode(mimeType: string, filename: string): boolean {
-  const ext = getFileExtension(filename);
-  return CODE_EXTENSIONS.includes(ext);
-}
+// /**
+//  * Verifica se o arquivo é código (para syntax highlighting)
+//  */
+// export function isCode(mimeType: string, filename: string): boolean {
+//   const ext = getFileExtension(filename);
+//   return CODE_EXTENSIONS.includes(ext);
+// }
 
-/**
- * Retorna a linguagem para syntax highlighting baseado na extensão
- */
-export function getCodeLanguage(filename: string): string {
-  const ext = getFileExtension(filename);
-  const languageMap: Record<string, string> = {
-    '.js': 'javascript',
-    '.jsx': 'jsx',
-    '.ts': 'typescript',
-    '.tsx': 'tsx',
-    '.json': 'json',
-    '.html': 'html',
-    '.htm': 'html',
-    '.css': 'css',
-    '.scss': 'scss',
-    '.sass': 'sass',
-    '.less': 'less',
-    '.py': 'python',
-    '.rb': 'ruby',
-    '.php': 'php',
-    '.java': 'java',
-    '.c': 'c',
-    '.cpp': 'cpp',
-    '.h': 'c',
-    '.hpp': 'cpp',
-    '.go': 'go',
-    '.rs': 'rust',
-    '.swift': 'swift',
-    '.kt': 'kotlin',
-    '.scala': 'scala',
-    '.sh': 'bash',
-    '.bash': 'bash',
-    '.zsh': 'bash',
-    '.ps1': 'powershell',
-    '.sql': 'sql',
-    '.graphql': 'graphql',
-    '.gql': 'graphql',
-    '.yaml': 'yaml',
-    '.yml': 'yaml',
-    '.toml': 'toml',
-    '.ini': 'ini',
-    '.env': 'bash',
-    '.xml': 'xml',
-    '.svg': 'xml',
-  };
-  return languageMap[ext] || 'text';
-}
+// /**
+//  * Retorna a linguagem para syntax highlighting baseado na extensão
+//  */
+// export function getCodeLanguage(filename: string): string {
+//   const ext = getFileExtension(filename);
+//   const languageMap: Record<string, string> = {
+//     '.js': 'javascript',
+//     '.jsx': 'jsx',
+//     '.ts': 'typescript',
+//     '.tsx': 'tsx',
+//     '.json': 'json',
+//     '.html': 'html',
+//     '.htm': 'html',
+//     '.css': 'css',
+//     '.scss': 'scss',
+//     '.sass': 'sass',
+//     '.less': 'less',
+//     '.py': 'python',
+//     '.rb': 'ruby',
+//     '.php': 'php',
+//     '.java': 'java',
+//     '.c': 'c',
+//     '.cpp': 'cpp',
+//     '.h': 'c',
+//     '.hpp': 'cpp',
+//     '.go': 'go',
+//     '.rs': 'rust',
+//     '.swift': 'swift',
+//     '.kt': 'kotlin',
+//     '.scala': 'scala',
+//     '.sh': 'bash',
+//     '.bash': 'bash',
+//     '.zsh': 'bash',
+//     '.ps1': 'powershell',
+//     '.sql': 'sql',
+//     '.graphql': 'graphql',
+//     '.gql': 'graphql',
+//     '.yaml': 'yaml',
+//     '.yml': 'yaml',
+//     '.toml': 'toml',
+//     '.ini': 'ini',
+//     '.env': 'bash',
+//     '.xml': 'xml',
+//     '.svg': 'xml',
+//   };
+//   return languageMap[ext] || 'text';
+// }
 
 // =============================================
 // GERAÇÃO DE IDs

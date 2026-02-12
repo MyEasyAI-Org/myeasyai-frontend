@@ -33,6 +33,12 @@ export function HtmlEditor({ content, isSaving = false, onSave, onCancel }: Html
   const [viewMode, setViewMode] = useState<ViewMode>('split');
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
 
+  // Sync with prop content when it changes
+  useEffect(() => {
+    setEditedContent(content);
+    setPreviewHtml(content);
+  }, [content]);
+
   // Debounced preview update
   useEffect(() => {
     if (debounceRef.current) {

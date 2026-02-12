@@ -52,43 +52,45 @@ export const FileGrid = memo(function FileGrid({
   onToggleFavorite,
 }: FileGridProps) {
   return (
-    <div className="grid grid-cols-[repeat(auto-fill,minmax(140px,170px))] gap-4">
+    <div className="flex flex-wrap gap-4">
       {/* Folders first */}
       {folders.map((folder) => (
-        <FileCard
-          key={folder.id}
-          item={folder}
-          type="folder"
-          documentsCount={documentsCountByFolder?.get(folder.id) ?? 0}
-          selectionMode={selectionMode}
-          isChecked={selectedIds?.has(folder.id) ?? false}
-          hasAnySelection={hasAnySelection}
-          onToggleSelect={onToggleSelect}
-          onOpen={onOpenFolder}
-          onRename={onRenameItem}
-          onDelete={onDeleteItem}
-          onMove={onMoveItem}
-        />
+        <div key={folder.id} className="flex-[1_1_160px] max-w-50">
+          <FileCard
+            item={folder}
+            type="folder"
+            documentsCount={documentsCountByFolder?.get(folder.id) ?? 0}
+            selectionMode={selectionMode}
+            isChecked={selectedIds?.has(folder.id) ?? false}
+            hasAnySelection={hasAnySelection}
+            onToggleSelect={onToggleSelect}
+            onOpen={onOpenFolder}
+            onRename={onRenameItem}
+            onDelete={onDeleteItem}
+            onMove={onMoveItem}
+          />
+        </div>
       ))}
 
       {/* Documents after folders */}
       {documents.map((doc) => (
-        <FileCard
-          key={doc.id}
-          item={doc}
-          type="document"
-          isSelected={selectedDocumentId === doc.id}
-          selectionMode={selectionMode}
-          isChecked={selectedIds?.has(doc.id) ?? false}
-          hasAnySelection={hasAnySelection}
-          onToggleSelect={onToggleSelect}
-          onOpen={onOpenDocument ?? onSelectDocument}
-          onSelect={onSelectDocument}
-          onRename={onRenameItem}
-          onDelete={onDeleteItem}
-          onMove={onMoveItem}
-          onToggleFavorite={onToggleFavorite}
-        />
+        <div key={doc.id} className="flex-[1_1_160px] max-w-[200px]">
+          <FileCard
+            item={doc}
+            type="document"
+            isSelected={selectedDocumentId === doc.id}
+            selectionMode={selectionMode}
+            isChecked={selectedIds?.has(doc.id) ?? false}
+            hasAnySelection={hasAnySelection}
+            onToggleSelect={onToggleSelect}
+            onOpen={onOpenDocument ?? onSelectDocument}
+            onSelect={onSelectDocument}
+            onRename={onRenameItem}
+            onDelete={onDeleteItem}
+            onMove={onMoveItem}
+            onToggleFavorite={onToggleFavorite}
+          />
+        </div>
       ))}
     </div>
   );
