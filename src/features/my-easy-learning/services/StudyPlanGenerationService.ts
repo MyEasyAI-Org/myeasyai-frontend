@@ -1,4 +1,4 @@
-import { geminiClient } from '../../../lib/api-clients/gemini-client';
+import { geminiProxyClient } from '../../../lib/api-clients/gemini-proxy-client';
 import type {
   StudyPlanProfile,
   GeneratedStudyPlan,
@@ -14,7 +14,10 @@ import type {
 import { getContentStrategy } from '../types/lesson';
 
 /**
- * Service for generating personalized study plans using Gemini AI
+ * Service for generating personalized study plans using Gemini AI (via backend proxy).
+ *
+ * NOTE: All prompt templates have been moved to the backend prompt registry
+ * (workers/api-d1/src/prompts/learning.ts) — CyberShield finding 3.E.
  */
 export class StudyPlanGenerationService {
   /**
@@ -23,8 +26,35 @@ export class StudyPlanGenerationService {
   async generateStudyPlan(profile: StudyPlanProfile): Promise<GeneratedStudyPlan> {
     console.log('🎓 [STUDY PLAN] Generating study plan for:', profile.skill_name);
 
-    const prompt = this.buildStudyPlanPrompt(profile);
-    const response = await geminiClient.call(prompt, 0.85);
+    const motivationLabels: Record<string, string> = {
+      career_change: 'Mudar de carreira',
+      promotion: 'Conseguir promoção',
+      income_increase: 'Aumentar renda',
+      personal_project: 'Projeto pessoal',
+      personal_satisfaction: 'Satisfação pessoal',
+    };
+
+    const levelLabels: Record<string, string> = {
+      none: 'Nenhum (nunca estudei)',
+      basic: 'Básico',
+      intermediate: 'Intermediário',
+      advanced: 'Avançado',
+      expert: 'Especialista',
+    };
+
+    const response = await geminiProxyClient.call(
+      'learning.generateStudyPlan',
+      {
+        skillName: profile.skill_name,
+        skillCategory: profile.skill_category,
+        currentLevel: levelLabels[profile.current_level] || 'Iniciante',
+        targetLevel: levelLabels[profile.target_level] || 'Intermediário',
+        weeklyHours: String(profile.weekly_hours),
+        deadlineWeeks: String(profile.deadline_weeks),
+        motivation: motivationLabels[profile.motivation] || 'Aprendizado',
+      },
+      0.85,
+    );
 
     console.log('✅ [STUDY PLAN] AI response received, parsing...');
 
@@ -38,99 +68,6 @@ export class StudyPlanGenerationService {
     });
 
     return parsedPlan;
-  }
-
-  /**
-   * Build the AI prompt for study plan generation
-   */
-  private buildStudyPlanPrompt(profile: StudyPlanProfile): string {
-    const motivationLabels = {
-      career_change: 'Mudar de carreira',
-      promotion: 'Conseguir promoção',
-      income_increase: 'Aumentar renda',
-      personal_project: 'Projeto pessoal',
-      personal_satisfaction: 'Satisfação pessoal',
-    };
-
-    const levelLabels = {
-      none: 'Nenhum (nunca estudei)',
-      basic: 'Básico',
-      intermediate: 'Intermediário',
-      advanced: 'Avançado',
-      expert: 'Especialista',
-    };
-
-    return `
-Você é um especialista em educação e planejamento de estudos. Sua missão é criar um plano de estudos personalizado, estruturado e realista.
-
-PERFIL DO ALUNO:
-- Habilidade a Aprender: ${profile.skill_name}
-- Categoria: ${profile.skill_category}
-- Nível Atual: ${levelLabels[profile.current_level]}
-- Nível Desejado: ${levelLabels[profile.target_level]}
-- Tempo Disponível: ${profile.weekly_hours} horas por semana
-- Prazo: ${profile.deadline_weeks} semanas
-- Motivação: ${motivationLabels[profile.motivation]}
-
-INSTRUÇÕES PARA CRIAR O PLANO:
-
-1. ESTRUTURA DO PLANO:
-   - Crie um plano com EXATAMENTE ${profile.deadline_weeks} semanas
-   - Cada semana deve ter aproximadamente ${profile.weekly_hours} horas de estudo
-   - Progrida do nível ${levelLabels[profile.current_level]} até ${levelLabels[profile.target_level]}
-
-2. FORMATO DE CADA SEMANA:
-   Para cada semana, forneça:
-
-   SEMANA [número]:
-   TÍTULO: [título da semana, ex: "Fundamentos de Python"]
-   FOCO: [breve descrição do foco da semana]
-   HORAS: ${profile.weekly_hours}
-
-   TAREFAS:
-   - TAREFA 1:
-     * Descrição: [descrição clara da tarefa]
-     * Tipo: [video/article/practice/project/book/course]
-     * Recurso: [nome do recurso recomendado - curso específico, canal do YouTube, site, etc.]
-     * URL: [URL real do recurso, se possível. Use URLs de recursos gratuitos conhecidos quando disponível]
-     * Duração: [tempo estimado em minutos]
-
-   - TAREFA 2:
-     [mesmo formato...]
-
-   [Continue com 3-5 tarefas por semana]
-
-3. MILESTONES (MARCOS):
-   Defina 2-3 milestones importantes ao longo do plano:
-
-   MILESTONE [número]:
-   SEMANA: [número da semana]
-   TÍTULO: [título do milestone]
-   DESCRIÇÃO: [descrição do que deve ser alcançado]
-   ENTREGÁVEL: [projeto ou resultado concreto esperado]
-
-4. TÓPICOS PRINCIPAIS:
-   Liste 5-8 tópicos principais que serão cobertos no plano.
-
-DIRETRIZES IMPORTANTES:
-- Seja ESPECÍFICO com recursos reais (cursos do YouTube, Udemy, Coursera, freeCodeCamp, etc.)
-- Para vídeos, recomende canais/cursos conhecidos e de qualidade
-- Para artigos, sugira sites respeitáveis (Medium, Dev.to, documentação oficial, etc.)
-- Para prática, sugira plataformas como LeetCode, HackerRank, exercism.io, etc.
-- Distribua os tipos de recursos: 40% vídeos, 30% prática, 20% leitura, 10% projetos
-- Considere a motivação "${motivationLabels[profile.motivation]}" ao escolher projetos e exemplos
-- Seja realista com o tempo: não sobrecarregue o aluno
-- Progrida gradualmente: conceitos básicos → intermediários → avançados
-
-FORMATO DA RESPOSTA:
-Use EXATAMENTE o formato especificado acima para facilitar o parsing.
-Separe cada semana claramente com "SEMANA [número]:" e cada milestone com "MILESTONE [número]:".
-
-IMPORTANTE:
-- Retorne APENAS o plano estruturado, sem introduções ou conclusões
-- Use URLs reais sempre que possível (YouTube, Coursera, freeCodeCamp, etc.)
-- Seja prático e objetivo
-`;
   }
 
   /**
@@ -383,50 +320,6 @@ export interface EnhancedStudyPlanWeekData {
   completed_at: string | null;
 }
 
-const ENHANCED_PLAN_PROMPT = `
-Voce e um especialista em educacao. Crie um plano de estudos com LICOES que voce vai ENSINAR diretamente ao aluno.
-
-PERFIL DO ALUNO:
-- Habilidade: {skillName}
-- Categoria: {category}
-- Nivel atual: {currentLevel}
-- Nivel desejado: {targetLevel}
-- Tempo semanal: {weeklyHours} horas
-- Prazo: {deadlineWeeks} semanas
-- Motivacao: {motivation}
-
-ESTRATEGIA DE CONTEUDO:
-{contentStrategy}
-
-INSTRUCOES:
-1. Crie EXATAMENTE {deadlineWeeks} semanas
-2. Cada semana deve ter 2-4 LICOES (topicos que voce vai ensinar)
-3. Para cada licao, defina objetivos de aprendizagem claros
-4. Progrida do nivel {currentLevel} ate {targetLevel}
-
-FORMATO (use exatamente este formato):
-
-SEMANA 1:
-TITULO: [titulo da semana]
-FOCO: [foco principal]
-OBJETIVOS: [objetivo 1], [objetivo 2], [objetivo 3]
-MODO: native
-LICAO 1:
-- TITULO: [titulo da licao]
-- DESCRICAO: [breve descricao]
-- OBJETIVOS: [objetivo de aprendizagem 1], [objetivo 2]
-LICAO 2:
-- TITULO: [titulo da licao]
-- DESCRICAO: [breve descricao]
-- OBJETIVOS: [objetivo 1], [objetivo 2]
-
-SEMANA 2:
-[mesmo formato...]
-
-TOPICOS_PRINCIPAIS: [topico1], [topico2], [topico3], [topico4], [topico5]
-
-Gere o plano agora:`;
-
 // Extended service class with enhanced plan generation
 StudyPlanGenerationService.prototype.generateEnhancedStudyPlan = async function (
   profile: StudyPlanProfile
@@ -456,21 +349,21 @@ StudyPlanGenerationService.prototype.generateEnhancedStudyPlan = async function 
     expert: 'Especialista',
   };
 
-  const prompt = ENHANCED_PLAN_PROMPT
-    .replace('{skillName}', profile.skill_name)
-    .replace('{category}', profile.skill_category)
-    .replace('{currentLevel}', levelLabels[profile.current_level] || 'Iniciante')
-    .replace('{targetLevel}', levelLabels[profile.target_level] || 'Intermediario')
-    .replace('{weeklyHours}', profile.weekly_hours.toString())
-    .replace('{deadlineWeeks}', profile.deadline_weeks.toString())
-    .replace('{motivation}', motivationLabels[profile.motivation] || 'Aprendizado')
-    .replace('{contentStrategy}', contentStrategy.reasoning)
-    .replace('{deadlineWeeks}', profile.deadline_weeks.toString())
-    .replace('{currentLevel}', levelLabels[profile.current_level] || 'Iniciante')
-    .replace('{targetLevel}', levelLabels[profile.target_level] || 'Intermediario');
-
   try {
-    const response = await geminiClient.call(prompt, 0.8);
+    const response = await geminiProxyClient.call(
+      'learning.generateEnhancedStudyPlan',
+      {
+        skillName: profile.skill_name,
+        category: profile.skill_category,
+        currentLevel: levelLabels[profile.current_level] || 'Iniciante',
+        targetLevel: levelLabels[profile.target_level] || 'Intermediario',
+        weeklyHours: String(profile.weekly_hours),
+        deadlineWeeks: String(profile.deadline_weeks),
+        motivation: motivationLabels[profile.motivation] || 'Aprendizado',
+        contentStrategy: contentStrategy.reasoning,
+      },
+      0.8,
+    );
     const plan = parseEnhancedPlanResponse(response, profile, contentStrategy);
 
     console.log('✅ [ENHANCED PLAN] Plan generated with', plan.weeks.length, 'weeks');

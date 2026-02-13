@@ -1,20 +1,22 @@
 /**
- * Streaming text generation using Gemini API
- * Adapted for browser-only usage with WebContainer
+ * Streaming text generation — now routed through the backend proxy.
+ *
+ * The system prompt (CODE_SYSTEM_PROMPT) is injected server-side so it never
+ * appears in the frontend JS bundle. Fixes CyberShield findings 3.E and 3.F.
  */
 
-const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
-const GEMINI_MODEL = 'gemini-2.5-flash';
-const GEMINI_STREAM_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:streamGenerateContent`;
+import {
+  streamTextViaProxy,
+  type StreamMessage,
+} from '../../../../lib/api-clients/gemini-proxy-client';
 
-export interface StreamMessage {
-  role: 'user' | 'assistant' | 'system';
-  content: string;
-}
+export type { StreamMessage };
 
 export interface StreamOptions {
   messages: StreamMessage[];
+  /** @deprecated System prompt is now injected server-side. This parameter is ignored. */
   systemPrompt?: string;
+  isContinuation?: boolean;
   temperature?: number;
   maxTokens?: number;
   onToken?: (token: string) => void;
@@ -22,176 +24,33 @@ export interface StreamOptions {
   onError?: (error: Error) => void;
 }
 
-interface GeminiStreamRequest {
-  contents: Array<{
-    role: string;
-    parts: Array<{ text: string }>;
-  }>;
-  systemInstruction?: {
-    parts: Array<{ text: string }>;
-  };
-  generationConfig?: {
-    temperature?: number;
-    maxOutputTokens?: number;
-    topK?: number;
-    topP?: number;
-  };
-}
-
 /**
- * Stream text generation from Gemini API
+ * Stream text generation via the backend Gemini proxy.
+ * Drop-in replacement for the old direct-call streamText.
  */
 export async function streamText(options: StreamOptions): Promise<string> {
   const {
     messages,
-    systemPrompt,
+    isContinuation = false,
     temperature = 0.7,
-    maxTokens = 65536, // Large limit for complete projects
+    maxTokens = 65536,
     onToken,
     onComplete,
     onError,
   } = options;
 
-  console.log('[streamText] Starting with model:', GEMINI_MODEL);
-  console.log('[streamText] API URL:', GEMINI_STREAM_URL);
-  console.log('[streamText] Messages count:', messages.length);
+  console.log('[streamText] Starting via backend proxy');
 
-  if (!GEMINI_API_KEY) {
-    const error = new Error('VITE_GEMINI_API_KEY não está configurada');
-    onError?.(error);
-    throw error;
-  }
-
-  // Build request body
-  const requestBody: GeminiStreamRequest = {
-    contents: messages.map((msg) => ({
-      role: msg.role === 'assistant' ? 'model' : 'user',
-      parts: [{ text: msg.content }],
-    })),
-    generationConfig: {
-      temperature,
-      maxOutputTokens: maxTokens,
-      topK: 40,
-      topP: 0.95,
-    },
-  };
-
-  // Add system instruction if provided
-  if (systemPrompt) {
-    requestBody.systemInstruction = {
-      parts: [{ text: systemPrompt }],
-    };
-  }
-
-  try {
-    const response = await fetch(
-      `${GEMINI_STREAM_URL}?key=${GEMINI_API_KEY}&alt=sse`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(requestBody),
-      }
-    );
-
-    console.log('[streamText] Response status:', response.status);
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('[streamText] API Error:', response.status, errorText);
-      const error = new Error(`Gemini API error: ${response.status} - ${errorText}`);
-      onError?.(error);
-      throw error;
-    }
-
-    const reader = response.body?.getReader();
-    if (!reader) {
-      const error = new Error('Response body is not readable');
-      onError?.(error);
-      throw error;
-    }
-
-    const decoder = new TextDecoder();
-    let fullText = '';
-    let buffer = '';
-    let finishReason = '';
-
-    while (true) {
-      const { done, value } = await reader.read();
-
-      if (done) {
-        break;
-      }
-
-      buffer += decoder.decode(value, { stream: true });
-
-      // Process SSE events
-      const lines = buffer.split('\n');
-      buffer = lines.pop() || ''; // Keep incomplete line in buffer
-
-      for (const line of lines) {
-        if (line.startsWith('data: ')) {
-          const jsonStr = line.slice(6).trim();
-
-          if (jsonStr === '[DONE]') {
-            continue;
-          }
-
-          try {
-            const data = JSON.parse(jsonStr);
-            const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-
-            // Check for finish reason
-            const candidateFinishReason = data.candidates?.[0]?.finishReason;
-            if (candidateFinishReason) {
-              finishReason = candidateFinishReason;
-              console.log('[streamText] Finish reason:', finishReason);
-            }
-
-            if (text) {
-              fullText += text;
-              onToken?.(text);
-            }
-          } catch {
-            // Ignore parse errors for incomplete JSON
-          }
-        }
-      }
-    }
-
-    // Process any remaining buffer content
-    if (buffer.trim()) {
-      console.log('[streamText] Processing remaining buffer:', buffer.substring(0, 100));
-      if (buffer.startsWith('data: ')) {
-        const jsonStr = buffer.slice(6).trim();
-        try {
-          const data = JSON.parse(jsonStr);
-          const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-          if (text) {
-            fullText += text;
-            onToken?.(text);
-          }
-        } catch {
-          // Ignore
-        }
-      }
-    }
-
-    // Check if response was truncated
-    if (finishReason === 'MAX_TOKENS') {
-      console.warn('[streamText] WARNING: Response was truncated due to max tokens!');
-    }
-
-    console.log('[streamText] Complete. Total length:', fullText.length, 'Finish reason:', finishReason);
-
-    onComplete?.(fullText);
-    return fullText;
-  } catch (error) {
-    const err = error instanceof Error ? error : new Error(String(error));
-    onError?.(err);
-    throw err;
-  }
+  return streamTextViaProxy({
+    messages,
+    useSystemPrompt: true,
+    isContinuation,
+    temperature,
+    maxTokens,
+    onToken,
+    onComplete,
+    onError,
+  });
 }
 
 /**
@@ -199,12 +58,11 @@ export async function streamText(options: StreamOptions): Promise<string> {
  */
 export async function generateText(
   prompt: string,
-  systemPrompt?: string,
+  _systemPrompt?: string,
   temperature = 0.7
 ): Promise<string> {
   return streamText({
     messages: [{ role: 'user', content: prompt }],
-    systemPrompt,
     temperature,
   });
 }

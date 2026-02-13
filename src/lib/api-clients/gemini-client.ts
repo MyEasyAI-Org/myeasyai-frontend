@@ -1,9 +1,15 @@
-// Cliente HTTP para integração com Google Gemini AI API
-// Este arquivo contém APENAS o wrapper da API, sem lógica de negócio
-
-const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
-const GEMINI_API_URL =
-  'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent';
+/**
+ * @deprecated — This file is DEPRECATED.
+ *
+ * All Gemini calls now go through the backend proxy (gemini-proxy-client.ts).
+ * The VITE_GEMINI_API_KEY env var has been removed from the frontend.
+ *
+ * This file is kept temporarily for backwards compatibility but will be
+ * removed in a future cleanup. Any remaining imports should be migrated
+ * to gemini-proxy-client.ts.
+ *
+ * See: CyberShield findings 3.E (prompt exposure) and 3.F (API key exposure).
+ */
 
 export interface GeminiRequest {
   contents: Array<{
@@ -30,67 +36,27 @@ export interface GeminiResponse {
 }
 
 /**
- * Cliente HTTP genérico para chamar a API do Gemini
- * Esta função NÃO contém lógica de negócio, apenas faz a chamada HTTP
+ * @deprecated Use geminiProxyClient from gemini-proxy-client.ts instead.
+ *
+ * This class now delegates to the proxy client. It accepts a raw prompt
+ * (for any remaining callers) and sends it as a 'legacy.rawPrompt' key.
+ * NOTE: This will NOT work unless a 'legacy.rawPrompt' key is registered
+ * in the backend prompt registry. Migrate all callers to use prompt keys.
  */
 export class GeminiClient {
-  /**
-   * Chama a API do Gemini com um prompt e configurações
-   * @param prompt - O texto do prompt a ser enviado
-   * @param temperature - Temperatura de geração (0-1)
-   * @returns A resposta de texto da API
-   */
-  async call(prompt: string, temperature: number = 0.9): Promise<string> {
-    try {
-      console.log('🤖 [GEMINI CLIENT] Enviando prompt para o Gemini 2.5 Flash...');
-      console.log('📝 Prompt:', prompt.substring(0, 150) + '...');
-
-      const requestBody: GeminiRequest = {
-        contents: [
-          {
-            parts: [
-              {
-                text: prompt,
-              },
-            ],
-          },
-        ],
-        generationConfig: {
-          temperature,
-          topK: 40,
-          topP: 0.95,
-          maxOutputTokens: 8192,
-        },
-      };
-
-      const response = await fetch(GEMINI_API_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-goog-api-key': GEMINI_API_KEY,
-        },
-        body: JSON.stringify(requestBody),
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('❌ [GEMINI CLIENT] Erro da API:', response.status, errorText);
-        throw new Error(`Gemini API error: ${response.statusText}`);
-      }
-
-      const data: GeminiResponse = await response.json();
-      const result = data.candidates[0]?.content?.parts[0]?.text || '';
-
-      console.log('✅ [GEMINI CLIENT] Resposta recebida!');
-      console.log('📄 Conteúdo:', result.substring(0, 200) + '...');
-
-      return result;
-    } catch (error) {
-      console.error('❌ [GEMINI CLIENT] Erro ao chamar Gemini API:', error);
-      throw error;
-    }
+  async call(_prompt: string, _temperature: number = 0.9): Promise<string> {
+    console.warn(
+      '⚠️ [GEMINI CLIENT] DEPRECATED: Use geminiProxyClient instead. ' +
+      'Direct Gemini calls are no longer supported.',
+    );
+    // This will fail unless the caller is migrated to use prompt keys.
+    // Kept as a safety net to avoid silent breakage.
+    throw new Error(
+      'GeminiClient is deprecated. Use geminiProxyClient with prompt keys instead. ' +
+      'See gemini-proxy-client.ts.',
+    );
   }
 }
 
-// Export singleton instance
+// Export singleton instance (deprecated — use geminiProxyClient instead)
 export const geminiClient = new GeminiClient();

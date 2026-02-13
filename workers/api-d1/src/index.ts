@@ -17,6 +17,7 @@ import { crmRoutes } from './routes/crm';
 import { contentRoutes } from './routes/content';
 import { stripeRoutes } from './routes/stripe';
 import { aiRoutes } from './routes/ai';
+import { geminiRoutes } from './routes/gemini';
 import { runAutoSync } from './scheduled/autoSync';
 
 // Tipagem do ambiente Cloudflare
@@ -33,6 +34,7 @@ export type Env = {
   SUPABASE_SERVICE_ROLE_KEY: string;
   // AI service keys (server-side only)
   GROQ_API_KEY: string;
+  GEMINI_API_KEY: string;
 };
 
 // Contexto customizado com DB
@@ -99,6 +101,7 @@ app.route('/crm', crmRoutes);
 app.route('/content', contentRoutes);
 app.route('/stripe', stripeRoutes);
 app.route('/ai', aiRoutes);
+app.route('/ai/gemini', geminiRoutes);
 
 // Root endpoint
 app.get('/', (c) => {
@@ -118,6 +121,7 @@ app.get('/', (c) => {
       content: '/content',
       stripe: '/stripe',
       ai: '/ai',
+      gemini: '/ai/gemini',
     },
   });
 });

@@ -1,11 +1,14 @@
 /**
  * Final Exam Generation Service
  *
- * Generates comprehensive final exam using Gemini AI.
+ * Generates comprehensive final exam using the backend Gemini proxy.
  * Creates a question pool covering all topics from the study plan.
+ *
+ * NOTE: The EXAM_GENERATION_PROMPT has been moved to the backend prompt registry
+ * (workers/api-d1/src/prompts/learning.ts) — CyberShield finding 3.E.
  */
 
-import { geminiClient } from '../../../lib/api-clients/gemini-client';
+import { geminiProxyClient } from '../../../lib/api-clients/gemini-proxy-client';
 import type { StudyPlanProfile } from '../types';
 import type { LessonTopic } from '../types/lesson';
 import type {
@@ -15,88 +18,6 @@ import type {
   FinalExamQuestion,
 } from '../types/courseCompletion';
 import { FINAL_EXAM_CONFIGS } from '../types/courseCompletion';
-
-// =============================================================================
-// PROMPT
-// =============================================================================
-
-const EXAM_GENERATION_PROMPT = `Voce e um avaliador educacional rigoroso. Crie {questionCount} perguntas para uma PROVA FINAL abrangente sobre "{skillName}".
-
-PERFIL DO ALUNO:
-- Habilidade: {skillName}
-- Nivel: {level}
-- Categoria: {category}
-
-TOPICOS DO CURSO QUE DEVEM SER COBERTOS:
-{topicsList}
-
-INSTRUCOES RIGOROSAS:
-1. As perguntas devem cobrir TODOS os topicos listados acima de forma equilibrada
-2. As perguntas devem testar COMPREENSAO PROFUNDA, nao memorizacao
-3. Distribuicao de dificuldade: {easyPct}% facil, {mediumPct}% medio, {hardPct}% dificil
-4. Use TODOS os tipos de pergunta de forma variada:
-   - "multiple_choice": 4 opcoes, apenas 1 correta
-   - "true_false": afirmacao para avaliar verdadeiro/falso (opcoes: ["Verdadeiro", "Falso"])
-   - "fill_blank": preencher lacuna (correctAnswer e a palavra/frase que completa)
-   - "code_output": qual a saida deste codigo? (inclua codeContext)
-   - "multiple_select": selecionar TODAS as opcoes corretas (use correctAnswers como array)
-5. Para "fill_blank": a pergunta deve conter "___" indicando onde vai a resposta
-6. Para "multiple_select": marque 2-3 opcoes corretas em correctAnswers
-7. Inclua explicacoes detalhadas para TODAS as respostas
-8. Cada pergunta deve indicar qual topico do curso ela cobre (campo "topic")
-9. As perguntas devem ser desafiadoras o suficiente para validar conhecimento real
-
-FORMATO DA RESPOSTA (JSON):
-{
-  "questions": [
-    {
-      "question": "texto da pergunta",
-      "type": "multiple_choice",
-      "difficulty": "easy",
-      "options": ["opcao1", "opcao2", "opcao3", "opcao4"],
-      "correctAnswer": "resposta correta exata",
-      "correctAnswers": null,
-      "explanation": "explicacao detalhada",
-      "codeContext": null,
-      "topic": "nome do topico coberto"
-    },
-    {
-      "question": "Verdadeiro ou Falso: afirmacao aqui",
-      "type": "true_false",
-      "difficulty": "medium",
-      "options": ["Verdadeiro", "Falso"],
-      "correctAnswer": "Verdadeiro",
-      "correctAnswers": null,
-      "explanation": "explicacao",
-      "codeContext": null,
-      "topic": "topico"
-    },
-    {
-      "question": "Complete: O ___ e responsavel por...",
-      "type": "fill_blank",
-      "difficulty": "hard",
-      "options": null,
-      "correctAnswer": "palavra correta",
-      "correctAnswers": null,
-      "explanation": "explicacao",
-      "codeContext": null,
-      "topic": "topico"
-    },
-    {
-      "question": "Selecione TODAS as opcoes corretas sobre X:",
-      "type": "multiple_select",
-      "difficulty": "hard",
-      "options": ["opcao1", "opcao2", "opcao3", "opcao4"],
-      "correctAnswer": null,
-      "correctAnswers": ["opcao1", "opcao3"],
-      "explanation": "explicacao",
-      "codeContext": null,
-      "topic": "topico"
-    }
-  ]
-}
-
-Gere o JSON agora:`;
 
 // =============================================================================
 // SERVICE CLASS
@@ -187,18 +108,21 @@ class FinalExamGenerationServiceClass {
       const questionsInBatch = Math.min(batchSize, totalNeeded - allQuestions.length);
       if (questionsInBatch <= 0) break;
 
-      const prompt = EXAM_GENERATION_PROMPT
-        .replace(/{questionCount}/g, String(questionsInBatch))
-        .replace(/{skillName}/g, profile.skill_name)
-        .replace(/{level}/g, config.level)
-        .replace(/{category}/g, profile.skill_category)
-        .replace(/{topicsList}/g, topicsList)
-        .replace(/{easyPct}/g, String(config.difficultyDistribution.easy))
-        .replace(/{mediumPct}/g, String(config.difficultyDistribution.medium))
-        .replace(/{hardPct}/g, String(config.difficultyDistribution.hard));
-
       try {
-        const response = await geminiClient.call(prompt, 0.7);
+        const response = await geminiProxyClient.call(
+          'learning.generateFinalExam',
+          {
+            questionCount: String(questionsInBatch),
+            skillName: profile.skill_name,
+            level: config.level,
+            category: profile.skill_category,
+            topicsList,
+            easyPct: String(config.difficultyDistribution.easy),
+            mediumPct: String(config.difficultyDistribution.medium),
+            hardPct: String(config.difficultyDistribution.hard),
+          },
+          0.7,
+        );
         const parsed = this.parseExamResponse(response);
         allQuestions.push(...parsed);
       } catch (error) {

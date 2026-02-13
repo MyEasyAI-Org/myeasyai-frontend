@@ -1,15 +1,20 @@
 /**
  * Lesson Content Generation Service
  *
- * Generates educational content using Gemini AI including:
+ * Generates educational content using the backend Gemini proxy including:
  * - Theory sections with clear explanations
  * - Code examples with explanations
  * - Quiz questions to test understanding
  * - Practice exercises
  * - External resource recommendations
+ *
+ * NOTE: All prompt templates (THEORY_GENERATION_PROMPT, QUIZ_GENERATION_PROMPT,
+ * EXERCISE_GENERATION_PROMPT, EXTERNAL_RESOURCES_PROMPT) have been moved to the
+ * backend prompt registry (workers/api-d1/src/prompts/learning.ts).
+ * CyberShield finding 3.E.
  */
 
-import { geminiClient } from '../../../lib/api-clients/gemini-client';
+import { geminiProxyClient } from '../../../lib/api-clients/gemini-proxy-client';
 import type {
   GeneratedLesson,
   LessonSection,
@@ -17,153 +22,9 @@ import type {
   QuizQuestion,
   PracticeExercise,
   ExternalResource,
-  ContentDeliveryMode,
   LessonTopic,
-  ContentStrategy,
-  LESSON_XP_REWARDS,
 } from '../types/lesson';
 import type { StudyPlanProfile } from '../types';
-
-// =============================================================================
-// PROMPTS
-// =============================================================================
-
-const THEORY_GENERATION_PROMPT = `Voce e um professor especialista e vai criar uma licao completa sobre o topico solicitado.
-
-PERFIL DO ALUNO:
-- Habilidade: {skillName}
-- Nivel atual: {currentLevel}
-- Nivel objetivo: {targetLevel}
-
-TOPICO DA LICAO:
-- Titulo: {lessonTitle}
-- Objetivos: {objectives}
-
-INSTRUCOES:
-1. Crie uma licao clara e didatica em portugues brasileiro
-2. Use analogias do dia-a-dia para explicar conceitos abstratos
-3. Seja amigavel e encorajador, como um mentor
-4. Inclua exemplos praticos sempre que possivel
-5. Destaque erros comuns e como evita-los
-6. Se for sobre programacao, inclua codigo comentado
-
-FORMATO DA RESPOSTA (use exatamente este formato):
-
-===SECAO_TEORIA===
-[Explicacao do conceito principal em Markdown. Seja claro e use paragrafos curtos.]
-
-===SECAO_EXEMPLO===
-[Se aplicavel, codigo de exemplo com comentarios explicativos]
-LINGUAGEM: [linguagem do codigo, ex: python, javascript]
-EXPLICACAO: [explicacao do que o codigo faz]
-
-===SECAO_DICA===
-[Dica importante ou boa pratica relacionada ao topico]
-
-===SECAO_ALERTA===
-[Erro comum que iniciantes cometem e como evitar]
-
-===SECAO_RESUMO===
-PONTO1: [primeiro ponto chave]
-PONTO2: [segundo ponto chave]
-PONTO3: [terceiro ponto chave]
-
-Gere o conteudo agora:`;
-
-const QUIZ_GENERATION_PROMPT = `Com base no conteudo da licao sobre "{lessonTitle}", crie {questionCount} perguntas de quiz para testar o entendimento do aluno.
-
-CONTEUDO DA LICAO:
-{lessonContent}
-
-NIVEL DO ALUNO: {level}
-
-INSTRUCOES:
-1. Crie perguntas que testem compreensao, nao memorizacao
-2. Varie os tipos: multipla escolha, verdadeiro/falso
-3. Dificuldade: 40% facil, 40% medio, 20% dificil
-4. Inclua explicacoes detalhadas para cada resposta
-5. Se for sobre codigo, inclua snippets nas perguntas
-
-FORMATO DA RESPOSTA (JSON):
-{
-  "questions": [
-    {
-      "question": "texto da pergunta",
-      "type": "multiple_choice" ou "true_false",
-      "difficulty": "easy" ou "medium" ou "hard",
-      "options": ["opcao1", "opcao2", "opcao3", "opcao4"],
-      "correctAnswer": "resposta correta (exatamente como nas opcoes)",
-      "explanation": "explicacao de por que esta e a resposta correta",
-      "codeContext": "codigo relacionado, se aplicavel"
-    }
-  ]
-}
-
-Gere o JSON agora:`;
-
-const EXERCISE_GENERATION_PROMPT = `Crie {exerciseCount} exercicios praticos para o aluno aplicar o que aprendeu sobre "{lessonTitle}".
-
-CONTEUDO DA LICAO:
-{lessonContent}
-
-NIVEL DO ALUNO: {level}
-CATEGORIA: {category}
-
-INSTRUCOES:
-1. Crie exercicios praticos que reforcem o aprendizado
-2. Comece com exercicios simples e aumente a dificuldade
-3. Inclua codigo inicial (starter code) quando aplicavel
-4. Forneca dicas uteis para ajudar o aluno
-5. Inclua a solucao esperada
-
-FORMATO DA RESPOSTA (JSON):
-{
-  "exercises": [
-    {
-      "title": "titulo do exercicio",
-      "description": "descricao detalhada do que fazer (Markdown)",
-      "difficulty": "easy" ou "medium" ou "hard",
-      "starterCode": "codigo inicial, se aplicavel",
-      "solution": "solucao esperada",
-      "hints": ["dica 1", "dica 2"],
-      "estimatedMinutes": numero
-    }
-  ]
-}
-
-Gere o JSON agora:`;
-
-const EXTERNAL_RESOURCES_PROMPT = `Recomende {resourceCount} recursos externos de alta qualidade para o aluno aprofundar seus conhecimentos sobre "{lessonTitle}".
-
-CONTEXTO:
-- Habilidade: {skillName}
-- Nivel: {level}
-- Categoria: {category}
-
-INSTRUCOES:
-1. Recomende recursos reais e de qualidade (YouTube, Udemy, Coursera, documentacao oficial, etc)
-2. Prefira recursos em portugues, mas inclua em ingles se forem essenciais
-3. Inclua mix de gratuitos e pagos
-4. Explique por que cada recurso e recomendado
-
-FORMATO DA RESPOSTA (JSON):
-{
-  "resources": [
-    {
-      "type": "video" ou "article" ou "course" ou "documentation" ou "tutorial",
-      "title": "titulo do recurso",
-      "url": "URL do recurso",
-      "source": "nome da plataforma (YouTube, Udemy, etc)",
-      "description": "breve descricao do conteudo",
-      "whyRecommended": "por que este recurso e util para o aluno",
-      "estimatedMinutes": numero,
-      "isFree": true ou false,
-      "language": "pt" ou "en"
-    }
-  ]
-}
-
-Gere o JSON agora:`;
 
 // =============================================================================
 // SERVICE CLASS
@@ -243,15 +104,18 @@ class LessonContentGenerationServiceClass {
     profile: StudyPlanProfile,
     topic: LessonTopic
   ): Promise<LessonSection[]> {
-    const prompt = THEORY_GENERATION_PROMPT
-      .replace('{skillName}', profile.skill_name)
-      .replace('{currentLevel}', profile.current_level)
-      .replace('{targetLevel}', profile.target_level)
-      .replace('{lessonTitle}', topic.title)
-      .replace('{objectives}', topic.learningObjectives.join(', '));
-
     try {
-      const response = await geminiClient.call(prompt, 0.7);
+      const response = await geminiProxyClient.call(
+        'learning.generateTheory',
+        {
+          skillName: profile.skill_name,
+          currentLevel: profile.current_level,
+          targetLevel: profile.target_level,
+          lessonTitle: topic.title,
+          objectives: topic.learningObjectives.join(', '),
+        },
+        0.7,
+      );
       return this.parseTheorySections(response);
     } catch (error) {
       console.error('❌ [LESSON SERVICE] Erro ao gerar teoria:', error);
@@ -400,14 +264,17 @@ class LessonContentGenerationServiceClass {
   ): Promise<LessonQuiz> {
     const questionCount = level === 'basic' || level === 'none' ? 3 : level === 'intermediate' ? 4 : 5;
 
-    const prompt = QUIZ_GENERATION_PROMPT
-      .replace('{lessonTitle}', lessonTitle)
-      .replace('{questionCount}', questionCount.toString())
-      .replace('{lessonContent}', lessonContent.substring(0, 2000))
-      .replace('{level}', level);
-
     try {
-      const response = await geminiClient.call(prompt, 0.6);
+      const response = await geminiProxyClient.call(
+        'learning.generateQuiz',
+        {
+          lessonTitle,
+          questionCount: String(questionCount),
+          lessonContent: lessonContent.substring(0, 2000),
+          level,
+        },
+        0.6,
+      );
       const questions = this.parseQuizResponse(response);
 
       return {
@@ -499,15 +366,18 @@ class LessonContentGenerationServiceClass {
   ): Promise<PracticeExercise[]> {
     const exerciseCount = level === 'basic' || level === 'none' ? 2 : 3;
 
-    const prompt = EXERCISE_GENERATION_PROMPT
-      .replace('{exerciseCount}', exerciseCount.toString())
-      .replace('{lessonTitle}', lessonTitle)
-      .replace('{lessonContent}', lessonContent.substring(0, 2000))
-      .replace('{level}', level)
-      .replace('{category}', category);
-
     try {
-      const response = await geminiClient.call(prompt, 0.7);
+      const response = await geminiProxyClient.call(
+        'learning.generateExercises',
+        {
+          exerciseCount: String(exerciseCount),
+          lessonTitle,
+          lessonContent: lessonContent.substring(0, 2000),
+          level,
+          category,
+        },
+        0.7,
+      );
       return this.parseExercisesResponse(response);
     } catch (error) {
       console.error('❌ [LESSON SERVICE] Erro ao gerar exercicios:', error);
@@ -583,15 +453,18 @@ class LessonContentGenerationServiceClass {
   ): Promise<ExternalResource[]> {
     const resourceCount = level === 'advanced' || level === 'expert' ? 4 : 2;
 
-    const prompt = EXTERNAL_RESOURCES_PROMPT
-      .replace('{resourceCount}', resourceCount.toString())
-      .replace('{lessonTitle}', lessonTitle)
-      .replace('{skillName}', skillName)
-      .replace('{level}', level)
-      .replace('{category}', category);
-
     try {
-      const response = await geminiClient.call(prompt, 0.8);
+      const response = await geminiProxyClient.call(
+        'learning.generateExternalResources',
+        {
+          resourceCount: String(resourceCount),
+          lessonTitle,
+          skillName,
+          level,
+          category,
+        },
+        0.8,
+      );
       return this.parseResourcesResponse(response);
     } catch (error) {
       console.error('❌ [LESSON SERVICE] Erro ao gerar recursos:', error);

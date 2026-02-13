@@ -34,6 +34,7 @@ SUPABASE_URL = "https://abmixlwlizdyvlxrizmi.supabase.co"
 # wrangler secret put STRIPE_SECRET_KEY
 # wrangler secret put STRIPE_WEBHOOK_SECRET
 # wrangler secret put GROQ_API_KEY
+# wrangler secret put GEMINI_API_KEY
 #
 # Para obter as credenciais do Google:
 # 1. Acesse https://console.cloud.google.com/apis/credentials
