@@ -198,12 +198,12 @@ export function SupportPage({ onBackToDashboard }: SupportPageProps) {
     },
     {
       id: '6',
-      title: 'Currículos Perfeitos com MyEasyResume',
+      title: 'Currículos Perfeitos com MyEasyJobs',
       description:
         'Crie currículos otimizados para conquistar sua vaga dos sonhos.',
       thumbnail: '/bone-logo.png',
       duration: '9:10',
-      category: 'MyEasyResume',
+      category: 'MyEasyJobs',
       youtubeUrl: YOUTUBE_VIDEO_URL,
     },
     {

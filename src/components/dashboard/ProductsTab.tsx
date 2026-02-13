@@ -11,7 +11,7 @@ type ProductsTabProps = {
   onGoToMyEasyFitness?: () => void;
   onGoToMyEasyAvatar?: () => void;
   onGoToMyEasyCode?: () => void;
-  onGoToMyEasyResume?: () => void;
+  onGoToMyEasyJobs?: () => void;
   onGoToMyEasyLearning?: () => void;
   onGoToMyEasyDocs?: () => void;
   onGoToSupport?: () => void;
@@ -27,7 +27,7 @@ export function ProductsTab({
   onGoToMyEasyFitness,
   onGoToMyEasyAvatar,
   onGoToMyEasyCode,
-  onGoToMyEasyResume,
+  onGoToMyEasyJobs,
   onGoToMyEasyLearning,
   onGoToMyEasyDocs,
   onGoToSupport,
@@ -307,7 +307,7 @@ export function ProductsTab({
               </div>
             </div>
 
-            {/* MyEasyResume Card - Always visible */}
+            {/* MyEasyJobs Card - Always visible */}
             <div className="rounded-lg border border-slate-800 bg-slate-900/50 p-6 hover:border-purple-500 transition-colors">
               <div className="flex items-start justify-between">
                 <div className="flex items-center space-x-3">
@@ -316,7 +316,7 @@ export function ProductsTab({
                   </div>
                   <div>
                     <h3 className="text-lg font-semibold text-white">
-                      MyEasyResume
+                      MyEasyJobs
                     </h3>
                     <span className="inline-block mt-1 rounded-full bg-purple-500/20 text-purple-400 px-2 py-1 text-xs font-semibold">
                       Ativo
@@ -327,13 +327,13 @@ export function ProductsTab({
 
               <div className="mt-4 space-y-2 text-sm">
                 <p className="text-slate-400">
-                  Crie currículos profissionais otimizados com IA para conquistar sua vaga dos sonhos.
+                  Crie currículos, publique vagas e encontre os melhores talentos com IA.
                 </p>
               </div>
 
               <div className="mt-6 flex space-x-2">
                 <button
-                  onClick={onGoToMyEasyResume}
+                  onClick={onGoToMyEasyJobs}
                   className="flex-1 rounded-lg bg-purple-600 px-4 py-2 text-sm font-semibold text-white hover:bg-purple-700 transition-colors flex items-center justify-center space-x-2"
                 >
                   <ExternalLink className="h-4 w-4" />

@@ -28,7 +28,7 @@ export const ROUTES = {
   MY_EASY_FITNESS: '/myeasyfitness',
   MY_EASY_AVATAR: '/myeasyavatar',
   MY_EASY_CODE: '/myeasycode',
-  MY_EASY_RESUME: '/myeasyresume',
+  MY_EASY_JOBS: '/myeasyjobs',
   MY_EASY_LEARNING: '/myeasylearning',
   MY_EASY_DOCS: '/myeasydocs',
 } as const;

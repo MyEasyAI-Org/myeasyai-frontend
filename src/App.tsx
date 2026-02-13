@@ -33,7 +33,7 @@ import { MyEasyCRM } from './features/my-easy-crm';
 import { MyEasyPricing } from './features/my-easy-pricing/MyEasyPricing';
 import { MyEasyFitness } from './features/my-easy-fitness';
 import { MyEasyWebsite } from './features/my-easy-website/MyEasyWebsite';
-import { MyEasyResume } from './features/my-easy-resume/MyEasyResume';
+import { MyEasyJobs } from './features/my-easy-jobs';
 import { MyEasyLearning } from './features/my-easy-learning/MyEasyLearning';
 import { MyEasyDocs } from './features/my-easy-docs';
 import { SupportPage } from './pages/SupportPage';
@@ -386,8 +386,8 @@ function AppContent() {
     navigate(ROUTES.MY_EASY_FITNESS);
   };
 
-  const goToMyEasyResume = () => {
-    navigate(ROUTES.MY_EASY_RESUME);
+  const goToMyEasyJobs = () => {
+    navigate(ROUTES.MY_EASY_JOBS);
   };
 
   const goToMyEasyLearning = () => {
@@ -939,7 +939,7 @@ function AppContent() {
                 onGoToMyEasyFitness={goToMyEasyFitness}
                 onGoToMyEasyAvatar={goToMyEasyAvatar}
                 onGoToMyEasyCode={goToMyEasyCode}
-                onGoToMyEasyResume={goToMyEasyResume}
+                onGoToMyEasyJobs={goToMyEasyJobs}
                 onGoToMyEasyLearning={goToMyEasyLearning}
                 onGoToMyEasyDocs={goToMyEasyDocs}
                 onGoToSupport={goToSupport}
@@ -1091,7 +1091,7 @@ function AppContent() {
       />
 
       <Route
-        path={ROUTES.MY_EASY_RESUME}
+        path={ROUTES.MY_EASY_JOBS}
         element={
           <ProtectedRoute
             user={user}
@@ -1101,7 +1101,7 @@ function AppContent() {
             isLoading={loading}
             isCheckingAuth={isCheckingAuth}
           >
-            <MyEasyResume onBackToDashboard={goToDashboardProducts} />
+            <MyEasyJobs onBackToDashboard={goToDashboardProducts} />
           </ProtectedRoute>
         }
       />

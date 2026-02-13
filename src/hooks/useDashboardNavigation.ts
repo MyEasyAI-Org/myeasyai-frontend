@@ -41,8 +41,8 @@ export type UseDashboardNavigationOptions = {
   onGoToMyEasyAvatar?: () => void;
   /** Callback function to navigate to MyEasyCode feature */
   onGoToMyEasyCode?: () => void;
-  /** Callback function to navigate to MyEasyResume feature */
-  onGoToMyEasyResume?: () => void;
+  /** Callback function to navigate to MyEasyJobs feature */
+  onGoToMyEasyJobs?: () => void;
   /** Callback function to navigate to MyEasyLearning feature */
   onGoToMyEasyLearning?: () => void;
   /** Callback function to navigate to MyEasyDocs feature */
@@ -103,7 +103,7 @@ export function useDashboardNavigation(
     onGoToMyEasyFitness,
     onGoToMyEasyAvatar,
     onGoToMyEasyCode,
-    onGoToMyEasyResume,
+    onGoToMyEasyJobs,
     onGoToMyEasyLearning,
     onGoToMyEasyDocs,
     initialTab = DEFAULT_INITIAL_TAB,
@@ -293,20 +293,20 @@ export function useDashboardNavigation(
   }, [onGoToMyEasyCode, navigate]);
 
   /**
-   * Navigate to MyEasyResume feature
+   * Navigate to MyEasyJobs feature
    * @description
    * Attempts to use the provided callback. If not available, uses React Router
-   * to navigate to the MyEasyResume route.
+   * to navigate to the MyEasyJobs route.
    *
    * @returns {void}
    */
-  const goToResume = useCallback(() => {
-    if (onGoToMyEasyResume) {
-      onGoToMyEasyResume();
+  const goToJobs = useCallback(() => {
+    if (onGoToMyEasyJobs) {
+      onGoToMyEasyJobs();
     } else {
-      navigate(ROUTES.MY_EASY_RESUME);
+      navigate(ROUTES.MY_EASY_JOBS);
     }
-  }, [onGoToMyEasyResume, navigate]);
+  }, [onGoToMyEasyJobs, navigate]);
 
   /**
    * Navigate to MyEasyLearning feature
@@ -352,7 +352,7 @@ export function useDashboardNavigation(
    * - Names containing "fitness" → MyEasyFitness
    * - Names containing "avatar" → MyEasyAvatar
    * - Names containing "code" → MyEasyCode
-   * - Names containing "resume" or "curriculo" → MyEasyResume
+   * - Names containing "jobs", "emprego", "vagas", "resume" or "curriculo" → MyEasyJobs
    * - Names containing "learning" or "aprendizado" or "estudo" → MyEasyLearning
    * - Names containing "docs" or "documentos" or "arquivos" → MyEasyDocs
    * - Other names → Home
@@ -380,8 +380,8 @@ export function useDashboardNavigation(
         goToAvatar();
       } else if (name.includes('code')) {
         goToCode();
-      } else if (name.includes('resume') || name.includes('curriculo')) {
-        goToResume();
+      } else if (name.includes('jobs') || name.includes('emprego') || name.includes('vagas') || name.includes('resume') || name.includes('curriculo')) {
+        goToJobs();
       } else if (name.includes('learning') || name.includes('aprendizado') || name.includes('estudo')) {
         goToLearning();
       } else if (name.includes('docs') || name.includes('documentos') || name.includes('arquivos')) {
@@ -390,7 +390,7 @@ export function useDashboardNavigation(
         goToHome();
       }
     },
-    [goToWebsite, goToGuru, goToPricing, goToCRM, goToContent, goToFitness, goToAvatar, goToCode, goToResume, goToLearning, goToDocs, goToHome],
+    [goToWebsite, goToGuru, goToPricing, goToCRM, goToContent, goToFitness, goToAvatar, goToCode, goToJobs, goToLearning, goToDocs, goToHome],
   );
 
   // ============================================================================
@@ -410,7 +410,7 @@ export function useDashboardNavigation(
     goToFitness,
     goToAvatar,
     goToCode,
-    goToResume,
+    goToJobs,
     goToLearning,
     goToDocs,
   };

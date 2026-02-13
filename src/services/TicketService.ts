@@ -13,7 +13,7 @@ export type TicketCategory =
   | 'myeasycontent'
   | 'myeasyavatar'
   | 'myeasycode'
-  | 'myeasyresume'
+  | 'myeasyjobs'
   | 'myeasylearning'
   | 'account_settings'
   | 'other';

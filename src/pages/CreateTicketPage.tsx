@@ -23,7 +23,7 @@ const TICKET_CATEGORIES: { value: TicketCategory; label: string }[] = [
   { value: 'myeasycontent', label: 'Duvidas sobre MyEasyContent' },
   { value: 'myeasyavatar', label: 'Duvidas sobre MyEasyAvatar' },
   { value: 'myeasycode', label: 'Duvidas sobre MyEasyCode' },
-  { value: 'myeasyresume', label: 'Duvidas sobre MyEasyResume' },
+  { value: 'myeasyjobs', label: 'Duvidas sobre MyEasyJobs' },
   { value: 'myeasylearning', label: 'Duvidas sobre MyEasyLearning' },
   { value: 'account_settings', label: 'Configuracoes da conta' },
   { value: 'other', label: 'Outro assunto' },
