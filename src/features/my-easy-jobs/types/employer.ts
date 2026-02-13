@@ -89,6 +89,18 @@ export interface Candidate {
   updated_at: string;
 }
 
+export interface CandidateFormData {
+  job_id: string;
+  name: string;
+  email: string;
+  phone?: string;
+  resume_data?: string;
+  cover_letter?: string;
+  status?: CandidateStatus;
+  recruiter_notes?: string;
+  tags?: string[];
+}
+
 export interface CandidateFilters {
   search?: string;
   job_id?: string;
